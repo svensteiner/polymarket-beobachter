@@ -109,9 +109,12 @@ class Collector:
         if not dry_run:
             self.storage.ensure_directories()
 
-        # Step 1: Fetch markets
+        # Step 1: Fetch markets (only OPEN markets, not closed)
         logger.info("Step 1: Fetching markets from Polymarket API...")
-        raw_markets = self.client.fetch_all_markets(max_markets=self.max_markets)
+        raw_markets = self.client.fetch_all_markets(
+            max_markets=self.max_markets,
+            closed=False,  # Only fetch active/open markets
+        )
         logger.info(f"Fetched {len(raw_markets)} markets")
 
         # Step 2: Sanitize
@@ -143,8 +146,13 @@ class Collector:
             )
             all_normalized.append(normalized)
 
-            # Only include complete + relevant markets as candidates
-            if fm.result == FilterResult.INCLUDED and normalized.is_complete():
+            # Include complete + relevant markets as candidates
+            # Accept INCLUDED, INCLUDED_CORPORATE, and INCLUDED_COURT
+            if fm.result in (
+                FilterResult.INCLUDED,
+                FilterResult.INCLUDED_CORPORATE,
+                FilterResult.INCLUDED_COURT,
+            ) and normalized.is_complete():
                 candidates.append(normalized)
 
         logger.info(f"Normalized {len(all_normalized)} markets")
