@@ -35,7 +35,7 @@
 
 from datetime import date
 from typing import Any, Dict, List, Optional
-from ..models.data_models import (
+from models.data_models import (
     MarketInput,
     ProcessStageAnalysis,
     EURegulationStage,

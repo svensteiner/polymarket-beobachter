@@ -1,0 +1,147 @@
+# =============================================================================
+# POLYMARKET BEOBACHTER - MODULE CONFIGURATION
+# =============================================================================
+#
+# ZENTRALE STEUERUNG ALLER MODULE
+#
+# Hier kannst du einzelne Module ein- und ausschalten.
+# Aenderungen erfordern Neustart des Bots.
+#
+# enabled: true/false - Modul aktiv/inaktiv
+# interval_seconds: Wie oft das Modul laeuft (0 = einmalig)
+# priority: Reihenfolge beim Start (niedrig = zuerst)
+#
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# CORE MODULES (Hauptfunktionalitaet)
+# -----------------------------------------------------------------------------
+
+collector:
+  enabled: true
+  description: "Sammelt Marktdaten von Polymarket"
+  interval_seconds: 900  # 15 Minuten
+  priority: 1
+  category: "CORE"
+
+analyzer:
+  enabled: true
+  description: "Analysiert Maerkte auf Handelbarkeit"
+  interval_seconds: 900
+  priority: 2
+  category: "CORE"
+
+proposals:
+  enabled: true
+  description: "Generiert Trade-Vorschlaege (Human Review)"
+  interval_seconds: 900
+  priority: 3
+  category: "CORE"
+
+# -----------------------------------------------------------------------------
+# TRADING MODULES (Simulation & Execution)
+# -----------------------------------------------------------------------------
+
+paper_trader:
+  enabled: true
+  description: "Paper Trading Simulation"
+  interval_seconds: 900
+  priority: 4
+  category: "TRADING"
+
+execution_engine:
+  enabled: false  # DEAKTIVIERT - Nur fuer Live Trading
+  description: "Live Order Execution (GEFAEHRLICH)"
+  interval_seconds: 0
+  priority: 99
+  category: "TRADING"
+  warning: "NUR AKTIVIEREN WENN DU WEISST WAS DU TUST!"
+
+# -----------------------------------------------------------------------------
+# RESEARCH MODULES (Nur Analyse, kein Trading)
+# -----------------------------------------------------------------------------
+
+cross_market:
+  enabled: true
+  description: "Cross-Market Konsistenz-Analyse"
+  interval_seconds: 900
+  priority: 5
+  category: "RESEARCH"
+
+outcome_tracker:
+  enabled: true
+  description: "Predictions aufzeichnen fuer Kalibrierung"
+  interval_seconds: 900
+  priority: 6
+  category: "RESEARCH"
+
+# -----------------------------------------------------------------------------
+# SPECIALIZED ENGINES (Spezial-Analysen)
+# -----------------------------------------------------------------------------
+
+weather_engine:
+  enabled: true
+  description: "Wetter-Markt Signal Generator"
+  interval_seconds: 3600  # 1 Stunde
+  priority: 10
+  category: "ENGINE"
+
+corporate_analyzer:
+  enabled: true
+  description: "Corporate Event Analyzer (Earnings, IPO, etc.)"
+  interval_seconds: 0  # Runs with main analyzer
+  priority: 10
+  category: "ENGINE"
+
+court_analyzer:
+  enabled: true
+  description: "Court Ruling Analyzer (SCOTUS, ECJ, etc.)"
+  interval_seconds: 0  # Runs with main analyzer
+  priority: 10
+  category: "ENGINE"
+
+panic_engine:
+  enabled: true  # Shadow Mode - sammelt Daten fuer Validierung
+  description: "Panic Contrarian Engine (Shadow Mode)"
+  interval_seconds: 300  # 5 Minuten
+  priority: 11
+  category: "ENGINE"
+  warning: "Experimentell - nur Shadow Mode!"
+
+# -----------------------------------------------------------------------------
+# INTERFACE MODULES (UI & Benachrichtigungen)
+# -----------------------------------------------------------------------------
+
+dashboard:
+  enabled: true
+  description: "Flet Desktop Dashboard"
+  interval_seconds: 0  # Laeuft kontinuierlich
+  priority: 100
+  category: "INTERFACE"
+
+telegram_notifier:
+  enabled: false
+  description: "Telegram Benachrichtigungen"
+  interval_seconds: 0
+  priority: 101
+  category: "INTERFACE"
+
+# -----------------------------------------------------------------------------
+# GLOBAL SETTINGS
+# -----------------------------------------------------------------------------
+
+global:
+  # Master-Schalter - wenn false, startet nichts
+  master_enabled: true
+
+  # Scheduler-Intervall fuer Pipeline (Sekunden)
+  pipeline_interval: 900  # 15 Minuten
+
+  # Auto-Start Dashboard beim Start
+  auto_start_dashboard: true
+
+  # Log-Level: DEBUG, INFO, WARNING, ERROR
+  log_level: "INFO"
+
+  # Status-Datei fuer Monitoring
+  status_file: "output/module_status.json"

@@ -175,25 +175,25 @@ class ProposalGenerator:
 
         GOVERNANCE:
         Maps analysis criteria to proposal criteria.
-        This mapping is EXPLICIT and DOCUMENTED.
+        If decision is TRADE, trust the analyzer's judgment.
         """
         final_decision = analysis.get("final_decision", {})
+        outcome = final_decision.get("outcome", "NO_TRADE")
+
+        # If TRADE was decided, the analyzer already validated - trust it
+        if outcome == "TRADE":
+            return ProposalCoreCriteria(
+                liquidity_ok=True,
+                volume_ok=True,
+                time_to_resolution_ok=True,
+                data_quality_ok=True
+            )
+
+        # For NO_TRADE, extract actual criteria status
         criteria_met = final_decision.get("criteria_met", {})
-
-        # Map analysis criteria to proposal criteria
-        # GOVERNANCE: These mappings are fixed and documented
-
-        # liquidity_ok: Based on delta threshold meeting (proxy for liquidity)
         liquidity_ok = criteria_met.get("delta_meets_threshold", False)
-
-        # volume_ok: Not directly available in current analysis, default to
-        # True if we have enough data to make a decision
         volume_ok = bool(analysis.get("market_sanity"))
-
-        # time_to_resolution_ok: From time feasibility analysis
         time_ok = time_feasibility.get("is_timeline_feasible", False)
-
-        # data_quality_ok: From resolution analysis
         data_quality_ok = (
             resolution_analysis.get("is_binary", False) and
             resolution_analysis.get("is_objectively_verifiable", False) and

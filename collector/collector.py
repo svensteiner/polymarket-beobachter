@@ -15,7 +15,7 @@
 # =============================================================================
 
 import logging
-from datetime import datetime, date
+from datetime import datetime, date, timezone
 from typing import Dict, Any, List, Optional
 from dataclasses import dataclass
 
@@ -97,7 +97,7 @@ class Collector:
         Returns:
             CollectorStats with run statistics
         """
-        start_time = datetime.utcnow()
+        start_time = datetime.now(timezone.utc)
         logger.info("=" * 60)
         logger.info("POLYMARKET EU AI COLLECTOR - Starting run")
         logger.info(f"Max markets: {self.max_markets}")
@@ -138,20 +138,54 @@ class Collector:
         all_normalized: List[NormalizedMarket] = []
         candidates: List[NormalizedMarket] = []
 
+        # Map FilterResult to category names
+        RESULT_TO_CATEGORY = {
+            FilterResult.INCLUDED: "EU_REGULATION",
+            FilterResult.INCLUDED_CORPORATE: "CORPORATE_EVENT",
+            FilterResult.INCLUDED_COURT: "COURT_RULING",
+            FilterResult.INCLUDED_WEATHER: "WEATHER_EVENT",
+            FilterResult.INCLUDED_POLITICAL: "POLITICAL_EVENT",
+            FilterResult.INCLUDED_CRYPTO: "CRYPTO_EVENT",
+            FilterResult.INCLUDED_FINANCE: "FINANCE_EVENT",
+            FilterResult.INCLUDED_GENERAL: "GENERAL_EVENT",
+        }
+
         for fm in filtered_markets:
             normalized = self.normalizer.normalize(
                 market=fm.market,
                 extracted_deadline=fm.extracted_deadline,
                 notes=fm.notes,
             )
+
+            # Override category based on filter result
+            if fm.result in RESULT_TO_CATEGORY:
+                # Create new NormalizedMarket with updated category
+                normalized = NormalizedMarket(
+                    market_id=normalized.market_id,
+                    title=normalized.title,
+                    resolution_text=normalized.resolution_text,
+                    end_date=normalized.end_date,
+                    created_time=normalized.created_time,
+                    category=RESULT_TO_CATEGORY[fm.result],
+                    tags=normalized.tags,
+                    url=normalized.url,
+                    collector_notes=normalized.collector_notes,
+                    collected_at=normalized.collected_at,
+                )
+
             all_normalized.append(normalized)
 
             # Include complete + relevant markets as candidates
-            # Accept INCLUDED, INCLUDED_CORPORATE, and INCLUDED_COURT
+            # Accept all INCLUDED_* filter results
             if fm.result in (
                 FilterResult.INCLUDED,
                 FilterResult.INCLUDED_CORPORATE,
                 FilterResult.INCLUDED_COURT,
+                FilterResult.INCLUDED_WEATHER,
+                FilterResult.INCLUDED_POLITICAL,
+                FilterResult.INCLUDED_CRYPTO,
+                FilterResult.INCLUDED_FINANCE,
+                FilterResult.INCLUDED_GENERAL,
             ) and normalized.is_complete():
                 candidates.append(normalized)
 
@@ -165,7 +199,7 @@ class Collector:
             self.storage.save_candidates(candidates)
 
         # Step 6: Generate report
-        end_time = datetime.utcnow()
+        end_time = datetime.now(timezone.utc)
         duration = (end_time - start_time).total_seconds()
 
         stats = CollectorStats(
@@ -213,7 +247,7 @@ class Collector:
             "# Polymarket EU AI Collector - Run Report",
             "",
             f"**Run Date:** {date.today().isoformat()}",
-            f"**Run Time:** {datetime.utcnow().isoformat()}Z",
+            f"**Run Time:** {datetime.now(timezone.utc).isoformat()}",
             f"**Duration:** {stats.run_duration_seconds:.1f} seconds",
             "",
             "## Summary",

@@ -34,7 +34,7 @@
 # =============================================================================
 
 from typing import Dict, List
-from ..models.data_models import (
+from models.data_models import (
     ResolutionAnalysis,
     ProcessStageAnalysis,
     TimeFeasibilityAnalysis,
@@ -43,6 +43,7 @@ from ..models.data_models import (
     FinalDecision,
     DecisionOutcome,
 )
+from shared.enums import MarketDirection
 
 
 class DecisionEngine:
@@ -243,15 +244,21 @@ class DecisionEngine:
 
         # Timeline warnings
         min_days = time_feasibility.minimum_days_required
-        if min_days <= 0:
+        if min_days is None or min_days <= 0:
             # This should not happen - indicates a bug upstream
             # Log warning and use 1 to avoid division by zero
             warnings.append(
-                f"WARNING: minimum_days_required is {min_days}, expected > 0. "
+                f"WARNING: minimum_days_required is invalid ({min_days}), expected > 0. "
                 "This may indicate a configuration issue."
             )
             min_days = 1
-        buffer_ratio = time_feasibility.days_until_target / min_days
+
+        # Validate days_until_target before division
+        days_until = time_feasibility.days_until_target
+        if days_until is None or days_until <= 0:
+            buffer_ratio = 0.0
+        else:
+            buffer_ratio = days_until / min_days
         if buffer_ratio < 2.0:
             warnings.append(
                 f"Timeline buffer is tight ({buffer_ratio:.1f}x minimum) - "
@@ -349,13 +356,13 @@ class DecisionEngine:
                 return "DO NOT TRADE. No clear edge identified."
 
         # outcome == TRADE
-        if market_direction == "MARKET_TOO_HIGH":
+        if market_direction == MarketDirection.MARKET_TOO_HIGH.value:
             return (
                 "STRUCTURALLY TRADEABLE. Market appears to OVERESTIMATE "
                 "probability. If trading, consider NO position. "
                 "Verify all assumptions before execution."
             )
-        elif market_direction == "MARKET_TOO_LOW":
+        elif market_direction == MarketDirection.MARKET_TOO_LOW.value:
             return (
                 "STRUCTURALLY TRADEABLE. Market appears to UNDERESTIMATE "
                 "probability. If trading, consider YES position. "

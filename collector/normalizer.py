@@ -25,7 +25,7 @@
 # =============================================================================
 
 import logging
-from datetime import datetime, date
+from datetime import datetime, date, timezone
 from typing import Dict, Any, List, Optional
 from dataclasses import dataclass, field, asdict
 
@@ -84,7 +84,7 @@ class MarketNormalizer:
         Args:
             collection_time: Timestamp for collected_at field (defaults to now)
         """
-        self.collection_time = collection_time or datetime.utcnow()
+        self.collection_time = collection_time or datetime.now(timezone.utc)
 
     def normalize(
         self,
@@ -318,7 +318,7 @@ class MarketNormalizer:
             if ts > 1000000000000:  # Milliseconds
                 ts = ts // 1000
             try:
-                return datetime.utcfromtimestamp(ts).date().isoformat()
+                return datetime.fromtimestamp(ts, tz=timezone.utc).date().isoformat()
             except (ValueError, OSError):
                 pass
 
@@ -346,7 +346,7 @@ class MarketNormalizer:
             if ts > 1000000000000:  # Milliseconds
                 ts = ts // 1000
             try:
-                return datetime.utcfromtimestamp(ts).isoformat() + "Z"
+                return datetime.fromtimestamp(ts, tz=timezone.utc).isoformat().replace("+00:00", "Z")
             except (ValueError, OSError):
                 pass
 

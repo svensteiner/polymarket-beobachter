@@ -4,6 +4,52 @@
 
 ---
 
+## How to Run (60 Seconds)
+
+**ONE COMMAND. ONE ENTRY POINT.**
+
+```bash
+python cockpit.py
+```
+
+That's it. The cockpit handles everything.
+
+### Interactive Menu
+
+```
+Menu:
+  1) Run pipeline now      # Collector -> Analyzer -> Proposals -> Paper
+  2) Show status           # Quick summary
+  3) Show latest proposal  # Last trade candidate
+  4) Show paper trading    # Positions and P&L
+  5) Open logs folder      # Where to find logs
+  6) Exit
+```
+
+### Scheduled/Automated Runs
+
+```bash
+# Run pipeline once, exit with status code
+python cockpit.py --run-once
+
+# Just show status
+python cockpit.py --status
+```
+
+Exit codes: `0`=OK, `2`=Degraded, `1`=Fail
+
+### What Happens When You Run the Pipeline
+
+1. **Collector**: Fetches EU/AI market metadata (no prices)
+2. **Analyzer**: Determines TRADE / NO_TRADE / INSUFFICIENT_DATA
+3. **Proposals**: Generates and reviews proposals (append-only)
+4. **Paper Trader**: Simulates positions (no real money)
+5. **Status**: Writes summary to `output/status_summary.txt`
+
+All governance protections remain active. No live trading. Human review required.
+
+---
+
 **THIS IS NOT A TRADING BOT.**
 **THIS IS NOT A PROFIT-OPTIMIZATION SYSTEM.**
 

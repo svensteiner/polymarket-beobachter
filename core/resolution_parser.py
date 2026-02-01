@@ -24,7 +24,7 @@
 
 import re
 from typing import List, Tuple
-from ..models.data_models import MarketInput, ResolutionAnalysis
+from models.data_models import MarketInput, ResolutionAnalysis
 
 
 class ResolutionParser:

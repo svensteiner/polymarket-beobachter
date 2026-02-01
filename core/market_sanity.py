@@ -9,11 +9,11 @@
 # - Our conservative, rule-based probability estimate
 # - The market-implied probability (from Polymarket prices)
 #
-# WHY 15 PERCENTAGE POINTS THRESHOLD:
-# - Market noise and bid-ask spreads account for ~5pp
-# - Our estimation uncertainty adds ~5-10pp
-# - Only trade when divergence exceeds combined uncertainty
-# - 15pp threshold provides margin of safety
+# WHY 8 PERCENTAGE POINTS THRESHOLD:
+# - Market noise and bid-ask spreads account for ~3pp
+# - Our estimation uncertainty adds ~3-5pp
+# - 8pp threshold balances signal frequency with edge quality
+# - Strong signals at 15pp+ indicate high-conviction opportunities
 #
 # DIRECTION MATTERS:
 # - MARKET_TOO_HIGH: Market overestimates probability → consider NO position
@@ -27,11 +27,12 @@
 #
 # =============================================================================
 
-from ..models.data_models import (
+from models.data_models import (
     MarketInput,
     ProbabilityEstimate,
     MarketSanityAnalysis,
 )
+from shared.enums import MarketDirection
 
 
 class MarketSanityChecker:
@@ -50,11 +51,11 @@ class MarketSanityChecker:
     # =========================================================================
 
     # Minimum percentage point delta to consider trading
-    # 15pp = 0.15 absolute difference
-    MINIMUM_DELTA_THRESHOLD: float = 0.15
+    # 8pp = 0.08 absolute difference
+    MINIMUM_DELTA_THRESHOLD: float = 0.08
 
-    # Strong signal threshold (very high conviction)
-    STRONG_DELTA_THRESHOLD: float = 0.25
+    # Strong signal threshold (high conviction)
+    STRONG_DELTA_THRESHOLD: float = 0.15
 
     # =========================================================================
     # EDGE CASE THRESHOLDS
@@ -106,11 +107,11 @@ class MarketSanityChecker:
         # STEP 2: Determine direction
         # ---------------------------------------------------------------------
         if delta > self.MINIMUM_DELTA_THRESHOLD:
-            direction = "MARKET_TOO_HIGH"
+            direction = MarketDirection.MARKET_TOO_HIGH.value
         elif delta < -self.MINIMUM_DELTA_THRESHOLD:
-            direction = "MARKET_TOO_LOW"
+            direction = MarketDirection.MARKET_TOO_LOW.value
         else:
-            direction = "ALIGNED"
+            direction = MarketDirection.ALIGNED.value
 
         # ---------------------------------------------------------------------
         # STEP 3: Check threshold

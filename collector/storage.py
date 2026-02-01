@@ -22,7 +22,7 @@
 import os
 import json
 import logging
-from datetime import datetime, date
+from datetime import datetime, date, timezone
 from typing import Dict, Any, List, Optional
 from pathlib import Path
 
@@ -87,7 +87,7 @@ class StorageManager:
             Path to saved file
         """
         if filename is None:
-            timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+            timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
             filename = f"markets_{timestamp}.json"
 
         filepath = self.raw_dir / filename

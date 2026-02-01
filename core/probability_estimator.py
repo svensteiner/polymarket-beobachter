@@ -41,14 +41,17 @@
 #
 # =============================================================================
 
+import logging
 from typing import List, Dict, Tuple
-from ..models.data_models import (
+from models.data_models import (
     MarketInput,
     ProcessStageAnalysis,
     TimeFeasibilityAnalysis,
     ProbabilityEstimate,
     EURegulationStage,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class ProbabilityEstimator:
@@ -365,14 +368,20 @@ class ProbabilityEstimator:
         stage_uncertainty = len(remaining_stages) * 0.03
 
         # Additional uncertainty from timeline pressure
-        # Note: Protect against division by zero with explicit check
+        # SAFETY: Protect against division by zero and invalid data
         min_days = time_feasibility.minimum_days_required
-        if min_days <= 0:
-            # This should not happen - indicates upstream issue
-            # Use 1 to avoid division by zero, and this will result
-            # in high time_buffer_ratio which is conservative
-            min_days = 1
-        time_buffer_ratio = time_feasibility.days_until_target / min_days
+        days_until = time_feasibility.days_until_target
+
+        if min_days is None or min_days <= 0:
+            # Invalid minimum_days - log warning and use high uncertainty
+            logger.warning(f"Invalid minimum_days_required: {min_days}, using max uncertainty")
+            time_buffer_ratio = 0.5  # Assume very tight timeline
+        elif days_until is None or days_until < 0:
+            # Invalid days_until_target - log warning and use high uncertainty
+            logger.warning(f"Invalid days_until_target: {days_until}, using max uncertainty")
+            time_buffer_ratio = 0.5  # Assume very tight timeline
+        else:
+            time_buffer_ratio = days_until / min_days
 
         if time_buffer_ratio < 1.5:
             # Very tight timeline - high uncertainty

@@ -42,6 +42,13 @@ from paper_trader.models import (
 from paper_trader.slippage import calculate_entry_price, calculate_exit_price
 from paper_trader.snapshot_client import get_market_snapshot
 from paper_trader.logger import get_paper_logger, log_trade, log_position
+from paper_trader.capital_manager import (
+    get_capital_manager,
+    allocate_capital,
+    release_capital,
+    has_sufficient_capital,
+)
+from paper_trader.kelly import kelly_size, FALLBACK_POSITION_EUR
 
 
 logger = logging.getLogger(__name__)
@@ -78,7 +85,12 @@ class ExecutionSimulator:
         Args:
             fixed_amount_eur: Fixed paper trading amount per trade
         """
-        self.fixed_amount_eur = fixed_amount_eur
+        self._capital_manager = get_capital_manager()
+        # Use provided amount if explicitly set, otherwise use capital manager
+        if fixed_amount_eur != FIXED_AMOUNT_EUR:
+            self.fixed_amount_eur = fixed_amount_eur
+        else:
+            self.fixed_amount_eur = self._capital_manager.get_position_size()
         self._paper_logger = get_paper_logger()
 
     def simulate_entry(
@@ -102,18 +114,15 @@ class ExecutionSimulator:
         """
         now = datetime.now().isoformat()
 
-        # Get market snapshot
-        snapshot = get_market_snapshot(proposal.market_id)
-
-        if snapshot is None:
-            # SKIP: No snapshot available
+        # Check capital availability BEFORE attempting entry
+        if not has_sufficient_capital():
             record = PaperTradeRecord(
                 record_id=generate_record_id(),
                 timestamp=now,
                 proposal_id=proposal.proposal_id,
                 market_id=proposal.market_id,
                 action=TradeAction.SKIP.value,
-                reason="Market snapshot unavailable - cannot simulate entry",
+                reason=f"Insufficient capital: {self.fixed_amount_eur:.2f} EUR required",
                 position_id=None,
                 snapshot_time=None,
                 entry_price=None,
@@ -122,8 +131,48 @@ class ExecutionSimulator:
                 pnl_eur=None,
             )
             log_trade(record)
-            logger.warning(f"SKIP: No snapshot for {proposal.market_id}")
+            logger.warning(f"SKIP: Insufficient capital for {proposal.market_id}")
             return (None, record)
+
+        # Get market snapshot - or create simulated one from proposal
+        snapshot = get_market_snapshot(proposal.market_id)
+
+        if snapshot is None:
+            # Create simulated snapshot from proposal price data
+            implied_prob = proposal.implied_probability
+            if implied_prob and 0.01 <= implied_prob <= 0.99:
+                # Use proposal's implied probability as mid price
+                snapshot = MarketSnapshot(
+                    market_id=proposal.market_id,
+                    snapshot_time=now,
+                    best_bid=max(0.01, implied_prob - 0.02),
+                    best_ask=min(0.99, implied_prob + 0.02),
+                    mid_price=implied_prob,
+                    spread_pct=4.0,  # Assume 4% spread for simulated
+                    liquidity_bucket="MEDIUM",
+                    is_resolved=False,
+                    resolved_outcome=None,
+                )
+                logger.info(f"Using simulated snapshot for {proposal.market_id} @ {implied_prob:.2f}")
+            else:
+                # SKIP: No snapshot and no valid implied probability
+                record = PaperTradeRecord(
+                    record_id=generate_record_id(),
+                    timestamp=now,
+                    proposal_id=proposal.proposal_id,
+                    market_id=proposal.market_id,
+                    action=TradeAction.SKIP.value,
+                    reason="No snapshot and no valid implied probability",
+                    position_id=None,
+                    snapshot_time=None,
+                    entry_price=None,
+                    exit_price=None,
+                    slippage_applied=None,
+                    pnl_eur=None,
+                )
+                log_trade(record)
+                logger.warning(f"SKIP: No snapshot for {proposal.market_id}")
+                return (None, record)
 
         if not snapshot.has_valid_prices():
             # SKIP: No valid prices
@@ -169,6 +218,18 @@ class ExecutionSimulator:
         # Positive edge (model > implied) = buy YES
         # Negative edge (model < implied) = buy NO
         side = "YES" if proposal.edge > 0 else "NO"
+
+        # Kelly position sizing: use model probability and market price
+        win_prob = proposal.model_probability if hasattr(proposal, 'model_probability') else None
+        try:
+            available = self._capital_manager.get_state().available_capital_eur
+        except Exception:
+            available = 10000.0
+        self.fixed_amount_eur = kelly_size(
+            win_probability=win_prob,
+            entry_price=snapshot.mid_price,
+            bankroll=available,
+        )
 
         # Calculate entry price with slippage
         price_result = calculate_entry_price(snapshot, side)
@@ -237,6 +298,27 @@ class ExecutionSimulator:
             slippage_applied=slippage_applied,
             pnl_eur=None,
         )
+
+        # Allocate capital for this position
+        if not allocate_capital(self.fixed_amount_eur, f"Entry: {proposal.market_id}"):
+            # Capital allocation failed (race condition) - skip
+            record = PaperTradeRecord(
+                record_id=generate_record_id(),
+                timestamp=now,
+                proposal_id=proposal.proposal_id,
+                market_id=proposal.market_id,
+                action=TradeAction.SKIP.value,
+                reason="Capital allocation failed - insufficient funds",
+                position_id=None,
+                snapshot_time=snapshot.snapshot_time,
+                entry_price=None,
+                exit_price=None,
+                slippage_applied=None,
+                pnl_eur=None,
+            )
+            log_trade(record)
+            logger.warning(f"SKIP: Capital allocation failed for {proposal.market_id}")
+            return (None, record)
 
         # Log both
         log_position(position)
@@ -322,6 +404,13 @@ class ExecutionSimulator:
             exit_price=exit_price,
             slippage_applied=exit_slippage,
             pnl_eur=realized_pnl,
+        )
+
+        # Release capital back to available pool
+        release_capital(
+            position.cost_basis_eur,
+            realized_pnl,
+            f"Resolution exit: {position.market_id} ({snapshot.resolved_outcome})"
         )
 
         # Log both

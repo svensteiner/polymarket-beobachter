@@ -44,7 +44,7 @@
 
 from datetime import date, timedelta
 from typing import List, Dict, Tuple
-from ..models.data_models import (
+from models.data_models import (
     MarketInput,
     ProcessStageAnalysis,
     TimeFeasibilityAnalysis,

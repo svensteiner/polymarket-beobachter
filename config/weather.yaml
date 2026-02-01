@@ -1,0 +1,197 @@
+# =============================================================================
+# POLYMARKET BEOBACHTER - WEATHER ENGINE CONFIGURATION
+# =============================================================================
+#
+# GOVERNANCE INTENT:
+# All parameters in this file are STATIC.
+# The engine does NOT modify these values.
+# Changes require human review and bot restart.
+#
+# PARAMETER PHILOSOPHY:
+# - Conservative by default
+# - Fail-closed on uncertainty
+# - Prioritize signal quality over quantity
+#
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# MARKET FILTER PARAMETERS
+# -----------------------------------------------------------------------------
+
+# Minimum USD liquidity required to consider a market
+# Lower liquidity = higher slippage risk = more uncertainty
+MIN_LIQUIDITY: 50
+
+# Odds range for eligible markets
+# Markets with odds outside this range are filtered out
+# Very low odds (< 0.01) have extreme leverage risk
+# Very high odds (> 0.10) have insufficient edge potential
+MIN_ODDS: 0.01
+MAX_ODDS: 0.10
+
+# Minimum time to resolution in hours
+# Markets too close to resolution have:
+# - Unreliable forecasts
+# - Insufficient time to exit if wrong
+MIN_TIME_TO_RESOLUTION_HOURS: 48
+
+# Safety buffer before resolution
+# Stop considering markets within this window
+# Allows for exit before resolution uncertainty spikes
+SAFETY_BUFFER_HOURS: 48
+
+# -----------------------------------------------------------------------------
+# EDGE CALCULATION PARAMETERS
+# -----------------------------------------------------------------------------
+
+# Minimum edge required to emit BUY signal
+# edge = (fair_probability - market_probability) / market_probability
+# 0.25 = 25% edge minimum
+MIN_EDGE: 0.25
+
+# Edge multiplier for MEDIUM confidence signals
+# Require more edge when model is less certain
+MEDIUM_CONFIDENCE_EDGE_MULTIPLIER: 1.5
+
+# -----------------------------------------------------------------------------
+# PROBABILITY MODEL PARAMETERS
+# -----------------------------------------------------------------------------
+
+# Default standard deviation for temperature forecasts (Fahrenheit)
+# Based on historical forecast accuracy analysis
+# Higher sigma = more uncertainty = wider probability bands
+SIGMA_F: 3.5
+
+# Sigma adjustments by forecast horizon
+# Longer horizons have higher uncertainty
+SIGMA_HORIZON_ADJUSTMENTS:
+  # Days to resolution: sigma multiplier
+  1: 0.8   # 1 day out: high confidence
+  2: 0.9   # 2 days out: good confidence
+  3: 1.0   # 3 days out: baseline
+  5: 1.2   # 5 days out: moderate uncertainty
+  7: 1.5   # 7 days out: significant uncertainty
+  10: 2.0  # 10+ days out: low confidence
+
+# Maximum forecast horizon to consider (days)
+# Beyond this, forecasts are too unreliable
+MAX_FORECAST_HORIZON_DAYS: 10
+
+# -----------------------------------------------------------------------------
+# ALLOWED CITIES
+# -----------------------------------------------------------------------------
+# Only cities with:
+# - Reliable forecast data availability
+# - Clear weather station definitions
+# - Sufficient Polymarket market history
+
+ALLOWED_CITIES:
+  - London
+  - New York
+  - Seoul
+  - Los Angeles
+  - Chicago
+  - Miami
+  - Denver
+  - Phoenix
+  - Seattle
+  - Boston
+  - Tokyo
+  - Paris
+  - Berlin
+  - Sydney
+  - Toronto
+
+# City-specific configurations (overrides defaults)
+CITY_CONFIG:
+  London:
+    timezone: "Europe/London"
+    primary_station: "EGLL"  # Heathrow ICAO
+  New York:
+    timezone: "America/New_York"
+    primary_station: "KJFK"  # JFK ICAO
+  Seoul:
+    timezone: "Asia/Seoul"
+    primary_station: "RKSS"  # Gimpo ICAO
+  Los Angeles:
+    timezone: "America/Los_Angeles"
+    primary_station: "KLAX"  # LAX ICAO
+  Chicago:
+    timezone: "America/Chicago"
+    primary_station: "KORD"  # O'Hare ICAO
+  Miami:
+    timezone: "America/New_York"
+    primary_station: "KMIA"  # Miami ICAO
+  Denver:
+    timezone: "America/Denver"
+    primary_station: "KDEN"  # Denver ICAO
+  Phoenix:
+    timezone: "America/Phoenix"
+    primary_station: "KPHX"  # Phoenix ICAO
+  Seattle:
+    timezone: "America/Los_Angeles"
+    primary_station: "KSEA"  # Seattle ICAO
+  Boston:
+    timezone: "America/New_York"
+    primary_station: "KBOS"  # Boston ICAO
+  Tokyo:
+    timezone: "Asia/Tokyo"
+    primary_station: "RJTT"  # Haneda ICAO
+  Paris:
+    timezone: "Europe/Paris"
+    primary_station: "LFPG"  # CDG ICAO
+  Berlin:
+    timezone: "Europe/Berlin"
+    primary_station: "EDDB"  # Berlin Brandenburg ICAO
+  Sydney:
+    timezone: "Australia/Sydney"
+    primary_station: "YSSY"  # Sydney ICAO
+  Toronto:
+    timezone: "America/Toronto"
+    primary_station: "CYYZ"  # Toronto Pearson ICAO
+
+# -----------------------------------------------------------------------------
+# FORECAST DATA SOURCES
+# -----------------------------------------------------------------------------
+# Ordered by preference (first available is used)
+
+FORECAST_SOURCES:
+  - name: "tomorrow_io"
+    api_key_env: "TOMORROW_IO_API_KEY"
+    base_url: "https://api.tomorrow.io/v4"
+    timeout_seconds: 10
+  - name: "openweather"
+    api_key_env: "OPENWEATHER_API_KEY"
+    base_url: "https://api.openweathermap.org/data/3.0"
+    timeout_seconds: 10
+  - name: "weatherapi"
+    api_key_env: "WEATHERAPI_KEY"
+    base_url: "https://api.weatherapi.com/v1"
+    timeout_seconds: 10
+
+# -----------------------------------------------------------------------------
+# CONFIDENCE THRESHOLDS
+# -----------------------------------------------------------------------------
+
+# Hours to resolution thresholds for confidence levels
+CONFIDENCE_THRESHOLDS:
+  HIGH_CONFIDENCE_MAX_HOURS: 72    # <= 3 days = HIGH
+  MEDIUM_CONFIDENCE_MAX_HOURS: 168  # <= 7 days = MEDIUM
+  # > 7 days = LOW
+
+# -----------------------------------------------------------------------------
+# ENGINE METADATA
+# -----------------------------------------------------------------------------
+
+ENGINE_VERSION: "1.0.0"
+ENGINE_NAME: "weather_engine_v1"
+
+# -----------------------------------------------------------------------------
+# AUDIT SETTINGS
+# -----------------------------------------------------------------------------
+
+# Log all signals (including NO_SIGNAL) for audit
+LOG_ALL_SIGNALS: true
+
+# Signal log path (relative to project root)
+SIGNAL_LOG_PATH: "logs/weather_signals.jsonl"

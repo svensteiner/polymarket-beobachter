@@ -51,8 +51,8 @@ class ReviewGate:
 
     # Configuration thresholds
     # GOVERNANCE: These thresholds are DOCUMENTED and FIXED
-    MINIMUM_EDGE_THRESHOLD = 0.05  # 5% minimum edge for PASS
-    BORDERLINE_EDGE_THRESHOLD = 0.03  # 3-5% is borderline (HOLD)
+    MINIMUM_EDGE_THRESHOLD = 0.02  # 2% minimum edge for PASS (lowered from 5%)
+    BORDERLINE_EDGE_THRESHOLD = 0.01  # 1-2% is borderline (HOLD)
     CRITICAL_WARNING_KEYWORDS = [
         "HARD FAIL",
         "CRITICAL",

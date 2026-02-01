@@ -18,10 +18,15 @@
 # =============================================================================
 
 import sys
+import json
 import logging
+import ssl
 from datetime import datetime
 from pathlib import Path
 from typing import Optional, Dict, Any, List
+from urllib.request import urlopen, Request
+from urllib.error import URLError, HTTPError
+from urllib.parse import urlencode, quote
 
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -84,6 +89,8 @@ class MarketSnapshotClient:
     - NEVER feeds back to Layer 1 (core_analyzer)
     """
 
+    GAMMA_API_BASE = "https://gamma-api.polymarket.com"
+
     def __init__(self, timeout: int = 30, max_retries: int = 3):
         """
         Initialize the snapshot client.
@@ -96,11 +103,65 @@ class MarketSnapshotClient:
             timeout=timeout,
             max_retries=max_retries
         )
-        logger.info("MarketSnapshotClient initialized (READ-ONLY)")
+        self._timeout = timeout
+        self._ssl_context = ssl.create_default_context()
+        logger.info("MarketSnapshotClient initialized (READ-ONLY, Gamma API)")
+
+    def _fetch_gamma_market(self, market_id: str) -> Optional[Dict[str, Any]]:
+        """
+        Fetch a single market directly from Gamma API.
+
+        Args:
+            market_id: The market/condition ID
+
+        Returns:
+            Market data dict or None
+        """
+        # Try fetching by condition_id (slug-based lookup)
+        url = f"{self.GAMMA_API_BASE}/markets?id={quote(market_id)}&limit=1"
+        try:
+            request = Request(url, headers={
+                "User-Agent": "PolymarketBeobachter/2.0",
+                "Accept": "application/json",
+            })
+            with urlopen(request, timeout=self._timeout, context=self._ssl_context) as response:
+                data = json.loads(response.read().decode("utf-8"))
+                if isinstance(data, list) and data:
+                    return data[0]
+                elif isinstance(data, dict):
+                    return data
+        except Exception as e:
+            logger.debug(f"Gamma API direct fetch failed for {market_id}: {e}")
+        return None
+
+    def _fetch_gamma_markets_batch(self, market_ids: List[str]) -> Dict[str, Dict[str, Any]]:
+        """
+        Fetch multiple markets from Gamma API.
+
+        Args:
+            market_ids: List of market IDs
+
+        Returns:
+            Dict mapping market_id to market data
+        """
+        results = {}
+        # Gamma API supports filtering - fetch in batches
+        try:
+            all_markets = self._client.fetch_all_markets(max_markets=500)
+            for m in all_markets:
+                mid = m.get("id") or m.get("condition_id") or ""
+                if mid in market_ids:
+                    results[mid] = m
+        except Exception as e:
+            logger.debug(f"Gamma batch fetch failed: {e}")
+        return results
 
     def get_snapshot(self, market_id: str) -> Optional[MarketSnapshot]:
         """
         Get a price snapshot for a specific market.
+
+        Uses Gamma API directly for real outcomePrices, volume, liquidity.
+        Falls back to paginated fetch if direct lookup fails.
 
         GOVERNANCE:
         This is a READ-ONLY operation.
@@ -113,15 +174,16 @@ class MarketSnapshotClient:
             MarketSnapshot if available, None otherwise
         """
         try:
-            # Fetch market data
-            markets = self._client.fetch_markets(limit=100)
+            # Try direct Gamma API fetch first (fast, single market)
+            market_data = self._fetch_gamma_market(market_id)
 
-            # Find the specific market
-            market_data = None
-            for market in markets:
-                if market.get("id") == market_id:
-                    market_data = market
-                    break
+            if market_data is None:
+                # Fallback: search in paginated fetch
+                markets = self._client.fetch_markets(limit=100)
+                for market in markets:
+                    if market.get("id") == market_id or market.get("condition_id") == market_id:
+                        market_data = market
+                        break
 
             if market_data is None:
                 logger.warning(f"Market not found: {market_id}")
@@ -129,8 +191,17 @@ class MarketSnapshotClient:
 
             return self._create_snapshot(market_data)
 
+        except ConnectionError as e:
+            logger.warning(f"Network error getting snapshot for {market_id}: {e} (transient)")
+            return None
+        except TimeoutError as e:
+            logger.warning(f"Timeout getting snapshot for {market_id}: {e} (transient)")
+            return None
+        except ValueError as e:
+            logger.error(f"Data parsing error for {market_id}: {e} (permanent)")
+            return None
         except Exception as e:
-            logger.error(f"Failed to get snapshot for {market_id}: {e}")
+            logger.error(f"Unexpected error getting snapshot for {market_id}: {e}", exc_info=True)
             return None
 
     def get_snapshots_batch(
@@ -164,9 +235,16 @@ class MarketSnapshotClient:
                     results[market_id] = None
                     logger.debug(f"Market not found in batch: {market_id}")
 
+        except ConnectionError as e:
+            logger.warning(f"Network error in batch snapshots: {e} (transient)")
+            for market_id in market_ids:
+                results[market_id] = None
+        except TimeoutError as e:
+            logger.warning(f"Timeout in batch snapshots: {e} (transient)")
+            for market_id in market_ids:
+                results[market_id] = None
         except Exception as e:
-            logger.error(f"Failed to get batch snapshots: {e}")
-            # Return None for all
+            logger.error(f"Unexpected error in batch snapshots: {e}", exc_info=True)
             for market_id in market_ids:
                 results[market_id] = None
 
@@ -176,29 +254,62 @@ class MarketSnapshotClient:
         """
         Create a MarketSnapshot from raw API data.
 
+        Handles Gamma API fields: outcomePrices, volume, liquidity.
+
         Args:
             market_data: Raw market data from API
 
         Returns:
             MarketSnapshot object
         """
-        market_id = market_data.get("id", "")
+        market_id = market_data.get("id", "") or market_data.get("condition_id", "")
 
-        # Extract prices
-        # API may have different field names - try multiple
-        best_bid = self._extract_price(market_data, ["bestBid", "best_bid", "bid"])
-        best_ask = self._extract_price(market_data, ["bestAsk", "best_ask", "ask"])
+        # Extract prices - try outcomePrices first (Gamma API format)
+        best_bid = None
+        best_ask = None
+        mid_price = None
 
-        # Calculate mid price
-        if best_bid is not None and best_ask is not None:
+        outcome_prices = market_data.get("outcomePrices")
+        if outcome_prices:
+            try:
+                if isinstance(outcome_prices, str):
+                    # Gamma API returns JSON string like "[0.55, 0.45]"
+                    prices = json.loads(outcome_prices)
+                elif isinstance(outcome_prices, list):
+                    prices = outcome_prices
+                else:
+                    prices = None
+
+                if prices and len(prices) >= 1:
+                    yes_price = float(prices[0])
+                    # Use YES price as mid price, simulate spread
+                    mid_price = yes_price
+                    best_bid = max(0.01, yes_price - 0.01)
+                    best_ask = min(0.99, yes_price + 0.01)
+            except (json.JSONDecodeError, ValueError, TypeError) as e:
+                logger.debug(f"Could not parse outcomePrices: {e}")
+
+        # Fallback to bestBid/bestAsk fields
+        if best_bid is None:
+            best_bid = self._extract_price(market_data, ["bestBid", "best_bid", "bid"])
+        if best_ask is None:
+            best_ask = self._extract_price(market_data, ["bestAsk", "best_ask", "ask"])
+
+        # Calculate mid price from bid/ask if not set
+        if mid_price is None and best_bid is not None and best_ask is not None:
             mid_price = (best_bid + best_ask) / 2
-            spread_pct = ((best_ask - best_bid) / mid_price) * 100
-        else:
-            # Try to get price from other fields
+
+        # Final fallback
+        if mid_price is None:
             mid_price = self._extract_price(
                 market_data,
-                ["price", "lastTradePrice", "outcomePrices"]
+                ["price", "lastTradePrice"]
             )
+
+        # Calculate spread
+        if best_bid is not None and best_ask is not None and mid_price and mid_price > 0:
+            spread_pct = ((best_ask - best_bid) / mid_price) * 100
+        else:
             spread_pct = None
 
         # Classify liquidity
