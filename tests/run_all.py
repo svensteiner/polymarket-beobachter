@@ -508,19 +508,8 @@ def main():
             test_module_loader.get_tests()
         ))
 
-    if run_all or args.integration:
-        from tests.integration import test_full_pipeline
-        runner.report.suites.append(runner.run_suite(
-            "Full Pipeline Integration",
-            test_full_pipeline.get_tests()
-        ))
-
-    if (run_all or args.stress) and not args.quick:
-        from tests.stress import test_performance
-        runner.report.suites.append(runner.run_suite(
-            "Performance & Stress",
-            test_performance.get_tests()
-        ))
+    # Note: test_full_pipeline and test_performance were removed in the weather-only refactor.
+    # Integration tests are now run via pytest (tests/integration/)
 
     runner.report.duration_seconds = time.time() - start_time
     runner.report.end_time = datetime.now().isoformat()
