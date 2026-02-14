@@ -19,18 +19,84 @@
 
 from dataclasses import dataclass, field, asdict
 from datetime import date
+from enum import Enum
 from typing import Optional, List, Dict, Any
 
-# =============================================================================
-# GOVERNANCE: Import enums from single source of truth
-# All enum definitions are in shared/enums.py to prevent duplication
-# =============================================================================
-from shared.enums import (
-    DecisionOutcome,
-    ConfidenceLevel,
-    MarketDirection,
-    EURegulationStage,
-)
+
+class DecisionOutcome(Enum):
+    """
+    Final trading decision outcome.
+
+    TRADE: All criteria met, market is structurally tradeable.
+    NO_TRADE: One or more criteria failed, do not trade.
+
+    AUDIT NOTE: There is no "MAYBE" - fail closed by design.
+    """
+    TRADE = "TRADE"
+    NO_TRADE = "NO_TRADE"
+
+
+class ConfidenceLevel(Enum):
+    """
+    Confidence level for probability estimates and decisions.
+
+    Used instead of string literals to ensure type safety.
+    """
+    LOW = "LOW"
+    MEDIUM = "MEDIUM"
+    HIGH = "HIGH"
+
+
+class MarketDirection(Enum):
+    """
+    Direction of market mispricing relative to rule-based estimate.
+
+    MARKET_TOO_HIGH: Market overestimates probability (consider NO position)
+    MARKET_TOO_LOW: Market underestimates probability (consider YES position)
+    ALIGNED: Market pricing is within acceptable range of estimate
+    """
+    MARKET_TOO_HIGH = "MARKET_TOO_HIGH"
+    MARKET_TOO_LOW = "MARKET_TOO_LOW"
+    ALIGNED = "ALIGNED"
+
+
+class EURegulationStage(Enum):
+    """
+    Stages of the EU regulatory lifecycle.
+
+    Based on the Ordinary Legislative Procedure (OLP) and post-adoption phases.
+    Reference: Article 294 TFEU
+
+    STAGES EXPLAINED:
+    - PROPOSAL: Commission has proposed the regulation
+    - FIRST_READING_EP: European Parliament first reading
+    - FIRST_READING_COUNCIL: Council first reading
+    - SECOND_READING_EP: EP second reading (if needed)
+    - SECOND_READING_COUNCIL: Council second reading (if needed)
+    - CONCILIATION: Conciliation Committee (if needed)
+    - ADOPTED: Regulation adopted by co-legislators
+    - PUBLISHED_OJ: Published in Official Journal of the EU
+    - ENTERED_INTO_FORCE: Usually 20 days after OJ publication
+    - APPLICATION_DATE: When the regulation starts applying
+    - TRANSITIONAL_PERIOD: Specific provisions with delayed application
+    - DELEGATED_ACTS_PENDING: Commission delegated acts required
+    - IMPLEMENTING_ACTS_PENDING: Commission implementing acts required
+    - FULLY_APPLICABLE: All provisions in force
+    """
+    PROPOSAL = "PROPOSAL"
+    FIRST_READING_EP = "FIRST_READING_EP"
+    FIRST_READING_COUNCIL = "FIRST_READING_COUNCIL"
+    SECOND_READING_EP = "SECOND_READING_EP"
+    SECOND_READING_COUNCIL = "SECOND_READING_COUNCIL"
+    CONCILIATION = "CONCILIATION"
+    ADOPTED = "ADOPTED"
+    PUBLISHED_OJ = "PUBLISHED_OJ"
+    ENTERED_INTO_FORCE = "ENTERED_INTO_FORCE"
+    APPLICATION_DATE = "APPLICATION_DATE"
+    TRANSITIONAL_PERIOD = "TRANSITIONAL_PERIOD"
+    DELEGATED_ACTS_PENDING = "DELEGATED_ACTS_PENDING"
+    IMPLEMENTING_ACTS_PENDING = "IMPLEMENTING_ACTS_PENDING"
+    FULLY_APPLICABLE = "FULLY_APPLICABLE"
 
 
 @dataclass

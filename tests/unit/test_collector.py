@@ -1,10 +1,9 @@
 # =============================================================================
-# POLYMARKET EU AI COLLECTOR - Unit Tests
+# POLYMARKET WEATHER COLLECTOR - Unit Tests
 # =============================================================================
 #
 # Tests cover:
-# - Keyword filtering (EU + AI matching)
-# - Deadline extraction from various formats
+# - Weather keyword filtering
 # - Price/probability field exclusion (CRITICAL)
 # - Fail-closed behavior for incomplete data
 # - Contract test for raw response sanitization
@@ -21,7 +20,7 @@ import sys
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from collector.sanitizer import Sanitizer
-from collector.filter import MarketFilter, FilterResult
+from collector.filter import MarketFilter, FilterResult, FilteredMarket
 from collector.normalizer import MarketNormalizer, NormalizedMarket
 
 
@@ -139,154 +138,124 @@ class TestSanitizer(unittest.TestCase):
         """Allowed fields should not be removed."""
         market = {
             "id": "123",
-            "question": "Will the EU AI Act be enforced?",
+            "question": "Will New York temperature exceed 100F tomorrow?",
             "description": "This market resolves YES if...",
-            "slug": "eu-ai-act",
+            "slug": "nyc-weather",
             "endDate": "2025-06-01",
             "createdAt": "2024-01-15T10:00:00Z",
-            "category": "Politics",
-            "tags": [{"label": "EU"}, {"label": "AI"}],
+            "category": "Weather",
+            "tags": [{"label": "weather"}, {"label": "NYC"}],
         }
 
         sanitized, removed = self.sanitizer.sanitize(market)
 
         self.assertEqual(sanitized["id"], "123")
-        self.assertEqual(sanitized["question"], "Will the EU AI Act be enforced?")
+        self.assertEqual(sanitized["question"], "Will New York temperature exceed 100F tomorrow?")
         self.assertEqual(sanitized["description"], "This market resolves YES if...")
-        self.assertEqual(sanitized["slug"], "eu-ai-act")
+        self.assertEqual(sanitized["slug"], "nyc-weather")
         self.assertEqual(sanitized["endDate"], "2025-06-01")
         self.assertEqual(len(removed), 0)
 
 
 class TestMarketFilter(unittest.TestCase):
-    """Tests for the MarketFilter class."""
+    """Tests for the MarketFilter class - WEATHER ONLY."""
 
     def setUp(self):
         self.filter = MarketFilter()
 
-    def test_includes_eu_ai_market(self):
-        """Markets matching EU + AI keywords should be included."""
+    def test_includes_weather_temperature_market(self):
+        """Markets with temperature keywords should be included."""
         market = {
-            "question": "Will the EU AI Act be fully implemented by 2026?",
-            "description": "Resolution based on Official Journal of the European Union",
-            "endDate": "2026-08-02",
+            "title": "Will New York temperature exceed 100F tomorrow?",
+            "description": "Resolves YES if NOAA reports temperature above 100 degrees Fahrenheit in NYC.",
         }
 
         result = self.filter.filter_market(market)
 
-        self.assertEqual(result.result, FilterResult.INCLUDED)
-        self.assertTrue(len(result.matched_eu_keywords) > 0)
-        self.assertTrue(len(result.matched_ai_keywords) > 0)
-        self.assertIsNotNone(result.extracted_deadline)
+        self.assertEqual(result.result, FilterResult.INCLUDED_WEATHER)
+        self.assertTrue(len(result.matched_keywords) >= 2)
 
-    def test_excludes_no_eu_match(self):
-        """Markets without EU keywords should be excluded."""
+    def test_includes_weather_rain_market(self):
+        """Markets with rain keywords should be included."""
         market = {
-            "question": "Will OpenAI release GPT-5 in 2025?",
-            "description": "Resolves YES if OpenAI announces GPT-5",
-            "endDate": "2025-12-31",
+            "title": "Will it rain in Chicago tomorrow?",
+            "description": "Weather forecast prediction market",
         }
 
         result = self.filter.filter_market(market)
 
-        self.assertEqual(result.result, FilterResult.EXCLUDED_NO_EU_MATCH)
+        self.assertEqual(result.result, FilterResult.INCLUDED_WEATHER)
 
-    def test_excludes_no_ai_match(self):
-        """Markets without AI keywords should be excluded."""
+    def test_includes_weather_snow_market(self):
+        """Markets with snow keywords should be included."""
         market = {
-            "question": "Will the EU approve new trade agreement?",
-            "description": "European Commission trade policy",
-            "endDate": "2025-06-01",
+            "title": "Will Denver get snow this weekend?",
+            "description": "National Weather Service forecast for precipitation",
         }
 
         result = self.filter.filter_market(market)
 
-        self.assertEqual(result.result, FilterResult.EXCLUDED_NO_AI_MATCH)
+        self.assertEqual(result.result, FilterResult.INCLUDED_WEATHER)
 
-    def test_excludes_price_markets(self):
-        """Price/market performance markets should be excluded."""
+    def test_excludes_non_weather_market(self):
+        """Markets without weather keywords should be excluded."""
         market = {
-            "question": "Will Bitcoin price reach $100k in EU markets?",
-            "description": "European AI trading platforms",
-            "endDate": "2025-12-31",
+            "title": "Will Bitcoin reach $100k by 2026?",
+            "description": "Cryptocurrency price prediction",
         }
 
         result = self.filter.filter_market(market)
 
-        self.assertEqual(result.result, FilterResult.EXCLUDED_PRICE_MARKET)
+        self.assertEqual(result.result, FilterResult.EXCLUDED_NOT_WEATHER)
 
-    def test_excludes_missing_deadline(self):
-        """Markets without extractable deadline should be excluded."""
+    def test_excludes_politics_market(self):
+        """Political markets should be excluded."""
         market = {
-            "question": "Will the EU regulate AI eventually?",
-            "description": "European Union artificial intelligence laws",
-            # No endDate field
+            "title": "Will Trump win the 2024 election?",
+            "description": "US presidential race prediction",
         }
 
         result = self.filter.filter_market(market)
 
-        self.assertEqual(result.result, FilterResult.EXCLUDED_NO_DEADLINE)
+        self.assertEqual(result.result, FilterResult.EXCLUDED_NOT_WEATHER)
 
-    def test_excludes_incomplete_data(self):
-        """Markets with missing title should be excluded."""
+    def test_excludes_crypto_market(self):
+        """Crypto markets should be excluded even with weather-like phrasing."""
         market = {
-            "question": "",  # Empty title
-            "description": "EU AI regulation",
-            "endDate": "2025-06-01",
+            "title": "Will Bitcoin price storm past $100k?",
+            "description": "Crypto forecast for Bitcoin price",
         }
 
         result = self.filter.filter_market(market)
 
-        self.assertEqual(result.result, FilterResult.EXCLUDED_INCOMPLETE)
+        self.assertEqual(result.result, FilterResult.EXCLUDED_NOT_WEATHER)
 
-
-class TestDeadlineExtraction(unittest.TestCase):
-    """Tests for deadline extraction from various formats."""
-
-    def setUp(self):
-        self.filter = MarketFilter()
-
-    def test_extracts_iso_date(self):
-        """Should extract ISO format dates."""
-        # Note: Market needs EU + AI keywords to pass filter and extract deadline
+    def test_requires_multiple_indicators(self):
+        """Markets need at least 2 weather indicators to be included."""
         market = {
-            "question": "EU AI Act Test",
-            "description": "European Union Artificial Intelligence",
-            "endDate": "2025-06-15"
+            "title": "Random market about humidity",
+            "description": "Nothing specific here about anything",
         }
-        result = self.filter.filter_market(market)
-        self.assertEqual(result.extracted_deadline, date(2025, 6, 15))
 
-    def test_extracts_iso_datetime(self):
-        """Should extract ISO datetime and convert to date."""
-        market = {
-            "question": "EU AI Act Test",
-            "description": "European Union Artificial Intelligence",
-            "endDate": "2025-06-15T23:59:59Z"
-        }
         result = self.filter.filter_market(market)
-        self.assertEqual(result.extracted_deadline, date(2025, 6, 15))
 
-    def test_extracts_from_text(self):
-        """Should extract dates from resolution text."""
-        market = {
-            "question": "Will EU pass AI law by March 31, 2025?",
-            "description": "European Union AI Act deadline"
-        }
-        result = self.filter.filter_market(market)
-        # Should find "March 31, 2025" in the question
-        self.assertIsNotNone(result.extracted_deadline)
+        # Should be excluded - only 1 weather indicator (humidity)
+        # Need 2+ indicators to be included
+        self.assertEqual(result.result, FilterResult.EXCLUDED_NOT_WEATHER)
 
-    def test_extracts_year_only(self):
-        """Should handle year-only dates (defaults to Dec 31)."""
-        market = {
-            "question": "Will EU regulate AI by 2026?",
-            "description": "European Union artificial intelligence"
-        }
-        result = self.filter.filter_market(market)
-        # Should extract 2026 as Dec 31, 2026
-        if result.extracted_deadline:
-            self.assertEqual(result.extracted_deadline.year, 2026)
+    def test_filter_markets_batch(self):
+        """Should correctly filter a batch of markets."""
+        markets = [
+            {"title": "NYC temperature 100F", "description": "weather forecast"},
+            {"title": "Bitcoin price prediction", "description": "crypto market"},
+            {"title": "Chicago rain tomorrow", "description": "weather event"},
+        ]
+
+        filtered, counts = self.filter.filter_markets(markets)
+
+        self.assertEqual(counts["total"], 3)
+        self.assertEqual(counts["included_weather"], 2)
+        self.assertEqual(counts["excluded_not_weather"], 1)
 
 
 class TestNormalizer(unittest.TestCase):
@@ -299,25 +268,25 @@ class TestNormalizer(unittest.TestCase):
         """Should create complete normalized record."""
         market = {
             "id": "abc123",
-            "question": "Will EU AI Act be enforced?",
+            "question": "Will NYC temperature exceed 100F?",
             "description": "Resolution criteria...",
             "endDate": "2025-06-01",
             "createdAt": "2024-01-15T10:00:00Z",
-            "category": "Politics",
-            "tags": [{"label": "EU"}, {"label": "AI"}],
-            "slug": "eu-ai-act",
+            "category": "Weather",
+            "tags": [{"label": "weather"}, {"label": "NYC"}],
+            "slug": "nyc-temperature",
         }
 
         normalized = self.normalizer.normalize(market)
 
         self.assertEqual(normalized.market_id, "abc123")
-        self.assertEqual(normalized.title, "Will EU AI Act be enforced?")
+        self.assertEqual(normalized.title, "Will NYC temperature exceed 100F?")
         self.assertEqual(normalized.resolution_text, "Resolution criteria...")
         self.assertEqual(normalized.end_date, "2025-06-01")
         self.assertIsNotNone(normalized.created_time)
-        self.assertEqual(normalized.category, "Politics")
-        self.assertEqual(normalized.tags, ["EU", "AI"])
-        self.assertTrue(normalized.url.endswith("eu-ai-act"))
+        self.assertEqual(normalized.category, "Weather")
+        self.assertEqual(normalized.tags, ["weather", "NYC"])
+        self.assertTrue(normalized.url.endswith("nyc-temperature"))
         self.assertTrue(normalized.is_complete())
 
     def test_marks_incomplete_record(self):
@@ -353,22 +322,6 @@ class TestNormalizer(unittest.TestCase):
 class TestFailClosedBehavior(unittest.TestCase):
     """Tests for fail-closed behavior."""
 
-    def test_filter_excludes_ambiguous_market(self):
-        """Ambiguous markets should be excluded."""
-        market_filter = MarketFilter()
-
-        # Market with EU + AI keywords but opinion/poll phrasing
-        market = {
-            "question": "Who will win the EU AI regulation debate?",
-            "description": "European Union artificial intelligence policy polling",
-            "endDate": "2025-06-01",
-        }
-
-        result = market_filter.filter_market(market)
-
-        # Should be excluded as opinion market (contains "who will win", "polling")
-        self.assertEqual(result.result, FilterResult.EXCLUDED_OPINION_MARKET)
-
     def test_normalizer_flags_missing_fields(self):
         """Normalizer should flag all missing required fields."""
         normalizer = MarketNormalizer()
@@ -383,6 +336,32 @@ class TestFailClosedBehavior(unittest.TestCase):
         self.assertIn("missing_resolution_text", normalized.collector_notes)
         self.assertIn("missing_end_date", normalized.collector_notes)
 
+    def test_filter_handles_empty_market(self):
+        """Filter should handle empty market data gracefully."""
+        market_filter = MarketFilter()
+
+        market = {}  # Empty
+
+        result = market_filter.filter_market(market)
+
+        # Should be excluded, not crash
+        self.assertEqual(result.result, FilterResult.EXCLUDED_NOT_WEATHER)
+
+    def test_filter_handles_none_fields(self):
+        """Filter should handle None fields gracefully."""
+        market_filter = MarketFilter()
+
+        market = {
+            "title": None,
+            "description": None,
+            "resolution_text": None,
+        }
+
+        result = market_filter.filter_market(market)
+
+        # Should be excluded, not crash
+        self.assertEqual(result.result, FilterResult.EXCLUDED_NOT_WEATHER)
+
 
 class TestContractSanitization(unittest.TestCase):
     """Contract test: verify sanitization of realistic API response."""
@@ -395,10 +374,10 @@ class TestContractSanitization(unittest.TestCase):
         # Simulate a realistic Polymarket API response
         raw_response = {
             "id": "0x1234567890abcdef",
-            "question": "Will the European Union pass the AI Act by 2024?",
+            "question": "Will NYC temperature exceed 100F tomorrow?",
             "conditionId": "0xabcdef1234567890",
-            "slug": "eu-ai-act-2024",
-            "description": "This market resolves YES if the EU AI Act is published in the Official Journal.",
+            "slug": "nyc-weather",
+            "description": "This market resolves YES if NOAA reports temp above 100F.",
             "endDate": "2024-12-31T23:59:59Z",
             "createdAt": "2024-01-01T00:00:00Z",
             "active": True,
@@ -423,7 +402,7 @@ class TestContractSanitization(unittest.TestCase):
             "events": [
                 {
                     "id": "event1",
-                    "title": "EU Regulation",
+                    "title": "Weather Event",
                     "volume": 500000,
                     "liquidity": 100000,
                 }
@@ -452,11 +431,11 @@ class TestContractSanitization(unittest.TestCase):
 
         # Assert allowed fields preserved
         self.assertEqual(sanitized["id"], "0x1234567890abcdef")
-        self.assertEqual(sanitized["question"], "Will the European Union pass the AI Act by 2024?")
-        self.assertEqual(sanitized["slug"], "eu-ai-act-2024")
+        self.assertEqual(sanitized["question"], "Will NYC temperature exceed 100F tomorrow?")
+        self.assertEqual(sanitized["slug"], "nyc-weather")
         self.assertEqual(sanitized["endDate"], "2024-12-31T23:59:59Z")
         self.assertEqual(sanitized["events"][0]["id"], "event1")
-        self.assertEqual(sanitized["events"][0]["title"], "EU Regulation")
+        self.assertEqual(sanitized["events"][0]["title"], "Weather Event")
 
         # Verify removal was tracked
         self.assertGreater(len(removed), 0)

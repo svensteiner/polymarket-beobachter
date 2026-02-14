@@ -27,7 +27,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from paper_trader.models import PaperPosition, MarketSnapshot
 from paper_trader.logger import get_paper_logger
 from paper_trader.snapshot_client import get_market_snapshots
-from paper_trader.simulator import simulate_exit_resolution
+from paper_trader.simulator import simulate_exit_resolution, simulate_exit_market
 
 
 logger = logging.getLogger(__name__)
@@ -127,6 +127,80 @@ class PositionManager:
 
         return summary
 
+    # Take-Profit / Stop-Loss thresholds
+    TAKE_PROFIT_PCT = 0.15   # 15% gain
+    STOP_LOSS_PCT = -0.25    # 25% loss
+
+    def check_mid_trade_exits(self) -> Dict[str, Any]:
+        """
+        Check open positions for take-profit or stop-loss conditions.
+
+        Compares current market price to entry price.
+        Exits if unrealized P&L exceeds thresholds.
+
+        Returns:
+            Summary with counts and P&L
+        """
+        open_positions = self.get_open_positions()
+        if not open_positions:
+            return {"checked": 0, "take_profit": 0, "stop_loss": 0, "pnl_eur": 0.0}
+
+        market_ids = [p.market_id for p in open_positions]
+        snapshots = get_market_snapshots(market_ids)
+
+        tp_count = 0
+        sl_count = 0
+        total_pnl = 0.0
+
+        for position in open_positions:
+            snapshot = snapshots.get(position.market_id)
+            if snapshot is None or snapshot.mid_price is None:
+                continue
+            if snapshot.is_resolved:
+                continue  # handled by check_and_close_resolved
+
+            current_price = snapshot.mid_price
+            entry_price = position.entry_price
+
+            if entry_price <= 0:
+                continue
+
+            # Unrealized P&L as percentage
+            # YES positions profit when price goes UP
+            # NO positions profit when YES price goes DOWN
+            if position.side == "NO":
+                unrealized_pct = (entry_price - current_price) / entry_price
+            else:
+                unrealized_pct = (current_price - entry_price) / entry_price
+
+            if unrealized_pct >= self.TAKE_PROFIT_PCT:
+                reason = f"Take-Profit ({unrealized_pct:+.1%})"
+                closed, record = simulate_exit_market(position, snapshot, reason)
+                tp_count += 1
+                if closed.realized_pnl_eur is not None:
+                    total_pnl += closed.realized_pnl_eur
+                logger.info(f"TP: {position.market_id} | {unrealized_pct:+.1%} | P&L: {closed.realized_pnl_eur:+.2f} EUR")
+
+            elif unrealized_pct <= self.STOP_LOSS_PCT:
+                reason = f"Stop-Loss ({unrealized_pct:+.1%})"
+                closed, record = simulate_exit_market(position, snapshot, reason)
+                sl_count += 1
+                if closed.realized_pnl_eur is not None:
+                    total_pnl += closed.realized_pnl_eur
+                logger.info(f"SL: {position.market_id} | {unrealized_pct:+.1%} | P&L: {closed.realized_pnl_eur:+.2f} EUR")
+
+        summary = {
+            "checked": len(open_positions),
+            "take_profit": tp_count,
+            "stop_loss": sl_count,
+            "pnl_eur": total_pnl,
+        }
+
+        if tp_count or sl_count:
+            logger.info(f"Mid-trade exits: {tp_count} TP, {sl_count} SL, P&L: {total_pnl:+.2f} EUR")
+
+        return summary
+
     def get_position_summary(self) -> Dict[str, Any]:
         """
         Get summary of all positions.
@@ -194,6 +268,11 @@ def get_open_positions() -> List[PaperPosition]:
 def check_and_close_resolved() -> Dict[str, Any]:
     """Convenience function to check and close resolved positions."""
     return get_position_manager().check_and_close_resolved()
+
+
+def check_mid_trade_exits() -> Dict[str, Any]:
+    """Convenience function to check take-profit/stop-loss exits."""
+    return get_position_manager().check_mid_trade_exits()
 
 
 def get_position_summary() -> Dict[str, Any]:

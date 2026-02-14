@@ -30,7 +30,7 @@
 import logging
 import math
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional, Dict, Any, Tuple
 
 from .weather_signal import WeatherConfidence
@@ -270,7 +270,7 @@ class WeatherProbabilityModel:
             ProbabilityResult with computed probability and confidence
         """
         # Calculate hours to resolution
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc).replace(tzinfo=None)
         hours_to_resolution = (forecast.target_time - now).total_seconds() / 3600
         days_to_resolution = hours_to_resolution / 24
 
@@ -417,6 +417,37 @@ class WeatherProbabilityModel:
 # =============================================================================
 # MODULE-LEVEL FUNCTIONS
 # =============================================================================
+
+
+def compute_probability_from_forecast_temp(
+    temperature_f: float,
+    threshold_f: float,
+    sigma: float,
+    event_type: str = "exceeds",
+) -> float:
+    """
+    Compute event probability from a forecast temperature.
+
+    Pure math extraction for use by EnsembleBuilder (no ForecastData needed).
+
+    Args:
+        temperature_f: Forecast temperature in Fahrenheit
+        threshold_f: Threshold temperature in Fahrenheit
+        sigma: Adjusted standard deviation
+        event_type: "exceeds" or "below"
+
+    Returns:
+        Probability of the event
+    """
+    if sigma <= 0:
+        raise ValueError(f"sigma must be positive, got {sigma}")
+
+    if event_type == "exceeds":
+        return probability_exceeds(threshold_f, temperature_f, sigma)
+    elif event_type == "below":
+        return probability_below(threshold_f, temperature_f, sigma)
+    else:
+        raise ValueError(f"Unknown event_type: {event_type}")
 
 
 def compute_edge(

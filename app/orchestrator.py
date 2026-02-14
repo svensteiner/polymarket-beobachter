@@ -1,38 +1,33 @@
 # =============================================================================
-# POLYMARKET BEOBACHTER - PIPELINE ORCHESTRATOR
+# WEATHER OBSERVER - PIPELINE ORCHESTRATOR
 # =============================================================================
 #
-# GOVERNANCE:
-# This module provides a SINGLE orchestration point for the entire pipeline.
-# It maintains all existing governance protections:
-# - Layer isolation
-# - No live trading
-# - Append-only logs
-# - Human review requirements
+# WEATHER-ONLY OBSERVATION + PAPER TRADING SYSTEM
 #
-# PIPELINE STEPS:
-# 1. Collector: Fetch market metadata (no prices)
-# 2. Analyzer: Determine TRADE / NO_TRADE / INSUFFICIENT_DATA
-# 3. Proposals: Generate and review proposals
-# 4. Paper Trader: Simulate entries (no real trades)
-# 5. Cross-Market Research: Detect logical inconsistencies (ISOLATED)
-# 6. Outcome Tracker: Record predictions for calibration (ISOLATED)
-# 7. Status: Write summary to output/status_summary.txt
+# This module orchestrates the weather observation pipeline:
+# 1. Collector: Fetch weather markets from Polymarket
+# 2. Weather Observer: Analyze markets and detect edge
+# 3. Proposal Generator: Convert edge to trading proposals
+# 4. Paper Trader: Simulate trades (PAPER ONLY)
+# 5. Outcome Tracker: Record observations for calibration
+# 6. Status: Write summary
+#
+# PAPER TRADING ONLY:
+# NO real orders are placed. NO real money is at risk.
 #
 # =============================================================================
 
 import json
 import logging
-import sys
-from datetime import datetime, date
+import os
+import shutil
+import time
+import uuid
+from datetime import datetime, date, timedelta, timezone
 from pathlib import Path
-from typing import Dict, Any, Optional, List, Tuple
+from typing import Dict, Any, Optional, List
 from dataclasses import dataclass, field
 from enum import Enum
-
-# Setup paths
-BASE_DIR = Path(__file__).parent.parent
-sys.path.insert(0, str(BASE_DIR))
 
 logger = logging.getLogger(__name__)
 
@@ -70,310 +65,131 @@ class PipelineResult:
 
 class Orchestrator:
     """
-    Main pipeline orchestrator.
+    Weather Observer Pipeline Orchestrator.
 
-    GOVERNANCE:
-    - All existing protections remain in place
-    - Each step is wrapped with error handling
-    - Failures in one step don't crash the pipeline
-    - All errors are logged to audit
+    OBSERVER + PAPER TRADING:
+    - Read-only observation and analysis
+    - Paper trading simulation (no real execution)
+    - Append-only logging for calibration
     """
 
-    # =========================================================================
-    # CONFIGURABLE LIMITS (avoid magic numbers)
-    # =========================================================================
-    MAX_CANDIDATES_TO_ANALYZE = 500  # Max candidates analyzed per run (was 20)
-    MAX_PROPOSALS_PER_RUN = 20       # Max proposals generated per run (was 5)
-
     def __init__(self, base_dir: Optional[Path] = None):
-        self.base_dir = base_dir or BASE_DIR
+        self.base_dir = base_dir or Path(__file__).parent.parent
         self.output_dir = self.base_dir / "output"
         self.logs_dir = self.base_dir / "logs"
-        self.audit_dir = self.logs_dir / "audit"
-        self.proposals_dir = self.base_dir / "proposals"
-        self.data_dir = self.base_dir / "data" / "collector"
+        self.data_dir = self.base_dir / "data"
 
         # Ensure directories exist
         self.output_dir.mkdir(parents=True, exist_ok=True)
         self.logs_dir.mkdir(parents=True, exist_ok=True)
-        self.audit_dir.mkdir(parents=True, exist_ok=True)
-
-        # Load module configuration
-        try:
-            from shared.module_loader import get_module_config
-            self.module_config = get_module_config()
-        except ImportError:
-            self.module_config = None
-            logger.warning("Module loader not available, all modules enabled by default")
-
-    def _is_module_enabled(self, module_name: str) -> bool:
-        """Check if a module is enabled in config."""
-        if self.module_config is None:
-            return True  # Default to enabled if no config
-        return self.module_config.is_enabled(module_name)
+        (self.data_dir / "forecasts").mkdir(parents=True, exist_ok=True)
+        (self.data_dir / "resolutions").mkdir(parents=True, exist_ok=True)
 
     def run_pipeline(self) -> PipelineResult:
         """
-        Execute the full pipeline.
+        Execute the weather observer pipeline.
 
-        Steps (only if enabled in config/modules.yaml):
-        1. Collector (metadata only)
-        2. Core Analyzer
-        3. Proposal Generator + Review Gate
-        4. Paper Trader
-        5. Cross-Market Research
-        6. Outcome Tracker
-        7. Weather Engine
-        8. Write status summary
+        Steps:
+        1. Collector: Fetch weather markets
+        2. Weather Observer: Analyze and detect edge
+        3. Proposal Generator: Convert edge to proposals
+        4. Paper Trader: Simulate trades
+        5. Outcome Tracker: Record for calibration
+        6. Write status summary
 
         Returns:
             PipelineResult with state and step details
         """
+        # Track pipeline duration
+        pipeline_start = time.perf_counter()
+
+        # Generate correlation ID for this pipeline run
+        run_id = f"RUN-{datetime.now().strftime('%Y%m%d-%H%M%S')}-{uuid.uuid4().hex[:6]}"
+        logger.info(f"=== Pipeline START === run_id={run_id}")
+
         result = PipelineResult(
             state=RunState.OK,
             timestamp=datetime.now().isoformat()
         )
 
-        # Check master switch
-        if self.module_config and not self.module_config.master_enabled:
-            logger.warning("Master switch is OFF - pipeline disabled")
-            result.state = RunState.DEGRADED
-            result.summary = {"error": "Master switch is disabled"}
-            return result
-
         # Step 1: Collector
-        if self._is_module_enabled("collector"):
-            collector_result = self._run_collector()
-            result.add_step(collector_result)
-        else:
-            collector_result = StepResult(name="collector", success=True, message="DISABLED", data={})
-            result.add_step(collector_result)
+        print("[1/6] Collector: Maerkte abrufen ...", end="", flush=True)
+        collector_result = self._run_collector()
+        result.add_step(collector_result)
+        print(f" {'OK' if collector_result.success else 'FAIL'} ({collector_result.message})")
 
-        # Step 2: Analyzer
-        if self._is_module_enabled("analyzer"):
-            analyzer_result = self._run_analyzer(collector_result.data)
-            result.add_step(analyzer_result)
-        else:
-            analyzer_result = StepResult(name="analyzer", success=True, message="DISABLED", data={})
-            result.add_step(analyzer_result)
+        # Step 1b: Cleanup alte Collector-Daten (>7 Tage)
+        try:
+            cleaned = self._cleanup_old_collector_data(max_age_days=7)
+            if cleaned:
+                logger.info(f"Collector cleanup: {cleaned} alte Verzeichnisse geloescht")
+        except Exception as e:
+            logger.warning(f"Collector cleanup fehlgeschlagen: {e}")
 
-        # Step 3: Proposals
-        if self._is_module_enabled("proposals"):
-            proposal_result = self._run_proposals(analyzer_result.data)
-            result.add_step(proposal_result)
-        else:
-            proposal_result = StepResult(name="proposals", success=True, message="DISABLED", data={})
-            result.add_step(proposal_result)
+        # Step 2: Weather Observer
+        print("[2/6] Weather Observer: Analyse + Edge ...", end="", flush=True)
+        weather_result = self._run_weather_observer()
+        result.add_step(weather_result)
+        print(f" {'OK' if weather_result.success else 'FAIL'} ({weather_result.message})")
+
+        # Step 3: Proposal Generator
+        print("[3/6] Proposals: Edge -> Signale ...", end="", flush=True)
+        proposal_result = self._run_proposal_generator(weather_result.data)
+        result.add_step(proposal_result)
+        print(f" {'OK' if proposal_result.success else 'FAIL'} ({proposal_result.message})")
 
         # Step 4: Paper Trader
-        if self._is_module_enabled("paper_trader"):
-            paper_result = self._run_paper_trader(proposal_result.data)
-            result.add_step(paper_result)
-        else:
-            result.add_step(StepResult(name="paper_trader", success=True, message="DISABLED", data={}))
+        print("[4/6] Paper Trader: Trades simulieren ...", end="", flush=True)
+        paper_result = self._run_paper_trader()
+        result.add_step(paper_result)
+        print(f" {'OK' if paper_result.success else 'FAIL'} ({paper_result.message})")
 
-        # Step 5: Cross-Market Research (ISOLATED - does not affect trading)
-        if self._is_module_enabled("cross_market"):
-            cross_market_result = self._run_cross_market(collector_result.data)
-            result.add_step(cross_market_result)
-        else:
-            result.add_step(StepResult(name="cross_market", success=True, message="DISABLED", data={}))
+        # Step 5: Outcome Tracker
+        print("[5/6] Outcome Tracker: Kalibrierung ...", end="", flush=True)
+        outcome_result = self._run_outcome_tracker(weather_result.data)
+        result.add_step(outcome_result)
+        print(f" {'OK' if outcome_result.success else 'FAIL'} ({outcome_result.message})")
 
-        # Step 6: Outcome Tracker (ISOLATED - records facts only)
-        if self._is_module_enabled("outcome_tracker"):
-            outcome_result = self._run_outcome_tracker(
-                collector_result.data,
-                analyzer_result.data,
-                result.timestamp
-            )
-            result.add_step(outcome_result)
-        else:
-            result.add_step(StepResult(name="outcome_tracker", success=True, message="DISABLED", data={}))
-
-        # Step 7: Weather Engine (signal generation)
-        if self._is_module_enabled("weather_engine"):
-            weather_result = self._run_weather_engine()
-            result.add_step(weather_result)
-
-        # Step 8: Signal-to-Paper-Trade wiring
-        # Convert weather + arbitrage signals into proposals and paper trade them
-        if self._is_module_enabled("paper_trader"):
-            signal_result = self._run_signal_trading()
-            result.add_step(signal_result)
-
-        # Build summary
+        # Build summary with pipeline duration
+        duration_seconds = round(time.perf_counter() - pipeline_start, 2)
         result.summary = self._build_summary(result)
+        result.summary["run_id"] = run_id
+        result.summary["duration_seconds"] = duration_seconds
 
-        # Step 8: Write status
+        # Step 6: Write status
+        print("[6/6] Status schreiben ...", end="", flush=True)
         status_result = self._write_status_summary(result)
         result.add_step(status_result)
+        print(f" {'OK' if status_result.success else 'FAIL'}")
 
-        # Log to audit
+        # Log to audit (includes run_id via summary)
         self._log_to_audit(result)
+
+        # Cleanup old audit logs (>90 days)
+        try:
+            self._cleanup_old_audit_logs(max_age_days=90)
+        except Exception as e:
+            logger.warning(f"Audit-Log cleanup fehlgeschlagen: {e}")
+
+        logger.info(f"=== Pipeline END === run_id={run_id} state={result.state.value}")
 
         return result
 
-    def _run_weather_engine(self) -> StepResult:
-        """Run the weather engine step (ISOLATED - signals only)."""
-        try:
-            from core.weather_engine import create_engine
-
-            # Weather engine is READ-ONLY, does not execute trades
-            engine = create_engine()
-            result = engine.run()
-
-            return StepResult(
-                name="weather_engine",
-                success=True,
-                message=f"Generated {len(result.actionable_signals)} actionable signals",
-                data={
-                    "signals_total": len(result.signals),
-                    "signals_actionable": len(result.actionable_signals),
-                    "markets_processed": result.markets_processed,
-                }
-            )
-        except Exception as e:
-            logger.error(f"Weather engine failed: {e}")
-            return StepResult(
-                name="weather_engine",
-                success=False,
-                message="Weather engine failed",
-                error=str(e)
-            )
-
-    def _run_signal_trading(self) -> StepResult:
-        """
-        Convert signals from specialized engines into proposals and paper trade them.
-
-        Wires: Weather Signals + Arbitrage Signals → Proposals → Paper Trader
-
-        This is the bridge between isolated signal engines and the paper trading system.
-        All proposals still pass through ReviewGate before being paper-traded.
-        """
-        try:
-            from proposals.signal_adapter import (
-                load_recent_weather_signals,
-                load_recent_arbitrage_signals,
-                weather_signal_to_analysis,
-                arbitrage_signal_to_analysis,
-            )
-            from proposals.generator import ProposalGenerator
-            from proposals.review_gate import ReviewGate
-            from proposals.storage import get_storage
-            from paper_trader.intake import is_proposal_eligible
-            from paper_trader.simulator import simulate_entry
-
-            generator = ProposalGenerator()
-            gate = ReviewGate()
-            storage = get_storage()
-
-            weather_proposals = 0
-            arb_proposals = 0
-            paper_traded = 0
-            skipped = 0
-            seen_markets = set()
-
-            # --- Weather Signals ---
-            weather_signals = load_recent_weather_signals(max_signals=10)
-            for signal in weather_signals:
-                try:
-                    analysis = weather_signal_to_analysis(signal)
-                    if not analysis:
-                        continue
-
-                    market_id = analysis["market_input"]["market_id"]
-                    if market_id in seen_markets:
-                        continue
-                    seen_markets.add(market_id)
-
-                    proposal = generator.generate(analysis)
-                    if not proposal:
-                        continue
-
-                    storage.save_proposal(proposal)
-                    review = gate.review(proposal)
-                    storage.save_review(proposal, review)
-
-                    if review.outcome.value == "REVIEW_PASS":
-                        weather_proposals += 1
-                        if is_proposal_eligible(proposal)[0]:
-                            position, record = simulate_entry(proposal)
-                            if position is not None:
-                                paper_traded += 1
-                            else:
-                                skipped += 1
-                except Exception as e:
-                    logger.warning(f"Weather signal trading failed: {e}")
-
-            # --- Arbitrage Signals ---
-            arb_signals = load_recent_arbitrage_signals(max_signals=10)
-            for signal in arb_signals:
-                try:
-                    analysis = arbitrage_signal_to_analysis(signal)
-                    if not analysis:
-                        continue
-
-                    market_id = analysis["market_input"]["market_id"]
-                    if market_id in seen_markets:
-                        continue
-                    seen_markets.add(market_id)
-
-                    proposal = generator.generate(analysis)
-                    if not proposal:
-                        continue
-
-                    storage.save_proposal(proposal)
-                    review = gate.review(proposal)
-                    storage.save_review(proposal, review)
-
-                    if review.outcome.value == "REVIEW_PASS":
-                        arb_proposals += 1
-                        if is_proposal_eligible(proposal)[0]:
-                            position, record = simulate_entry(proposal)
-                            if position is not None:
-                                paper_traded += 1
-                            else:
-                                skipped += 1
-                except Exception as e:
-                    logger.warning(f"Arbitrage signal trading failed: {e}")
-
-            total = weather_proposals + arb_proposals
-            return StepResult(
-                name="signal_trading",
-                success=True,
-                message=f"{total} signal proposals ({weather_proposals} weather, {arb_proposals} arb), {paper_traded} paper traded",
-                data={
-                    "weather_proposals": weather_proposals,
-                    "arbitrage_proposals": arb_proposals,
-                    "paper_traded": paper_traded,
-                    "skipped": skipped,
-                }
-            )
-
-        except Exception as e:
-            logger.warning(f"Signal trading step failed (non-critical): {e}")
-            return StepResult(
-                name="signal_trading",
-                success=True,  # Non-critical
-                message=f"Signal trading skipped: {str(e)[:50]}",
-                data={"weather_proposals": 0, "arbitrage_proposals": 0, "paper_traded": 0}
-            )
-
     def _run_collector(self) -> StepResult:
-        """Run the collector step."""
+        """Fetch weather markets from Polymarket."""
         try:
             from collector.collector import Collector
 
             collector = Collector(
-                output_dir=str(self.data_dir),
-                max_markets=1500  # Increased from 500 for more coverage
+                output_dir=str(self.data_dir / "collector"),
+                max_markets=500
             )
             stats = collector.run(dry_run=False)
 
             return StepResult(
                 name="collector",
                 success=True,
-                message=f"Fetched {stats.total_fetched} markets, {stats.total_candidates} candidates",
+                message=f"Fetched {stats.total_fetched} markets, {stats.total_candidates} weather candidates",
                 data={
                     "total_fetched": stats.total_fetched,
                     "total_candidates": stats.total_candidates,
@@ -389,414 +205,301 @@ class Orchestrator:
                 error=str(e)
             )
 
-    def _run_analyzer(self, collector_data: Dict[str, Any]) -> StepResult:
-        """Run the core analyzer step with specialized analyzers per category."""
-        try:
-            # Load candidates from collector output
-            today_str = date.today().isoformat()
-            candidates_file = self.data_dir / "candidates" / today_str / "candidates.jsonl"
+    def _cleanup_old_collector_data(self, max_age_days: int = 7) -> int:
+        """Loesche Collector-Rohdaten die aelter als max_age_days sind.
 
-            if not candidates_file.exists():
-                return StepResult(
-                    name="analyzer",
-                    success=True,
-                    message="No candidates to analyze",
-                    data={"analyzed": 0, "trade": 0, "no_trade": 0, "insufficient": 0}
-                )
+        Bereinigt raw/, normalized/ und candidates/ Unterverzeichnisse.
+        Gibt die Anzahl geloeschter Verzeichnisse zurueck.
+        """
+        collector_dir = self.data_dir / "collector"
+        cutoff = datetime.now() - timedelta(days=max_age_days)
+        deleted = 0
 
-            candidates = []
-            with open(candidates_file, 'r', encoding='utf-8') as f:
-                for line in f:
-                    line = line.strip()
-                    if line:
-                        candidates.append(json.loads(line))
+        for subdir_name in ("raw", "normalized", "candidates"):
+            subdir = collector_dir / subdir_name
+            if not subdir.is_dir():
+                continue
 
-            if not candidates:
-                return StepResult(
-                    name="analyzer",
-                    success=True,
-                    message="No candidates to analyze",
-                    data={"analyzed": 0, "trade": 0, "no_trade": 0, "insufficient": 0}
-                )
-
-            # Import all analyzers
-            from core.corporate_analyzer import CorporateEventAnalyzer, CorporateMarketInput
-            from core.court_analyzer import CourtRulingAnalyzer, CourtMarketInput
-
-            # Initialize specialized analyzers
-            corporate_analyzer = CorporateEventAnalyzer()
-            court_analyzer = CourtRulingAnalyzer()
-
-            results = {"trade": 0, "no_trade": 0, "insufficient": 0}
-            analyses = []
-            latest_trade = None
-
-            for candidate in candidates[:self.MAX_CANDIDATES_TO_ANALYZE]:
+            for dirname in os.listdir(subdir):
                 try:
-                    category = self._get_category(candidate)
-                    title = candidate.get("title", "Unknown")
-                    resolution = candidate.get("resolution_text", candidate.get("description", ""))
-                    end_date = candidate.get("end_date", "2025-12-31")[:10]
+                    dir_date = datetime.strptime(dirname, "%Y-%m-%d")
+                    if dir_date < cutoff:
+                        dir_path = subdir / dirname
+                        shutil.rmtree(str(dir_path))
+                        deleted += 1
+                        logger.info("Collector-Daten geloescht: %s/%s", subdir_name, dirname)
+                except (ValueError, OSError):
+                    continue
 
-                    # Route to specialized analyzer based on category
-                    if category == "CORPORATE_EVENT":
-                        result = self._analyze_corporate(corporate_analyzer, candidate)
-                    elif category == "COURT_RULING":
-                        result = self._analyze_court(court_analyzer, candidate)
-                    else:
-                        # Use simplified analysis for other categories
-                        result = self._analyze_simple(candidate)
+        return deleted
 
-                    outcome = result["decision"]
-                    if outcome == "TRADE":
-                        results["trade"] += 1
-                        latest_trade = {
-                            "market_id": candidate.get("market_id"),
-                            "title": title[:60],
-                            "category": category,
-                            "end_date": end_date,
-                            "reason": result.get("reason", "Meets criteria")[:200],
-                            "confidence": result.get("confidence", "MEDIUM"),
-                        }
-                    elif outcome == "NO_TRADE":
-                        results["no_trade"] += 1
-                    else:
-                        results["insufficient"] += 1
+    def _run_weather_observer(self) -> StepResult:
+        """Run the weather observation engine."""
+        try:
+            from core.weather_engine import create_engine
+            from core.weather_market_filter import WeatherMarket, WeatherMarketFilter
+            from collector.client import PolymarketClient
+            import json
+            import yaml
+            from datetime import datetime
 
-                    analyses.append({
-                        "market_id": candidate.get("market_id"),
-                        "title": title,
-                        "category": category,
-                        "decision": outcome,
-                        "confidence": result.get("confidence", "MEDIUM"),
-                        "blocking_criteria": result.get("blocking", [])
-                    })
+            # Load config and create filter
+            config_path = self.data_dir.parent / "config" / "weather.yaml"
+            with open(config_path) as f:
+                weather_config = yaml.safe_load(f)
+            weather_filter = WeatherMarketFilter(weather_config)
 
+            # Load collected weather candidates (stored in date-based path)
+            from datetime import date
+            today = date.today().isoformat()
+            candidates_root = self.data_dir / "collector" / "candidates"
+            candidates_file = candidates_root / today / "candidates.jsonl"
+            raw_candidates = []
+
+            # Fallback to most recent non-empty candidates file if today's is missing/empty
+            if not candidates_file.exists() or candidates_file.stat().st_size == 0:
+                if candidates_root.exists():
+                    for day_dir in sorted(candidates_root.iterdir(), reverse=True):
+                        fallback = day_dir / "candidates.jsonl"
+                        if fallback.exists() and fallback.stat().st_size > 0:
+                            candidates_file = fallback
+                            logger.info(f"Using fallback candidates file: {fallback}")
+                            break
+
+            # Step 1: Load raw candidate data
+            if candidates_file.exists() and candidates_file.stat().st_size > 0:
+                with open(candidates_file, 'r', encoding='utf-8') as f:
+                    for line in f:
+                        line = line.strip()
+                        if line:
+                            try:
+                                data = json.loads(line)
+                                raw_candidates.append(data)
+                            except Exception as e:
+                                logger.debug(f"Skipping invalid candidate: {e}")
+
+            # Step 2: Fetch real market odds from Polymarket API
+            market_ids = [c.get("market_id", "") for c in raw_candidates if c.get("market_id")]
+            real_prices = {}
+            if market_ids:
+                try:
+                    client = PolymarketClient(timeout=15)
+                    real_prices = client.fetch_market_prices(market_ids)
+                    logger.info(f"Fetched real odds for {len(real_prices)}/{len(market_ids)} markets")
                 except Exception as e:
-                    logger.warning(f"Analysis failed: {e}")
-                    results["insufficient"] += 1
+                    logger.warning(f"Failed to fetch real market prices: {e}")
+
+            # Step 3: Convert to WeatherMarket with real odds
+            weather_markets = []
+            for data in raw_candidates:
+                try:
+                    market_id = data.get("market_id", "")
+
+                    # Get real odds and liquidity if available
+                    odds_yes = 0.05  # Default fallback
+                    liquidity_usd = 100.0  # Default fallback
+
+                    if market_id in real_prices:
+                        price_data = real_prices[market_id]
+                        # Parse outcomePrices (format: '["0.95", "0.05"]' - [YES, NO])
+                        outcome_prices = price_data.get("outcomePrices")
+                        if outcome_prices:
+                            try:
+                                prices_list = json.loads(outcome_prices)
+                                if len(prices_list) >= 1:
+                                    odds_yes = float(prices_list[0])
+                            except Exception:
+                                pass
+                        # Get liquidity
+                        liq = price_data.get("liquidity")
+                        if liq:
+                            try:
+                                liquidity_usd = float(liq)
+                            except Exception:
+                                pass
+
+                    market = WeatherMarket(
+                        market_id=market_id,
+                        question=data.get("title", ""),
+                        resolution_text=data.get("resolution_text", ""),
+                        description=data.get("description", ""),
+                        category="WEATHER",
+                        is_binary=True,
+                        liquidity_usd=liquidity_usd,
+                        odds_yes=odds_yes,
+                        resolution_time=datetime.fromisoformat(data["end_date"]) if data.get("end_date") else datetime.now(),
+                    )
+
+                    # Run through filter to populate detected_city and detected_threshold
+                    filter_result = weather_filter.filter_market(market)
+                    if filter_result.passed and filter_result.market:
+                        weather_markets.append(filter_result.market)
+                    else:
+                        logger.debug(f"Market {market.market_id} filtered out: {filter_result.rejection_reasons}")
+                except Exception as e:
+                    logger.debug(f"Skipping invalid candidate: {e}")
+
+            logger.info(f"Loaded {len(weather_markets)} weather candidates for observation")
+
+            # Create market fetcher from loaded candidates
+            def market_fetcher():
+                return weather_markets
+
+            engine = create_engine(market_fetcher=market_fetcher)
+            result = engine.run()
 
             return StepResult(
-                name="analyzer",
+                name="weather_observer",
                 success=True,
-                message=f"Analyzed {len(candidates[:self.MAX_CANDIDATES_TO_ANALYZE])} markets",
+                message=f"Observed {result.markets_processed} markets, {len(result.edge_observations)} with edge",
                 data={
-                    "analyzed": len(candidates[:self.MAX_CANDIDATES_TO_ANALYZE]),
-                    **results,
-                    "analyses": analyses,
-                    "latest_trade": latest_trade
+                    "observations_total": len(result.observations),
+                    "edge_observations": len(result.edge_observations),
+                    "edge_observations_list": result.edge_observations,
+                    "markets_processed": result.markets_processed,
+                    "markets_filtered": result.markets_filtered,
                 }
             )
-
         except Exception as e:
-            logger.error(f"Analyzer failed: {e}")
+            logger.error(f"Weather observer failed: {e}")
             return StepResult(
-                name="analyzer",
+                name="weather_observer",
                 success=False,
-                message="Analyzer failed",
-                error=str(e),
-                data={"analyzed": 0, "trade": 0, "no_trade": 0, "insufficient": 0}
+                message="Weather observer failed",
+                error=str(e)
             )
 
-    def _get_category(self, candidate: Dict[str, Any]) -> str:
-        """Extract category from candidate."""
-        category = candidate.get("category", "").upper()
-        if category:
-            return category
-        # Infer from collector_notes
-        notes = candidate.get("collector_notes", [])
-        if "corporate_event_market" in notes:
-            return "CORPORATE_EVENT"
-        elif "court_ruling_market" in notes:
-            return "COURT_RULING"
-        elif "weather_event_market" in notes:
-            return "WEATHER_EVENT"
-        elif "political_event_market" in notes:
-            return "POLITICAL_EVENT"
-        elif "finance_event_market" in notes:
-            return "FINANCE_EVENT"
-        return "GENERIC"
+    def _run_proposal_generator(self, weather_data: Dict[str, Any]) -> StepResult:
+        """Convert weather observations with edge to proposals.
 
-    def _analyze_corporate(self, analyzer, candidate: Dict[str, Any]) -> Dict[str, Any]:
-        """Analyze corporate event with specialized analyzer."""
-        from core.corporate_analyzer import CorporateMarketInput
-        market_input = CorporateMarketInput(
-            market_question=candidate.get("title", "Unknown"),
-            resolution_text=candidate.get("resolution_text", candidate.get("description", "")),
-            target_date=candidate.get("end_date", "2025-12-31")[:10],
-            description=candidate.get("description", ""),
-        )
-        report = analyzer.analyze(market_input)
-        return {
-            "decision": report.decision,
-            "confidence": "HIGH" if report.decision == "TRADE" else "MEDIUM",
-            "blocking": report.blocking_reasons,
-            "reason": "; ".join(report.blocking_reasons[:3]) if report.blocking_reasons else "Passed all checks",
-        }
-
-    def _analyze_court(self, analyzer, candidate: Dict[str, Any]) -> Dict[str, Any]:
-        """Analyze court ruling with specialized analyzer."""
-        from core.court_analyzer import CourtMarketInput
-        market_input = CourtMarketInput(
-            market_question=candidate.get("title", "Unknown"),
-            resolution_text=candidate.get("resolution_text", candidate.get("description", "")),
-            target_date=candidate.get("end_date", "2025-12-31")[:10],
-            description=candidate.get("description", ""),
-        )
-        report = analyzer.analyze(market_input)
-        return {
-            "decision": report.decision,
-            "confidence": "HIGH" if report.decision == "TRADE" else "MEDIUM",
-            "blocking": report.blocking_reasons,
-            "reason": "; ".join(report.blocking_reasons[:3]) if report.blocking_reasons else "Passed all checks",
-        }
-
-    def _analyze_simple(self, candidate: Dict[str, Any]) -> Dict[str, Any]:
+        Uses edge_observations_list from the weather observer step directly,
+        avoiding a redundant second engine run.
         """
-        Simplified analysis for non-specialized categories.
-        Less strict - allows more TRADE decisions.
-        """
-        title = candidate.get("title", "").lower()
-        end_date_str = candidate.get("end_date", "2025-12-31")[:10]
-        blocking = []
-
-        # Check timeline
         try:
-            end_date = date.fromisoformat(end_date_str)
-            days_until = (end_date - date.today()).days
-            if days_until < 1:
-                blocking.append("Target date too soon")
-            elif days_until > 365:
-                blocking.append("Target date too far")
-        except ValueError:
-            blocking.append("Invalid date")
+            from proposals.signal_adapter import weather_observation_to_proposal
+            from proposals.storage import get_storage
 
-        # Check for resolution text
-        resolution = candidate.get("resolution_text", candidate.get("description", ""))
-        if len(resolution) < 20:
-            blocking.append("Resolution text too short")
-
-        # Check for problematic keywords
-        problematic = ["at our discretion", "we may", "subject to"]
-        if any(p in resolution.lower() for p in problematic):
-            blocking.append("Ambiguous resolution")
-
-        # Decision based on blocking reasons
-        if blocking:
-            return {"decision": "NO_TRADE", "confidence": "MEDIUM", "blocking": blocking, "reason": "; ".join(blocking)}
-        else:
-            return {"decision": "TRADE", "confidence": "MEDIUM", "blocking": [], "reason": "All basic checks passed"}
-
-    def _run_proposals(self, analyzer_data: Dict[str, Any]) -> StepResult:
-        """Run proposal generation and review step."""
-        try:
-            analyses = analyzer_data.get("analyses", [])
-            trade_analyses = [a for a in analyses if a.get("decision") == "TRADE"]
-
-            if not trade_analyses:
+            # Use edge observations passed from weather observer step
+            edge_observations = weather_data.get("edge_observations_list", [])
+            if not edge_observations:
                 return StepResult(
-                    name="proposals",
+                    name="proposal_generator",
                     success=True,
-                    message="No TRADE decisions to propose",
-                    data={"generated": 0, "reviewed": 0, "passed": 0}
+                    message="No edge observations to convert",
+                    data={"proposals_generated": 0}
                 )
 
-            # Generate proposals for TRADE decisions
-            from proposals.generator import ProposalGenerator
-            from proposals.review_gate import ReviewGate
-            from proposals.storage import get_storage
-            from core.probability_models import get_honest_estimate, calculate_edge
-
-            generator = ProposalGenerator()
-            gate = ReviewGate()
+            # Convert edge observations to proposals
+            proposals_generated = 0
             storage = get_storage()
 
-            generated = 0
-            reviewed = 0
-            passed = 0
-            skipped_no_signal = 0
-            latest_proposal = None
-
-            for analysis in trade_analyses[:self.MAX_PROPOSALS_PER_RUN]:
-                try:
-                    # =========================================================
-                    # HONEST PROBABILITY ESTIMATION
-                    # =========================================================
-                    # Use the new honest probability model interface.
-                    # If the model returns valid=False, we SKIP this market.
-                    # NO fake edges. NO placeholder probabilities.
-                    # =========================================================
-
-                    # Fetch current market price via snapshot client
-                    market_id = analysis.get("market_id", "unknown")
-                    market_probability = None
-                    try:
-                        from paper_trader.snapshot_client import get_market_snapshot
-                        snapshot = get_market_snapshot(market_id)
-                        if snapshot and hasattr(snapshot, 'mid_price') and snapshot.mid_price:
-                            market_probability = snapshot.mid_price
-                    except Exception as e:
-                        logger.debug(f"Could not fetch snapshot for {market_id}: {e}")
-
-                    market_data = {
-                        "market_id": market_id,
-                        "title": analysis.get("title", "Unknown"),
-                        "category": analysis.get("category", "Unknown"),
-                        "description": analysis.get("resolution_text", ""),
-                        "market_implied_probability": market_probability,
-                        "yes_price": market_probability,
-                        "price": market_probability,
-                    }
-
-                    # Get HONEST probability estimate
-                    estimate = get_honest_estimate(market_data)
-
-                    # If estimate is INVALID -> NO_SIGNAL -> skip proposal
-                    if not estimate.valid:
-                        skipped_no_signal += 1
-                        logger.info(
-                            f"NO_SIGNAL: Skipping market '{market_data['title'][:40]}...' - "
-                            f"{estimate.reasoning}"
-                        )
-                        continue
-
-                    # If we still don't have market_probability, skip
-                    if market_probability is None:
-                        skipped_no_signal += 1
-                        logger.info(
-                            f"NO_SIGNAL: No market price for '{market_data['title'][:40]}...'"
-                        )
-                        continue
-
-                    # Calculate edge
-                    edge_calc = calculate_edge(estimate, market_probability)
-
-                    if not edge_calc.valid:
-                        skipped_no_signal += 1
-                        logger.info(
-                            f"NO_SIGNAL: Cannot calculate edge for '{market_data['title'][:40]}...' - "
-                            f"{edge_calc.reason}"
-                        )
-                        continue
-
-                    # Build analysis dict with REAL probabilities
-                    analysis_dict = {
-                        "final_decision": {"outcome": "TRADE"},
-                        "market_input": {
-                            "market_id": market_data["market_id"],
-                            "market_title": market_data["title"],
-                            "market_implied_probability": market_probability or 0.0
-                        },
-                        "probability_estimate": {
-                            "probability_midpoint": estimate.probability,
-                            "probability_low": estimate.probability_low,
-                            "probability_high": estimate.probability_high,
-                            "confidence_level": estimate.confidence.value,
-                            "model_type": estimate.model_type.value if estimate.model_type else None,
-                            "assumption": estimate.assumption,
-                            "data_sources": estimate.data_sources,
-                        },
-                        "market_sanity": {
-                            "direction": edge_calc.direction
-                        },
-                        "edge_calculation": edge_calc.to_dict(),
-                    }
-
-                    proposal = generator.generate(analysis_dict)
-                    if proposal:
-                        generated += 1
-                        storage.save_proposal(proposal)
-
-                        review = gate.review(proposal)
-                        reviewed += 1
-                        storage.save_review(proposal, review)
-
-                        if review.outcome.value == "REVIEW_PASS":
-                            passed += 1
-                            latest_proposal = {
-                                "proposal_id": proposal.proposal_id,
-                                "market": proposal.market_question[:50],
-                                "review": "PASS"
-                            }
-
-                except Exception as e:
-                    logger.warning(f"Proposal generation failed: {e}")
+            for observation in edge_observations:
+                proposal = weather_observation_to_proposal(observation)
+                if proposal is not None:
+                    storage.save_proposal(proposal)
+                    proposals_generated += 1
+                    logger.info(f"Generated proposal for market {observation.market_id}")
 
             return StepResult(
-                name="proposals",
+                name="proposal_generator",
                 success=True,
-                message=f"Generated {generated} proposals, {passed} passed, {skipped_no_signal} NO_SIGNAL",
+                message=f"Generated {proposals_generated} proposals",
                 data={
-                    "generated": generated,
-                    "reviewed": reviewed,
-                    "passed": passed,
-                    "skipped_no_signal": skipped_no_signal,
-                    "latest_proposal": latest_proposal
+                    "proposals_generated": proposals_generated,
+                    "edge_observations_processed": len(edge_observations)
                 }
             )
 
         except Exception as e:
-            logger.error(f"Proposals failed: {e}")
+            logger.error(f"Proposal generator failed: {e}")
             return StepResult(
-                name="proposals",
+                name="proposal_generator",
                 success=False,
-                message="Proposal generation failed",
-                error=str(e),
-                data={"generated": 0, "reviewed": 0, "passed": 0}
+                message="Proposal generator failed",
+                error=str(e)
             )
 
-    def _run_paper_trader(self, proposal_data: Dict[str, Any]) -> StepResult:
-        """Run paper trading step."""
+    def _run_paper_trader(self) -> StepResult:
+        """
+        Run paper trading cycle.
+
+        PAPER TRADING ONLY:
+        - NO real orders are placed
+        - NO real money is at risk
+        """
         try:
-            from paper_trader.position_manager import get_position_summary, check_and_close_resolved
             from paper_trader.intake import get_eligible_proposals
             from paper_trader.simulator import simulate_entry
+            from paper_trader.position_manager import check_and_close_resolved, check_mid_trade_exits
+            from paper_trader.averaging_down import check_averaging_down
+            from paper_trader.edge_reversal import check_edge_reversal_exits
 
-            # -----------------------------------------------------------------
-            # STEP 1: Check and close any resolved positions
-            # -----------------------------------------------------------------
-            close_result = check_and_close_resolved()
+            # Step 1: Check mid-trade exits FIRST (take-profit / stop-loss)
+            mid_trade = check_mid_trade_exits()
+            if mid_trade["take_profit"] or mid_trade["stop_loss"]:
+                logger.info(
+                    f"Mid-trade exits: {mid_trade['take_profit']} TP, "
+                    f"{mid_trade['stop_loss']} SL, P&L: {mid_trade['pnl_eur']:+.2f} EUR"
+                )
 
-            # -----------------------------------------------------------------
-            # STEP 2: Open new paper positions for eligible proposals
-            # This is the KEY step that makes paper trading automatic!
-            # -----------------------------------------------------------------
-            eligible_proposals = get_eligible_proposals()
-            new_positions_opened = 0
+            # Step 2: Check edge reversal exits (forecast turned against us)
+            edge_reversal = check_edge_reversal_exits()
+            if edge_reversal["exited"]:
+                logger.info(
+                    f"Edge reversal exits: {edge_reversal['exited']} positions, "
+                    f"P&L: {edge_reversal['pnl_eur']:+.2f} EUR"
+                )
+
+            # Step 3: Check averaging-down opportunities
+            avg_down = check_averaging_down()
+            if avg_down["addons"]:
+                logger.info(
+                    f"Averaging down: {avg_down['addons']} add-ons, "
+                    f"cost: {avg_down['cost_eur']:.2f} EUR"
+                )
+
+            # Step 4: Get eligible proposals for new entries
+            eligible = get_eligible_proposals()
+            logger.info(f"Found {len(eligible)} eligible proposals for paper trading")
+
+            # Simulate entries
+            entered = 0
             skipped = 0
 
-            for proposal in eligible_proposals[:self.MAX_PROPOSALS_PER_RUN]:
-                try:
-                    position, record = simulate_entry(proposal)
-                    if position is not None:
-                        new_positions_opened += 1
-                        logger.info(
-                            f"Paper trade opened: {proposal.market_question[:40]} "
-                            f"| {position.side} @ {position.entry_price:.4f}"
-                        )
-                    else:
-                        skipped += 1
-                        logger.info(f"Paper trade skipped: {record.reason}")
-                except Exception as e:
-                    logger.warning(f"Failed to open paper trade: {e}")
+            for proposal in eligible:
+                position, record = simulate_entry(proposal)
+                if position is not None:
+                    entered += 1
+                    logger.info(f"Paper ENTRY: {proposal.market_id[:30]}... | {position.side} @ {position.entry_price:.4f}")
+                else:
                     skipped += 1
 
-            # -----------------------------------------------------------------
-            # STEP 3: Get current position summary
-            # -----------------------------------------------------------------
-            summary = get_position_summary()
+            # Step 5: Check and close resolved positions
+            close_summary = check_and_close_resolved()
 
             return StepResult(
                 name="paper_trader",
                 success=True,
-                message=f"{summary.get('open', 0)} open, {new_positions_opened} new",
+                message=(
+                    f"Entered: {entered} | Addons: {avg_down['addons']} | "
+                    f"Edge-Rev: {edge_reversal['exited']} | "
+                    f"Closed: {close_summary['closed']} | P&L: {close_summary['total_pnl_eur']:+.2f} EUR"
+                ),
                 data={
-                    "open_positions": summary.get("open", 0),
-                    "closed_positions": summary.get("closed", 0) + summary.get("resolved", 0),
-                    "total_pnl": summary.get("total_realized_pnl_eur", 0.0),
-                    "closed_this_run": close_result.get("closed", 0),
-                    "new_positions_opened": new_positions_opened,
-                    "skipped": skipped,
+                    "proposals_eligible": len(eligible),
+                    "positions_entered": entered,
+                    "positions_skipped": skipped,
+                    "addon_entries": avg_down["addons"],
+                    "addon_cost_eur": avg_down["cost_eur"],
+                    "mid_trade_tp": mid_trade["take_profit"],
+                    "mid_trade_sl": mid_trade["stop_loss"],
+                    "mid_trade_pnl": mid_trade["pnl_eur"],
+                    "edge_reversal_exited": edge_reversal["exited"],
+                    "edge_reversal_pnl": edge_reversal["pnl_eur"],
+                    "positions_checked": close_summary['checked'],
+                    "positions_closed": close_summary['closed'],
+                    "positions_still_open": close_summary['still_open'],
+                    "total_pnl_eur": close_summary['total_pnl_eur'],
                 }
             )
 
@@ -806,320 +509,139 @@ class Orchestrator:
                 name="paper_trader",
                 success=False,
                 message="Paper trader failed",
-                error=str(e),
-                data={"open_positions": 0, "closed_positions": 0, "total_pnl": 0.0}
+                error=str(e)
             )
 
-    def _run_cross_market(self, collector_data: Dict[str, Any]) -> StepResult:
-        """
-        Run cross-market consistency research (ISOLATED).
-
-        ISOLATION GUARANTEES:
-        - This step has NO influence on trading decisions
-        - It only reads market data and writes to separate log
-        - Findings are informational only
-        - If this step fails, trading is NOT affected
-        """
-        try:
-            # Load candidates for research
-            today_str = date.today().isoformat()
-            candidates_file = self.data_dir / "candidates" / today_str / "candidates.jsonl"
-
-            if not candidates_file.exists():
-                return StepResult(
-                    name="cross_market",
-                    success=True,
-                    message="No candidates for research",
-                    data={"markets_analyzed": 0, "relations_found": 0, "inconsistencies": 0}
-                )
-
-            # Load ALL candidates (research wants many markets)
-            candidates = []
-            with open(candidates_file, 'r', encoding='utf-8') as f:
-                for line in f:
-                    line = line.strip()
-                    if line:
-                        candidates.append(json.loads(line))
-
-            if len(candidates) < 2:
-                return StepResult(
-                    name="cross_market",
-                    success=True,
-                    message="Too few candidates for consistency check",
-                    data={"markets_analyzed": len(candidates), "relations_found": 0, "inconsistencies": 0}
-                )
-
-            # Import cross-market engine (ISOLATED module)
-            from cross_market_engine.auto_detector import detect_from_collector_output, get_detection_summary
-            from cross_market_engine.consistency_check import check_all_relations
-            from cross_market_engine.runner import write_summary_to_log
-            from cross_market_engine.arbitrage_signals import generate_signals_from_findings, log_signals
-
-            # Detect relations automatically
-            graph, relations = detect_from_collector_output(candidates)
-
-            if not relations:
-                return StepResult(
-                    name="cross_market",
-                    success=True,
-                    message=f"Analyzed {len(candidates)} markets, no relations detected",
-                    data={"markets_analyzed": len(candidates), "relations_found": 0, "inconsistencies": 0, "arbitrage_signals": 0}
-                )
-
-            # Run consistency check
-            findings_summary = check_all_relations(graph, relations)
-
-            # Write findings to isolated log
-            write_summary_to_log(findings_summary)
-
-            # Generate arbitrage signals from inconsistencies
-            arb_signals = generate_signals_from_findings(findings_summary)
-            if arb_signals:
-                log_signals(arb_signals)
-
-            # Get detection summary
-            detection_info = get_detection_summary(graph, relations)
-
-            return StepResult(
-                name="cross_market",
-                success=True,
-                message=f"{findings_summary.inconsistent_count} inconsistencies, {len(arb_signals)} arb signals",
-                data={
-                    "markets_analyzed": detection_info["markets_analyzed"],
-                    "relations_found": len(relations),
-                    "topic_groups": detection_info["topic_groups"],
-                    "consistent": findings_summary.consistent_count,
-                    "inconsistencies": findings_summary.inconsistent_count,
-                    "unclear": findings_summary.unclear_count,
-                    "run_id": findings_summary.run_id,
-                    "arbitrage_signals": len(arb_signals),
-                }
-            )
-
-        except Exception as e:
-            # Cross-market failures should NOT fail the pipeline
-            # This is research - trading must continue
-            logger.warning(f"Cross-market research failed (non-critical): {e}")
-            return StepResult(
-                name="cross_market",
-                success=True,  # Mark as success to not degrade pipeline
-                message=f"Research skipped: {str(e)[:40]}",
-                data={"markets_analyzed": 0, "relations_found": 0, "inconsistencies": 0}
-            )
-
-    def _run_outcome_tracker(
-        self,
-        collector_data: Dict[str, Any],
-        analyzer_data: Dict[str, Any],
-        run_timestamp: str,
-    ) -> StepResult:
-        """
-        Run outcome tracking (ISOLATED).
-
-        ISOLATION GUARANTEES:
-        - This step has NO influence on trading decisions
-        - It only records facts (predictions + resolutions)
-        - If this step fails, trading is NOT affected
-        - NO imports from decision_engine or panic_contrarian_engine
-        """
+    def _run_outcome_tracker(self, weather_data: Dict[str, Any]) -> StepResult:
+        """Record observations for calibration tracking."""
         try:
             from core.outcome_tracker import (
                 OutcomeStorage,
                 ResolutionChecker,
-                create_prediction_snapshot,
-                generate_event_id,
+                PredictionSnapshot,
+                EngineContext,
             )
+            import uuid
 
             storage = OutcomeStorage(self.base_dir)
-            run_id = f"scheduler_{generate_event_id()[:8]}"
 
-            # Get analyses from analyzer step
-            analyses = analyzer_data.get("analyses", [])
+            # Record edge observations as predictions for calibration
+            predictions_recorded = 0
+            edge_observations = weather_data.get("edge_observations_list", [])
+            run_id = uuid.uuid4().hex[:12]
 
-            if not analyses:
-                return StepResult(
-                    name="outcome_tracker",
-                    success=True,
-                    message="No analyses to track",
-                    data={"predictions_recorded": 0, "resolutions_updated": 0}
-                )
-
-            # Load candidate details for market questions
-            today_str = date.today().isoformat()
-            candidates_file = self.data_dir / "candidates" / today_str / "candidates.jsonl"
-            candidates_by_id = {}
-
-            if candidates_file.exists():
-                with open(candidates_file, 'r', encoding='utf-8') as f:
-                    for line in f:
-                        line = line.strip()
-                        if line:
-                            c = json.loads(line)
-                            mid = c.get("market_id") or c.get("condition_id")
-                            if mid:
-                                candidates_by_id[mid] = c
-
-            # Record predictions
-            recorded = 0
-            skipped = 0
-
-            for analysis in analyses[:self.MAX_CANDIDATES_TO_ANALYZE]:
-                market_id = analysis.get("market_id")
-                if not market_id:
-                    continue
-
-                candidate = candidates_by_id.get(market_id, {})
-                decision = analysis.get("decision", "INSUFFICIENT_DATA")
-                confidence = analysis.get("confidence")
-                blocking = analysis.get("blocking_criteria", [])
-
-                # Build reasons
-                reasons = []
-                if blocking:
-                    reasons = [f"Blocked: {c}" for c in blocking[:3]]
-                elif decision == "TRADE":
-                    reasons = ["All criteria passed"]
-                else:
-                    reasons = ["Analyzed by baseline engine"]
-
+            for obs in edge_observations:
                 try:
-                    snapshot = create_prediction_snapshot(
-                        market_id=market_id,
-                        question=candidate.get("title", analysis.get("title", "Unknown")),
-                        decision=decision,
-                        decision_reasons=reasons,
-                        engine="baseline",
-                        mode="SHADOW",
-                        run_id=run_id,
+                    snapshot = PredictionSnapshot(
+                        schema_version=1,
+                        event_id=f"EVT-{obs.market_id}-{datetime.now().strftime('%Y%m%d%H%M')}",
+                        timestamp_utc=datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S") + "Z",
+                        market_id=obs.market_id,
+                        question=obs.market_question,
+                        outcomes=["YES", "NO"],
+                        market_price_yes=obs.implied_probability,
+                        market_price_no=1.0 - obs.implied_probability if obs.implied_probability else None,
+                        our_estimate_yes=obs.model_probability,
+                        estimate_confidence=obs.confidence_level if hasattr(obs, 'confidence_level') else None,
+                        decision="TRADE" if obs.edge and abs(obs.edge) >= 0.12 else "NO_TRADE",
+                        decision_reasons=[f"Edge: {obs.edge:+.2%}" if obs.edge else "No edge"],
+                        engine_context=EngineContext(
+                            engine="weather_observer",
+                            mode="PAPER",
+                            run_id=run_id,
+                        ),
                         source="scheduler",
-                        market_price_yes=candidate.get("probability"),
-                        our_estimate_yes=None,
-                        estimate_confidence=confidence,
                     )
-
                     success, _ = storage.write_prediction(snapshot)
                     if success:
-                        recorded += 1
-                    else:
-                        skipped += 1
-
+                        predictions_recorded += 1
                 except Exception as e:
-                    logger.debug(f"Failed to record prediction for {market_id}: {e}")
-                    skipped += 1
+                    logger.debug(f"Could not record prediction for {obs.market_id}: {e}")
 
-            # Update resolutions (check up to 10 per run to avoid slowdown)
+            # Update resolutions for past observations
             checker = ResolutionChecker(storage)
-            resolution_result = checker.update_resolutions(max_checks=10)
+            resolution_result = checker.update_resolutions(max_checks=50)
 
             return StepResult(
                 name="outcome_tracker",
                 success=True,
-                message=f"{recorded} predictions, {resolution_result.get('new_resolutions', 0)} resolutions",
+                message=f"{predictions_recorded} predictions recorded, {resolution_result.get('new_resolutions', 0)} resolutions updated",
                 data={
-                    "predictions_recorded": recorded,
-                    "predictions_skipped": skipped,
+                    "observations_recorded": predictions_recorded,
                     "resolutions_updated": resolution_result.get("new_resolutions", 0),
                     "unresolved_remaining": resolution_result.get("remaining_unresolved", 0),
                 }
             )
-
         except Exception as e:
-            # Outcome tracker failures should NOT fail the pipeline
-            logger.warning(f"Outcome tracker failed (non-critical): {e}")
+            logger.warning(f"Outcome tracker failed: {e}")
             return StepResult(
                 name="outcome_tracker",
-                success=True,  # Mark as success to not degrade pipeline
+                success=True,  # Non-critical
                 message=f"Tracking skipped: {str(e)[:40]}",
-                data={"predictions_recorded": 0, "resolutions_updated": 0}
+                data={"observations_recorded": 0, "resolutions_updated": 0}
             )
 
     def _build_summary(self, result: PipelineResult) -> Dict[str, Any]:
         """Build the pipeline summary."""
         collector_step = next((s for s in result.steps if s.name == "collector"), None)
-        analyzer_step = next((s for s in result.steps if s.name == "analyzer"), None)
-        proposal_step = next((s for s in result.steps if s.name == "proposals"), None)
+        weather_step = next((s for s in result.steps if s.name == "weather_observer"), None)
+        proposal_step = next((s for s in result.steps if s.name == "proposal_generator"), None)
         paper_step = next((s for s in result.steps if s.name == "paper_trader"), None)
-        cross_market_step = next((s for s in result.steps if s.name == "cross_market"), None)
+        outcome_step = next((s for s in result.steps if s.name == "outcome_tracker"), None)
 
         return {
             "run_date": date.today().isoformat(),
             "run_time": result.timestamp,
             "state": result.state.value,
-            "markets_checked": collector_step.data.get("total_fetched", 0) if collector_step else 0,
-            "candidates_found": collector_step.data.get("total_candidates", 0) if collector_step else 0,
-            "trade_count": analyzer_step.data.get("trade", 0) if analyzer_step else 0,
-            "no_trade_count": analyzer_step.data.get("no_trade", 0) if analyzer_step else 0,
-            "insufficient_count": analyzer_step.data.get("insufficient", 0) if analyzer_step else 0,
-            "proposals_generated": proposal_step.data.get("generated", 0) if proposal_step else 0,
-            "proposals_passed": proposal_step.data.get("passed", 0) if proposal_step else 0,
-            "paper_positions_open": paper_step.data.get("open_positions", 0) if paper_step else 0,
-            "paper_total_pnl": paper_step.data.get("total_pnl", 0.0) if paper_step else 0.0,
-            "paper_new_opened": paper_step.data.get("new_positions_opened", 0) if paper_step else 0,
-            "paper_closed_this_run": paper_step.data.get("closed_this_run", 0) if paper_step else 0,
-            "latest_trade": analyzer_step.data.get("latest_trade") if analyzer_step else None,
-            "latest_proposal": proposal_step.data.get("latest_proposal") if proposal_step else None,
-            # Cross-Market Research (ISOLATED)
-            "cross_market_relations": cross_market_step.data.get("relations_found", 0) if cross_market_step else 0,
-            "cross_market_inconsistencies": cross_market_step.data.get("inconsistencies", 0) if cross_market_step else 0,
-            "cross_market_topics": cross_market_step.data.get("topic_groups", 0) if cross_market_step else 0,
+            "markets_fetched": collector_step.data.get("total_fetched", 0) if collector_step else 0,
+            "weather_candidates": collector_step.data.get("total_candidates", 0) if collector_step else 0,
+            "observations_total": weather_step.data.get("observations_total", 0) if weather_step else 0,
+            "edge_observations": weather_step.data.get("edge_observations", 0) if weather_step else 0,
+            "proposals_generated": proposal_step.data.get("proposals_generated", 0) if proposal_step else 0,
+            "paper_positions_entered": paper_step.data.get("positions_entered", 0) if paper_step else 0,
+            "paper_positions_closed": paper_step.data.get("positions_closed", 0) if paper_step else 0,
+            "paper_pnl_eur": paper_step.data.get("total_pnl_eur", 0) if paper_step else 0,
+            "resolutions_updated": outcome_step.data.get("resolutions_updated", 0) if outcome_step else 0,
         }
+
+    @staticmethod
+    def _rotate_if_needed(filepath, max_size_mb=5):
+        """Rotate log file if it exceeds max_size_mb."""
+        try:
+            filepath = str(filepath)
+            if os.path.exists(filepath) and os.path.getsize(filepath) > max_size_mb * 1024 * 1024:
+                date_str = datetime.now().strftime("%Y%m%d_%H%M%S")
+                base, ext = os.path.splitext(filepath)
+                rotated = f"{base}_{date_str}{ext}"
+                os.rename(filepath, rotated)
+                logger.info(f"Log rotiert: {filepath} -> {rotated}")
+        except OSError as e:
+            logger.warning(f"Log-Rotation fehlgeschlagen fuer {filepath}: {e}")
 
     def _write_status_summary(self, result: PipelineResult) -> StepResult:
         """Write status summary to file."""
         try:
             summary_file = self.output_dir / "status_summary.txt"
 
-            # Append-only: add timestamp entry
+            # Rotate if file exceeds 5 MB
+            self._rotate_if_needed(summary_file, max_size_mb=5)
+
             entry_lines = [
                 f"\n{'='*50}",
                 f"Run: {result.timestamp}",
+                f"Run-ID: {result.summary.get('run_id', 'N/A')}",
                 f"State: {result.state.value}",
                 f"{'='*50}",
-                f"Markets checked: {result.summary.get('markets_checked', 0)}",
-                f"Candidates: {result.summary.get('candidates_found', 0)}",
-                f"TRADE: {result.summary.get('trade_count', 0)}",
-                f"NO_TRADE: {result.summary.get('no_trade_count', 0)}",
-                f"INSUFFICIENT_DATA: {result.summary.get('insufficient_count', 0)}",
-                f"Paper positions open: {result.summary.get('paper_positions_open', 0)}",
-                f"Paper P&L: {result.summary.get('paper_total_pnl', 0.0):+.2f} EUR",
-                f"New paper trades: {result.summary.get('paper_new_opened', 0)}",
+                f"Markets fetched:      {result.summary.get('markets_fetched', 0)}",
+                f"Weather candidates:   {result.summary.get('weather_candidates', 0)}",
+                f"Observations:         {result.summary.get('observations_total', 0)}",
+                f"Edge detected:        {result.summary.get('edge_observations', 0)}",
+                f"Proposals generated:  {result.summary.get('proposals_generated', 0)}",
+                f"Paper positions:      {result.summary.get('paper_positions_entered', 0)} entered, {result.summary.get('paper_positions_closed', 0)} closed",
+                f"Paper P&L (EUR):      {result.summary.get('paper_pnl_eur', 0):+.2f}",
+                f"Resolutions updated:  {result.summary.get('resolutions_updated', 0)}",
             ]
 
-            latest_trade = result.summary.get("latest_trade")
-            if latest_trade:
-                entry_lines.append("")
-                entry_lines.append("=" * 40)
-                entry_lines.append("TRADE SIGNAL DETECTED")
-                entry_lines.append("=" * 40)
-                entry_lines.append(f"Market: {latest_trade.get('title', 'N/A')[:50]}")
-                entry_lines.append(f"Category: {latest_trade.get('category', 'N/A')}")
-                entry_lines.append(f"End Date: {latest_trade.get('end_date', 'N/A')}")
-                entry_lines.append("")
-                entry_lines.append("--- Probability Analysis ---")
-                entry_lines.append(f"Our Estimate: {latest_trade.get('our_estimate', 0):.1%} ({latest_trade.get('estimate_range', 'N/A')})")
-                entry_lines.append(f"Market Price: {latest_trade.get('market_price', 0):.1%}")
-                edge = latest_trade.get('edge', 0)
-                entry_lines.append(f"Edge: {edge:+.1%}")
-                entry_lines.append(f"Direction: {latest_trade.get('direction', 'N/A')}")
-                entry_lines.append("")
-                entry_lines.append("--- Decision Quality ---")
-                entry_lines.append(f"Confidence: {latest_trade.get('confidence', 'N/A')}")
-                entry_lines.append(f"Criteria: {latest_trade.get('criteria_passed', 0)}/{latest_trade.get('criteria_total', 0)} passed")
-                entry_lines.append(f"Days to Target: {latest_trade.get('days_until_target', 'N/A')}")
-                # Risk warnings
-                warnings = latest_trade.get('risk_warnings', [])
-                if warnings:
-                    entry_lines.append("")
-                    entry_lines.append("Risk Warnings:")
-                    for w in warnings[:3]:
-                        entry_lines.append(f"  ! {w[:70]}")
-                # Recommendation
-                action = latest_trade.get('recommended_action', '')
-                if action:
-                    entry_lines.append("")
-                    entry_lines.append(f"Recommendation: {action[:80]}")
-
-            # Check for errors
             errors = [s for s in result.steps if not s.success]
             if errors:
                 entry_lines.append(f"Errors: {len(errors)} step(s) failed")
@@ -1149,11 +671,14 @@ class Orchestrator:
     def _log_to_audit(self, result: PipelineResult):
         """Log pipeline run to audit."""
         try:
-            audit_file = self.audit_dir / f"pipeline_{date.today().isoformat()}.jsonl"
+            audit_dir = self.logs_dir / "audit"
+            audit_dir.mkdir(parents=True, exist_ok=True)
+            audit_file = audit_dir / f"observer_{date.today().isoformat()}.jsonl"
 
             entry = {
                 "timestamp": result.timestamp,
-                "event": "PIPELINE_RUN",
+                "event": "OBSERVER_RUN",
+                "run_id": result.summary.get("run_id"),
                 "state": result.state.value,
                 "summary": result.summary,
                 "steps": [
@@ -1162,7 +687,6 @@ class Orchestrator:
                         "success": s.success,
                         "message": s.message,
                         "error": s.error,
-                        "data": s.data  # Include step data for filter_results
                     }
                     for s in result.steps
                 ]
@@ -1174,21 +698,25 @@ class Orchestrator:
         except Exception as e:
             logger.error(f"Audit log failed: {e}")
 
+    def _cleanup_old_audit_logs(self, max_age_days=90):
+        """Loesche Audit-Logs aelter als max_age_days."""
+        audit_dir = self.logs_dir / "audit"
+        if not audit_dir.is_dir():
+            return
+        cutoff = datetime.now() - timedelta(days=max_age_days)
+        for filename in os.listdir(audit_dir):
+            if filename.startswith("observer_") and filename.endswith(".jsonl"):
+                try:
+                    date_str = filename.replace("observer_", "").replace(".jsonl", "")
+                    file_date = datetime.strptime(date_str, "%Y-%m-%d")
+                    if file_date < cutoff:
+                        os.unlink(os.path.join(str(audit_dir), filename))
+                        logger.info("Altes Audit-Log geloescht: %s", filename)
+                except (ValueError, OSError):
+                    continue
+
     def get_status(self) -> Dict[str, Any]:
-        """
-        Get current system status without running pipeline.
-
-        Returns:
-            Status dictionary
-        """
-        try:
-            from paper_trader.position_manager import get_position_summary
-            paper_summary = get_position_summary()
-        except Exception as e:
-            logger.warning(f"Paper trader unavailable: {e}")
-            paper_summary = {"open": 0, "total_realized_pnl_eur": 0.0}
-
-        # Load latest from status file
+        """Get current system status without running pipeline."""
         summary_file = self.output_dir / "status_summary.txt"
         last_run = "Never"
         last_state = "UNKNOWN"
@@ -1208,362 +736,11 @@ class Orchestrator:
             except Exception as e:
                 logger.debug(f"Could not parse status file: {e}")
 
-        # Count proposals
-        proposals_log = self.proposals_dir / "proposals_log.json"
-        proposal_count = 0
-        if proposals_log.exists():
-            try:
-                with open(proposals_log, 'r', encoding='utf-8') as f:
-                    data = json.load(f)
-                    proposal_count = len(data.get("proposals", []))
-            except Exception as e:
-                logger.debug(f"Could not load proposals log: {e}")
-
-        # Load audit for today's stats
-        today_stats = {"trade": 0, "no_trade": 0, "insufficient": 0, "markets_checked": 0}
-        audit_file = self.audit_dir / f"pipeline_{date.today().isoformat()}.jsonl"
-        if audit_file.exists():
-            try:
-                with open(audit_file, 'r', encoding='utf-8') as f:
-                    for line in f:
-                        entry = json.loads(line.strip())
-                        if entry.get("event") == "PIPELINE_RUN":
-                            summary = entry.get("summary", {})
-                            today_stats["trade"] += summary.get("trade_count", 0)
-                            today_stats["no_trade"] += summary.get("no_trade_count", 0)
-                            today_stats["insufficient"] += summary.get("insufficient_count", 0)
-                            today_stats["markets_checked"] += summary.get("markets_checked", 0)
-            except Exception as e:
-                logger.debug(f"Could not load audit file: {e}")
-
         return {
             "last_run": last_run,
             "last_state": last_state,
-            "today": today_stats,
-            "paper_positions_open": paper_summary.get("open", 0),
-            "paper_total_pnl": paper_summary.get("total_realized_pnl_eur", 0.0),
-            "total_proposals": proposal_count,
             "logs_path": str(self.logs_dir)
         }
-
-    def get_latest_proposal(self) -> Optional[Dict[str, Any]]:
-        """
-        Get the latest proposal with review result.
-
-        Returns:
-            Proposal dict or None
-        """
-        proposals_log = self.proposals_dir / "proposals_log.json"
-
-        if not proposals_log.exists():
-            return None
-
-        try:
-            with open(proposals_log, 'r', encoding='utf-8') as f:
-                data = json.load(f)
-                proposals = data.get("proposals", [])
-                if not proposals:
-                    return None
-
-                # Get latest
-                proposals.sort(key=lambda x: x.get("timestamp", ""), reverse=True)
-                latest = proposals[0]
-
-                return {
-                    "proposal_id": latest.get("proposal_id"),
-                    "timestamp": latest.get("timestamp"),
-                    "market": latest.get("market_question", "Unknown")[:60],
-                    "decision": latest.get("decision"),
-                    "edge": latest.get("edge", 0),
-                    "confidence": latest.get("confidence_level")
-                }
-
-        except Exception as e:
-            logger.debug(f"Could not load latest proposal: {e}")
-            return None
-
-    def get_paper_summary(self) -> Dict[str, Any]:
-        """
-        Get paper trading summary.
-
-        Returns:
-            Summary dict with positions and recent actions
-        """
-        try:
-            from paper_trader.position_manager import get_position_summary, get_open_positions
-            from paper_trader.logger import get_paper_logger
-
-            summary = get_position_summary()
-            open_positions = get_open_positions()
-
-            # Get recent trades
-            paper_logger = get_paper_logger()
-            recent_trades = []
-            try:
-                all_trades = paper_logger.read_all_trades()
-                all_trades.sort(key=lambda x: x.timestamp, reverse=True)
-                recent_trades = [
-                    {
-                        "timestamp": t.timestamp,
-                        "action": t.action,
-                        "market_id": t.market_id[:20],
-                        "pnl": t.pnl_eur
-                    }
-                    for t in all_trades[:5]
-                ]
-            except Exception as e:
-                logger.debug(f"Could not read trade history: {e}")
-
-            return {
-                "open_positions": len(open_positions),
-                "total_positions": summary.get("total_positions", 0),
-                "realized_pnl": summary.get("total_realized_pnl_eur", 0.0),
-                "open_cost_basis": summary.get("open_cost_basis_eur", 0.0),
-                "positions": [
-                    {
-                        "id": p.position_id[:12],
-                        "market": p.market_question[:40] if p.market_question else "Unknown",
-                        "side": p.side,
-                        "entry_price": p.entry_price
-                    }
-                    for p in open_positions[:5]
-                ],
-                "recent_actions": recent_trades
-            }
-
-        except Exception as e:
-            logger.error(f"Paper summary failed: {e}")
-            return {
-                "open_positions": 0,
-                "total_positions": 0,
-                "realized_pnl": 0.0,
-                "positions": [],
-                "recent_actions": []
-            }
-
-    def get_category_stats(self) -> Dict[str, Any]:
-        """
-        Get market category breakdown.
-
-        Returns:
-            Stats per category (EU, Weather, Corporate, Court)
-        """
-        stats = {
-            "eu_regulation": 0,
-            "weather_event": 0,
-            "corporate_event": 0,
-            "court_ruling": 0,
-            "political_event": 0,
-            "crypto_event": 0,
-            "finance_event": 0,
-            "general_event": 0,
-            "generic": 0,
-            "total_candidates": 0,
-        }
-
-        # Load today's candidates
-        today_str = date.today().isoformat()
-        candidates_file = self.data_dir / "candidates" / today_str / "candidates.jsonl"
-
-        if candidates_file.exists():
-            try:
-                with open(candidates_file, 'r', encoding='utf-8') as f:
-                    for line in f:
-                        line = line.strip()
-                        if line:
-                            candidate = json.loads(line)
-                            stats["total_candidates"] += 1
-
-                            # Get category from field first, fallback to collector_notes
-                            category = candidate.get("category")
-                            if not category:
-                                # Infer category from collector_notes
-                                notes = candidate.get("collector_notes", [])
-                                if "corporate_event_market" in notes:
-                                    category = "CORPORATE_EVENT"
-                                elif "court_ruling_market" in notes:
-                                    category = "COURT_RULING"
-                                elif "weather_event_market" in notes:
-                                    category = "WEATHER_EVENT"
-                                elif "political_event_market" in notes:
-                                    category = "POLITICAL_EVENT"
-                                elif "crypto_event_market" in notes:
-                                    category = "CRYPTO_EVENT"
-                                elif "finance_event_market" in notes:
-                                    category = "FINANCE_EVENT"
-                                elif "general_event_market" in notes:
-                                    category = "GENERAL_EVENT"
-                                else:
-                                    category = "GENERIC"
-
-                            category = category.upper()
-
-                            if category == "EU_REGULATION":
-                                stats["eu_regulation"] += 1
-                            elif category == "WEATHER_EVENT":
-                                stats["weather_event"] += 1
-                            elif category == "CORPORATE_EVENT":
-                                stats["corporate_event"] += 1
-                            elif category == "COURT_RULING":
-                                stats["court_ruling"] += 1
-                            elif category == "POLITICAL_EVENT":
-                                stats["political_event"] += 1
-                            elif category == "CRYPTO_EVENT":
-                                stats["crypto_event"] += 1
-                            elif category == "FINANCE_EVENT":
-                                stats["finance_event"] += 1
-                            elif category == "GENERAL_EVENT":
-                                stats["general_event"] += 1
-                            else:
-                                stats["generic"] += 1
-            except Exception as e:
-                logger.error(f"Failed to load category stats: {e}")
-
-        return stats
-
-    def get_filter_stats(self) -> Dict[str, Any]:
-        """
-        Get filter statistics from collector.
-
-        Returns:
-            Stats about why markets were included/excluded
-        """
-        stats = {
-            "included": 0,
-            "included_corporate": 0,
-            "included_court": 0,
-            "included_weather": 0,
-            "excluded_no_eu_match": 0,
-            "excluded_no_ai_match": 0,
-            "excluded_no_deadline": 0,
-            "excluded_price_market": 0,
-            "excluded_opinion_market": 0,
-            "excluded_incomplete": 0,
-            "total_fetched": 0,
-        }
-
-        # Try to load from audit log - get the LATEST entry only
-        audit_file = self.audit_dir / f"pipeline_{date.today().isoformat()}.jsonl"
-        if audit_file.exists():
-            try:
-                latest_entry = None
-                with open(audit_file, 'r', encoding='utf-8') as f:
-                    for line in f:
-                        entry = json.loads(line.strip())
-                        if entry.get("event") == "PIPELINE_RUN":
-                            latest_entry = entry
-
-                if latest_entry:
-                    steps = latest_entry.get("steps", [])
-                    for step in steps:
-                        if step.get("name") == "collector":
-                            step_data = step.get("data", {})
-                            stats["total_fetched"] = step_data.get("total_fetched", 0)
-                            filter_results = step_data.get("filter_results", {})
-                            for key, value in filter_results.items():
-                                if key in stats:
-                                    stats[key] = value
-            except Exception as e:
-                logger.error(f"Failed to load filter stats: {e}")
-
-        return stats
-
-    def get_candidates(self) -> List[Dict[str, Any]]:
-        """
-        Get current candidates list with details.
-
-        Returns:
-            List of candidate dictionaries
-        """
-        candidates = []
-
-        today_str = date.today().isoformat()
-        candidates_file = self.data_dir / "candidates" / today_str / "candidates.jsonl"
-
-        if candidates_file.exists():
-            try:
-                with open(candidates_file, 'r', encoding='utf-8') as f:
-                    for line in f:
-                        line = line.strip()
-                        if line:
-                            candidate = json.loads(line)
-
-                            # Get category from field first, fallback to collector_notes
-                            category = candidate.get("category")
-                            if not category:
-                                notes = candidate.get("collector_notes", [])
-                                if "corporate_event_market" in notes:
-                                    category = "CORPORATE_EVENT"
-                                elif "court_ruling_market" in notes:
-                                    category = "COURT_RULING"
-                                elif "weather_event_market" in notes:
-                                    category = "WEATHER_EVENT"
-                                elif "political_event_market" in notes:
-                                    category = "POLITICAL_EVENT"
-                                elif "crypto_event_market" in notes:
-                                    category = "CRYPTO_EVENT"
-                                elif "finance_event_market" in notes:
-                                    category = "FINANCE_EVENT"
-                                elif "general_event_market" in notes:
-                                    category = "GENERAL_EVENT"
-                                else:
-                                    category = "GENERIC"
-
-                            candidates.append({
-                                "market_id": candidate.get("market_id", "?")[:16],
-                                "title": candidate.get("title", "Unknown")[:60],
-                                "category": category,
-                                "end_date": candidate.get("end_date", "N/A")[:10],
-                                "matched_keywords": candidate.get("matched_keywords", [])[:3],
-                            })
-            except Exception as e:
-                logger.error(f"Failed to load candidates: {e}")
-
-        return candidates[:20]  # Limit to 20 for display
-
-    def get_audit_log(self, limit: int = 10) -> List[Dict[str, Any]]:
-        """
-        Get recent audit log entries.
-
-        Args:
-            limit: Maximum entries to return
-
-        Returns:
-            List of audit log entries
-        """
-        entries = []
-
-        # Check last 3 days of audit files
-        for days_ago in range(3):
-            check_date = date.today()
-            if days_ago > 0:
-                from datetime import timedelta
-                check_date = date.today() - timedelta(days=days_ago)
-
-            audit_file = self.audit_dir / f"pipeline_{check_date.isoformat()}.jsonl"
-
-            if audit_file.exists():
-                try:
-                    with open(audit_file, 'r', encoding='utf-8') as f:
-                        for line in f:
-                            entry = json.loads(line.strip())
-                            if entry.get("event") == "PIPELINE_RUN":
-                                summary = entry.get("summary", {})
-                                entries.append({
-                                    "timestamp": entry.get("timestamp", "?")[:19],
-                                    "state": entry.get("state", "?"),
-                                    "markets_checked": summary.get("markets_checked", 0),
-                                    "candidates": summary.get("candidates_found", 0),
-                                    "trade": summary.get("trade_count", 0),
-                                    "no_trade": summary.get("no_trade_count", 0),
-                                    "insufficient": summary.get("insufficient_count", 0),
-                                })
-                except Exception as e:
-                    logger.error(f"Failed to load audit log: {e}")
-
-        # Sort by timestamp descending
-        entries.sort(key=lambda x: x.get("timestamp", ""), reverse=True)
-        return entries[:limit]
 
 
 # Module-level convenience functions
@@ -1579,40 +756,10 @@ def get_orchestrator() -> Orchestrator:
 
 
 def run_pipeline() -> PipelineResult:
-    """Run the full pipeline."""
+    """Run the weather observer pipeline."""
     return get_orchestrator().run_pipeline()
 
 
 def get_status() -> Dict[str, Any]:
     """Get current status."""
     return get_orchestrator().get_status()
-
-
-def get_category_stats() -> Dict[str, Any]:
-    """Get category breakdown statistics."""
-    return get_orchestrator().get_category_stats()
-
-
-def get_filter_stats() -> Dict[str, Any]:
-    """Get filter statistics."""
-    return get_orchestrator().get_filter_stats()
-
-
-def get_candidates() -> List[Dict[str, Any]]:
-    """Get current candidates list."""
-    return get_orchestrator().get_candidates()
-
-
-def get_audit_log(limit: int = 10) -> List[Dict[str, Any]]:
-    """Get recent audit log entries."""
-    return get_orchestrator().get_audit_log(limit)
-
-
-def get_latest_proposal() -> Optional[Dict[str, Any]]:
-    """Get latest proposal."""
-    return get_orchestrator().get_latest_proposal()
-
-
-def get_paper_summary() -> Dict[str, Any]:
-    """Get paper trading summary."""
-    return get_orchestrator().get_paper_summary()

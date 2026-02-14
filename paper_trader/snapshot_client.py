@@ -209,7 +209,10 @@ class MarketSnapshotClient:
         market_ids: List[str]
     ) -> Dict[str, Optional[MarketSnapshot]]:
         """
-        Get price snapshots for multiple markets efficiently.
+        Get price snapshots for multiple markets by fetching each individually.
+
+        Uses direct Gamma API lookups per market ID to ensure weather markets
+        (which are typically not in the top-500) are found reliably.
 
         Args:
             market_ids: List of market IDs to fetch
@@ -219,34 +222,20 @@ class MarketSnapshotClient:
         """
         results = {}
 
-        try:
-            # Fetch all markets at once
-            markets = self._client.fetch_all_markets(max_markets=500)
-
-            # Create lookup
-            market_lookup = {m.get("id"): m for m in markets}
-
-            # Create snapshots
-            for market_id in market_ids:
-                market_data = market_lookup.get(market_id)
+        for market_id in market_ids:
+            try:
+                market_data = self._fetch_gamma_market(market_id)
                 if market_data:
                     results[market_id] = self._create_snapshot(market_data)
                 else:
                     results[market_id] = None
-                    logger.debug(f"Market not found in batch: {market_id}")
+                    logger.debug(f"Market not found: {market_id}")
+            except Exception as e:
+                logger.warning(f"Error fetching snapshot for {market_id}: {e}")
+                results[market_id] = None
 
-        except ConnectionError as e:
-            logger.warning(f"Network error in batch snapshots: {e} (transient)")
-            for market_id in market_ids:
-                results[market_id] = None
-        except TimeoutError as e:
-            logger.warning(f"Timeout in batch snapshots: {e} (transient)")
-            for market_id in market_ids:
-                results[market_id] = None
-        except Exception as e:
-            logger.error(f"Unexpected error in batch snapshots: {e}", exc_info=True)
-            for market_id in market_ids:
-                results[market_id] = None
+        found = sum(1 for v in results.values() if v is not None)
+        logger.info(f"Batch snapshots: {found}/{len(market_ids)} found")
 
         return results
 

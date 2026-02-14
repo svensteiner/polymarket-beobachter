@@ -14,7 +14,7 @@
 import json
 import logging
 import ssl
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional, Dict, Tuple
 from urllib.request import urlopen, Request
 from urllib.error import URLError, HTTPError
@@ -248,7 +248,7 @@ def fetch_forecast_for_city(city_name: str, target_time: datetime) -> Optional[F
 
     return ForecastData(
         city=city_name,
-        forecast_time=datetime.utcnow(),
+        forecast_time=datetime.now(timezone.utc),
         target_time=target_time,
         temperature_f=temp_f,
         source="noaa_api",

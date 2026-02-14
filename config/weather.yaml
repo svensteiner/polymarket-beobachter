@@ -25,20 +25,21 @@ MIN_LIQUIDITY: 50
 # Odds range for eligible markets
 # Markets with odds outside this range are filtered out
 # Very low odds (< 0.01) have extreme leverage risk
-# Very high odds (> 0.10) have insufficient edge potential
+# Very high odds (> 0.35) have insufficient edge potential
 MIN_ODDS: 0.01
-MAX_ODDS: 0.10
+MAX_ODDS: 0.35
 
 # Minimum time to resolution in hours
 # Markets too close to resolution have:
 # - Unreliable forecasts
 # - Insufficient time to exit if wrong
-MIN_TIME_TO_RESOLUTION_HOURS: 48
+# Reduced to 24h to enable daily temperature market trading
+MIN_TIME_TO_RESOLUTION_HOURS: 24
 
 # Safety buffer before resolution
 # Stop considering markets within this window
 # Allows for exit before resolution uncertainty spikes
-SAFETY_BUFFER_HOURS: 48
+SAFETY_BUFFER_HOURS: 24
 
 # -----------------------------------------------------------------------------
 # EDGE CALCULATION PARAMETERS
@@ -46,12 +47,17 @@ SAFETY_BUFFER_HOURS: 48
 
 # Minimum edge required to emit BUY signal
 # edge = (fair_probability - market_probability) / market_probability
-# 0.25 = 25% edge minimum
-MIN_EDGE: 0.25
+# 0.12 = 12% relative edge minimum
+MIN_EDGE: 0.12
+
+# Absolute edge floor (model_prob - market_prob)
+# Prevents false positives at very low odds where small model errors
+# create large relative edges
+MIN_EDGE_ABSOLUTE: 0.05
 
 # Edge multiplier for MEDIUM confidence signals
 # Require more edge when model is less certain
-MEDIUM_CONFIDENCE_EDGE_MULTIPLIER: 1.5
+MEDIUM_CONFIDENCE_EDGE_MULTIPLIER: 1.25
 
 # -----------------------------------------------------------------------------
 # PROBABILITY MODEL PARAMETERS
@@ -101,6 +107,14 @@ ALLOWED_CITIES:
   - Berlin
   - Sydney
   - Toronto
+  - Houston
+  - Atlanta
+  - Dallas
+  - San Francisco
+  - Washington
+  - Philadelphia
+  - Buenos Aires
+  - Ankara
 
 # City-specific configurations (overrides defaults)
 CITY_CONFIG:
@@ -180,6 +194,23 @@ CONFIDENCE_THRESHOLDS:
   # > 7 days = LOW
 
 # -----------------------------------------------------------------------------
+# ENSEMBLE CONFIGURATION
+# -----------------------------------------------------------------------------
+# Multi-source ensemble forecast system.
+# Combines forecasts from all available APIs for robust probability estimates.
+
+ENSEMBLE:
+  ENABLED: true
+  VARIANCE_THRESHOLD: 0.15        # Varianz > 15% -> Confidence degradieren
+  MIN_INDEPENDENT_SOURCES: 2      # Weniger -> LOW Confidence
+  SOURCE_TIMEOUT_SECONDS: 12      # Pro Quelle max 12s
+  CORRELATED_MODELS:              # Gleiche Basis-Modelle
+    GFS:
+      - "open_meteo_gfs"
+      - "openweather_gfs"
+      - "noaa_gfs"
+
+# -----------------------------------------------------------------------------
 # ENGINE METADATA
 # -----------------------------------------------------------------------------
 
@@ -190,8 +221,8 @@ ENGINE_NAME: "weather_engine_v1"
 # AUDIT SETTINGS
 # -----------------------------------------------------------------------------
 
-# Log all signals (including NO_SIGNAL) for audit
-LOG_ALL_SIGNALS: true
+# Log all observations (including NO_SIGNAL) for audit
+LOG_ALL_OBSERVATIONS: true
 
-# Signal log path (relative to project root)
-SIGNAL_LOG_PATH: "logs/weather_signals.jsonl"
+# Observation log path (relative to project root)
+OBSERVATION_LOG_PATH: "logs/weather_observations.jsonl"

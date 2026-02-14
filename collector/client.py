@@ -45,6 +45,11 @@ class PolymarketClient:
     INITIAL_BACKOFF = 1.0  # seconds
     MAX_BACKOFF = 30.0  # seconds
 
+    # Delay between paginated API requests (seconds)
+    API_DELAY_SECONDS = 0.5
+    # Delay between batch event fetches (seconds)
+    BATCH_DELAY_SECONDS = 0.3
+
     def __init__(
         self,
         timeout: int = DEFAULT_TIMEOUT,
@@ -132,7 +137,7 @@ class PolymarketClient:
             offset += len(markets)
 
             # Small delay between pages to be respectful
-            time.sleep(0.5)
+            time.sleep(self.API_DELAY_SECONDS)
 
             if len(markets) < limit:
                 logger.info("Received fewer markets than requested - end of data")
@@ -145,6 +150,8 @@ class PolymarketClient:
         self,
         limit: int = 100,
         offset: int = 0,
+        tag_slug: Optional[str] = None,
+        closed: Optional[bool] = None,
     ) -> List[Dict[str, Any]]:
         """
         Fetch events from Polymarket Gamma API.
@@ -154,6 +161,8 @@ class PolymarketClient:
         Args:
             limit: Maximum number of events to fetch
             offset: Pagination offset
+            tag_slug: Filter by tag (e.g., "weather", "climate")
+            closed: Filter by closed status (None = all)
 
         Returns:
             List of raw event dictionaries from API
@@ -163,7 +172,180 @@ class PolymarketClient:
             "offset": offset,
         }
 
+        if tag_slug:
+            params["tag_slug"] = tag_slug
+
+        if closed is not None:
+            params["closed"] = str(closed).lower()
+
         return self._request("/events", params)
+
+    def fetch_weather_markets(
+        self,
+        max_markets: int = 500,
+        include_closed: bool = False,
+    ) -> List[Dict[str, Any]]:
+        """
+        Fetch weather-related markets from Polymarket.
+
+        Weather markets are tagged with "weather" or "climate" on Polymarket.
+        This method fetches events with these tags and extracts the markets.
+
+        Args:
+            max_markets: Maximum total markets to return
+            include_closed: Whether to include closed markets
+
+        Returns:
+            List of market dictionaries from weather events
+        """
+        all_markets = []
+        seen_ids = set()
+
+        # Fetch from both weather and climate tags
+        for tag in ["weather", "climate"]:
+            offset = 0
+            page_size = 100
+
+            while len(all_markets) < max_markets:
+                logger.info(f"Fetching {tag} events: offset={offset}")
+
+                events = self.fetch_events(
+                    limit=page_size,
+                    offset=offset,
+                    tag_slug=tag,
+                    closed=None,  # Get all, filter later
+                )
+
+                if not events:
+                    break
+
+                # Extract markets from events
+                for event in events:
+                    event_closed = event.get("closed", False)
+                    event_title = event.get("title", "")
+                    event_tags = event.get("tags", [])
+                    tag_labels = [
+                        t.get("label", "") for t in event_tags
+                        if isinstance(t, dict)
+                    ]
+
+                    markets = event.get("markets", [])
+                    for market in markets:
+                        market_id = market.get("id") or market.get("conditionId")
+                        market_closed = market.get("closed", False)
+
+                        # Skip if already seen
+                        if market_id in seen_ids:
+                            continue
+
+                        # Skip closed markets if not requested
+                        if not include_closed and (event_closed or market_closed):
+                            continue
+
+                        seen_ids.add(market_id)
+
+                        # Enrich market with event metadata
+                        market["_event_title"] = event_title
+                        market["_event_tags"] = tag_labels
+                        market["_source_tag"] = tag
+
+                        all_markets.append(market)
+
+                        if len(all_markets) >= max_markets:
+                            break
+
+                    if len(all_markets) >= max_markets:
+                        break
+
+                offset += len(events)
+                time.sleep(self.BATCH_DELAY_SECONDS)  # Rate limiting
+
+                if len(events) < page_size:
+                    break
+
+        logger.info(f"Total weather markets fetched: {len(all_markets)}")
+        return all_markets
+
+    def fetch_market_prices(
+        self,
+        market_ids: List[str],
+    ) -> Dict[str, Dict[str, Any]]:
+        """
+        Fetch current prices/odds for specific markets.
+
+        This is used by the Weather Engine to get live odds for edge calculation.
+        Only fetches price data, no trade execution.
+
+        Args:
+            market_ids: List of market IDs to fetch prices for
+
+        Returns:
+            Dict mapping market_id to price data
+        """
+        prices = {}
+
+        for market_id in market_ids:
+            try:
+                result = self._request(f"/markets/{market_id}")
+                if result and isinstance(result, list) and len(result) > 0:
+                    market = result[0]
+                elif isinstance(result, dict):
+                    market = result
+                else:
+                    continue
+
+                prices[market_id] = {
+                    "outcomePrices": market.get("outcomePrices"),
+                    "bestBid": market.get("bestBid"),
+                    "bestAsk": market.get("bestAsk"),
+                    "lastTradePrice": market.get("lastTradePrice"),
+                    "volume": market.get("volume"),
+                    "liquidity": market.get("liquidity"),
+                }
+
+                time.sleep(0.2)
+
+            except Exception as e:
+                logger.warning(f"Failed to fetch prices for {market_id}: {e}")
+
+        logger.info(f"Fetched prices for {len(prices)}/{len(market_ids)} markets")
+        return prices
+
+    def get_market_odds_yes(self, market_id: str) -> Optional[float]:
+        """
+        Get current YES odds for a specific market.
+
+        Args:
+            market_id: Market ID
+
+        Returns:
+            YES probability (0.0-1.0) or None if not available
+        """
+        prices = self.fetch_market_prices([market_id])
+        if market_id not in prices:
+            return None
+
+        market_prices = prices[market_id]
+
+        # Try outcomePrices first (format: '["0.95", "0.05"]')
+        outcome_prices = market_prices.get("outcomePrices")
+        if outcome_prices:
+            try:
+                prices_list = json.loads(outcome_prices)
+                if len(prices_list) >= 1:
+                    return float(prices_list[0])
+            except (json.JSONDecodeError, ValueError, TypeError):
+                pass
+
+        # Fallback to lastTradePrice
+        last_price = market_prices.get("lastTradePrice")
+        if last_price:
+            try:
+                return float(last_price)
+            except (ValueError, TypeError):
+                pass
+
+        return None
 
     def _request(
         self,

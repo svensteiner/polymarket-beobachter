@@ -16,6 +16,9 @@
 
 import json
 import logging
+import os
+import shutil
+import tempfile
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, Any, Optional
@@ -52,17 +55,21 @@ class CapitalManager:
     - Capital state is persisted to JSON for audit trail
     """
 
-    def __init__(self, config_path: Optional[Path] = None):
+    def __init__(self, config_path: Optional[Path] = None, auto_reconcile: bool = True):
         """
         Initialize the capital manager.
 
         Args:
             config_path: Path to capital config JSON. Defaults to data/capital_config.json
+            auto_reconcile: If True, run reconcile() at startup to fix
+                            capital/position mismatches (FIX M2).
         """
         self._config_path = config_path or CAPITAL_CONFIG_PATH
         self._lock = Lock()
         self._state: Optional[CapitalState] = None
         self._load_config()
+        if auto_reconcile:
+            self.reconcile()
 
     def _load_config(self) -> None:
         """Load capital configuration from JSON file."""
@@ -108,13 +115,34 @@ class CapitalManager:
         }
 
         self._config_path.parent.mkdir(parents=True, exist_ok=True)
-        with open(self._config_path, "w", encoding="utf-8") as f:
-            json.dump(default_config, f, indent=2, ensure_ascii=False)
+        self._atomic_write(self._config_path, default_config)
 
         logger.info(f"Created default capital config at {self._config_path}")
 
+    @staticmethod
+    def _atomic_write(filepath: Path, data: dict) -> None:
+        """
+        Write JSON data to file atomically using write-to-temp + rename.
+
+        Prevents data corruption if the process crashes during write.
+        """
+        dirpath = str(filepath.parent)
+        temp_fd, temp_path = tempfile.mkstemp(dir=dirpath, suffix='.tmp')
+        try:
+            with os.fdopen(temp_fd, 'w', encoding='utf-8') as tmp:
+                json.dump(data, tmp, indent=2, ensure_ascii=False)
+                tmp.flush()
+                os.fsync(tmp.fileno())
+            os.replace(temp_path, str(filepath))  # Atomic rename
+        except Exception:
+            try:
+                os.unlink(temp_path)
+            except OSError:
+                pass
+            raise
+
     def _save_config(self, reason: str) -> None:
-        """Save current state to config file."""
+        """Save current state to config file (atomic write)."""
         if self._state is None:
             return
 
@@ -133,8 +161,61 @@ class CapitalManager:
             "last_updated_reason": reason
         }
 
-        with open(self._config_path, "w", encoding="utf-8") as f:
-            json.dump(data, f, indent=2, ensure_ascii=False)
+        # Backup before write (FIX M5)
+        if self._config_path.exists():
+            backup_path = str(self._config_path) + ".bak"
+            shutil.copy2(str(self._config_path), backup_path)
+
+        self._atomic_write(self._config_path, data)
+
+    def reconcile(self) -> None:
+        """Gleiche Kapital mit offenen Positionen ab (FIX M2).
+
+        Prueft beim Start, ob allocated_capital mit den tatsaechlich
+        offenen Positionen uebereinstimmt. Korrigiert bei Abweichung > 1 EUR.
+        """
+        if self._state is None:
+            return
+
+        try:
+            from paper_trader.logger import PaperTradingLogger
+            # Verwende Logger relativ zum Config-Pfad, damit Tests
+            # mit eigenem tmp-Verzeichnis korrekt funktionieren
+            project_root = self._config_path.parent.parent
+            logs_dir = project_root / "paper_trader" / "logs"
+            reports_dir = project_root / "paper_trader" / "reports"
+            reconcile_logger = PaperTradingLogger(logs_dir=logs_dir, reports_dir=reports_dir)
+            positions = reconcile_logger.get_open_positions()
+        except Exception as e:
+            logger.debug("Reconciliation uebersprungen - Logger nicht verfuegbar: %s", e)
+            return
+
+        expected_allocated = sum(p.cost_basis_eur for p in positions if p.cost_basis_eur is not None)
+
+        actual_allocated = self._state.allocated_capital_eur
+        diff = abs(actual_allocated - expected_allocated)
+
+        if diff > 1.0:  # Mehr als 1 EUR Abweichung
+            logger.warning(
+                "Kapital-Reconciliation: allocated=%.2f, expected=%.2f, diff=%.2f - korrigiere",
+                actual_allocated, expected_allocated, diff
+            )
+            new_available = (
+                self._state.initial_capital_eur
+                + self._state.realized_pnl_eur
+                - expected_allocated
+            )
+            self._state = CapitalState(
+                initial_capital_eur=self._state.initial_capital_eur,
+                available_capital_eur=new_available,
+                allocated_capital_eur=expected_allocated,
+                realized_pnl_eur=self._state.realized_pnl_eur,
+                position_size_eur=self._state.position_size_eur,
+                max_position_pct=self._state.max_position_pct,
+                max_open_positions=self._state.max_open_positions,
+                max_daily_trades=self._state.max_daily_trades,
+            )
+            self._save_config("Kapital-Reconciliation korrigiert")
 
     def get_state(self) -> CapitalState:
         """Get current capital state."""
@@ -243,8 +324,8 @@ class CapitalManager:
         with self._lock:
             state = self.get_state()
 
-            # Calculate return: cost basis + P&L
-            return_amount = cost_basis_eur + pnl_eur
+            # Calculate return: cost basis + P&L (guard against negative, FIX W11)
+            return_amount = max(0.0, cost_basis_eur + pnl_eur)
 
             # Update state
             self._state = CapitalState(

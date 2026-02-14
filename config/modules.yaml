@@ -1,147 +1,78 @@
 # =============================================================================
-# POLYMARKET BEOBACHTER - MODULE CONFIGURATION
+# WEATHER OBSERVER - MODULE CONFIGURATION
 # =============================================================================
 #
-# ZENTRALE STEUERUNG ALLER MODULE
+# WEATHER-ONLY OBSERVATION + PAPER TRADING SYSTEM
 #
-# Hier kannst du einzelne Module ein- und ausschalten.
-# Aenderungen erfordern Neustart des Bots.
-#
-# enabled: true/false - Modul aktiv/inaktiv
-# interval_seconds: Wie oft das Modul laeuft (0 = einmalig)
-# priority: Reihenfolge beim Start (niedrig = zuerst)
+# Phase 1: Paper Trading (current) - Sammle Daten, validiere Strategie
+# Phase 2: Live Trading (future) - Nach erfolgreicher Validierung
 #
 # =============================================================================
 
 # -----------------------------------------------------------------------------
-# CORE MODULES (Hauptfunktionalitaet)
+# CORE MODULES
 # -----------------------------------------------------------------------------
 
 collector:
   enabled: true
-  description: "Sammelt Marktdaten von Polymarket"
-  interval_seconds: 900  # 15 Minuten
+  description: "Fetch weather markets from Polymarket"
+  interval_seconds: 900  # 15 minutes
   priority: 1
   category: "CORE"
 
-analyzer:
+weather_observer:
   enabled: true
-  description: "Analysiert Maerkte auf Handelbarkeit"
+  description: "Weather market observation and edge detection"
   interval_seconds: 900
   priority: 2
   category: "CORE"
 
-proposals:
+outcome_tracker:
   enabled: true
-  description: "Generiert Trade-Vorschlaege (Human Review)"
+  description: "Record observations for calibration"
   interval_seconds: 900
-  priority: 3
+  priority: 5
   category: "CORE"
 
 # -----------------------------------------------------------------------------
-# TRADING MODULES (Simulation & Execution)
+# TRADING MODULES (PAPER ONLY - Phase 1)
 # -----------------------------------------------------------------------------
+
+proposal_generator:
+  enabled: true
+  description: "Convert edge observations to trading proposals"
+  interval_seconds: 900
+  priority: 3
+  category: "TRADING"
 
 paper_trader:
   enabled: true
-  description: "Paper Trading Simulation"
+  description: "Simulate trades for data collection (PAPER ONLY)"
   interval_seconds: 900
   priority: 4
   category: "TRADING"
-
-execution_engine:
-  enabled: false  # DEAKTIVIERT - Nur fuer Live Trading
-  description: "Live Order Execution (GEFAEHRLICH)"
-  interval_seconds: 0
-  priority: 99
-  category: "TRADING"
-  warning: "NUR AKTIVIEREN WENN DU WEISST WAS DU TUST!"
-
-# -----------------------------------------------------------------------------
-# RESEARCH MODULES (Nur Analyse, kein Trading)
-# -----------------------------------------------------------------------------
-
-cross_market:
-  enabled: true
-  description: "Cross-Market Konsistenz-Analyse"
-  interval_seconds: 900
-  priority: 5
-  category: "RESEARCH"
-
-outcome_tracker:
-  enabled: true
-  description: "Predictions aufzeichnen fuer Kalibrierung"
-  interval_seconds: 900
-  priority: 6
-  category: "RESEARCH"
-
-# -----------------------------------------------------------------------------
-# SPECIALIZED ENGINES (Spezial-Analysen)
-# -----------------------------------------------------------------------------
-
-weather_engine:
-  enabled: true
-  description: "Wetter-Markt Signal Generator"
-  interval_seconds: 3600  # 1 Stunde
-  priority: 10
-  category: "ENGINE"
-
-corporate_analyzer:
-  enabled: true
-  description: "Corporate Event Analyzer (Earnings, IPO, etc.)"
-  interval_seconds: 0  # Runs with main analyzer
-  priority: 10
-  category: "ENGINE"
-
-court_analyzer:
-  enabled: true
-  description: "Court Ruling Analyzer (SCOTUS, ECJ, etc.)"
-  interval_seconds: 0  # Runs with main analyzer
-  priority: 10
-  category: "ENGINE"
-
-panic_engine:
-  enabled: true  # Shadow Mode - sammelt Daten fuer Validierung
-  description: "Panic Contrarian Engine (Shadow Mode)"
-  interval_seconds: 300  # 5 Minuten
-  priority: 11
-  category: "ENGINE"
-  warning: "Experimentell - nur Shadow Mode!"
-
-# -----------------------------------------------------------------------------
-# INTERFACE MODULES (UI & Benachrichtigungen)
-# -----------------------------------------------------------------------------
-
-dashboard:
-  enabled: true
-  description: "Flet Desktop Dashboard"
-  interval_seconds: 0  # Laeuft kontinuierlich
-  priority: 100
-  category: "INTERFACE"
-
-telegram_notifier:
-  enabled: false
-  description: "Telegram Benachrichtigungen"
-  interval_seconds: 0
-  priority: 101
-  category: "INTERFACE"
+  settings:
+    fixed_amount_eur: 100.0
+    max_positions: 10
+    min_edge_threshold: 0.10
+    paper_only: true  # CRITICAL: Always true until Phase 2
 
 # -----------------------------------------------------------------------------
 # GLOBAL SETTINGS
 # -----------------------------------------------------------------------------
 
 global:
-  # Master-Schalter - wenn false, startet nichts
+  # Master switch
   master_enabled: true
 
-  # Scheduler-Intervall fuer Pipeline (Sekunden)
-  pipeline_interval: 900  # 15 Minuten
+  # Pipeline interval (seconds)
+  pipeline_interval: 900  # 15 minutes
 
-  # Auto-Start Dashboard beim Start
-  auto_start_dashboard: true
-
-  # Log-Level: DEBUG, INFO, WARNING, ERROR
+  # Log level: DEBUG, INFO, WARNING, ERROR
   log_level: "INFO"
 
-  # Status-Datei fuer Monitoring
-  status_file: "output/module_status.json"
+  # Status file
+  status_file: "output/status_summary.txt"
+
+  # Current phase
+  phase: "PAPER_TRADING"  # PAPER_TRADING or LIVE_TRADING

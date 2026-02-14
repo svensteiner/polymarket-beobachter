@@ -72,7 +72,7 @@ class WeatherAnalysisReport:
     Complete analysis report for a weather market.
 
     GOVERNANCE:
-    - decision: TRADE / NO_TRADE / INSUFFICIENT_DATA
+    - decision: VALID / INVALID / INSUFFICIENT_DATA
     - If weather_validation fails → decision = INSUFFICIENT_DATA
     - weather_validation_summary shows exactly which criteria failed
     """
@@ -80,7 +80,7 @@ class WeatherAnalysisReport:
     market_input: WeatherMarketInput
 
     # Decision outcome
-    decision: str  # "TRADE" / "NO_TRADE" / "INSUFFICIENT_DATA"
+    decision: str  # "VALID" / "INVALID" / "INSUFFICIENT_DATA"
 
     # Weather-specific validation
     weather_validation_summary: Dict[str, Any]
@@ -211,9 +211,9 @@ class WeatherEventAnalyzer:
 
         # Determine final decision
         if blocking_reasons:
-            decision = "NO_TRADE"
+            decision = "INVALID"
         else:
-            decision = "TRADE"
+            decision = "VALID"
 
         logger.info(f"Weather analysis complete: {decision}")
 

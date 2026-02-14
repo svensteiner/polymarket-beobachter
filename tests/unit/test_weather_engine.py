@@ -1,14 +1,14 @@
 """
 UNIT TESTS - WEATHER ENGINE
 ============================
-Intensive Tests fuer core/weather_engine.py
+Tests for core/weather_engine.py (observer-only system)
 """
 
 import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import List, Tuple, Callable, Optional
 
 from core.weather_engine import (
@@ -20,10 +20,10 @@ from core.weather_engine import (
 from core.weather_market_filter import WeatherMarket
 from core.weather_probability_model import ForecastData
 from core.weather_signal import (
-    WeatherSignal,
-    WeatherSignalAction,
+    WeatherObservation,
+    ObservationAction,
     WeatherConfidence,
-    create_weather_signal,
+    create_observation,
 )
 
 
@@ -44,7 +44,7 @@ def create_test_config():
         "MAX_FORECAST_HORIZON_DAYS": 10,
         "MIN_EDGE": 0.25,
         "MEDIUM_CONFIDENCE_EDGE_MULTIPLIER": 1.5,
-        "LOG_ALL_SIGNALS": False,  # Disable logging for tests
+        "LOG_ALL_OBSERVATIONS": False,  # Disable logging for tests
         "CONFIDENCE_THRESHOLDS": {
             "HIGH_CONFIDENCE_MAX_HOURS": 72,
             "MEDIUM_CONFIDENCE_MAX_HOURS": 168,
@@ -152,8 +152,8 @@ def test_engine_run_no_market_fetcher():
     result = engine.run()
 
     assert isinstance(result, EngineRunResult)
-    assert len(result.signals) == 0
-    assert len(result.actionable_signals) == 0
+    assert len(result.observations) == 0
+    assert len(result.edge_observations) == 0
     assert result.markets_processed == 0
 
 
@@ -168,7 +168,7 @@ def test_engine_run_market_fetch_error():
     result = engine.run()
 
     assert isinstance(result, EngineRunResult)
-    assert len(result.signals) == 0
+    assert len(result.observations) == 0
     assert result.markets_processed == 0
 
 
@@ -184,7 +184,7 @@ def test_engine_run_empty_markets():
 
     assert result.markets_processed == 0
     assert result.markets_filtered == 0
-    assert len(result.signals) == 0
+    assert len(result.observations) == 0
 
 
 def test_engine_run_no_forecast_fetcher():
@@ -198,10 +198,10 @@ def test_engine_run_no_forecast_fetcher():
 
     result = engine.run()
 
-    # Should have processed markets but no actionable signals
+    # Should have processed markets but no edge observations
     assert result.markets_processed > 0
-    for signal in result.signals:
-        assert signal.recommended_action == WeatherSignalAction.NO_SIGNAL
+    for obs in result.observations:
+        assert obs.action == ObservationAction.NO_SIGNAL
 
 
 def test_engine_run_forecast_fetch_error():
@@ -216,9 +216,9 @@ def test_engine_run_forecast_fetch_error():
     result = engine.run()
 
     assert result.markets_processed > 0
-    # All signals should be NO_SIGNAL due to forecast errors
-    for signal in result.signals:
-        assert signal.recommended_action == WeatherSignalAction.NO_SIGNAL
+    # All observations should be NO_SIGNAL due to forecast errors
+    for obs in result.observations:
+        assert obs.action == ObservationAction.NO_SIGNAL
 
 
 def test_engine_run_no_forecast_available():
@@ -232,12 +232,12 @@ def test_engine_run_no_forecast_available():
 
     result = engine.run()
 
-    for signal in result.signals:
-        assert signal.recommended_action == WeatherSignalAction.NO_SIGNAL
+    for obs in result.observations:
+        assert obs.action == ObservationAction.NO_SIGNAL
 
 
 def test_engine_run_success_with_edge():
-    """Test engine generates BUY signal when edge exists."""
+    """Test engine generates OBSERVE when edge exists."""
     config = create_test_config()
 
     # Market at 3%, forecast suggests 10% fair value → edge = 233%
@@ -257,14 +257,14 @@ def test_engine_run_success_with_edge():
     result = engine.run()
 
     assert result.markets_processed == 1
-    assert len(result.signals) > 0
+    assert len(result.observations) > 0
 
-    # Check if we have actionable signals
+    # Check if we have edge observations
     # (depends on whether edge meets threshold)
-    if len(result.actionable_signals) > 0:
-        signal = result.actionable_signals[0]
-        assert signal.recommended_action == WeatherSignalAction.BUY
-        assert signal.edge > 0
+    if len(result.edge_observations) > 0:
+        obs = result.edge_observations[0]
+        assert obs.action == ObservationAction.OBSERVE
+        assert obs.edge > 0
 
 
 def test_engine_run_no_edge():
@@ -287,16 +287,16 @@ def test_engine_run_no_edge():
 
     result = engine.run()
 
-    # May or may not have actionable signals depending on exact probability
-    # But should have some signals generated
+    # May or may not have edge observations depending on exact probability
+    # But should have some observations generated
     assert result.markets_processed == 1
 
 
 def test_engine_result_to_dict():
     """Test EngineRunResult serialization."""
     result = EngineRunResult(
-        signals=[],
-        actionable_signals=[],
+        observations=[],
+        edge_observations=[],
         markets_processed=10,
         markets_filtered=5,
         run_timestamp="2026-01-24T12:00:00Z",
@@ -443,7 +443,7 @@ def test_engine_filtered_markets():
 
 
 def test_engine_actionable_subset():
-    """Test actionable signals are subset of all signals."""
+    """Test edge observations are subset of all observations."""
     config = create_test_config()
     engine = WeatherEngine(
         config,
@@ -453,11 +453,11 @@ def test_engine_actionable_subset():
 
     result = engine.run()
 
-    assert len(result.actionable_signals) <= len(result.signals)
+    assert len(result.edge_observations) <= len(result.observations)
 
-    # All actionable should be BUY
-    for signal in result.actionable_signals:
-        assert signal.recommended_action == WeatherSignalAction.BUY
+    # All edge observations should be OBSERVE
+    for obs in result.edge_observations:
+        assert obs.action == ObservationAction.OBSERVE
 
 
 def test_process_market_no_threshold():
@@ -472,9 +472,9 @@ def test_process_market_no_threshold():
     market = create_valid_market()
     market.detected_threshold = None
 
-    signal = engine._process_market(market)
+    observation = engine._process_market(market)
 
-    assert signal.recommended_action == WeatherSignalAction.NO_SIGNAL
+    assert observation.action == ObservationAction.NO_SIGNAL
 
 
 def test_engine_version():
@@ -491,11 +491,11 @@ def test_create_empty_result():
     config = create_test_config()
     engine = WeatherEngine(config)
 
-    start_time = datetime.utcnow()
+    start_time = datetime.now(timezone.utc)
     result = engine._create_empty_result("2026-01-24T12:00:00Z", start_time)
 
-    assert len(result.signals) == 0
-    assert len(result.actionable_signals) == 0
+    assert len(result.observations) == 0
+    assert len(result.edge_observations) == 0
     assert result.markets_processed == 0
     assert result.markets_filtered == 0
     assert result.config_hash == engine._config_hash
@@ -511,6 +511,9 @@ def test_load_config():
     config_content = {
         "MIN_LIQUIDITY": 100,
         "MIN_EDGE": 0.30,
+        "MIN_EDGE_ABSOLUTE": 0.05,
+        "MIN_ODDS": 0.01,
+        "MAX_ODDS": 0.35,
         "SIGMA_F": 4.0,
         "ALLOWED_CITIES": ["Berlin", "Munich"],
     }
@@ -541,6 +544,7 @@ def test_create_engine_factory():
         "MIN_LIQUIDITY": 50,
         "MIN_ODDS": 0.01,
         "MAX_ODDS": 0.10,
+        "MIN_EDGE_ABSOLUTE": 0.05,
         "MIN_TIME_TO_RESOLUTION_HOURS": 48,
         "ALLOWED_CITIES": ["New York"],
         "SIGMA_F": 3.5,
@@ -567,7 +571,7 @@ def test_create_engine_factory():
 
 
 def test_log_signal():
-    """Test _log_signal writes to file correctly."""
+    """Test _log_observation writes to file correctly."""
     import tempfile
     import os
     import json
@@ -579,25 +583,25 @@ def test_log_signal():
     os.close(fd)
 
     try:
-        config["SIGNAL_LOG_PATH"] = log_path
-        config["LOG_ALL_SIGNALS"] = True
+        config["OBSERVATION_LOG_PATH"] = log_path
+        config["LOG_ALL_OBSERVATIONS"] = True
 
         engine = WeatherEngine(config)
 
-        # Create a signal
-        signal = create_weather_signal(
+        # Create an observation
+        observation = create_observation(
             market_id="log-test-001",
             city="New York",
-            event_description="Test signal",
+            event_description="Test observation",
             market_probability=0.05,
-            fair_probability=0.10,
+            model_probability=0.10,
             confidence=WeatherConfidence.HIGH,
-            recommended_action=WeatherSignalAction.BUY,
+            action=ObservationAction.OBSERVE,
             config_snapshot=config,
         )
 
-        # Log the signal
-        engine._log_signal(signal)
+        # Log the observation
+        engine._log_observation(observation)
 
         # Verify file was written - note: to_json uses pretty-print so content is multi-line
         with open(log_path, 'r', encoding='utf-8') as f:
@@ -612,7 +616,7 @@ def test_log_signal():
 
 
 def test_log_signal_creates_directory():
-    """Test _log_signal creates parent directory if needed."""
+    """Test _log_observation creates parent directory if needed."""
     import tempfile
     import os
     import shutil
@@ -621,24 +625,24 @@ def test_log_signal_creates_directory():
 
     # Create a nested path that doesn't exist
     temp_dir = tempfile.mkdtemp()
-    log_path = os.path.join(temp_dir, "subdir", "deep", "signals.jsonl")
+    log_path = os.path.join(temp_dir, "subdir", "deep", "observations.jsonl")
 
     try:
-        config["SIGNAL_LOG_PATH"] = log_path
+        config["OBSERVATION_LOG_PATH"] = log_path
         engine = WeatherEngine(config)
 
-        signal = create_weather_signal(
+        observation = create_observation(
             market_id="dir-test",
             city="NYC",
             event_description="Test",
             market_probability=0.05,
-            fair_probability=0.10,
+            model_probability=0.10,
             confidence=WeatherConfidence.HIGH,
-            recommended_action=WeatherSignalAction.BUY,
+            action=ObservationAction.OBSERVE,
             config_snapshot=config,
         )
 
-        engine._log_signal(signal)
+        engine._log_observation(observation)
 
         # Verify directory was created and file exists
         assert os.path.exists(log_path), f"Log file was not created at {log_path}"

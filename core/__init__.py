@@ -1,36 +1,45 @@
 # =============================================================================
-# POLYMARKET EU AI REGULATION ANALYZER
-# Module: core/__init__.py
-# Purpose: Package initialization for core analysis modules
+# WEATHER OBSERVER - CORE MODULE
 # =============================================================================
 #
-# AUDIT NOTE:
-# This package contains all analysis logic.
-# Each module is deterministic and side-effect free.
-# No network calls. No file I/O except explicit output writing.
+# Weather-only observation system.
+# No trading, no execution, no positions.
 #
-# MODULE OVERVIEW:
-# 1. resolution_parser: Analyzes market resolution criteria
-# 2. process_model: Models EU regulatory lifecycle stages
-# 3. time_feasibility: Checks timeline plausibility
-# 4. probability_estimator: Rule-based probability calculation
-# 5. market_sanity: Compares estimate to market price
-# 6. decision_engine: Final TRADE/NO_TRADE decision
+# MODULES:
+# - weather_engine: Main observation orchestrator
+# - weather_signal: Observation data model (OBSERVE/NO_SIGNAL)
+# - weather_probability_model: Forecast to probability conversion
+# - weather_market_filter: Market eligibility filtering
+# - weather_validation: 6-point validation checklist
+# - weather_analyzer: Structural validation
+# - noaa_client: NOAA forecast API
+# - outcome_tracker: Resolution tracking
+# - calibration_engine: Analytics (read-only)
 #
 # =============================================================================
 
-from .resolution_parser import ResolutionParser
-from .process_model import EUProcessModel
-from .time_feasibility import TimeFeasibilityChecker
-from .probability_estimator import ProbabilityEstimator
-from .market_sanity import MarketSanityChecker
-from .decision_engine import DecisionEngine
+from .weather_signal import (
+    WeatherObservation,
+    ObservationAction,
+    WeatherConfidence,
+    create_observation,
+    create_no_signal,
+)
+from .weather_engine import (
+    WeatherEngine,
+    EngineRunResult,
+    create_engine,
+    load_config,
+)
 
 __all__ = [
-    "ResolutionParser",
-    "EUProcessModel",
-    "TimeFeasibilityChecker",
-    "ProbabilityEstimator",
-    "MarketSanityChecker",
-    "DecisionEngine",
+    "WeatherObservation",
+    "ObservationAction",
+    "WeatherConfidence",
+    "create_observation",
+    "create_no_signal",
+    "WeatherEngine",
+    "EngineRunResult",
+    "create_engine",
+    "load_config",
 ]

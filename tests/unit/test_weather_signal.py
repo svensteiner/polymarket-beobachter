@@ -1,7 +1,7 @@
 """
-UNIT TESTS - WEATHER SIGNAL
-===========================
-Intensive Tests fuer core/weather_signal.py
+UNIT TESTS - WEATHER OBSERVATION
+================================
+Tests for core/weather_signal.py (observer-only system)
 """
 
 import sys
@@ -11,10 +11,10 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 from typing import List, Tuple, Callable
 
 from core.weather_signal import (
-    WeatherSignal,
-    WeatherSignalAction,
+    WeatherObservation,
+    ObservationAction,
     WeatherConfidence,
-    create_weather_signal,
+    create_observation,
     create_no_signal,
 )
 
@@ -24,79 +24,79 @@ from core.weather_signal import (
 # =============================================================================
 
 def test_signal_creation_basic():
-    """Test basic signal creation."""
-    signal = WeatherSignal(
-        signal_id="test-001",
+    """Test basic observation creation."""
+    observation = WeatherObservation(
+        observation_id="test-001",
         timestamp_utc="2026-01-24T12:00:00Z",
         market_id="market-001",
         city="New York",
         event_description="Temperature exceeds 100F",
         market_probability=0.05,
-        fair_probability=0.10,
+        model_probability=0.10,
         edge=1.0,
         confidence=WeatherConfidence.HIGH,
-        recommended_action=WeatherSignalAction.BUY,
+        action=ObservationAction.OBSERVE,
     )
 
-    assert signal.signal_id == "test-001"
-    assert signal.city == "New York"
-    assert signal.market_probability == 0.05
-    assert signal.fair_probability == 0.10
-    assert signal.edge == 1.0
-    assert signal.confidence == WeatherConfidence.HIGH
-    assert signal.recommended_action == WeatherSignalAction.BUY
+    assert observation.observation_id == "test-001"
+    assert observation.city == "New York"
+    assert observation.market_probability == 0.05
+    assert observation.model_probability == 0.10
+    assert observation.edge == 1.0
+    assert observation.confidence == WeatherConfidence.HIGH
+    assert observation.action == ObservationAction.OBSERVE
 
 
 def test_signal_is_actionable():
-    """Test is_actionable property."""
-    buy_signal = WeatherSignal(
-        signal_id="test-buy",
+    """Test has_edge property."""
+    observe_signal = WeatherObservation(
+        observation_id="test-observe",
         timestamp_utc="2026-01-24T12:00:00Z",
         market_id="m1",
         city="NYC",
         event_description="Test",
         market_probability=0.05,
-        fair_probability=0.10,
+        model_probability=0.10,
         edge=1.0,
         confidence=WeatherConfidence.HIGH,
-        recommended_action=WeatherSignalAction.BUY,
+        action=ObservationAction.OBSERVE,
     )
 
-    no_signal = WeatherSignal(
-        signal_id="test-no",
+    no_signal = WeatherObservation(
+        observation_id="test-no",
         timestamp_utc="2026-01-24T12:00:00Z",
         market_id="m2",
         city="NYC",
         event_description="Test",
         market_probability=0.05,
-        fair_probability=0.10,
+        model_probability=0.10,
         edge=1.0,
         confidence=WeatherConfidence.HIGH,
-        recommended_action=WeatherSignalAction.NO_SIGNAL,
+        action=ObservationAction.NO_SIGNAL,
     )
 
-    assert buy_signal.is_actionable is True
-    assert no_signal.is_actionable is False
+    assert observe_signal.has_edge is True
+    assert no_signal.has_edge is False
 
 
 def test_signal_immutability():
-    """Test that signals are immutable (frozen)."""
-    signal = WeatherSignal(
-        signal_id="test-immut",
+    """Test that observations are immutable (frozen)."""
+    observation = WeatherObservation(
+        observation_id="test-immut",
         timestamp_utc="2026-01-24T12:00:00Z",
         market_id="m1",
         city="NYC",
         event_description="Test",
         market_probability=0.05,
-        fair_probability=0.10,
+        model_probability=0.10,
         edge=1.0,
         confidence=WeatherConfidence.HIGH,
-        recommended_action=WeatherSignalAction.BUY,
+        action=ObservationAction.OBSERVE,
     )
 
     # Trying to modify should raise AttributeError
     try:
-        signal.market_probability = 0.99
+        observation.market_probability = 0.99
         assert False, "Should have raised AttributeError"
     except AttributeError:
         pass  # Expected
@@ -105,34 +105,34 @@ def test_signal_immutability():
 def test_signal_validation_probability_range():
     """Test probability validation."""
     # Valid probabilities
-    signal = WeatherSignal(
-        signal_id="test",
+    observation = WeatherObservation(
+        observation_id="test",
         timestamp_utc="2026-01-24T12:00:00Z",
         market_id="m1",
         city="NYC",
         event_description="Test",
         market_probability=0.0,  # Boundary
-        fair_probability=1.0,    # Boundary
+        model_probability=1.0,    # Boundary
         edge=0.0,
         confidence=WeatherConfidence.HIGH,
-        recommended_action=WeatherSignalAction.BUY,
+        action=ObservationAction.OBSERVE,
     )
-    assert signal.market_probability == 0.0
-    assert signal.fair_probability == 1.0
+    assert observation.market_probability == 0.0
+    assert observation.model_probability == 1.0
 
     # Invalid probabilities
     try:
-        WeatherSignal(
-            signal_id="test",
+        WeatherObservation(
+            observation_id="test",
             timestamp_utc="2026-01-24T12:00:00Z",
             market_id="m1",
             city="NYC",
             event_description="Test",
             market_probability=1.5,  # Invalid
-            fair_probability=0.5,
+            model_probability=0.5,
             edge=0.0,
             confidence=WeatherConfidence.HIGH,
-            recommended_action=WeatherSignalAction.BUY,
+            action=ObservationAction.OBSERVE,
         )
         assert False, "Should have raised ValueError"
     except ValueError:
@@ -140,85 +140,85 @@ def test_signal_validation_probability_range():
 
 
 def test_signal_to_dict():
-    """Test signal serialization to dict."""
-    signal = WeatherSignal(
-        signal_id="test-dict",
+    """Test observation serialization to dict."""
+    observation = WeatherObservation(
+        observation_id="test-dict",
         timestamp_utc="2026-01-24T12:00:00Z",
         market_id="market-123",
         city="London",
         event_description="Test event",
         market_probability=0.03,
-        fair_probability=0.08,
+        model_probability=0.08,
         edge=1.67,
         confidence=WeatherConfidence.MEDIUM,
-        recommended_action=WeatherSignalAction.BUY,
+        action=ObservationAction.OBSERVE,
         forecast_temperature_f=95.5,
     )
 
-    d = signal.to_dict()
+    d = observation.to_dict()
 
-    assert d["signal_id"] == "test-dict"
+    assert d["observation_id"] == "test-dict"
     assert d["market_id"] == "market-123"
     assert d["city"] == "London"
     assert d["market_probability"] == 0.03
-    assert d["fair_probability"] == 0.08
+    assert d["model_probability"] == 0.08
     assert d["edge"] == 1.67
     assert d["confidence"] == "MEDIUM"
-    assert d["recommended_action"] == "BUY"
+    assert d["action"] == "OBSERVE"
     assert d["forecast_temperature_f"] == 95.5
 
 
 def test_signal_to_json():
-    """Test signal serialization to JSON."""
-    signal = WeatherSignal(
-        signal_id="test-json",
+    """Test observation serialization to JSON."""
+    observation = WeatherObservation(
+        observation_id="test-json",
         timestamp_utc="2026-01-24T12:00:00Z",
         market_id="m1",
         city="NYC",
         event_description="Test",
         market_probability=0.05,
-        fair_probability=0.10,
+        model_probability=0.10,
         edge=1.0,
         confidence=WeatherConfidence.HIGH,
-        recommended_action=WeatherSignalAction.BUY,
+        action=ObservationAction.OBSERVE,
     )
 
-    json_str = signal.to_json()
+    json_str = observation.to_json()
 
     assert "test-json" in json_str
     assert "NYC" in json_str
     assert "HIGH" in json_str
-    assert "BUY" in json_str
+    assert "OBSERVE" in json_str
 
 
 def test_create_weather_signal_factory():
-    """Test factory function creates signals correctly."""
+    """Test factory function creates observations correctly."""
     config = {"MIN_EDGE": 0.25, "SIGMA_F": 3.5}
 
-    signal = create_weather_signal(
+    observation = create_observation(
         market_id="factory-test",
         city="Seoul",
         event_description="Temperature test",
         market_probability=0.04,
-        fair_probability=0.08,
+        model_probability=0.08,
         confidence=WeatherConfidence.HIGH,
-        recommended_action=WeatherSignalAction.BUY,
+        action=ObservationAction.OBSERVE,
         config_snapshot=config,
     )
 
-    assert signal.market_id == "factory-test"
-    assert signal.city == "Seoul"
-    assert len(signal.signal_id) == 36  # UUID format
-    assert signal.parameters_hash != ""
+    assert observation.market_id == "factory-test"
+    assert observation.city == "Seoul"
+    assert len(observation.observation_id) == 36  # UUID format
+    assert observation.parameters_hash != ""
     # Edge should be calculated: (0.08 - 0.04) / 0.04 = 1.0
-    assert abs(signal.edge - 1.0) < 0.001
+    assert abs(observation.edge - 1.0) < 0.001
 
 
 def test_create_no_signal_factory():
     """Test NO_SIGNAL factory function."""
     config = {"MIN_EDGE": 0.25}
 
-    signal = create_no_signal(
+    observation = create_no_signal(
         market_id="no-signal-test",
         city="Tokyo",
         event_description="Some event",
@@ -227,10 +227,10 @@ def test_create_no_signal_factory():
         config_snapshot=config,
     )
 
-    assert signal.market_id == "no-signal-test"
-    assert signal.recommended_action == WeatherSignalAction.NO_SIGNAL
-    assert signal.confidence == WeatherConfidence.LOW
-    assert "Insufficient edge" in signal.event_description
+    assert observation.market_id == "no-signal-test"
+    assert observation.action == ObservationAction.NO_SIGNAL
+    assert observation.confidence == WeatherConfidence.LOW
+    assert "Insufficient edge" in observation.event_description
 
 
 def test_confidence_enum_values():
@@ -241,24 +241,27 @@ def test_confidence_enum_values():
 
 
 def test_action_enum_values():
-    """Test action enum has correct values."""
-    assert WeatherSignalAction.BUY.value == "BUY"
-    assert WeatherSignalAction.NO_SIGNAL.value == "NO_SIGNAL"
+    """Test action enum has correct values (OBSERVE/NO_SIGNAL only)."""
+    assert ObservationAction.OBSERVE.value == "OBSERVE"
+    assert ObservationAction.NO_SIGNAL.value == "NO_SIGNAL"
+    # BUY/SELL should NOT exist
+    assert not hasattr(ObservationAction, "BUY")
+    assert not hasattr(ObservationAction, "SELL")
 
 
 def test_signal_with_optional_fields():
-    """Test signal with all optional fields."""
-    signal = WeatherSignal(
-        signal_id="opt-test",
+    """Test observation with all optional fields."""
+    observation = WeatherObservation(
+        observation_id="opt-test",
         timestamp_utc="2026-01-24T12:00:00Z",
         market_id="m1",
         city="NYC",
         event_description="Test",
         market_probability=0.05,
-        fair_probability=0.10,
+        model_probability=0.10,
         edge=1.0,
         confidence=WeatherConfidence.HIGH,
-        recommended_action=WeatherSignalAction.BUY,
+        action=ObservationAction.OBSERVE,
         forecast_source="tomorrow_io",
         forecast_temperature_f=98.5,
         forecast_sigma_f=3.5,
@@ -266,45 +269,45 @@ def test_signal_with_optional_fields():
         hours_to_resolution=48.5,
     )
 
-    assert signal.forecast_source == "tomorrow_io"
-    assert signal.forecast_temperature_f == 98.5
-    assert signal.forecast_sigma_f == 3.5
-    assert signal.threshold_temperature_f == 100.0
-    assert signal.hours_to_resolution == 48.5
+    assert observation.forecast_source == "tomorrow_io"
+    assert observation.forecast_temperature_f == 98.5
+    assert observation.forecast_sigma_f == 3.5
+    assert observation.threshold_temperature_f == 100.0
+    assert observation.hours_to_resolution == 48.5
 
 
 def test_edge_calculation_zero_market_prob():
     """Test edge calculation when market probability is zero."""
     config = {}
-    signal = create_weather_signal(
+    observation = create_observation(
         market_id="zero-test",
         city="NYC",
         event_description="Test",
         market_probability=0.0,
-        fair_probability=0.10,
+        model_probability=0.10,
         confidence=WeatherConfidence.HIGH,
-        recommended_action=WeatherSignalAction.NO_SIGNAL,
+        action=ObservationAction.NO_SIGNAL,
         config_snapshot=config,
     )
 
     # Edge should be 0 when market_probability is 0
-    assert signal.edge == 0.0
+    assert observation.edge == 0.0
 
 
 def test_negative_probability_rejected():
     """Test that negative probabilities are rejected."""
     try:
-        WeatherSignal(
-            signal_id="neg-test",
+        WeatherObservation(
+            observation_id="neg-test",
             timestamp_utc="2026-01-24T12:00:00Z",
             market_id="m1",
             city="NYC",
             event_description="Test",
             market_probability=-0.1,  # Invalid
-            fair_probability=0.10,
+            model_probability=0.10,
             edge=1.0,
             confidence=WeatherConfidence.HIGH,
-            recommended_action=WeatherSignalAction.BUY,
+            action=ObservationAction.OBSERVE,
         )
         assert False, "Should have raised ValueError"
     except ValueError:
@@ -315,24 +318,24 @@ def test_parameters_hash_consistency():
     """Test that same config produces same hash."""
     config = {"MIN_EDGE": 0.25, "SIGMA_F": 3.5}
 
-    signal1 = create_weather_signal(
+    obs1 = create_observation(
         market_id="m1", city="NYC", event_description="Test",
-        market_probability=0.05, fair_probability=0.10,
+        market_probability=0.05, model_probability=0.10,
         confidence=WeatherConfidence.HIGH,
-        recommended_action=WeatherSignalAction.BUY,
+        action=ObservationAction.OBSERVE,
         config_snapshot=config,
     )
 
-    signal2 = create_weather_signal(
+    obs2 = create_observation(
         market_id="m2", city="LA", event_description="Test2",
-        market_probability=0.03, fair_probability=0.08,
+        market_probability=0.03, model_probability=0.08,
         confidence=WeatherConfidence.MEDIUM,
-        recommended_action=WeatherSignalAction.BUY,
+        action=ObservationAction.OBSERVE,
         config_snapshot=config,
     )
 
     # Same config should produce same hash
-    assert signal1.parameters_hash == signal2.parameters_hash
+    assert obs1.parameters_hash == obs2.parameters_hash
 
 
 def test_parameters_hash_differs_with_config():
@@ -340,24 +343,24 @@ def test_parameters_hash_differs_with_config():
     config1 = {"MIN_EDGE": 0.25}
     config2 = {"MIN_EDGE": 0.30}
 
-    signal1 = create_weather_signal(
+    obs1 = create_observation(
         market_id="m1", city="NYC", event_description="Test",
-        market_probability=0.05, fair_probability=0.10,
+        market_probability=0.05, model_probability=0.10,
         confidence=WeatherConfidence.HIGH,
-        recommended_action=WeatherSignalAction.BUY,
+        action=ObservationAction.OBSERVE,
         config_snapshot=config1,
     )
 
-    signal2 = create_weather_signal(
+    obs2 = create_observation(
         market_id="m1", city="NYC", event_description="Test",
-        market_probability=0.05, fair_probability=0.10,
+        market_probability=0.05, model_probability=0.10,
         confidence=WeatherConfidence.HIGH,
-        recommended_action=WeatherSignalAction.BUY,
+        action=ObservationAction.OBSERVE,
         config_snapshot=config2,
     )
 
     # Different config should produce different hash
-    assert signal1.parameters_hash != signal2.parameters_hash
+    assert obs1.parameters_hash != obs2.parameters_hash
 
 
 # =============================================================================

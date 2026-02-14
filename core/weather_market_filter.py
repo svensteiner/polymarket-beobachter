@@ -26,7 +26,7 @@
 import logging
 import re
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional, Dict, Any, List, Tuple
 
 logger = logging.getLogger(__name__)
@@ -128,6 +128,7 @@ class WeatherMarketFilter:
     # City name patterns for detection
     CITY_PATTERNS = {
         "london": "London",
+        "new york city": "New York",
         "new york": "New York",
         "nyc": "New York",
         "manhattan": "New York",
@@ -145,6 +146,14 @@ class WeatherMarketFilter:
         "berlin": "Berlin",
         "sydney": "Sydney",
         "toronto": "Toronto",
+        "houston": "Houston",
+        "atlanta": "Atlanta",
+        "dallas": "Dallas",
+        "san francisco": "San Francisco",
+        "washington": "Washington",
+        "philadelphia": "Philadelphia",
+        "buenos aires": "Buenos Aires",
+        "ankara": "Ankara",
     }
 
     # Weather category indicators
@@ -156,14 +165,22 @@ class WeatherMarketFilter:
 
     # Temperature threshold patterns
     TEMPERATURE_PATTERNS = [
-        # "above 40°F", "exceed 100°F", ">= 32°F"
-        re.compile(r'(above|exceed|>=?|over)\s*(\d+\.?\d*)\s*°?([FC])', re.I),
+        # "between 48-49°F", "between 50-51°F"
+        re.compile(r'between\s*(\d+)\s*-\s*(\d+)\s*°?\s*([FC])', re.I),
+        # "be 10°C", "be 56°F or higher", "be 31°F or below"
+        re.compile(r'be\s+(\d+)\s*°?\s*([FC])\s*(or\s+)?(higher|below|lower)?', re.I),
+        # "above 40°F", "exceed 100°F", ">= 32°F", "over 90°F"
+        re.compile(r'(above|exceed|>=?|over)\s*(\d+\.?\d*)\s*°?\s*([FC])', re.I),
         # "40°F or higher", "100°F+"
-        re.compile(r'(\d+\.?\d*)\s*°?([FC])\s*(or\s+)?(higher|above|\+)', re.I),
+        re.compile(r'(\d+\.?\d*)\s*°?\s*([FC])\s*(or\s+)?(higher|above|\+)', re.I),
         # "below 32°F", "under 0°C", "< 50°F"
-        re.compile(r'(below|under|<=?)\s*(\d+\.?\d*)\s*°?([FC])', re.I),
+        re.compile(r'(below|under|<=?)\s*(\d+\.?\d*)\s*°?\s*([FC])', re.I),
         # "reach 100°F", "hit 90°F"
-        re.compile(r'(reach|hit)\s*(\d+\.?\d*)\s*°?([FC])', re.I),
+        re.compile(r'(reach|hit)\s*(\d+\.?\d*)\s*°?\s*([FC])', re.I),
+        # "highest temperature" + number (implicit threshold)
+        re.compile(r'highest\s+temperature.*?(\d+)\s*°?\s*([FC])', re.I),
+        # "temperature increase" patterns (global temp markets)
+        re.compile(r'temperature\s+increase.*?(\d+\.?\d*)\s*°?\s*([FC])', re.I),
     ]
 
     def __init__(self, config: Dict[str, Any]):
@@ -195,6 +212,11 @@ class WeatherMarketFilter:
         """
         Apply all filter criteria to a single market.
 
+        Supports multiple market types:
+        - CITY_TEMPERATURE: City-specific temperature thresholds
+        - GLOBAL_RANKING: Global temperature rankings (hottest year)
+        - CLIMATE_METRIC: Arctic ice, hurricane count, etc.
+
         Args:
             market: Weather market to filter
 
@@ -203,6 +225,12 @@ class WeatherMarketFilter:
         """
         rejection_reasons: List[str] = []
         filter_details: Dict[str, Any] = {}
+
+        # =====================================================================
+        # DETECT MARKET TYPE
+        # =====================================================================
+        market_type = self._detect_market_type(market)
+        filter_details["market_type"] = market_type
 
         # =====================================================================
         # CHECK 1: Category is WEATHER
@@ -234,7 +262,7 @@ class WeatherMarketFilter:
         # =====================================================================
         # CHECK 4: Resolution time is far enough
         # =====================================================================
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc).replace(tzinfo=None)
         hours_to_resolution = (market.resolution_time - now).total_seconds() / 3600
         filter_details["hours_to_resolution"] = hours_to_resolution
         filter_details["min_hours"] = self.min_time_to_resolution_hours
@@ -250,40 +278,59 @@ class WeatherMarketFilter:
         # =====================================================================
         filter_details["odds_yes"] = market.odds_yes
         filter_details["odds_range"] = [self.min_odds, self.max_odds]
-
         if market.odds_yes < self.min_odds:
             rejection_reasons.append(
-                f"ODDS: {market.odds_yes:.4f} < {self.min_odds} minimum"
+                f"ODDS: {market.odds_yes:.4f} below minimum {self.min_odds}"
             )
         elif market.odds_yes > self.max_odds:
             rejection_reasons.append(
-                f"ODDS: {market.odds_yes:.4f} > {self.max_odds} maximum"
+                f"ODDS: {market.odds_yes:.4f} above maximum {self.max_odds}"
             )
 
         # =====================================================================
-        # CHECK 6: City is allowed
+        # CHECK 6: Market type specific validation
         # =====================================================================
         detected_city = self._detect_city(market)
         filter_details["detected_city"] = detected_city
-        filter_details["allowed_cities"] = list(self.allowed_cities)
 
-        if detected_city is None:
-            rejection_reasons.append("CITY: Could not detect city from market text")
-        elif detected_city not in self.allowed_cities:
-            rejection_reasons.append(
-                f"CITY: '{detected_city}' not in allowed cities"
-            )
+        if market_type == "CITY_TEMPERATURE":
+            # City-specific markets require city detection
+            if detected_city is None:
+                rejection_reasons.append("CITY: Could not detect city from market text")
+            elif detected_city not in self.allowed_cities:
+                rejection_reasons.append(
+                    f"CITY: '{detected_city}' not in allowed cities"
+                )
 
-        # =====================================================================
-        # CHECK 7: Resolution is explicit and verifiable
-        # =====================================================================
-        resolution_check = self._check_resolution_explicit(market)
-        filter_details["resolution_check"] = resolution_check
+            # Also check for explicit temperature threshold
+            resolution_check = self._check_resolution_explicit(market)
+            filter_details["resolution_check"] = resolution_check
+            if not resolution_check["is_explicit"]:
+                rejection_reasons.append(
+                    f"RESOLUTION: {resolution_check['reason']}"
+                )
 
-        if not resolution_check["is_explicit"]:
-            rejection_reasons.append(
-                f"RESOLUTION: {resolution_check['reason']}"
-            )
+        elif market_type == "GLOBAL_RANKING":
+            # Global ranking markets don't need city, but need ranking criteria
+            ranking_check = self._check_ranking_explicit(market)
+            filter_details["ranking_check"] = ranking_check
+            if not ranking_check["is_explicit"]:
+                rejection_reasons.append(
+                    f"RANKING: {ranking_check['reason']}"
+                )
+
+        elif market_type == "CLIMATE_METRIC":
+            # Climate metric markets need explicit measurement criteria
+            metric_check = self._check_metric_explicit(market)
+            filter_details["metric_check"] = metric_check
+            if not metric_check["is_explicit"]:
+                rejection_reasons.append(
+                    f"METRIC: {metric_check['reason']}"
+                )
+
+        else:
+            # Unknown type - require manual review
+            rejection_reasons.append(f"TYPE: Unknown market type '{market_type}'")
 
         # =====================================================================
         # FINAL RESULT
@@ -293,8 +340,12 @@ class WeatherMarketFilter:
         # Populate detected fields if passed
         if passed:
             market.detected_city = detected_city
-            market.detected_threshold = resolution_check.get("threshold_f")
-            market.detected_metric = resolution_check.get("metric")
+            market.detected_metric = market_type
+
+            # Set threshold for CITY_TEMPERATURE markets
+            if market_type == "CITY_TEMPERATURE":
+                resolution_check = filter_details.get("resolution_check", {})
+                market.detected_threshold = resolution_check.get("threshold_f")
 
         return FilterResult(
             passed=passed,
@@ -302,6 +353,90 @@ class WeatherMarketFilter:
             rejection_reasons=rejection_reasons,
             filter_details=filter_details,
         )
+
+    def _detect_market_type(self, market: WeatherMarket) -> str:
+        """
+        Detect the type of weather market.
+
+        Returns one of:
+        - CITY_TEMPERATURE: City-specific temperature market
+        - GLOBAL_RANKING: Global temperature ranking
+        - CLIMATE_METRIC: Arctic ice, hurricane, etc.
+        - UNKNOWN: Unrecognized type
+        """
+        text = f"{market.question} {market.description}".lower()
+
+        # Check for global ranking keywords
+        if any(kw in text for kw in ["hottest year", "coldest year", "warmest year",
+                                      "hottest on record", "coldest on record",
+                                      "1st hottest", "2nd hottest", "3rd hottest",
+                                      "4th hottest", "5th hottest", "6th hottest"]):
+            return "GLOBAL_RANKING"
+
+        # Check for climate metric keywords
+        if any(kw in text for kw in ["arctic", "sea ice", "ice extent",
+                                      "hurricane", "tropical storm", "landfall",
+                                      "tornado", "earthquake", "global temperature increase"]):
+            return "CLIMATE_METRIC"
+
+        # Check for temperature-related market (city validation happens in CHECK 6)
+        if any(kw in text for kw in ["temperature", "high", "low", "degrees", "heat", "hot", "cold", "warm"]):
+            return "CITY_TEMPERATURE"
+
+        return "UNKNOWN"
+
+    def _check_ranking_explicit(self, market: WeatherMarket) -> Dict[str, Any]:
+        """
+        Check if global ranking criteria are explicit.
+        """
+        text = f"{market.question} {market.description}".lower()
+
+        # Check for explicit ranking position
+        ranking_patterns = [
+            r"(1st|first|2nd|second|3rd|third|4th|fourth|5th|fifth|6th|sixth)",
+            r"(hottest|coldest|warmest|coolest)\s+(year|month|day)",
+            r"on record",
+        ]
+
+        for pattern in ranking_patterns:
+            if re.search(pattern, text, re.I):
+                return {
+                    "is_explicit": True,
+                    "metric": "global_ranking",
+                }
+
+        return {
+            "is_explicit": False,
+            "reason": "No explicit ranking criteria found",
+        }
+
+    def _check_metric_explicit(self, market: WeatherMarket) -> Dict[str, Any]:
+        """
+        Check if climate metric criteria are explicit.
+        """
+        text = f"{market.question} {market.description}".lower()
+
+        # Check for explicit measurement criteria
+        metric_patterns = [
+            (r"(\d+\.?\d*)\s*(million|m)\s*(square\s*)?(kilo)?", "ice_extent"),
+            (r"(hurricane|tropical storm).*(landfall|form)", "hurricane"),
+            (r"(category\s*\d|cat\s*\d)", "hurricane_category"),
+            (r"(\d+)\s*(tornado|tornadoes)", "tornado_count"),
+            (r"(\d+\.?\d*)\s*°?\s*[FC]", "temperature_increase"),
+            (r"(magnitude|richter)\s*(\d+\.?\d*)", "earthquake"),
+        ]
+
+        for pattern, metric_type in metric_patterns:
+            if re.search(pattern, text, re.I):
+                return {
+                    "is_explicit": True,
+                    "metric": metric_type,
+                }
+
+        return {
+            "is_explicit": False,
+            "reason": "No explicit metric criteria found",
+        }
 
     def filter_markets(
         self, markets: List[WeatherMarket]

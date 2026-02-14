@@ -1,1 +1,1 @@
-# End-to-end test suite for Polymarket Beobachter
+# End-to-End Tests fuer die Weather Observer Pipeline

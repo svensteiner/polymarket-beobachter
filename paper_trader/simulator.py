@@ -20,6 +20,7 @@
 #
 # =============================================================================
 
+import re
 import sys
 import logging
 from datetime import datetime
@@ -60,6 +61,40 @@ logger = logging.getLogger(__name__)
 
 # Fixed paper trading amount in EUR
 FIXED_AMOUNT_EUR: Final[float] = 100.0
+
+# Simulated spread for fallback snapshots (%)
+SIMULATED_SPREAD_PCT: Final[float] = 4.0
+
+# Diversification limits
+MAX_POSITIONS_PER_CITY_DATE: Final[int] = 1  # Exclusive markets: only 1 per city+date
+MAX_POSITIONS_PER_CITY: Final[int] = 3        # Max positions per city overall
+
+
+def _extract_city_date(market_question: str) -> tuple:
+    """
+    Extract city and date from a weather market question.
+
+    Returns:
+        Tuple of (city, date_str) or (None, None) if not parseable.
+    """
+    # Pattern: "...temperature in {City} be ... on {Date}?"
+    m = re.search(
+        r"temperature in ([A-Za-z\s]+?)\s+be\s+.+?\s+on\s+(.+?)\?",
+        market_question,
+        re.IGNORECASE,
+    )
+    if m:
+        city = m.group(1).strip()
+        date_str = m.group(2).strip().rstrip(".")
+        return city, date_str
+    # Fallback: "...temperature in {City} ... {Month} {Day}"
+    m2 = re.search(
+        r"temperature in ([A-Za-z\s]+?)(?:\s+be|\s+exceed|\s+reach)",
+        market_question,
+        re.IGNORECASE,
+    )
+    city = m2.group(1).strip() if m2 else None
+    return city, None
 
 
 # =============================================================================
@@ -114,15 +149,17 @@ class ExecutionSimulator:
         """
         now = datetime.now().isoformat()
 
-        # Check capital availability BEFORE attempting entry
-        if not has_sufficient_capital():
+        # Check position limit BEFORE attempting entry
+        open_positions = self._paper_logger.get_open_positions()
+        can_open, limit_reason = self._capital_manager.can_open_position(len(open_positions))
+        if not can_open:
             record = PaperTradeRecord(
                 record_id=generate_record_id(),
                 timestamp=now,
                 proposal_id=proposal.proposal_id,
                 market_id=proposal.market_id,
                 action=TradeAction.SKIP.value,
-                reason=f"Insufficient capital: {self.fixed_amount_eur:.2f} EUR required",
+                reason=limit_reason,
                 position_id=None,
                 snapshot_time=None,
                 entry_price=None,
@@ -131,8 +168,66 @@ class ExecutionSimulator:
                 pnl_eur=None,
             )
             log_trade(record)
-            logger.warning(f"SKIP: Insufficient capital for {proposal.market_id}")
+            logger.warning(f"SKIP: {limit_reason} for {proposal.market_id}")
             return (None, record)
+
+        # Check diversification: max positions per city+date (exclusive markets)
+        new_city, new_date = _extract_city_date(proposal.market_question)
+        if new_city:
+            city_date_count = 0
+            city_count = 0
+            for pos in open_positions:
+                pos_city, pos_date = _extract_city_date(pos.market_question)
+                if pos_city and pos_city.lower() == new_city.lower():
+                    city_count += 1
+                    if pos_date and new_date and pos_date == new_date:
+                        city_date_count += 1
+
+            if new_date and city_date_count >= MAX_POSITIONS_PER_CITY_DATE:
+                skip_reason = (
+                    f"Exclusive market limit: already {city_date_count} position(s) "
+                    f"for {new_city} on {new_date} (max {MAX_POSITIONS_PER_CITY_DATE})"
+                )
+                record = PaperTradeRecord(
+                    record_id=generate_record_id(),
+                    timestamp=now,
+                    proposal_id=proposal.proposal_id,
+                    market_id=proposal.market_id,
+                    action=TradeAction.SKIP.value,
+                    reason=skip_reason,
+                    position_id=None,
+                    snapshot_time=None,
+                    entry_price=None,
+                    exit_price=None,
+                    slippage_applied=None,
+                    pnl_eur=None,
+                )
+                log_trade(record)
+                logger.warning(f"SKIP: {skip_reason} for {proposal.market_id}")
+                return (None, record)
+
+            if city_count >= MAX_POSITIONS_PER_CITY:
+                skip_reason = (
+                    f"City diversification limit: already {city_count} position(s) "
+                    f"for {new_city} (max {MAX_POSITIONS_PER_CITY})"
+                )
+                record = PaperTradeRecord(
+                    record_id=generate_record_id(),
+                    timestamp=now,
+                    proposal_id=proposal.proposal_id,
+                    market_id=proposal.market_id,
+                    action=TradeAction.SKIP.value,
+                    reason=skip_reason,
+                    position_id=None,
+                    snapshot_time=None,
+                    entry_price=None,
+                    exit_price=None,
+                    slippage_applied=None,
+                    pnl_eur=None,
+                )
+                log_trade(record)
+                logger.warning(f"SKIP: {skip_reason} for {proposal.market_id}")
+                return (None, record)
 
         # Get market snapshot - or create simulated one from proposal
         snapshot = get_market_snapshot(proposal.market_id)
@@ -148,7 +243,7 @@ class ExecutionSimulator:
                     best_bid=max(0.01, implied_prob - 0.02),
                     best_ask=min(0.99, implied_prob + 0.02),
                     mid_price=implied_prob,
-                    spread_pct=4.0,  # Assume 4% spread for simulated
+                    spread_pct=SIMULATED_SPREAD_PCT,
                     liquidity_bucket="MEDIUM",
                     is_resolved=False,
                     resolved_outcome=None,
@@ -225,7 +320,7 @@ class ExecutionSimulator:
             available = self._capital_manager.get_state().available_capital_eur
         except Exception:
             available = 10000.0
-        self.fixed_amount_eur = kelly_size(
+        position_eur = kelly_size(
             win_probability=win_prob,
             entry_price=snapshot.mid_price,
             bankroll=available,
@@ -259,7 +354,25 @@ class ExecutionSimulator:
         # Calculate position size
         # In prediction markets: price is probability, contracts pay $1 if correct
         # Size = amount / price
-        size_contracts = self.fixed_amount_eur / entry_price
+        if entry_price <= 0:
+            logger.warning(f"Entry price <= 0 ({entry_price}), skipping trade for {proposal.market_id}")
+            record = PaperTradeRecord(
+                record_id=generate_record_id(),
+                timestamp=now,
+                proposal_id=proposal.proposal_id,
+                market_id=proposal.market_id,
+                action=TradeAction.SKIP.value,
+                reason=f"Entry price <= 0 ({entry_price})",
+                position_id=None,
+                snapshot_time=snapshot.snapshot_time,
+                entry_price=None,
+                exit_price=None,
+                slippage_applied=None,
+                pnl_eur=None,
+            )
+            log_trade(record)
+            return (None, record)
+        size_contracts = position_eur / entry_price
 
         # Create paper position
         position_id = generate_position_id()
@@ -274,7 +387,7 @@ class ExecutionSimulator:
             entry_price=entry_price,
             entry_slippage=slippage_applied,
             size_contracts=size_contracts,
-            cost_basis_eur=self.fixed_amount_eur,
+            cost_basis_eur=position_eur,
             exit_time=None,
             exit_price=None,
             exit_slippage=None,
@@ -300,7 +413,7 @@ class ExecutionSimulator:
         )
 
         # Allocate capital for this position
-        if not allocate_capital(self.fixed_amount_eur, f"Entry: {proposal.market_id}"):
+        if not allocate_capital(position_eur, f"Entry: {proposal.market_id}"):
             # Capital allocation failed (race condition) - skip
             record = PaperTradeRecord(
                 record_id=generate_record_id(),
@@ -330,6 +443,89 @@ class ExecutionSimulator:
         )
 
         return (position, record)
+
+    def simulate_exit_market(
+        self,
+        position: PaperPosition,
+        snapshot: MarketSnapshot,
+        reason: str
+    ) -> Tuple[PaperPosition, PaperTradeRecord]:
+        """
+        Simulate exit at current market price (take-profit, stop-loss, etc.).
+
+        Args:
+            position: The open position to close
+            snapshot: Current market snapshot
+            reason: Exit reason (e.g. "Take-Profit", "Stop-Loss")
+
+        Returns:
+            Tuple of (closed PaperPosition, PaperTradeRecord)
+        """
+        now = datetime.now().isoformat()
+
+        exit_result = calculate_exit_price(snapshot, position.side, is_resolution=False)
+
+        if exit_result is None:
+            exit_price = snapshot.mid_price or position.entry_price
+            exit_slippage = 0.0
+        else:
+            exit_price, exit_slippage = exit_result
+
+        revenue_eur = position.size_contracts * exit_price
+        realized_pnl = revenue_eur - position.cost_basis_eur
+        pnl_pct = (realized_pnl / position.cost_basis_eur) * 100 if position.cost_basis_eur > 0 else 0.0
+
+        closed_position = PaperPosition(
+            position_id=position.position_id,
+            proposal_id=position.proposal_id,
+            market_id=position.market_id,
+            market_question=position.market_question,
+            side=position.side,
+            status="CLOSED",
+            entry_time=position.entry_time,
+            entry_price=position.entry_price,
+            entry_slippage=position.entry_slippage,
+            size_contracts=position.size_contracts,
+            cost_basis_eur=position.cost_basis_eur,
+            exit_time=now,
+            exit_price=exit_price,
+            exit_slippage=exit_slippage,
+            exit_reason=reason,
+            realized_pnl_eur=realized_pnl,
+            pnl_pct=pnl_pct,
+        )
+
+        record = PaperTradeRecord(
+            record_id=generate_record_id(),
+            timestamp=now,
+            proposal_id=position.proposal_id,
+            market_id=position.market_id,
+            action=TradeAction.PAPER_EXIT.value,
+            reason=f"{reason}: exit @ {exit_price:.4f} | P&L: {realized_pnl:+.2f} EUR ({pnl_pct:+.1f}%)",
+            position_id=position.position_id,
+            snapshot_time=snapshot.snapshot_time,
+            entry_price=position.entry_price,
+            exit_price=exit_price,
+            slippage_applied=exit_slippage,
+            pnl_eur=realized_pnl,
+        )
+
+        release_capital(
+            position.cost_basis_eur,
+            realized_pnl,
+            f"{reason}: {position.market_id}"
+        )
+
+        log_position(closed_position)
+        log_trade(record)
+
+        logger.info(
+            f"PAPER_EXIT ({reason}): {position.market_id} | {position.side} | "
+            f"entry @ {position.entry_price:.4f} → exit @ {exit_price:.4f} | "
+            f"P&L: {realized_pnl:+.2f} EUR ({pnl_pct:+.1f}%)"
+        )
+
+        return (closed_position, record)
 
     def simulate_exit_resolution(
         self,
@@ -367,7 +563,7 @@ class ExecutionSimulator:
         # Revenue = size * exit_price
         revenue_eur = position.size_contracts * exit_price
         realized_pnl = revenue_eur - position.cost_basis_eur
-        pnl_pct = (realized_pnl / position.cost_basis_eur) * 100
+        pnl_pct = (realized_pnl / position.cost_basis_eur) * 100 if position.cost_basis_eur > 0 else 0.0
 
         # Create closed position
         closed_position = PaperPosition(
@@ -443,6 +639,15 @@ def get_simulator() -> ExecutionSimulator:
 def simulate_entry(proposal: Proposal) -> Tuple[Optional[PaperPosition], PaperTradeRecord]:
     """Convenience function to simulate entry."""
     return get_simulator().simulate_entry(proposal)
+
+
+def simulate_exit_market(
+    position: PaperPosition,
+    snapshot: MarketSnapshot,
+    reason: str
+) -> Tuple[PaperPosition, PaperTradeRecord]:
+    """Convenience function to simulate market-price exit."""
+    return get_simulator().simulate_exit_market(position, snapshot, reason)
 
 
 def simulate_exit_resolution(

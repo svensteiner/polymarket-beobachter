@@ -30,6 +30,76 @@ BASE_DIR = Path(__file__).parent.parent
 # =============================================================================
 
 
+def weather_observation_to_proposal(observation) -> Optional["Proposal"]:
+    """
+    Convert a WeatherObservation to a Proposal for the ProposalGenerator.
+
+    Args:
+        observation: WeatherObservation object from weather_engine
+
+    Returns:
+        Proposal object or None if observation is not actionable.
+    """
+    from proposals.models import Proposal, ProposalCoreCriteria, generate_proposal_id
+    from datetime import datetime, timezone
+
+    # Only process OBSERVE actions (edge detected)
+    from core.weather_signal import ObservationAction
+    if observation.action != ObservationAction.OBSERVE:
+        return None
+
+    market_id = observation.market_id
+    if not market_id:
+        return None
+
+    model_prob = observation.model_probability
+    market_prob = observation.market_probability
+    edge = observation.edge
+
+    if model_prob <= 0 or edge <= 0:
+        return None
+
+    # Create core criteria (all pass for weather observations with edge)
+    core_criteria = ProposalCoreCriteria(
+        liquidity_ok=True,
+        volume_ok=True,
+        time_to_resolution_ok=True,
+        data_quality_ok=True,
+    )
+
+    # Map confidence
+    confidence = observation.confidence or "MEDIUM"
+    if confidence not in ("LOW", "MEDIUM", "HIGH"):
+        confidence = "MEDIUM"
+
+    # Build justification
+    city = getattr(observation, 'city', 'Unknown')
+    forecast_f = getattr(observation, 'forecast_temperature_f', None)
+    threshold_f = getattr(observation, 'threshold_temperature_f', None)
+
+    justification = f"Weather model for {city}"
+    if forecast_f and threshold_f:
+        justification += f": Forecast {forecast_f}°F vs threshold {threshold_f}°F"
+
+    # Create proposal
+    proposal = Proposal(
+        proposal_id=generate_proposal_id(),
+        timestamp=datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S") + "Z",
+        market_id=market_id,
+        market_question=observation.event_description or f"Weather: {city}",
+        decision="TRADE",
+        implied_probability=market_prob,
+        model_probability=model_prob,
+        edge=edge,
+        core_criteria=core_criteria,
+        warnings=tuple(),
+        confidence_level=confidence,
+        justification_summary=justification,
+    )
+
+    return proposal
+
+
 def weather_signal_to_analysis(signal: Dict[str, Any]) -> Optional[Dict[str, Any]]:
     """
     Convert a WeatherSignal (as dict) to an analysis dict for ProposalGenerator.

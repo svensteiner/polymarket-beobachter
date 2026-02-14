@@ -18,10 +18,13 @@
 # =============================================================================
 
 import json
+import logging
 import os
 from datetime import datetime
 from pathlib import Path
 from typing import Optional, List, Dict, Any
+
+_logger = logging.getLogger(__name__)
 
 from paper_trader.models import (
     PaperPosition,
@@ -85,6 +88,10 @@ class PaperTradingLogger:
         self.trades_log_path = self.logs_dir / "paper_trades.jsonl"
         self.positions_log_path = self.logs_dir / "paper_positions.jsonl"
 
+        # In-memory cache for open positions (FIX K6)
+        self._open_positions_cache: Optional[List[PaperPosition]] = None
+        self._cache_dirty: bool = True
+
         # Initialize files with headers
         self._init_files()
 
@@ -124,6 +131,8 @@ class PaperTradingLogger:
         """Append a JSON object as a single line."""
         with open(path, 'a', encoding='utf-8') as f:
             f.write(json.dumps(data, ensure_ascii=False) + '\n')
+            f.flush()
+            os.fsync(f.fileno())
 
     def log_trade(self, record: PaperTradeRecord) -> bool:
         """
@@ -143,7 +152,7 @@ class PaperTradingLogger:
             self._append_json(self.trades_log_path, record.to_dict())
             return True
         except (IOError, OSError, TypeError, ValueError) as e:
-            print(f"[PAPER LOGGER ERROR] Failed to log trade: {e}")
+            _logger.error(f"Failed to log trade: {e}")
             return False
 
     def log_position(self, position: PaperPosition) -> bool:
@@ -162,9 +171,10 @@ class PaperTradingLogger:
         """
         try:
             self._append_json(self.positions_log_path, position.to_dict())
+            self._cache_dirty = True
             return True
         except (IOError, OSError, TypeError, ValueError) as e:
-            print(f"[PAPER LOGGER ERROR] Failed to log position: {e}")
+            _logger.error(f"Failed to log position: {e}")
             return False
 
     def read_all_trades(self) -> List[PaperTradeRecord]:
@@ -209,7 +219,7 @@ class PaperTradingLogger:
                     except (json.JSONDecodeError, KeyError):
                         continue
         except (IOError, OSError) as e:
-            print(f"[PAPER LOGGER ERROR] Failed to read trades: {e}")
+            _logger.error(f"Failed to read trades: {e}")
 
         return records
 
@@ -242,7 +252,7 @@ class PaperTradingLogger:
                     except (json.JSONDecodeError, KeyError):
                         continue
         except (IOError, OSError) as e:
-            print(f"[PAPER LOGGER ERROR] Failed to read positions: {e}")
+            _logger.error(f"Failed to read positions: {e}")
 
         return positions
 
@@ -250,9 +260,15 @@ class PaperTradingLogger:
         """
         Get all currently open positions.
 
+        Uses an in-memory cache with a dirty-flag to avoid re-reading
+        the entire JSONL file on every call (FIX K6).
+
         Returns:
             List of OPEN PaperPosition objects
         """
+        if not self._cache_dirty and self._open_positions_cache is not None:
+            return self._open_positions_cache
+
         all_positions = self.read_all_positions()
 
         # Build latest state for each position
@@ -261,7 +277,9 @@ class PaperTradingLogger:
             position_states[pos.position_id] = pos
 
         # Filter to open only
-        return [p for p in position_states.values() if p.status == "OPEN"]
+        self._open_positions_cache = [p for p in position_states.values() if p.status == "OPEN"]
+        self._cache_dirty = False
+        return self._open_positions_cache
 
     def get_executed_proposal_ids(self) -> set:
         """

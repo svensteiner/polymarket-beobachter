@@ -1,13 +1,13 @@
 # =============================================================================
-# POLYMARKET EU AI COLLECTOR
-# Module: collector/collector.py
-# Purpose: Main collector orchestrating discovery and storage pipeline
+# WEATHER OBSERVER - COLLECTOR
 # =============================================================================
+#
+# WEATHER-ONLY COLLECTOR
 #
 # PIPELINE:
 # 1. Fetch markets from Polymarket API
 # 2. Sanitize (strip forbidden fields)
-# 3. Filter for EU + AI relevance
+# 3. Filter for weather relevance
 # 4. Normalize to standard format
 # 5. Save raw, normalized, and candidate records
 # 6. Generate run report
@@ -41,12 +41,12 @@ class CollectorStats:
 
 class Collector:
     """
-    Main collector class orchestrating the discovery pipeline.
+    Weather-only collector class.
 
     Coordinates:
     - API client for fetching
     - Sanitizer for removing forbidden fields
-    - Filter for relevance matching
+    - Filter for weather relevance matching
     - Normalizer for standardization
     - Storage for persistence
     """
@@ -55,7 +55,6 @@ class Collector:
         self,
         output_dir: str = "data/collector",
         max_markets: int = 200,
-        custom_keywords: Optional[List[str]] = None,
     ):
         """
         Initialize the collector.
@@ -63,7 +62,6 @@ class Collector:
         Args:
             output_dir: Base directory for output
             max_markets: Maximum markets to fetch
-            custom_keywords: Optional custom keyword overrides
         """
         self.output_dir = output_dir
         self.max_markets = max_markets
@@ -71,19 +69,7 @@ class Collector:
         # Initialize components
         self.client = PolymarketClient()
         self.sanitizer = Sanitizer(log_removals=False)
-
-        # Parse custom keywords if provided
-        eu_keywords = None
-        ai_keywords = None
-        if custom_keywords:
-            eu_keywords = [k for k in custom_keywords if "eu" in k.lower() or "european" in k.lower()]
-            ai_keywords = [k for k in custom_keywords if k not in (eu_keywords or [])]
-
-        self.filter = MarketFilter(
-            custom_eu_keywords=eu_keywords,
-            custom_ai_keywords=ai_keywords,
-        )
-
+        self.filter = MarketFilter()  # Weather-only filter
         self.normalizer = MarketNormalizer()
         self.storage = StorageManager(base_dir=output_dir)
 
@@ -99,7 +85,7 @@ class Collector:
         """
         start_time = datetime.now(timezone.utc)
         logger.info("=" * 60)
-        logger.info("POLYMARKET EU AI COLLECTOR - Starting run")
+        logger.info("WEATHER OBSERVER COLLECTOR - Starting run")
         logger.info(f"Max markets: {self.max_markets}")
         logger.info(f"Output dir: {self.output_dir}")
         logger.info(f"Dry run: {dry_run}")
@@ -109,13 +95,14 @@ class Collector:
         if not dry_run:
             self.storage.ensure_directories()
 
-        # Step 1: Fetch markets (only OPEN markets, not closed)
-        logger.info("Step 1: Fetching markets from Polymarket API...")
-        raw_markets = self.client.fetch_all_markets(
+        # Step 1: Fetch weather markets from events with weather/climate tags
+        logger.info("Step 1: Fetching weather markets from Polymarket API...")
+        logger.info("  (Using /events?tag_slug=weather and /events?tag_slug=climate)")
+        raw_markets = self.client.fetch_weather_markets(
             max_markets=self.max_markets,
-            closed=False,  # Only fetch active/open markets
+            include_closed=False,  # Only fetch active/open markets
         )
-        logger.info(f"Fetched {len(raw_markets)} markets")
+        logger.info(f"Fetched {len(raw_markets)} weather-tagged markets")
 
         # Step 2: Sanitize
         logger.info("Step 2: Sanitizing (removing forbidden fields)...")
@@ -128,8 +115,8 @@ class Collector:
         if not dry_run:
             self.storage.save_raw_response(sanitized_markets)
 
-        # Step 3: Filter for relevance
-        logger.info("Step 3: Filtering for EU + AI relevance...")
+        # Step 3: Filter for weather relevance
+        logger.info("Step 3: Filtering for weather relevance...")
         filtered_markets, filter_stats = self.filter.filter_markets(sanitized_markets)
         logger.info(f"Filter results: {filter_stats}")
 
@@ -138,59 +125,35 @@ class Collector:
         all_normalized: List[NormalizedMarket] = []
         candidates: List[NormalizedMarket] = []
 
-        # Map FilterResult to category names
-        RESULT_TO_CATEGORY = {
-            FilterResult.INCLUDED: "EU_REGULATION",
-            FilterResult.INCLUDED_CORPORATE: "CORPORATE_EVENT",
-            FilterResult.INCLUDED_COURT: "COURT_RULING",
-            FilterResult.INCLUDED_WEATHER: "WEATHER_EVENT",
-            FilterResult.INCLUDED_POLITICAL: "POLITICAL_EVENT",
-            FilterResult.INCLUDED_CRYPTO: "CRYPTO_EVENT",
-            FilterResult.INCLUDED_FINANCE: "FINANCE_EVENT",
-            FilterResult.INCLUDED_GENERAL: "GENERAL_EVENT",
-        }
-
         for fm in filtered_markets:
             normalized = self.normalizer.normalize(
                 market=fm.market,
-                extracted_deadline=fm.extracted_deadline,
                 notes=fm.notes,
             )
 
-            # Override category based on filter result
-            if fm.result in RESULT_TO_CATEGORY:
-                # Create new NormalizedMarket with updated category
+            # Set category for weather markets
+            if fm.result == FilterResult.INCLUDED_WEATHER:
                 normalized = NormalizedMarket(
                     market_id=normalized.market_id,
                     title=normalized.title,
                     resolution_text=normalized.resolution_text,
                     end_date=normalized.end_date,
                     created_time=normalized.created_time,
-                    category=RESULT_TO_CATEGORY[fm.result],
+                    category="WEATHER_EVENT",
                     tags=normalized.tags,
                     url=normalized.url,
-                    collector_notes=normalized.collector_notes,
+                    collector_notes=normalized.collector_notes + fm.matched_keywords,
                     collected_at=normalized.collected_at,
                 )
 
             all_normalized.append(normalized)
 
-            # Include complete + relevant markets as candidates
-            # Accept all INCLUDED_* filter results
-            if fm.result in (
-                FilterResult.INCLUDED,
-                FilterResult.INCLUDED_CORPORATE,
-                FilterResult.INCLUDED_COURT,
-                FilterResult.INCLUDED_WEATHER,
-                FilterResult.INCLUDED_POLITICAL,
-                FilterResult.INCLUDED_CRYPTO,
-                FilterResult.INCLUDED_FINANCE,
-                FilterResult.INCLUDED_GENERAL,
-            ) and normalized.is_complete():
+            # Include complete weather markets as candidates
+            if fm.result == FilterResult.INCLUDED_WEATHER and normalized.is_complete():
                 candidates.append(normalized)
 
         logger.info(f"Normalized {len(all_normalized)} markets")
-        logger.info(f"Found {len(candidates)} candidates")
+        logger.info(f"Found {len(candidates)} weather candidates")
 
         # Step 5: Save outputs
         if not dry_run:
@@ -221,7 +184,7 @@ class Collector:
         logger.info("COLLECTION COMPLETE")
         logger.info(f"Duration: {duration:.1f}s")
         logger.info(f"Fetched: {stats.total_fetched}")
-        logger.info(f"Candidates: {stats.total_candidates}")
+        logger.info(f"Weather Candidates: {stats.total_candidates}")
         logger.info("=" * 60)
 
         return stats
@@ -244,7 +207,7 @@ class Collector:
             Markdown report string
         """
         lines = [
-            "# Polymarket EU AI Collector - Run Report",
+            "# Weather Observer Collector - Run Report",
             "",
             f"**Run Date:** {date.today().isoformat()}",
             f"**Run Time:** {datetime.now(timezone.utc).isoformat()}",
@@ -254,7 +217,7 @@ class Collector:
             "",
             f"- **Total Fetched:** {stats.total_fetched}",
             f"- **Total Sanitized:** {stats.total_sanitized}",
-            f"- **Total Candidates:** {stats.total_candidates}",
+            f"- **Weather Candidates:** {stats.total_candidates}",
             "",
             "## Filter Results",
             "",
@@ -281,13 +244,14 @@ class Collector:
 
         lines.extend([
             "",
-            "## Candidates Found",
+            "## Weather Candidates Found",
             "",
         ])
 
         if candidates:
             for i, candidate in enumerate(candidates[:20], 1):
-                lines.append(f"### {i}. {candidate.title[:80]}...")
+                title = candidate.title[:80] if candidate.title else "Unknown"
+                lines.append(f"### {i}. {title}...")
                 lines.append("")
                 lines.append(f"- **ID:** `{candidate.market_id}`")
                 lines.append(f"- **End Date:** {candidate.end_date}")
@@ -295,13 +259,13 @@ class Collector:
                 lines.append(f"- **Tags:** {', '.join(candidate.tags) if candidate.tags else 'N/A'}")
                 lines.append(f"- **URL:** {candidate.url}")
                 if candidate.collector_notes:
-                    lines.append(f"- **Notes:** {', '.join(candidate.collector_notes)}")
+                    lines.append(f"- **Weather Keywords:** {', '.join(candidate.collector_notes[:5])}")
                 lines.append("")
 
             if len(candidates) > 20:
                 lines.append(f"*... and {len(candidates) - 20} more candidates*")
         else:
-            lines.append("*No candidates found matching EU + AI criteria.*")
+            lines.append("*No weather candidates found.*")
 
         lines.extend([
             "",
@@ -312,9 +276,9 @@ class Collector:
         # Sample excluded markets by reason
         exclusion_samples: Dict[str, List[str]] = {}
         for fm in filtered:
-            if fm.result != FilterResult.INCLUDED:
+            if fm.result != FilterResult.INCLUDED_WEATHER:
                 reason = fm.result.value
-                title = fm.market.get("question", "Unknown")[:60]
+                title = fm.market.get("question", fm.market.get("title", "Unknown"))[:60]
                 if reason not in exclusion_samples:
                     exclusion_samples[reason] = []
                 if len(exclusion_samples[reason]) < 3:
@@ -331,7 +295,7 @@ class Collector:
             "",
             "---",
             "",
-            "*This report was generated automatically by the Polymarket EU AI Collector.*",
+            "*This report was generated automatically by the Weather Observer Collector.*",
             "*No price, volume, or probability data was collected or stored.*",
         ])
 
