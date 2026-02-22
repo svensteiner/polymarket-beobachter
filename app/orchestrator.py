@@ -132,14 +132,19 @@ class Orchestrator:
         result.add_step(weather_result)
         print(f" {'OK' if weather_result.success else 'FAIL'} ({weather_result.message})")
 
+        # Step 2b: Market Condition Assessment (READ-ONLY)
+        edge_obs_count = weather_result.data.get("edge_observations", 0)
+        market_condition = self._assess_market_condition(edge_obs_count)
+
         # Step 3: Proposal Generator
         print("[3/6] Proposals: Edge -> Signale ...", end="", flush=True)
         proposal_result = self._run_proposal_generator(weather_result.data)
         result.add_step(proposal_result)
         print(f" {'OK' if proposal_result.success else 'FAIL'} ({proposal_result.message})")
 
-        # Step 4: Paper Trader
+        # Step 4: Paper Trader (mit DrawdownProtector-Snapshot)
         print("[4/6] Paper Trader: Trades simulieren ...", end="", flush=True)
+        self._record_equity_snapshot("pre_paper_trader")
         paper_result = self._run_paper_trader()
         result.add_step(paper_result)
         print(f" {'OK' if paper_result.success else 'FAIL'} ({paper_result.message})")
@@ -149,6 +154,9 @@ class Orchestrator:
         outcome_result = self._run_outcome_tracker(weather_result.data)
         result.add_step(outcome_result)
         print(f" {'OK' if outcome_result.success else 'FAIL'} ({outcome_result.message})")
+
+        # Step 5b: Outcome Analyser (nach jedem Run aktualisieren)
+        self._run_outcome_analyser()
 
         # Build summary with pipeline duration
         duration_seconds = round(time.perf_counter() - pipeline_start, 2)
@@ -174,6 +182,17 @@ class Orchestrator:
         logger.info(f"=== Pipeline END === run_id={run_id} state={result.state.value}")
 
         return result
+
+    def _record_equity_snapshot(self, reason: str = "pipeline_run") -> None:
+        """Speichere aktuellen Equity-Wert fuer DrawdownProtector."""
+        try:
+            from paper_trader.capital_manager import get_capital_manager
+            from paper_trader.drawdown_protector import record_equity_snapshot
+            state = get_capital_manager().get_state()
+            equity = state.available_capital_eur + state.allocated_capital_eur
+            record_equity_snapshot(equity, reason)
+        except Exception as e:
+            logger.debug(f"Equity-Snapshot fehlgeschlagen: {e}")
 
     def _run_collector(self) -> StepResult:
         """Fetch weather markets from Polymarket."""
@@ -581,6 +600,36 @@ class Orchestrator:
                 data={"observations_recorded": 0, "resolutions_updated": 0}
             )
 
+    def _assess_market_condition(self, edge_observations_count: int = 0) -> dict:
+        """Bewerte Marktbedingungen (READ-ONLY). Gibt Condition-Dict zurueck."""
+        try:
+            from core.market_condition import assess_market_condition
+            state = assess_market_condition(edge_observations_count)
+            condition = state.get("condition", "WATCH")
+            logger.info(f"Market Condition: {condition} ({edge_observations_count} edge obs)")
+            return state
+        except Exception as e:
+            logger.debug(f"Market Condition Assessment fehlgeschlagen: {e}")
+            return {"condition": "WATCH"}
+
+    def _run_outcome_analyser(self) -> None:
+        """Aktualisiere Performance-Report nach jedem Pipeline-Run (non-blocking)."""
+        try:
+            from analytics.outcome_analyser import run_analysis
+            run_analysis()
+            logger.info("Outcome-Analyser: Performance-Report aktualisiert")
+        except Exception as e:
+            logger.debug(f"Outcome-Analyser fehlgeschlagen (unkritisch): {e}")
+
+    def _get_drawdown_summary(self) -> Dict[str, Any]:
+        """Hole aktuellen Drawdown-Status fuer Summary."""
+        try:
+            from paper_trader.drawdown_protector import get_drawdown_status
+            return get_drawdown_status()
+        except Exception as e:
+            logger.debug(f"Drawdown-Status nicht verfuegbar: {e}")
+            return {}
+
     def _build_summary(self, result: PipelineResult) -> Dict[str, Any]:
         """Build the pipeline summary."""
         collector_step = next((s for s in result.steps if s.name == "collector"), None)
@@ -589,6 +638,9 @@ class Orchestrator:
         paper_step = next((s for s in result.steps if s.name == "paper_trader"), None)
         outcome_step = next((s for s in result.steps if s.name == "outcome_tracker"), None)
 
+        dd = self._get_drawdown_summary()
+        from core.market_condition import load_last_condition
+        mc = load_last_condition()
         return {
             "run_date": date.today().isoformat(),
             "run_time": result.timestamp,
@@ -602,6 +654,10 @@ class Orchestrator:
             "paper_positions_closed": paper_step.data.get("positions_closed", 0) if paper_step else 0,
             "paper_pnl_eur": paper_step.data.get("total_pnl_eur", 0) if paper_step else 0,
             "resolutions_updated": outcome_step.data.get("resolutions_updated", 0) if outcome_step else 0,
+            "drawdown_pct": dd.get("current_dd_pct", 0.0),
+            "drawdown_recovery_mode": dd.get("is_recovery_mode", False),
+            "drawdown_size_factor": dd.get("size_factor", 1.0),
+            "market_condition": mc.get("condition", "WATCH"),
         }
 
     @staticmethod
@@ -640,6 +696,9 @@ class Orchestrator:
                 f"Paper positions:      {result.summary.get('paper_positions_entered', 0)} entered, {result.summary.get('paper_positions_closed', 0)} closed",
                 f"Paper P&L (EUR):      {result.summary.get('paper_pnl_eur', 0):+.2f}",
                 f"Resolutions updated:  {result.summary.get('resolutions_updated', 0)}",
+                f"Drawdown:             {result.summary.get('drawdown_pct', 0.0):.1f}% "
+                f"{'[RECOVERY MODE]' if result.summary.get('drawdown_recovery_mode') else '[OK]'}",
+                f"Market Condition:     {result.summary.get('market_condition', 'WATCH')}",
             ]
 
             errors = [s for s in result.steps if not s.success]

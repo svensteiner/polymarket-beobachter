@@ -50,6 +50,7 @@ from paper_trader.capital_manager import (
     has_sufficient_capital,
 )
 from paper_trader.kelly import kelly_size, FALLBACK_POSITION_EUR
+from paper_trader.drawdown_protector import check_can_open_position
 
 
 logger = logging.getLogger(__name__)
@@ -169,6 +170,27 @@ class ExecutionSimulator:
             )
             log_trade(record)
             logger.warning(f"SKIP: {limit_reason} for {proposal.market_id}")
+            return (None, record)
+
+        # DrawdownProtector: Keine neuen Positionen im Recovery-Modus
+        dd_ok, dd_reason = check_can_open_position()
+        if not dd_ok:
+            record = PaperTradeRecord(
+                record_id=generate_record_id(),
+                timestamp=now,
+                proposal_id=proposal.proposal_id,
+                market_id=proposal.market_id,
+                action=TradeAction.SKIP.value,
+                reason=dd_reason,
+                position_id=None,
+                snapshot_time=None,
+                entry_price=None,
+                exit_price=None,
+                slippage_applied=None,
+                pnl_eur=None,
+            )
+            log_trade(record)
+            logger.warning(f"SKIP (DrawdownProtector): {dd_reason} for {proposal.market_id}")
             return (None, record)
 
         # Check diversification: max positions per city+date (exclusive markets)
