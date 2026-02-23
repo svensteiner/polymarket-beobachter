@@ -342,10 +342,15 @@ class ExecutionSimulator:
             available = self._capital_manager.get_state().available_capital_eur
         except Exception:
             available = 10000.0
+        # Feature 7 + 4: Time-Decay und Ensemble-Vol-Scaling
+        hours_to_res = getattr(proposal, 'hours_to_resolution', None)
+        ens_variance = getattr(proposal, 'ensemble_variance', None)
         position_eur = kelly_size(
             win_probability=win_prob,
             entry_price=snapshot.mid_price,
             bankroll=available,
+            hours_to_resolution=hours_to_res,
+            ensemble_variance=ens_variance,
         )
 
         # Calculate entry price with slippage

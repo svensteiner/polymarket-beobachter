@@ -359,11 +359,19 @@ class WeatherEngine:
                 config_snapshot=self.config,
             )
 
-        # Calculate edge
+        # Calculate edge (Feature 3: Fee-Aware)
         edge = compute_edge(fair_prob, market.odds_yes)
+        try:
+            from .fee_model import polymarket_taker_fee
+            fee = polymarket_taker_fee(market.odds_yes)
+            net_edge = edge - fee  # Netto-Edge nach Fee
+            if abs(edge) > 0:
+                logger.debug(f"Fee-Aware: raw_edge={edge:.4f} fee={fee:.4f} net={net_edge:.4f}")
+        except Exception:
+            net_edge = edge  # Fallback ohne Fee
 
         edge_ok = meets_edge_threshold(
-            edge=edge, min_edge=self.min_edge,
+            edge=net_edge, min_edge=self.min_edge,
             confidence=confidence,
             medium_confidence_multiplier=self.medium_confidence_multiplier,
         )
@@ -474,9 +482,15 @@ class WeatherEngine:
             )
 
         edge = compute_edge(prob_result.fair_probability, market.odds_yes)
+        try:
+            from .fee_model import polymarket_taker_fee
+            fee = polymarket_taker_fee(market.odds_yes)
+            net_edge = edge - fee
+        except Exception:
+            net_edge = edge
 
         edge_ok = meets_edge_threshold(
-            edge=edge, min_edge=self.min_edge,
+            edge=net_edge, min_edge=self.min_edge,
             confidence=prob_result.confidence,
             medium_confidence_multiplier=self.medium_confidence_multiplier,
         )

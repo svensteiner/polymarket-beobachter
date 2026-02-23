@@ -45,9 +45,30 @@ Bereits implementierte Features (neu):
   - Verkauf wenn Forecast sich dreht und Edge verschwindet
   - Exit bei Edge <= 0 oder Edge < MIN_EDGE bei HIGH Confidence
 
-Offene Strategie-Luecken die du angehen sollst:
-- **Kurs-Monitoring**: Aktuelle Preise fuer offene Positionen tracken
-- **Outcome-Analyse**: Nach Resolution analysieren was funktioniert hat
+Neu implementierte Features (2026-02-23):
+- **Fee-Aware Edge** (FERTIG): `core/fee_model.py` + `core/weather_engine.py`
+  - Polymarket Taker-Fee (nicht-linear: max 2% bei p=0.5) wird vom Edge abgezogen
+  - net_edge = raw_edge - fee(market_price)
+- **Time-to-Resolution Decay** (FERTIG): `paper_trader/kelly.py`
+  - Kelly-Faktor sinkt bei kurzer Restlaufzeit: <6h=0.3, <24h=0.6, 24-72h=1.0, <168h=0.8, >168h=0.5
+- **Ensemble Disagreement Vol-Scaling** (FERTIG): `paper_trader/kelly.py`
+  - Hohe Ensemble-Varianz -> Kelly-Faktor reduziert: scale=max(0.25, 1-variance*2)
+- **Brier Score Kalibrierung** (FERTIG): `analytics/outcome_analyser.py`
+  - Brier Score, Brier Skill Score, Calibration Bins (Reliability Diagram Daten)
+- **Bayesian Log Score Ensemble** (FERTIG): `core/model_weights.py`
+  - Dynamische Modellgewichte via Exponential Weight Update nach Log Score
+  - Gewichte in `data/model_weights.json`, integriert in `core/ensemble_builder.py`
+- **Gamma API Auto-Discovery** (FERTIG): `collector/gamma_discovery.py`
+  - Entdeckt neue Wetter-Maerkte automatisch (rate-limited: 1x/Stunde)
+- **Telegram Notifications** (FERTIG): `notifications/telegram.py`
+  - Alerts: Stop-Loss (sofort+Ton), Take-Profit, High-Edge, Pipeline Summary, Tages-Digest
+  - Config: TELEGRAM_BOT_TOKEN + TELEGRAM_CHAT_ID in .env
+- **Arbitrage-Detektion** (FERTIG): `analytics/arbitrage_detector.py`
+  - Erkennt logisch inkonsistente Maerkte (gleiche Stadt, versch. Temperaturschwellen)
+  - Output: `output/arbitrage_opportunities.json`
+- **Smart Money Tracking** (FERTIG): `analytics/smart_money.py`
+  - Verfolgt grosse Wallets via CLOB API + Subgraph GraphQL
+  - DB: `data/smart_money.json`
 
 ### 3. Code-Architekt (bei "Architektur", "wie funktioniert")
 Erklaere die Pipeline und schlage strukturelle Verbesserungen vor:

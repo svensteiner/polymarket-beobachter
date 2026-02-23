@@ -26,7 +26,7 @@ import logging
 from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -329,6 +329,161 @@ def _compute_monthly_performance(positions: list[dict]) -> dict[str, Any]:
 # HAUPTFUNKTION
 # =============================================================================
 
+
+# =============================================================================
+# FEATURE 2: BRIER SCORE KALIBRIERUNG
+# =============================================================================
+
+def _compute_brier_score(positions: list[dict]) -> dict[str, Any]:
+    """
+    Berechne den Brier Score als Kalibrierungsmetrik.
+
+    Der Brier Score misst die Genauigkeit von Wahrscheinlichkeitsvorhersagen:
+    BS = (1/N) * sum((forecast - outcome)^2)
+
+    - BS = 0.0: Perfekte Vorhersage
+    - BS = 0.25: Equivalent zu immer 50% sagen (uninformiert)
+    - BS = 1.0: Perfekt falsch
+
+    Reliability: Wenn wir 70% sagen, soll die Sache 70% der Zeit eintreten.
+    Wir bauen auch Reliability Bins (Kalibrierungsdiagramm-Daten).
+
+    Args:
+        positions: Geschlossene Positionen mit Forecast-Daten
+
+    Returns:
+        Dict mit Brier Score, Kalibrierungsbins, Sharpness-Metriken
+    """
+    import math
+
+    if not positions:
+        return {
+            "brier_score": None,
+            "brier_skill_score": None,
+            "sample_size": 0,
+            "calibration_bins": [],
+            "sharpness": None,
+            "resolution": None,
+        }
+
+    scored = []
+    for pos in positions:
+        # Forecast-Wahrscheinlichkeit: entry_price als Proxy fuer market_prob
+        # Wir nutzen (1 - entry_price) wenn wir NO gekauft haben
+        side = pos.get("side", "YES")
+        entry_price = pos.get("entry_price")
+        if entry_price is None:
+            continue
+
+        # Outcome: WIN = 1, LOSE = 0
+        # Bestimme anhand von P&L und entry_price
+        pnl = pos.get("realized_pnl_eur", 0)
+        cost = pos.get("cost_basis_eur", 1)
+        exit_price = pos.get("exit_price")
+
+        if exit_price is None:
+            continue
+
+        # Fuer YES-Position: gewonnen wenn exit_price >= 0.9
+        # Fuer NO-Position: gewonnen wenn exit_price >= 0.9
+        # Bei Resolution: exit_price ist 1.0 oder 0.0
+        if exit_price >= 0.9:
+            outcome = 1
+        elif exit_price <= 0.1:
+            outcome = 0
+        else:
+            continue  # Unklar (Mid-Trade Exit), skip
+
+        # Unser Forecast: entry_price repraesentiert die market probability
+        # Unser Modell dachte wir haetten Edge, also model_prob > entry_price (bei YES)
+        forecast = entry_price  # Bester verfuegbarer Proxy
+
+        brier_sq = (forecast - outcome) ** 2
+        scored.append({
+            "forecast": forecast,
+            "outcome": outcome,
+            "brier_sq": brier_sq,
+            "side": side,
+        })
+
+    if not scored:
+        return {
+            "brier_score": None,
+            "brier_skill_score": None,
+            "sample_size": 0,
+            "calibration_bins": [],
+            "sharpness": None,
+            "resolution": None,
+        }
+
+    n = len(scored)
+    brier_score = sum(s["brier_sq"] for s in scored) / n
+
+    # Brier Skill Score (BSS) relativ zu Klimatologie (base rate)
+    # BSS = 1 - BS / BS_ref, wobei BS_ref = p_bar * (1 - p_bar)
+    outcomes = [s["outcome"] for s in scored]
+    base_rate = sum(outcomes) / len(outcomes)
+    bs_ref = base_rate * (1 - base_rate) if base_rate not in (0, 1) else 0.25
+    bss = 1.0 - (brier_score / bs_ref) if bs_ref > 0 else None
+
+    # Kalibrierungsbins fuer Reliability Diagram
+    # 10 Bins von 0.0-0.1, 0.1-0.2, ..., 0.9-1.0
+    bins: list[dict] = []
+    for i in range(10):
+        low = i / 10.0
+        high = (i + 1) / 10.0
+        bin_items = [s for s in scored if low <= s["forecast"] < high]
+        if bin_items:
+            mean_forecast = sum(x["forecast"] for x in bin_items) / len(bin_items)
+            mean_outcome = sum(x["outcome"] for x in bin_items) / len(bin_items)
+            bins.append({
+                "bin_low": low,
+                "bin_high": high,
+                "n": len(bin_items),
+                "mean_forecast": round(mean_forecast, 3),
+                "mean_outcome": round(mean_outcome, 3),
+                "calibration_error": round(abs(mean_forecast - mean_outcome), 3),
+            })
+
+    # Sharpness: mittlere Distanz von 0.5 (je groesser desto besser wenn kalibriert)
+    sharpness = sum(abs(s["forecast"] - 0.5) for s in scored) / n if n > 0 else None
+
+    # Resolution: Varianz der mittleren Outcomes in den Bins
+    # Misst wie viel Information die Forecasts enthalten
+    if bins:
+        bin_outcomes = [b["mean_outcome"] for b in bins]
+        mean_outcome_global = sum(bin_outcomes) / len(bin_outcomes)
+        resolution = sum((o - mean_outcome_global) ** 2 for o in bin_outcomes) / len(bin_outcomes)
+    else:
+        resolution = None
+
+    return {
+        "brier_score": round(brier_score, 6),
+        "brier_skill_score": round(bss, 4) if bss is not None else None,
+        "sample_size": n,
+        "base_rate": round(base_rate, 3),
+        "calibration_bins": bins,
+        "sharpness": round(sharpness, 4) if sharpness is not None else None,
+        "resolution": round(resolution, 6) if resolution is not None else None,
+        "interpretation": _interpret_brier_score(brier_score, bss),
+    }
+
+
+def _interpret_brier_score(bs: float, bss: Optional[float] = None) -> str:
+    """Interpretiere Brier Score in menschenlesbares Urteil."""
+    if bs is None:
+        return "NO_DATA"
+    if bs < 0.05:
+        return "EXCELLENT"
+    elif bs < 0.10:
+        return "GOOD"
+    elif bs < 0.15:
+        return "FAIR"
+    elif bs < 0.25:
+        return "POOR"
+    else:
+        return "UNINFORMATIVE"
+
 def run_analysis() -> dict[str, Any]:
     """
     Fuehre vollstaendige Outcome-Analyse durch und speichere Report.
@@ -345,6 +500,7 @@ def run_analysis() -> dict[str, Any]:
     attribution = _compute_strategy_attribution(positions)
     cities = _compute_city_performance(positions)
     monthly = _compute_monthly_performance(positions)
+    brier = _compute_brier_score(positions)
 
     # Bewertung
     win_rate = base["win_rate_pct"]
@@ -369,6 +525,7 @@ def run_analysis() -> dict[str, Any]:
         "performance_by_month": monthly,
         "data_source": str(POSITIONS_FILE),
         "positions_analysed": len(positions),
+        "calibration": brier,
     }
 
     # Report speichern
@@ -447,6 +604,28 @@ def print_report(report: dict[str, Any] | None = None) -> None:
             )
         print(f"{'='*55}")
 
+    brier = report.get("calibration", {})
+    if brier and brier.get("brier_score") is not None:
+        bs = brier["brier_score"]
+        interp = brier.get("interpretation", "?")
+        bss = brier.get("brier_skill_score")
+        n = brier.get("sample_size", 0)
+        print(f"  KALIBRIERUNG (Brier Score):")
+        print(f"    Brier Score: {bs:.4f}  [{interp}]  (n={n})")
+        if bss is not None:
+            print(f"    Brier Skill: {bss:+.4f}  (0=keine Verbesserung, 1=perfekt)")
+        bins = brier.get("calibration_bins", [])
+        if bins:
+            print(f"    Reliability Bins:")
+            for b in bins:
+                err = b["calibration_error"]
+                bar = "#" * int(err * 20)
+                print(
+                    f"      [{b['bin_low']:.1f}-{b['bin_high']:.1f}] "
+                    f"n={b['n']:>3}  forecast={b['mean_forecast']:.2f}  "
+                    f"outcome={b['mean_outcome']:.2f}  err={err:.3f} {bar}"
+                )
+        print(f"{'='*55}")
     print()
 
 

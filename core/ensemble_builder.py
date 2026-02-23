@@ -259,9 +259,19 @@ class EnsembleBuilder:
         """
         Compute weights for each source.
 
-        Independent models get weight 1.0.
+        Independent models get weight 1.0 (or learned Log-Score weight).
         Correlated models share weight: each gets 1.0/count_in_group.
+
+        Feature 10: Bayesian Log Score Gewichte werden aus data/model_weights.json
+        geladen und mit den Korrelations-Gewichten multipliziert.
         """
+        # Feature 10: Lade gelernte Modell-Gewichte
+        try:
+            from .model_weights import get_normalized_weights
+            learned_weights = get_normalized_weights()
+        except Exception:
+            learned_weights = {}
+
         # Group forecasts by correlation group
         group_counts: Dict[str, int] = {}
         source_group: Dict[str, Optional[str]] = {}
@@ -276,9 +286,13 @@ class EnsembleBuilder:
         for sf in forecasts:
             group = source_group[sf.source_name]
             if group and group_counts.get(group, 0) > 1:
-                weights[sf.source_name] = 1.0 / group_counts[group]
+                base_weight = 1.0 / group_counts[group]
             else:
-                weights[sf.source_name] = 1.0
+                base_weight = 1.0
+
+            # Multipliziere mit gelerntem Gewicht (default 1.0)
+            learned = learned_weights.get(sf.model_name, 1.0)
+            weights[sf.source_name] = base_weight * learned
 
         return weights
 

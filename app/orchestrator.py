@@ -158,6 +158,12 @@ class Orchestrator:
         # Step 5b: Outcome Analyser (nach jedem Run aktualisieren)
         self._run_outcome_analyser()
 
+        # Step 5c: Arbitrage Scan (READ-ONLY, non-blocking)
+        self._run_arbitrage_scan(weather_result.data)
+
+        # Step 5d: Gamma Discovery (suche neue Maerkte, non-blocking)
+        self._run_gamma_discovery()
+
         # Build summary with pipeline duration
         duration_seconds = round(time.perf_counter() - pipeline_start, 2)
         result.summary = self._build_summary(result)
@@ -173,6 +179,14 @@ class Orchestrator:
         # Log to audit (includes run_id via summary)
         self._log_to_audit(result)
 
+        # Telegram Pipeline Summary (nur bei interessanten Events)
+        try:
+            from notifications.telegram import send_pipeline_summary, is_configured
+            if is_configured():
+                send_pipeline_summary(result.summary)
+        except Exception as e:
+            logger.debug(f"Telegram Pipeline Summary fehlgeschlagen: {e}")
+
         # Cleanup old audit logs (>90 days)
         try:
             self._cleanup_old_audit_logs(max_age_days=90)
@@ -182,6 +196,91 @@ class Orchestrator:
         logger.info(f"=== Pipeline END === run_id={run_id} state={result.state.value}")
 
         return result
+
+    def _run_arbitrage_scan(self, weather_data: dict) -> None:
+        """Scanne Wetter-Maerkte auf Arbitrage-Moeglichkeiten (non-blocking)."""
+        try:
+            from analytics.arbitrage_detector import run_arbitrage_scan
+            import json
+            from datetime import date
+            from pathlib import Path
+
+            # Lade aktuelle Kandidaten
+            candidates_root = self.data_dir / "collector" / "candidates"
+            today = date.today().isoformat()
+            candidates_file = candidates_root / today / "candidates.jsonl"
+
+            if not candidates_file.exists():
+                # Fallback auf letzten verfuegbaren Tag
+                if candidates_root.exists():
+                    for day_dir in sorted(candidates_root.iterdir(), reverse=True):
+                        f = day_dir / "candidates.jsonl"
+                        if f.exists() and f.stat().st_size > 0:
+                            candidates_file = f
+                            break
+
+            candidates = []
+            if candidates_file.exists():
+                with open(candidates_file, "r", encoding="utf-8") as f:
+                    for line in f:
+                        line = line.strip()
+                        if line:
+                            try:
+                                candidates.append(json.loads(line))
+                            except Exception:
+                                pass
+
+            if candidates:
+                output_file = str(self.output_dir / "arbitrage_opportunities.json")
+                opportunities = run_arbitrage_scan(candidates, output_file=output_file)
+                if opportunities:
+                    logger.info(f"Arbitrage: {len(opportunities)} Moeglichkeiten gefunden")
+                    # Telegram Alert fuer grosse Arbitrage-Chancen
+                    try:
+                        from notifications.telegram import send_message
+                        for opp in opportunities[:3]:  # Max 3 Alerts
+                            if opp.inconsistency_magnitude >= 0.05:
+                                text = (
+                                    f"💰 <b>ARBITRAGE CHANCE</b>
+"
+                                    f"📍 Stadt: {opp.city}
+"
+                                    f"📊 Delta: {opp.inconsistency_magnitude:.1%}
+"
+                                    f"❓ {opp._describe()[:100]}"
+                                )
+                                send_message(text, disable_notification=True)
+                    except Exception:
+                        pass
+        except Exception as e:
+            logger.debug(f"Arbitrage Scan fehlgeschlagen (unkritisch): {e}")
+
+    def _run_gamma_discovery(self) -> None:
+        """Suche neue Wetter-Maerkte via Gamma API (non-blocking, max 1x pro Stunde)."""
+        try:
+            import time
+            from pathlib import Path
+            from datetime import date
+
+            # Rate-Limit: max 1x pro Stunde
+            marker_file = self.data_dir / ".gamma_last_run"
+            if marker_file.exists():
+                last_run = marker_file.stat().st_mtime
+                if time.time() - last_run < 3600:
+                    return  # Noch nicht eine Stunde vergangen
+
+            from collector.gamma_discovery import run_discovery_and_save
+            output_dir = str(self.data_dir / "collector" / "gamma")
+            count = run_discovery_and_save(output_dir=output_dir, limit=300, min_liquidity=50.0)
+
+            if count > 0:
+                logger.info(f"Gamma Discovery: {count} neue Wetter-Maerkte gefunden")
+
+            # Marker aktualisieren
+            marker_file.touch()
+
+        except Exception as e:
+            logger.debug(f"Gamma Discovery fehlgeschlagen (unkritisch): {e}")
 
     def _record_equity_snapshot(self, reason: str = "pipeline_run") -> None:
         """Speichere aktuellen Equity-Wert fuer DrawdownProtector."""
