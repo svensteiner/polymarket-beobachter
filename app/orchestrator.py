@@ -187,6 +187,15 @@ class Orchestrator:
         except Exception as e:
             logger.debug(f"Telegram Pipeline Summary fehlgeschlagen: {e}")
 
+        # Evolution Tick (non-blocking, triggert alle 50 Runs automatisch)
+        try:
+            from evolution.tournament import cmd_tick
+            import types
+            tick_args = types.SimpleNamespace(force=False)
+            cmd_tick(tick_args)
+        except Exception as e:
+            logger.debug(f"Evolution Tick fehlgeschlagen (unkritisch): {e}")
+
         # Cleanup old audit logs (>90 days)
         try:
             self._cleanup_old_audit_logs(max_age_days=90)
