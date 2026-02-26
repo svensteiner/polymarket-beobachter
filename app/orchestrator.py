@@ -250,12 +250,9 @@ class Orchestrator:
                         for opp in opportunities[:3]:  # Max 3 Alerts
                             if opp.inconsistency_magnitude >= 0.05:
                                 text = (
-                                    f"💰 <b>ARBITRAGE CHANCE</b>
-"
-                                    f"📍 Stadt: {opp.city}
-"
-                                    f"📊 Delta: {opp.inconsistency_magnitude:.1%}
-"
+                                    f"💰 <b>ARBITRAGE CHANCE</b>\n"
+                                    f"📍 Stadt: {opp.city}\n"
+                                    f"📊 Delta: {opp.inconsistency_magnitude:.1%}\n"
                                     f"❓ {opp._describe()[:100]}"
                                 )
                                 send_message(text, disable_notification=True)

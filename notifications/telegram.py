@@ -3,6 +3,7 @@
 # =============================================================================
 import logging
 import os
+import time
 from datetime import datetime
 from typing import Optional, Dict, Any
 import requests
@@ -44,6 +45,12 @@ def send_message(
             "disable_notification": disable_notification,
         }
         resp = requests.post(url, json=payload, timeout=timeout)
+        # 429 Rate Limit: kurz warten und einmal retry
+        if resp.status_code == 429:
+            retry_after = int(resp.headers.get("Retry-After", "5"))
+            logger.warning("Telegram: Rate limited (429), retry nach %ss", retry_after)
+            time.sleep(retry_after + 1)
+            resp = requests.post(url, json=payload, timeout=timeout)
         if resp.ok:
             logger.debug("Telegram: Nachricht gesendet")
             return True

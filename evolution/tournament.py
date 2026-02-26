@@ -126,6 +126,15 @@ def cmd_tick(args):
                 send_message(msg, disable_notification=True)
         except Exception:
             pass
+
+        # Strategy Agent: LLM-Diagnose nach jedem Evolutions-Schritt
+        try:
+            from evolution.strategy_agent import run_strategy_agent, send_strategy_telegram
+            diagnosis = run_strategy_agent()
+            send_strategy_telegram(diagnosis)
+        except Exception as e:
+            logger.debug(f"Strategy Agent fehlgeschlagen (unkritisch): {e}")
+
     return runs
 
 
