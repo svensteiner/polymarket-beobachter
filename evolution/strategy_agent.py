@@ -39,8 +39,11 @@ PROJECT_ROOT = Path(__file__).parent.parent
 CONFIG_FILE  = PROJECT_ROOT / "config" / "weather.yaml"
 HINTS_FILE   = PROJECT_ROOT / "data" / "evolution" / "strategy_hints.json"
 DIAGNOSIS_FILE    = PROJECT_ROOT / "data" / "evolution" / "strategy_diagnosis.json"
-CONFIG_LOG_FILE   = PROJECT_ROOT / "data" / "evolution" / "config_change_log.jsonl"
-POSITIONS_FILE    = PROJECT_ROOT / "paper_trader" / "logs" / "paper_positions.jsonl"
+CONFIG_LOG_FILE      = PROJECT_ROOT / "data" / "evolution" / "config_change_log.jsonl"
+GOALS_FILE           = PROJECT_ROOT / "data" / "evolution" / "goals.json"
+AB_TEST_FILE         = PROJECT_ROOT / "data" / "evolution" / "ab_test.json"
+CODE_PROPOSALS_FILE  = PROJECT_ROOT / "data" / "evolution" / "code_proposals.jsonl"
+POSITIONS_FILE       = PROJECT_ROOT / "paper_trader" / "logs" / "paper_positions.jsonl"
 
 # =============================================================================
 # PROVIDER CONFIGURATION
@@ -234,6 +237,88 @@ TOOLS = [
             },
         },
     },
+    # --- GOAL TRACKING ---
+    {
+        "type": "function",
+        "function": {
+            "name": "set_goal",
+            "description": (
+                "Setze ein messbares Ziel mit Deadline. "
+                "Beispiel: Win-Rate auf 55% in 14 Tagen. "
+                "Ersetzt vorherige Ziele fuer dieselbe Metrik."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "metric": {
+                        "type": "string",
+                        "enum": ["win_rate_pct", "profit_factor", "total_pnl_eur", "trade_count"],
+                        "description": "Zu verbessernde Metrik",
+                    },
+                    "target": {"type": "number", "description": "Zielwert"},
+                    "deadline_days": {"type": "integer", "description": "Tage bis Deadline"},
+                    "reason": {"type": "string", "description": "Warum dieses Ziel?"},
+                },
+                "required": ["metric", "target", "deadline_days"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "check_goals",
+            "description": "Pruefe alle aktiven Ziele gegen aktuelle Metriken. Zeigt Fortschritt und Abweichungen.",
+            "parameters": {"type": "object", "properties": {}, "required": []},
+        },
+    },
+    # --- A/B TEST ---
+    {
+        "type": "function",
+        "function": {
+            "name": "start_ab_test",
+            "description": (
+                "Starte einen A/B-Test: Vergleiche Control (aktuelle Config) "
+                "gegen Challenger (neue Parameter) via Backtest auf historischen Daten. "
+                "Ergebnis wird sofort zurueckgegeben."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "challenger_params": {
+                        "type": "object",
+                        "description": "Neue Parameter zum Testen (min_edge, max_odds, min_liquidity, min_edge_absolute)",
+                    },
+                    "description": {
+                        "type": "string",
+                        "description": "Was wird getestet und warum?",
+                    },
+                },
+                "required": ["challenger_params", "description"],
+            },
+        },
+    },
+    # --- CODE PROPOSALS ---
+    {
+        "type": "function",
+        "function": {
+            "name": "propose_code_change",
+            "description": (
+                "Schlage eine Code-Aenderung vor die zu gross/riskant fuer automatischen Eingriff ist. "
+                "Schreibt Vorschlag in Datei + Telegram-Alert. Mensch entscheidet ob Umsetzung."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "file": {"type": "string", "description": "Betroffene Datei (z.B. paper_trader/kelly.py)"},
+                    "title": {"type": "string", "description": "Kurztitel des Vorschlags"},
+                    "description": {"type": "string", "description": "Was und warum geaendert werden soll"},
+                    "expected_impact": {"type": "string", "description": "Erwartete Auswirkung auf Performance"},
+                    "priority": {"type": "string", "enum": ["LOW", "MEDIUM", "HIGH"]},
+                },
+                "required": ["file", "title", "description", "priority"],
+            },
+        },
+    },
     # --- WRITE TOOLS ---
     {
         "type": "function",
@@ -251,6 +336,10 @@ TOOLS = [
                     "mutations_applied": {"type": "array", "items": {"type": "string"}},
                     "hint_impact":       {"type": "string",
                                          "description": "Bewertung ob letzte Hints geholfen haben"},
+                    "goals_status":      {"type": "string",
+                                         "description": "Kurz-Status der aktiven Ziele"},
+                    "code_proposals":    {"type": "array", "items": {"type": "string"},
+                                         "description": "Titel der vorgeschlagenen Code-Aenderungen"},
                     "grade": {"type": "string", "enum": ["HEALTHY", "DEGRADED", "CRITICAL"]},
                 },
                 "required": ["summary", "root_causes", "hypotheses", "grade"],
@@ -612,6 +701,182 @@ def _execute_tool(name: str, inputs: dict) -> Any:
         logger.info(f"Mutation Hint: {action}")
         return {"ok": True, "action": action, "total_hints": len(hints)}
 
+    # ---- GOAL TRACKING ----
+
+    elif name == "set_goal":
+        metric   = inputs.get("metric", "")
+        target   = float(inputs.get("target", 0))
+        days     = int(inputs.get("deadline_days", 14))
+        reason   = inputs.get("reason", "")
+
+        goals: dict = {"goals": []}
+        if GOALS_FILE.exists():
+            try:
+                goals = json.loads(GOALS_FILE.read_text(encoding="utf-8"))
+            except Exception:
+                pass
+
+        # Perf-Baseline lesen
+        baseline = 0.0
+        perf_file = PROJECT_ROOT / "analytics" / "performance_report.json"
+        if perf_file.exists():
+            try:
+                perf = json.loads(perf_file.read_text(encoding="utf-8"))
+                baseline = float(perf.get("metrics", {}).get(metric, 0) or 0)
+            except Exception:
+                pass
+
+        from datetime import timedelta
+        deadline = (datetime.now() + timedelta(days=days)).isoformat()
+
+        # Gleiches Metric-Ziel ersetzen
+        goals["goals"] = [g for g in goals.get("goals", []) if g.get("metric") != metric]
+        goals["goals"].append({
+            "metric": metric,
+            "target": target,
+            "baseline": baseline,
+            "deadline": deadline,
+            "deadline_days": days,
+            "reason": reason,
+            "created_at": datetime.now().isoformat(),
+        })
+
+        GOALS_FILE.parent.mkdir(parents=True, exist_ok=True)
+        GOALS_FILE.write_text(json.dumps(goals, indent=2, ensure_ascii=False), encoding="utf-8")
+        logger.info(f"Ziel gesetzt: {metric} → {target} (in {days} Tagen, Baseline: {baseline})")
+        return {
+            "ok": True,
+            "goal": f"{metric} → {target} bis {deadline[:10]}",
+            "baseline": baseline,
+            "gap": round(target - baseline, 3),
+        }
+
+    elif name == "check_goals":
+        if not GOALS_FILE.exists():
+            return {"goals": [], "note": "Noch keine Ziele gesetzt"}
+
+        goals = json.loads(GOALS_FILE.read_text(encoding="utf-8")).get("goals", [])
+        perf_file = PROJECT_ROOT / "analytics" / "performance_report.json"
+        metrics: dict = {}
+        if perf_file.exists():
+            try:
+                perf = json.loads(perf_file.read_text(encoding="utf-8"))
+                metrics = perf.get("metrics", {})
+            except Exception:
+                pass
+
+        result = []
+        for g in goals:
+            metric   = g["metric"]
+            target   = g["target"]
+            baseline = g.get("baseline", 0)
+            current  = float(metrics.get(metric, 0) or 0)
+            progress = ((current - baseline) / (target - baseline)) * 100 if (target != baseline) else 0
+            deadline = g.get("deadline", "?")[:10]
+            result.append({
+                "metric": metric,
+                "target": target,
+                "current": current,
+                "baseline": baseline,
+                "progress_pct": round(progress, 1),
+                "deadline": deadline,
+                "status": "ERREICHT" if current >= target else "OFFEN",
+            })
+        return {"goals": result, "total": len(result)}
+
+    # ---- A/B TEST ----
+
+    elif name == "start_ab_test":
+        challenger = inputs.get("challenger_params", {})
+        description = inputs.get("description", "")
+
+        # Control = aktuelle Config
+        control = _read_config_values()
+        control_bt = _execute_tool("run_backtest", {
+            "min_edge":          control.get("MIN_EDGE", 0.12),
+            "min_edge_absolute": control.get("MIN_EDGE_ABSOLUTE", 0.05),
+            "max_odds":          control.get("MAX_ODDS", 0.35),
+            "min_liquidity":     control.get("MIN_LIQUIDITY", 50.0),
+        })
+
+        # Challenger = neue Parameter
+        challenger_bt = _execute_tool("run_backtest", challenger)
+
+        ab_result = {
+            "started_at": datetime.now().isoformat(),
+            "description": description,
+            "control_params": {
+                "MIN_EDGE": control.get("MIN_EDGE"),
+                "MAX_ODDS": control.get("MAX_ODDS"),
+                "MIN_LIQUIDITY": control.get("MIN_LIQUIDITY"),
+            },
+            "challenger_params": challenger,
+            "control_backtest": control_bt,
+            "challenger_backtest": challenger_bt,
+        }
+
+        AB_TEST_FILE.parent.mkdir(parents=True, exist_ok=True)
+        AB_TEST_FILE.write_text(json.dumps(ab_result, indent=2, ensure_ascii=False), encoding="utf-8")
+
+        # Gewinner bestimmen
+        c_wr = control_bt.get("simulated_win_rate", 0) or control_bt.get("current_win_rate", 0)
+        ch_wr = challenger_bt.get("simulated_win_rate", 0)
+        c_pnl = control_bt.get("simulated_pnl_eur", 0) or control_bt.get("current_pnl_eur", 0)
+        ch_pnl = challenger_bt.get("simulated_pnl_eur", 0)
+
+        winner = "CHALLENGER" if (ch_pnl > c_pnl and ch_wr >= c_wr * 0.9) else "CONTROL"
+
+        return {
+            "ok": True,
+            "description": description,
+            "control": {"win_rate": c_wr, "pnl_eur": c_pnl, "trades": control_bt.get("trades_would_take", 0)},
+            "challenger": {"win_rate": ch_wr, "pnl_eur": ch_pnl, "trades": challenger_bt.get("trades_would_take", 0)},
+            "winner": winner,
+            "recommendation": f"{'Challenger-Parameter uebernehmen' if winner == 'CHALLENGER' else 'Aktuelle Config beibehalten'}",
+        }
+
+    # ---- CODE PROPOSALS ----
+
+    elif name == "propose_code_change":
+        proposal = {
+            "timestamp": datetime.now().isoformat(),
+            "file": inputs.get("file", ""),
+            "title": inputs.get("title", ""),
+            "description": inputs.get("description", ""),
+            "expected_impact": inputs.get("expected_impact", ""),
+            "priority": inputs.get("priority", "MEDIUM"),
+            "status": "PENDING",
+        }
+
+        CODE_PROPOSALS_FILE.parent.mkdir(parents=True, exist_ok=True)
+        with open(CODE_PROPOSALS_FILE, "a", encoding="utf-8") as f:
+            f.write(json.dumps(proposal, ensure_ascii=False) + "\n")
+
+        # Telegram Alert
+        try:
+            from notifications.telegram import send_message, is_configured
+            if is_configured():
+                prio_emoji = {"HIGH": "🔴", "MEDIUM": "🟡", "LOW": "🟢"}.get(proposal["priority"], "⚪")
+                nl = "\n"
+                msg = (
+                    f"{prio_emoji} <b>CODE-VORSCHLAG {proposal['priority']}</b>{nl}"
+                    f"📄 <code>{proposal['file']}</code>{nl}"
+                    f"<b>{proposal['title']}</b>{nl}{nl}"
+                    f"{proposal['description'][:300]}{nl}{nl}"
+                    f"💡 Impact: {proposal['expected_impact'][:150]}"
+                )
+                send_message(msg, disable_notification=(proposal["priority"] != "HIGH"))
+        except Exception:
+            pass
+
+        logger.info(f"Code-Vorschlag: [{proposal['priority']}] {proposal['title']} ({proposal['file']})")
+        return {
+            "ok": True,
+            "title": proposal["title"],
+            "priority": proposal["priority"],
+            "note": "Vorschlag gespeichert + Telegram-Alert gesendet. Mensch entscheidet.",
+        }
+
     elif name == "write_diagnosis":
         diagnosis = {**inputs, "generated_at": datetime.now().isoformat()}
         DIAGNOSIS_FILE.parent.mkdir(parents=True, exist_ok=True)
@@ -632,20 +897,23 @@ Du hast ECHTEN Zugriff auf Config-Aenderungen und Backtests. Gehe systematisch v
 
 ABLAUF:
 1. read_performance + read_recent_positions → Was laeuft gut/schlecht?
-2. read_previous_diagnosis → Was haben wir zuletzt gemacht?
-3. evaluate_hint_impact → Hat der letzte Eingriff geholfen?
-4. read_current_config → Was sind die aktuellen Werte?
-5. run_backtest (optional) → Hypothese validieren bevor du aenderst
-6. adjust_config (0-2x) → Direkte, datenbasierte Eingriffe
-7. set_mutation_bias (0-2x) → Langfristige Evolution lenken
-8. write_diagnosis → Abschliessen
+2. read_previous_diagnosis + evaluate_hint_impact → Letzte Eingriffe bewertet?
+3. check_goals → Sind Ziele on-track?
+4. read_current_config → Aktuelle Werte?
+5. start_ab_test (optional) → Hypothese mit A/B-Test validieren
+6. run_backtest (optional) → Alternativ: einfacher Backtest
+7. adjust_config (0-2x) → Direkter Eingriff wenn Daten es begruenden
+8. set_mutation_bias (0-2x) → Langfristige Evolution lenken
+9. set_goal (0-1x) → Ziel setzen/aktualisieren wenn sinnvoll
+10. propose_code_change (0-1x) → Groessere Aenderungen vorschlagen
+11. write_diagnosis → Immer als letztes
 
-REGELN fuer adjust_config:
-- NUR aendern wenn Daten einen klaren Eingriff begruenden
-- Max 2 Config-Aenderungen pro Diagnose
-- Max 25% Aenderung pro Parameter
-- Immer zuerst Backtest laufen lassen wenn moeglich
-- Bei < 10 Trades: KEINE Config-Aenderungen, nur Beobachten
+REGELN:
+- NUR aendern wenn Daten es begruenden
+- Max 2 Config-Aenderungen pro Diagnose, Max 25% pro Parameter
+- Bei < 10 Trades: KEINE Config-Aenderungen, nur Ziel setzen + beobachten
+- Vor adjust_config: Immer start_ab_test oder run_backtest
+- propose_code_change fuer: Kelly-Formel-Aenderungen, neue Exit-Logik, neue Datenquellen
 
 PARAMETER-WIRKUNGEN:
 - MIN_EDGE hoeher → weniger aber bessere Trades (bei niedriger Win-Rate)
@@ -859,6 +1127,16 @@ def send_strategy_telegram(diagnosis: dict) -> None:
         impact = diagnosis.get("hint_impact")
         if impact:
             lines += ["", f"<b>Letzte Hints:</b> {impact[:100]}"]
+
+        goals_status = diagnosis.get("goals_status")
+        if goals_status:
+            lines += ["", f"<b>Ziele:</b> {goals_status[:120]}"]
+
+        proposals = diagnosis.get("code_proposals", [])
+        if proposals:
+            lines += ["", "<b>Code-Vorschlaege:</b>"]
+            for p in proposals[:2]:
+                lines.append(f"💡 {p}")
 
         send_message(nl.join(lines), disable_notification=True)
 
