@@ -1,20 +1,22 @@
 # =============================================================================
-# LLM STRATEGY AGENT
+# LLM STRATEGY AGENT  —  Stufe 2: Direkter Eingriff + Feedback-Loop
 # =============================================================================
 #
-# Claude/GPT/Kimi-basierter Agent der die System-Performance analysiert,
-# Root Causes erkennt und gerichtete Mutations-Hints setzt.
-#
 # Provider-Prioritaet (Fallback):
-#   1. Kimi (moonshot-v1-8k, sehr guenstig)
-#   2. OpenAI (gpt-4o-mini, guenstig + zuverlaessig)
-#   3. OpenRouter (anthropic/claude-haiku-4-5, Claude-native)
+#   1. Kimi (moonshot-v1-8k)
+#   2. OpenRouter (openai/gpt-4o-mini)
+#   3. OpenAI (gpt-4o-mini)
+#
+# Tools:
+#   READ:    read_performance, read_recent_positions, read_population_status,
+#            read_market_condition, read_previous_diagnosis
+#   ANALYZE: evaluate_hint_impact, run_backtest
+#   ACT:     set_mutation_bias, adjust_config
+#   WRITE:   write_diagnosis
 #
 # Ablauf:
-#   1. Lese Performance, Positionen, Population, Marktbedingung via Tools
-#   2. Analysiere mit LLM was gut/schlecht laeuft
-#   3. Setze Mutations-Hints (biasierte Parameter-Evolution)
-#   4. Schreibe Diagnose-Report + Telegram-Alert
+#   Lesen → Hypothese bilden → Backtest validieren → Config anpassen
+#   → Mutations-Hints setzen → Diagnose schreiben → Telegram-Alert
 #
 # Wird nach jedem Evolutions-Tick aufgerufen (alle 50 Pipeline-Runs).
 #
@@ -25,6 +27,8 @@ from __future__ import annotations
 import json
 import logging
 import os
+import re
+import shutil
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -32,8 +36,11 @@ from typing import Any
 logger = logging.getLogger(__name__)
 
 PROJECT_ROOT = Path(__file__).parent.parent
-HINTS_FILE = PROJECT_ROOT / "data" / "evolution" / "strategy_hints.json"
-DIAGNOSIS_FILE = PROJECT_ROOT / "data" / "evolution" / "strategy_diagnosis.json"
+CONFIG_FILE  = PROJECT_ROOT / "config" / "weather.yaml"
+HINTS_FILE   = PROJECT_ROOT / "data" / "evolution" / "strategy_hints.json"
+DIAGNOSIS_FILE    = PROJECT_ROOT / "data" / "evolution" / "strategy_diagnosis.json"
+CONFIG_LOG_FILE   = PROJECT_ROOT / "data" / "evolution" / "config_change_log.jsonl"
+POSITIONS_FILE    = PROJECT_ROOT / "paper_trader" / "logs" / "paper_positions.jsonl"
 
 # =============================================================================
 # PROVIDER CONFIGURATION
@@ -55,24 +62,40 @@ PROVIDERS = [
     {
         "name": "OpenAI",
         "env_key": "OPENAI_API_KEY",
-        "base_url": None,  # default
+        "base_url": None,
         "model": "gpt-4o-mini",
     },
 ]
 
 # =============================================================================
-# TOOL DEFINITIONS (OpenAI Function-Calling Format)
+# CONFIG-PARAMETER CONSTRAINTS
+# Nur diese Parameter darf der Agent direkt aendern.
+# Ranges sind enge Safety-Guardrails.
+# =============================================================================
+
+CONFIG_PARAMS: dict[str, dict] = {
+    "MIN_EDGE":                       {"min": 0.06,  "max": 0.30,  "desc": "Relativer Edge-Floor"},
+    "MIN_EDGE_ABSOLUTE":              {"min": 0.02,  "max": 0.12,  "desc": "Absoluter Edge-Floor"},
+    "MAX_ODDS":                       {"min": 0.20,  "max": 0.50,  "desc": "Maximale Market-Odds"},
+    "MIN_LIQUIDITY":                  {"min": 10.0,  "max": 500.0, "desc": "Mindest-Liquiditaet USD"},
+    "MEDIUM_CONFIDENCE_EDGE_MULTIPLIER": {"min": 1.0, "max": 2.5,  "desc": "Edge-Multiplikator MEDIUM"},
+    "SAFETY_BUFFER_HOURS":            {"min": 6.0,   "max": 48.0,  "desc": "Safety-Buffer vor Resolution"},
+}
+
+# Max Aenderung pro Call: 25% des aktuellen Wertes
+MAX_CHANGE_PCT = 0.25
+
+# =============================================================================
+# TOOL DEFINITIONS  (OpenAI Function-Calling Format)
 # =============================================================================
 
 TOOLS = [
+    # --- READ TOOLS ---
     {
         "type": "function",
         "function": {
             "name": "read_performance",
-            "description": (
-                "Lese den aktuellen Performance-Report: Win-Rate, PnL, Profit-Factor, "
-                "Drawdown, Brier Score, Strategy Attribution und Performance nach Stadt."
-            ),
+            "description": "Lese Performance-Report: Win-Rate, PnL, Profit-Factor, Drawdown, Brier Score.",
             "parameters": {"type": "object", "properties": {}, "required": []},
         },
     },
@@ -80,11 +103,11 @@ TOOLS = [
         "type": "function",
         "function": {
             "name": "read_recent_positions",
-            "description": "Lese die letzten N abgeschlossenen Positionen (CLOSED/RESOLVED).",
+            "description": "Lese die letzten N abgeschlossenen Positionen.",
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "n": {"type": "integer", "description": "Anzahl Positionen (default: 30)"}
+                    "n": {"type": "integer", "description": "Anzahl (default: 30)"}
                 },
                 "required": [],
             },
@@ -94,10 +117,7 @@ TOOLS = [
         "type": "function",
         "function": {
             "name": "read_population_status",
-            "description": (
-                "Lese den Status der Evolution-Population: Generation, Champion, "
-                "Fitness-Scores und Parameter aller aktiven Agenten."
-            ),
+            "description": "Lese Evolution-Population: Generation, Champion, Fitness, Parameter.",
             "parameters": {"type": "object", "properties": {}, "required": []},
         },
     },
@@ -105,7 +125,7 @@ TOOLS = [
         "type": "function",
         "function": {
             "name": "read_market_condition",
-            "description": "Lese die aktuelle Marktbedingung (BULLISH/BEARISH/WATCH etc.).",
+            "description": "Lese aktuelle Marktbedingung.",
             "parameters": {"type": "object", "properties": {}, "required": []},
         },
     },
@@ -113,17 +133,60 @@ TOOLS = [
         "type": "function",
         "function": {
             "name": "read_previous_diagnosis",
-            "description": "Lese die letzte Diagnose um Fortschritt zu beurteilen.",
+            "description": "Lese letzte Diagnose inkl. welche Hints/Config-Aenderungen damals gemacht wurden.",
             "parameters": {"type": "object", "properties": {}, "required": []},
         },
     },
     {
         "type": "function",
         "function": {
-            "name": "set_mutation_bias",
+            "name": "read_current_config",
+            "description": "Lese die aktuellen Werte aller aenderbaren Config-Parameter aus weather.yaml.",
+            "parameters": {"type": "object", "properties": {}, "required": []},
+        },
+    },
+    # --- ANALYZE TOOLS ---
+    {
+        "type": "function",
+        "function": {
+            "name": "evaluate_hint_impact",
             "description": (
-                "Setze einen gerichteten Bias fuer die naechste Mutation. "
-                "direction='up' erhoeht den Parameter, 'down' verringert, 'reset' entfernt."
+                "Vergleiche Metriken vor/nach den letzten Mutations-Hints. "
+                "Beantwortet: Hat der letzte Eingriff geholfen?"
+            ),
+            "parameters": {"type": "object", "properties": {}, "required": []},
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "run_backtest",
+            "description": (
+                "Mini-Backtest: Replay historischer Positionen mit hypothetischen Parametern. "
+                "Gibt an wie viele Trades wir unter neuen Parametern eingegangen waeren "
+                "und wie die simulierte Win-Rate/PnL waere."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "min_edge":          {"type": "number", "description": "Relativer Edge-Floor (z.B. 0.15)"},
+                    "min_edge_absolute": {"type": "number", "description": "Absoluter Edge-Floor (z.B. 0.05)"},
+                    "max_odds":          {"type": "number", "description": "Max Market-Odds (z.B. 0.35)"},
+                    "min_liquidity":     {"type": "number", "description": "Min Liquiditaet USD (z.B. 50)"},
+                },
+                "required": [],
+            },
+        },
+    },
+    # --- ACTION TOOLS ---
+    {
+        "type": "function",
+        "function": {
+            "name": "adjust_config",
+            "description": (
+                "Aendere einen Config-Parameter DIREKT in config/weather.yaml. "
+                "Nur erlaubte Parameter, max 25% Aenderung pro Call. "
+                "Backup wird automatisch erstellt. Wirkung ab naechstem Pipeline-Run."
             ),
             "parameters": {
                 "type": "object",
@@ -131,58 +194,64 @@ TOOLS = [
                     "param": {
                         "type": "string",
                         "description": (
-                            "Parameter-Name. Gueltig: min_edge, min_edge_absolute, "
-                            "kelly_fraction, max_odds, take_profit_pct, stop_loss_pct, "
-                            "avg_down_threshold_pct, variance_threshold, "
-                            "medium_confidence_multiplier, min_liquidity"
+                            "Parameter-Name. Erlaubt: "
+                            + ", ".join(CONFIG_PARAMS.keys())
                         ),
                     },
-                    "direction": {
-                        "type": "string",
-                        "enum": ["up", "down", "reset"],
-                    },
-                    "strength": {
+                    "value": {
                         "type": "number",
-                        "description": "Staerke 0.1-1.0 (default: 0.5)",
+                        "description": "Neuer Wert (innerhalb der erlaubten Range)",
                     },
                     "reason": {
                         "type": "string",
-                        "description": "Kurze Begruendung",
+                        "description": "Begruendung basierend auf Daten",
                     },
                 },
-                "required": ["param", "direction"],
+                "required": ["param", "value", "reason"],
             },
         },
     },
     {
         "type": "function",
         "function": {
-            "name": "write_diagnosis",
-            "description": "Schreibe die finale Diagnose. IMMER als letztes Tool aufrufen.",
+            "name": "set_mutation_bias",
+            "description": (
+                "Setze Bias fuer naechste Evolution-Mutation. "
+                "Ergaenzend zu adjust_config: lenkt langfristige Parameter-Suche."
+            ),
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "summary": {"type": "string", "description": "Zusammenfassung 2-3 Saetze"},
-                    "root_causes": {
-                        "type": "array",
-                        "items": {"type": "string"},
-                        "description": "Erkannte Hauptursachen",
-                    },
-                    "hypotheses": {
-                        "type": "array",
-                        "items": {"type": "string"},
-                        "description": "Hypothesen zum Testen",
-                    },
-                    "mutations_applied": {
-                        "type": "array",
-                        "items": {"type": "string"},
-                        "description": "Liste der gesetzten Mutations-Hints",
-                    },
-                    "grade": {
+                    "param": {
                         "type": "string",
-                        "enum": ["HEALTHY", "DEGRADED", "CRITICAL"],
-                        "description": "Systemstatus",
+                        "description": "Evolution-Parameter (min_edge, kelly_fraction, etc.)",
                     },
+                    "direction": {"type": "string", "enum": ["up", "down", "reset"]},
+                    "strength":  {"type": "number", "description": "0.1-1.0"},
+                    "reason":    {"type": "string"},
+                },
+                "required": ["param", "direction"],
+            },
+        },
+    },
+    # --- WRITE TOOLS ---
+    {
+        "type": "function",
+        "function": {
+            "name": "write_diagnosis",
+            "description": "Schreibe finale Diagnose. IMMER als letztes Tool.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "summary":           {"type": "string"},
+                    "root_causes":       {"type": "array", "items": {"type": "string"}},
+                    "hypotheses":        {"type": "array", "items": {"type": "string"}},
+                    "config_changes":    {"type": "array", "items": {"type": "string"},
+                                         "description": "Liste der Config-Aenderungen"},
+                    "mutations_applied": {"type": "array", "items": {"type": "string"}},
+                    "hint_impact":       {"type": "string",
+                                         "description": "Bewertung ob letzte Hints geholfen haben"},
+                    "grade": {"type": "string", "enum": ["HEALTHY", "DEGRADED", "CRITICAL"]},
                 },
                 "required": ["summary", "root_causes", "hypotheses", "grade"],
             },
@@ -191,10 +260,77 @@ TOOLS = [
 ]
 
 # =============================================================================
+# HELPER: POSITIONS LADEN
+# =============================================================================
+
+def _load_all_positions() -> list[dict]:
+    """Lade alle abgeschlossenen Positionen."""
+    if not POSITIONS_FILE.exists():
+        return []
+    by_id: dict[str, dict] = {}
+    try:
+        for line in POSITIONS_FILE.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                p = json.loads(line)
+                if p.get("_type") != "LOG_HEADER" and p.get("position_id"):
+                    by_id[p["position_id"]] = p
+            except Exception:
+                pass
+    except Exception:
+        return []
+    return [p for p in by_id.values() if p.get("status") in ("CLOSED", "RESOLVED")]
+
+
+# =============================================================================
+# HELPER: CONFIG LESEN/SCHREIBEN
+# =============================================================================
+
+def _read_config_values() -> dict[str, float]:
+    """Lese aktuelle numerische Werte der erlaubten Config-Parameter."""
+    result = {}
+    if not CONFIG_FILE.exists():
+        return result
+    text = CONFIG_FILE.read_text(encoding="utf-8")
+    for param in CONFIG_PARAMS:
+        m = re.search(rf"^{param}:\s*([0-9.]+)", text, re.MULTILINE)
+        if m:
+            try:
+                result[param] = float(m.group(1))
+            except ValueError:
+                pass
+    return result
+
+
+def _write_config_value(param: str, new_value: float) -> bool:
+    """Aendere einen einzelnen Parameter in weather.yaml (in-place, Kommentare bleiben)."""
+    if not CONFIG_FILE.exists():
+        return False
+    text = CONFIG_FILE.read_text(encoding="utf-8")
+    # Suche nach "PARAM: <zahl>" (mit optionalem Leerzeichen)
+    pattern = rf"(^{re.escape(param)}:\s*)([0-9.]+)"
+    new_text, count = re.subn(pattern, rf"\g<1>{new_value}", text, flags=re.MULTILINE)
+    if count == 0:
+        return False
+    CONFIG_FILE.write_text(new_text, encoding="utf-8")
+    return True
+
+
+def _backup_config() -> str:
+    """Erstelle Backup der weather.yaml. Gibt Backup-Pfad zurueck."""
+    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+    backup = CONFIG_FILE.parent / f"weather_backup_{ts}.yaml"
+    shutil.copy2(CONFIG_FILE, backup)
+    return str(backup)
+
+
+# =============================================================================
 # TOOL EXECUTION
 # =============================================================================
 
-VALID_PARAMS = {
+VALID_EVOLUTION_PARAMS = {
     "min_edge", "min_edge_absolute", "kelly_fraction", "max_odds",
     "take_profit_pct", "stop_loss_pct", "avg_down_threshold_pct",
     "variance_threshold", "medium_confidence_multiplier", "min_liquidity",
@@ -202,110 +338,254 @@ VALID_PARAMS = {
 
 
 def _execute_tool(name: str, inputs: dict) -> Any:
+
+    # ---- READ TOOLS ----
+
     if name == "read_performance":
-        report_file = PROJECT_ROOT / "analytics" / "performance_report.json"
-        if report_file.exists():
-            try:
-                return json.loads(report_file.read_text(encoding="utf-8"))
-            except Exception as e:
-                return {"error": f"Lesefehler: {e}"}
-        return {"error": "Kein Performance-Report gefunden"}
+        f = PROJECT_ROOT / "analytics" / "performance_report.json"
+        return json.loads(f.read_text(encoding="utf-8")) if f.exists() else {"error": "Kein Report"}
 
     elif name == "read_recent_positions":
         n = inputs.get("n", 30)
-        positions_file = PROJECT_ROOT / "paper_trader" / "logs" / "paper_positions.jsonl"
-        if not positions_file.exists():
-            return {"positions": [], "count": 0}
-
-        by_id: dict[str, dict] = {}
-        try:
-            for line in positions_file.read_text(encoding="utf-8").splitlines():
-                line = line.strip()
-                if not line:
-                    continue
-                try:
-                    p = json.loads(line)
-                    if p.get("_type") != "LOG_HEADER" and p.get("position_id"):
-                        by_id[p["position_id"]] = p
-                except Exception:
-                    pass
-        except Exception as e:
-            return {"error": f"Lesefehler: {e}"}
-
-        closed = [p for p in by_id.values() if p.get("status") in ("CLOSED", "RESOLVED")]
-        closed.sort(key=lambda p: p.get("exit_time", ""), reverse=True)
-        summary = [
-            {
-                "market": p.get("market_question", "?")[:60],
-                "side": p.get("side"),
-                "entry": p.get("entry_price"),
-                "exit": p.get("exit_price"),
-                "pnl_eur": p.get("pnl_eur"),
-                "pnl_pct": p.get("pnl_pct"),
-                "exit_reason": p.get("exit_reason"),
-                "city": p.get("city"),
-                "confidence": p.get("confidence_level"),
-            }
-            for p in closed[:n]
-        ]
-        return {"positions": summary, "count": len(summary)}
+        positions = _load_all_positions()
+        positions.sort(key=lambda p: p.get("exit_time", ""), reverse=True)
+        return {
+            "positions": [
+                {
+                    "market": p.get("market_question", "?")[:60],
+                    "side": p.get("side"),
+                    "entry": p.get("entry_price"),
+                    "exit": p.get("exit_price"),
+                    "pnl_eur": p.get("pnl_eur"),
+                    "pnl_pct": p.get("pnl_pct"),
+                    "exit_reason": p.get("exit_reason"),
+                    "city": p.get("city"),
+                    "confidence": p.get("confidence_level"),
+                    "edge": p.get("initial_edge"),
+                }
+                for p in positions[:n]
+            ],
+            "count": len(positions),
+        }
 
     elif name == "read_population_status":
         pop_file = PROJECT_ROOT / "data" / "evolution" / "population.json"
         if not pop_file.exists():
             return {"error": "Keine Population"}
-        try:
-            pop = json.loads(pop_file.read_text(encoding="utf-8"))
-            agents_dir = PROJECT_ROOT / "data" / "evolution" / "agents"
-            agent_summaries = []
-            for aid in pop.get("agents", []):
-                afile = agents_dir / aid / "agent.json"
-                if afile.exists():
-                    try:
-                        a = json.loads(afile.read_text(encoding="utf-8"))
-                        agent_summaries.append({
-                            "id": a.get("agent_id"),
-                            "generation": a.get("generation"),
-                            "status": a.get("status"),
-                            "fitness": a.get("fitness", {}),
-                            "params": a.get("params", {}),
-                        })
-                    except Exception:
-                        pass
-            return {
-                "generation": pop.get("generation"),
-                "total_runs": pop.get("total_runs"),
-                "champion_id": pop.get("champion_id"),
-                "agents": agent_summaries,
-            }
-        except Exception as e:
-            return {"error": str(e)}
+        pop = json.loads(pop_file.read_text(encoding="utf-8"))
+        agents_dir = PROJECT_ROOT / "data" / "evolution" / "agents"
+        summaries = []
+        for aid in pop.get("agents", []):
+            af = agents_dir / aid / "agent.json"
+            if af.exists():
+                try:
+                    a = json.loads(af.read_text(encoding="utf-8"))
+                    summaries.append({
+                        "id": a["agent_id"],
+                        "generation": a.get("generation"),
+                        "status": a.get("status"),
+                        "fitness": a.get("fitness", {}),
+                        "params": a.get("params", {}),
+                    })
+                except Exception:
+                    pass
+        return {
+            "generation": pop.get("generation"),
+            "total_runs": pop.get("total_runs"),
+            "champion_id": pop.get("champion_id"),
+            "agents": summaries,
+        }
 
     elif name == "read_market_condition":
-        cond_file = PROJECT_ROOT / "data" / "market_condition.json"
-        if cond_file.exists():
-            try:
-                return json.loads(cond_file.read_text(encoding="utf-8"))
-            except Exception:
-                pass
-        return {"condition": "UNKNOWN"}
+        f = PROJECT_ROOT / "data" / "market_condition.json"
+        return json.loads(f.read_text(encoding="utf-8")) if f.exists() else {"condition": "UNKNOWN"}
 
     elif name == "read_previous_diagnosis":
-        if DIAGNOSIS_FILE.exists():
-            try:
-                return json.loads(DIAGNOSIS_FILE.read_text(encoding="utf-8"))
-            except Exception:
-                pass
-        return {"error": "Keine vorherige Diagnose"}
+        return json.loads(DIAGNOSIS_FILE.read_text(encoding="utf-8")) if DIAGNOSIS_FILE.exists() else {"error": "Keine vorherige Diagnose"}
 
-    elif name == "set_mutation_bias":
-        param = inputs.get("param", "")
-        direction = inputs.get("direction", "reset")
-        strength = float(inputs.get("strength", 0.5))
+    elif name == "read_current_config":
+        values = _read_config_values()
+        result = {}
+        for param, val in values.items():
+            meta = CONFIG_PARAMS.get(param, {})
+            result[param] = {
+                "current": val,
+                "min": meta.get("min"),
+                "max": meta.get("max"),
+                "desc": meta.get("desc"),
+            }
+        return result
+
+    # ---- ANALYZE TOOLS ----
+
+    elif name == "evaluate_hint_impact":
+        """Vergleiche ob letzte Diagnose/Hints Wirkung gezeigt haben."""
+        if not DIAGNOSIS_FILE.exists():
+            return {"error": "Keine vorherige Diagnose zum Vergleichen"}
+
+        prev = json.loads(DIAGNOSIS_FILE.read_text(encoding="utf-8"))
+        prev_grade = prev.get("grade", "?")
+        prev_time = prev.get("generated_at", "?")
+        prev_hints = prev.get("mutations_applied", [])
+        prev_config = prev.get("config_changes", [])
+
+        # Aktuelle Metriken
+        perf_file = PROJECT_ROOT / "analytics" / "performance_report.json"
+        if perf_file.exists():
+            perf = json.loads(perf_file.read_text(encoding="utf-8"))
+            metrics = perf.get("metrics", {})
+        else:
+            metrics = {}
+
+        return {
+            "previous_grade": prev_grade,
+            "previous_diagnosis_time": prev_time,
+            "hints_set_then": prev_hints,
+            "config_changes_then": prev_config,
+            "current_metrics": {
+                "win_rate": metrics.get("win_rate_pct", 0),
+                "profit_factor": metrics.get("profit_factor", 0),
+                "total_trades": metrics.get("total_trades", 0),
+                "total_pnl_eur": metrics.get("total_pnl_eur", 0),
+            },
+            "note": "Vergleiche ob sich Win-Rate/PnL seit letzter Diagnose verbessert hat.",
+        }
+
+    elif name == "run_backtest":
+        """Mini-Backtest: Replay historischer Positionen mit neuen Parametern."""
+        positions = _load_all_positions()
+        if not positions:
+            return {"error": "Keine historischen Positionen", "trades": 0}
+
+        # Parameter
+        min_edge     = float(inputs.get("min_edge", 0.12))
+        min_edge_abs = float(inputs.get("min_edge_absolute", 0.05))
+        max_odds     = float(inputs.get("max_odds", 0.35))
+        min_liq      = float(inputs.get("min_liquidity", 50.0))
+
+        # Filtern: welche Trades haetten wir unter neuen Params gemacht?
+        taken = []
+        for p in positions:
+            entry = p.get("entry_price", 0) or 0
+            edge  = p.get("initial_edge") or p.get("edge") or 0
+            liq   = p.get("liquidity_usd", 100) or 100
+
+            # Odds-Filter
+            if entry > max_odds:
+                continue
+            # Edge-Filter (relativer Edge)
+            if edge and abs(edge) < min_edge:
+                continue
+            # Absoluter Edge (entry_price als Proxy)
+            if abs(entry - 0.5) < min_edge_abs:
+                continue
+            # Liquiditaet
+            if liq < min_liq:
+                continue
+            taken.append(p)
+
+        if not taken:
+            return {
+                "params_tested": inputs,
+                "trades_would_take": 0,
+                "trades_total": len(positions),
+                "note": "Kein Trade wuerde die neuen Filter passieren",
+            }
+
+        pnls   = [p.get("pnl_eur", 0) or 0 for p in taken]
+        wins   = [x for x in pnls if x > 0]
+        losses = [x for x in pnls if x < 0]
+        win_rate = len(wins) / len(taken) if taken else 0
+        pf = (sum(wins) / abs(sum(losses))) if losses else (5.0 if wins else 0.0)
+
+        # Vergleich: aktuelle Parameter
+        current_pnls = [p.get("pnl_eur", 0) or 0 for p in positions]
+        current_wins = [x for x in current_pnls if x > 0]
+
+        return {
+            "params_tested": inputs,
+            "trades_would_take": len(taken),
+            "trades_total": len(positions),
+            "simulated_win_rate": round(win_rate, 3),
+            "simulated_pnl_eur": round(sum(pnls), 2),
+            "simulated_profit_factor": round(pf, 3),
+            "current_win_rate": round(len(current_wins) / len(positions), 3) if positions else 0,
+            "current_pnl_eur": round(sum(current_pnls), 2),
+        }
+
+    # ---- ACTION TOOLS ----
+
+    elif name == "adjust_config":
+        param  = inputs.get("param", "")
+        value  = inputs.get("value")
         reason = inputs.get("reason", "")
 
-        if param not in VALID_PARAMS:
-            return {"error": f"Ungueltiger Parameter: {param}"}
+        if param not in CONFIG_PARAMS:
+            return {"error": f"Parameter '{param}' nicht erlaubt. Erlaubt: {list(CONFIG_PARAMS.keys())}"}
+        if value is None:
+            return {"error": "Kein Wert angegeben"}
+
+        value = float(value)
+        meta = CONFIG_PARAMS[param]
+
+        # Range-Check
+        if value < meta["min"] or value > meta["max"]:
+            return {
+                "error": f"Wert {value} ausserhalb Range [{meta['min']}, {meta['max']}]",
+                "param": param,
+            }
+
+        # Max-Change-Check
+        current_vals = _read_config_values()
+        current = current_vals.get(param)
+        if current is not None and current != 0:
+            change_pct = abs(value - current) / abs(current)
+            if change_pct > MAX_CHANGE_PCT:
+                allowed_min = round(current * (1 - MAX_CHANGE_PCT), 4)
+                allowed_max = round(current * (1 + MAX_CHANGE_PCT), 4)
+                return {
+                    "error": f"Aenderung zu gross ({change_pct:.0%} > {MAX_CHANGE_PCT:.0%}). "
+                             f"Max erlaubt: [{allowed_min}, {allowed_max}]",
+                    "current_value": current,
+                }
+
+        # Backup + Schreiben
+        backup_path = _backup_config()
+        success = _write_config_value(param, value)
+        if not success:
+            return {"error": f"Konnte '{param}' nicht in weather.yaml schreiben"}
+
+        # Change-Log
+        log_entry = {
+            "timestamp": datetime.now().isoformat(),
+            "param": param,
+            "old_value": current,
+            "new_value": value,
+            "reason": reason,
+            "backup": backup_path,
+        }
+        CONFIG_LOG_FILE.parent.mkdir(parents=True, exist_ok=True)
+        with open(CONFIG_LOG_FILE, "a", encoding="utf-8") as f:
+            f.write(json.dumps(log_entry, ensure_ascii=False) + "\n")
+
+        logger.info(f"Config geaendert: {param} {current} -> {value} | {reason}")
+        return {
+            "ok": True,
+            "param": param,
+            "old_value": current,
+            "new_value": value,
+            "action": f"{param}: {current} → {value} ({reason})",
+            "note": "Wirksam ab naechstem Pipeline-Run",
+        }
+
+    elif name == "set_mutation_bias":
+        param     = inputs.get("param", "")
+        direction = inputs.get("direction", "reset")
+        strength  = float(inputs.get("strength", 0.5))
+        reason    = inputs.get("reason", "")
+
+        if param not in VALID_EVOLUTION_PARAMS:
+            return {"error": f"Ungueltiger Evolution-Parameter: {param}"}
 
         strength = max(0.1, min(1.0, strength))
         hints: dict = {}
@@ -317,7 +597,7 @@ def _execute_tool(name: str, inputs: dict) -> Any:
 
         if direction == "reset":
             hints.pop(param, None)
-            action = f"Bias fuer '{param}' zurueckgesetzt"
+            action = f"Bias '{param}' zurueckgesetzt"
         else:
             hints[param] = {
                 "direction": direction,
@@ -329,16 +609,14 @@ def _execute_tool(name: str, inputs: dict) -> Any:
 
         HINTS_FILE.parent.mkdir(parents=True, exist_ok=True)
         HINTS_FILE.write_text(json.dumps(hints, indent=2, ensure_ascii=False), encoding="utf-8")
-        logger.info(f"Strategy Hint: {action}")
+        logger.info(f"Mutation Hint: {action}")
         return {"ok": True, "action": action, "total_hints": len(hints)}
 
     elif name == "write_diagnosis":
         diagnosis = {**inputs, "generated_at": datetime.now().isoformat()}
         DIAGNOSIS_FILE.parent.mkdir(parents=True, exist_ok=True)
-        DIAGNOSIS_FILE.write_text(
-            json.dumps(diagnosis, indent=2, ensure_ascii=False), encoding="utf-8"
-        )
-        logger.info(f"Diagnose: {inputs.get('grade')} — {inputs.get('summary', '')[:80]}")
+        DIAGNOSIS_FILE.write_text(json.dumps(diagnosis, indent=2, ensure_ascii=False), encoding="utf-8")
+        logger.info(f"Diagnose: {inputs.get('grade')} — {inputs.get('summary','')[:80]}")
         return {"ok": True}
 
     return {"error": f"Unbekanntes Tool: {name}"}
@@ -348,30 +626,39 @@ def _execute_tool(name: str, inputs: dict) -> Any:
 # SYSTEM PROMPT
 # =============================================================================
 
-SYSTEM_PROMPT = """Du bist ein Strategie-Analyst fuer ein Polymarket Weather-Betting System (Paper Trading).
+SYSTEM_PROMPT = """Du bist ein autonomer Strategie-Agent fuer ein Polymarket Weather-Betting System.
 
-Deine Aufgabe:
-1. Analysiere Performance-Daten, Positionen, Population und Marktbedingung via Tools
-2. Erkenne Root Causes fuer Gewinne/Verluste
-3. Setze gerichtete Mutations-Hints (1-3 Stueck, nur datenbasiert)
-4. Schliesse mit write_diagnosis ab
+Du hast ECHTEN Zugriff auf Config-Aenderungen und Backtests. Gehe systematisch vor:
 
-Parameter-Wirkung:
-- min_edge hoeher → weniger aber qualitativ bessere Trades
-- kelly_fraction hoeher → groessere Positionen, mehr Risiko
-- max_odds hoeher → auch Favoriten handelbar
-- take_profit_pct niedriger → fruehzeitiger sicherer Exit
-- stop_loss_pct hoeher → weniger voreilige SL-Exits
-- min_liquidity hoeher → nur gute Maerkte, weniger Slippage
+ABLAUF:
+1. read_performance + read_recent_positions → Was laeuft gut/schlecht?
+2. read_previous_diagnosis → Was haben wir zuletzt gemacht?
+3. evaluate_hint_impact → Hat der letzte Eingriff geholfen?
+4. read_current_config → Was sind die aktuellen Werte?
+5. run_backtest (optional) → Hypothese validieren bevor du aenderst
+6. adjust_config (0-2x) → Direkte, datenbasierte Eingriffe
+7. set_mutation_bias (0-2x) → Langfristige Evolution lenken
+8. write_diagnosis → Abschliessen
 
-Typische Problemmuster:
-- Viele SL-Exits → stop_loss_pct erhoehen ODER min_edge erhoehen
-- Niedrige Win-Rate → min_edge erhoehen, max_odds senken
-- Kein Trade-Flow → min_edge senken ODER min_liquidity senken
-- Hoher Drawdown → kelly_fraction senken
-- Wenig Daten → noch keine Hints setzen, nur beobachten
+REGELN fuer adjust_config:
+- NUR aendern wenn Daten einen klaren Eingriff begruenden
+- Max 2 Config-Aenderungen pro Diagnose
+- Max 25% Aenderung pro Parameter
+- Immer zuerst Backtest laufen lassen wenn moeglich
+- Bei < 10 Trades: KEINE Config-Aenderungen, nur Beobachten
 
-Reihenfolge: read_performance → read_recent_positions → read_population_status → (optional weitere) → set_mutation_bias (0-3x) → write_diagnosis"""
+PARAMETER-WIRKUNGEN:
+- MIN_EDGE hoeher → weniger aber bessere Trades (bei niedriger Win-Rate)
+- MIN_EDGE niedriger → mehr Trades (bei Null Trade-Flow)
+- MAX_ODDS hoeher → auch Favoriten (z.B. >30% Odds)
+- MIN_LIQUIDITY hoeher → nur liquide Maerkte
+- SAFETY_BUFFER_HOURS niedriger → auch kurzfristige Maerkte
+
+TYPISCHE PROBLEME:
+- Keine Trades → MIN_EDGE senken ODER MIN_LIQUIDITY senken
+- Viele Stop-Losses → MIN_EDGE erhoehen (hoeherer Qualitaetsfilter)
+- Niedrige Win-Rate → MIN_EDGE erhoehen + MAX_ODDS senken
+- Hoher Drawdown → (kelly_fraction via Mutation-Hint)"""
 
 
 # =============================================================================
@@ -379,17 +666,13 @@ Reihenfolge: read_performance → read_recent_positions → read_population_stat
 # =============================================================================
 
 def _get_client(provider: dict):
-    """Erstelle OpenAI-kompatiblen Client fuer den Provider."""
     from openai import OpenAI
-
     api_key = os.environ.get(provider["env_key"], "").strip()
     if not api_key:
         return None
-
-    kwargs = {"api_key": api_key}
+    kwargs: dict = {"api_key": api_key}
     if provider["base_url"]:
         kwargs["base_url"] = provider["base_url"]
-
     return OpenAI(**kwargs)
 
 
@@ -397,16 +680,12 @@ def _get_client(provider: dict):
 # AGENT LOOP
 # =============================================================================
 
-def run_strategy_agent(max_iterations: int = 12) -> dict:
+def run_strategy_agent(max_iterations: int = 15) -> dict:
     """
     Starte den LLM Strategy Agent mit Tool-Use und Provider-Fallback.
-
-    Reihenfolge: Kimi → OpenAI → OpenRouter
-
-    Returns:
-        Diagnosis dict oder {"error": ...}
+    Reihenfolge: Kimi → OpenRouter → OpenAI
     """
-    # .env laden falls noch nicht geschehen
+    # .env laden
     env_file = PROJECT_ROOT / ".env"
     if env_file.exists():
         for line in env_file.read_text(encoding="utf-8").splitlines():
@@ -416,11 +695,11 @@ def run_strategy_agent(max_iterations: int = 12) -> dict:
                 os.environ.setdefault(k.strip(), v.strip())
 
     try:
-        from openai import OpenAI  # noqa: F401
+        from openai import OpenAI  # noqa
     except ImportError:
-        return {"error": "openai Paket nicht installiert (pip install openai)"}
+        return {"error": "openai nicht installiert"}
 
-    # Provider mit Fallback durchprobieren
+    # Provider mit Fallback
     client = None
     active_provider = None
     for provider in PROVIDERS:
@@ -431,23 +710,18 @@ def run_strategy_agent(max_iterations: int = 12) -> dict:
             break
 
     if client is None:
-        logger.warning("Kein LLM-Provider konfiguriert (KIMI/OPENAI/OPENROUTER Key fehlt)")
+        logger.warning("Kein LLM-Provider verfuegbar")
         return {"error": "Kein LLM-Provider verfuegbar"}
 
-    logger.info(f"Strategy Agent gestartet via {active_provider['name']} ({active_provider['model']})")
+    logger.info(f"Strategy Agent via {active_provider['name']} ({active_provider['model']})")
 
     messages = [
         {"role": "system", "content": SYSTEM_PROMPT},
-        {
-            "role": "user",
-            "content": (
-                "Analysiere die aktuelle System-Performance und gib gezielte Empfehlungen. "
-                "Nutze die Tools in der beschriebenen Reihenfolge."
-            ),
-        },
+        {"role": "user", "content": "Analysiere die Performance und handle falls noetig."},
     ]
 
     diagnosis: dict = {}
+    config_changes: list[str] = []
     hints_applied: list[str] = []
 
     for i in range(max_iterations):
@@ -462,34 +736,35 @@ def run_strategy_agent(max_iterations: int = 12) -> dict:
             )
         except Exception as e:
             logger.warning(f"{active_provider['name']} fehlgeschlagen: {e}")
-
-            # Fallback: naechsten Provider versuchen
+            # Fallback
             current_idx = PROVIDERS.index(active_provider)
+            succeeded = False
             for fallback in PROVIDERS[current_idx + 1:]:
                 c = _get_client(fallback)
-                if c is not None:
-                    logger.info(f"Fallback auf {fallback['name']} ({fallback['model']})")
+                if c is None:
+                    continue
+                try:
                     client = c
                     active_provider = fallback
-                    try:
-                        response = client.chat.completions.create(
-                            model=active_provider["model"],
-                            messages=messages,
-                            tools=TOOLS,
-                            tool_choice="auto",
-                            max_tokens=2048,
-                            temperature=0.2,
-                        )
-                        break
-                    except Exception as e2:
-                        logger.warning(f"{fallback['name']} auch fehlgeschlagen: {e2}")
-                        continue
-            else:
-                return {"error": f"Alle Provider fehlgeschlagen. Letzter Fehler: {e}"}
+                    logger.info(f"Fallback auf {fallback['name']}")
+                    response = client.chat.completions.create(
+                        model=active_provider["model"],
+                        messages=messages,
+                        tools=TOOLS,
+                        tool_choice="auto",
+                        max_tokens=2048,
+                        temperature=0.2,
+                    )
+                    succeeded = True
+                    break
+                except Exception as e2:
+                    logger.warning(f"{fallback['name']} auch fehlgeschlagen: {e2}")
+            if not succeeded:
+                return {"error": f"Alle Provider fehlgeschlagen: {e}"}
 
         choice = response.choices[0]
 
-        # Assistenten-Nachricht korrekt aufbauen (content kann None sein bei tool_calls)
+        # Assistenten-Nachricht korrekt aufbauen
         asst_msg: dict = {"role": "assistant", "content": choice.message.content or ""}
         if choice.message.tool_calls:
             asst_msg["tool_calls"] = [
@@ -509,20 +784,23 @@ def run_strategy_agent(max_iterations: int = 12) -> dict:
             tool_results = []
             for tc in choice.message.tool_calls:
                 try:
-                    inputs = json.loads(tc.function.arguments)
+                    tool_inputs = json.loads(tc.function.arguments)
                 except Exception:
-                    inputs = {}
+                    tool_inputs = {}
 
-                result = _execute_tool(tc.function.name, inputs)
+                result = _execute_tool(tc.function.name, tool_inputs)
 
                 tool_results.append({
                     "role": "tool",
+                    "tool_use_id": tc.id,
                     "tool_call_id": tc.id,
                     "content": json.dumps(result, ensure_ascii=False, default=str),
                 })
 
                 if tc.function.name == "write_diagnosis":
-                    diagnosis = inputs
+                    diagnosis = tool_inputs
+                elif tc.function.name == "adjust_config" and result.get("ok"):
+                    config_changes.append(result.get("action", ""))
                 elif tc.function.name == "set_mutation_bias" and result.get("ok"):
                     hints_applied.append(result.get("action", ""))
 
@@ -531,12 +809,14 @@ def run_strategy_agent(max_iterations: int = 12) -> dict:
             break
 
     if diagnosis:
+        diagnosis["config_changes"]    = config_changes
         diagnosis["mutations_applied"] = hints_applied
-        diagnosis["provider"] = active_provider["name"]
+        diagnosis["provider"]          = active_provider["name"]
 
     logger.info(
-        f"Strategy Agent fertig: grade={diagnosis.get('grade', '?')}, "
-        f"hints={len(hints_applied)}, provider={active_provider['name']}, iter={i + 1}"
+        f"Strategy Agent: grade={diagnosis.get('grade','?')}, "
+        f"config_changes={len(config_changes)}, hints={len(hints_applied)}, "
+        f"provider={active_provider['name']}, iter={i+1}"
     )
     return diagnosis
 
@@ -546,7 +826,6 @@ def run_strategy_agent(max_iterations: int = 12) -> dict:
 # =============================================================================
 
 def send_strategy_telegram(diagnosis: dict) -> None:
-    """Sende Diagnose-Report via Telegram."""
     try:
         from notifications.telegram import send_message, is_configured
         if not is_configured() or not diagnosis or "error" in diagnosis:
@@ -559,33 +838,32 @@ def send_strategy_telegram(diagnosis: dict) -> None:
         nl = "\n"
         lines = [
             f"{grade_emoji} <b>STRATEGY AGENT — {grade}</b> <i>({provider})</i>",
-            "",
-            f"<i>{diagnosis.get('summary', '')}</i>",
+            f"<i>{diagnosis.get('summary', '')[:200]}</i>",
         ]
 
-        root_causes = diagnosis.get("root_causes", [])
-        if root_causes:
-            lines += ["", "<b>Root Causes:</b>"]
-            for rc in root_causes[:3]:
-                lines.append(f"• {rc}")
+        for rc in diagnosis.get("root_causes", [])[:3]:
+            lines.append(f"• {rc}")
 
-        mutations = diagnosis.get("mutations_applied", [])
-        if mutations:
-            lines += ["", "<b>Mutations-Hints:</b>"]
-            for m in mutations[:4]:
-                lines.append(f"→ {m}")
+        changes = diagnosis.get("config_changes", [])
+        if changes:
+            lines += ["", "<b>Config geaendert:</b>"]
+            for c in changes[:3]:
+                lines.append(f"⚙️ {c}")
 
-        hypotheses = diagnosis.get("hypotheses", [])
-        if hypotheses:
-            lines += ["", "<b>Naechste Hypothesen:</b>"]
-            for h in hypotheses[:2]:
-                lines.append(f"💡 {h}")
+        hints = diagnosis.get("mutations_applied", [])
+        if hints:
+            lines += ["", "<b>Mutation-Hints:</b>"]
+            for h in hints[:3]:
+                lines.append(f"→ {h}")
+
+        impact = diagnosis.get("hint_impact")
+        if impact:
+            lines += ["", f"<b>Letzte Hints:</b> {impact[:100]}"]
 
         send_message(nl.join(lines), disable_notification=True)
-        logger.info("Strategy Agent Telegram-Report gesendet")
 
     except Exception as e:
-        logger.debug(f"Telegram Strategy Report fehlgeschlagen: {e}")
+        logger.debug(f"Telegram fehlgeschlagen: {e}")
 
 
 # =============================================================================
@@ -593,34 +871,28 @@ def send_strategy_telegram(diagnosis: dict) -> None:
 # =============================================================================
 
 def main():
-    import sys
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-        datefmt="%H:%M:%S",
-    )
+    import sys, io
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s", datefmt="%H:%M:%S")
 
-    print("Strategy Agent wird gestartet...")
+    print("Strategy Agent wird gestartet (Stufe 2)...")
     diagnosis = run_strategy_agent()
 
     if "error" in diagnosis:
         print(f"FEHLER: {diagnosis['error']}")
         sys.exit(1)
 
-    print(f"\nProvider: {diagnosis.get('provider')}")
-    print(f"Grade:    {diagnosis.get('grade')}")
-    print(f"Summary:  {diagnosis.get('summary')}")
-    print("\nRoot Causes:")
+    print(f"\nProvider:  {diagnosis.get('provider')}")
+    print(f"Grade:     {diagnosis.get('grade')}")
+    print(f"Summary:   {diagnosis.get('summary','')[:150]}")
     for rc in diagnosis.get("root_causes", []):
-        print(f"  • {rc}")
-    print("\nHypothesen:")
-    for h in diagnosis.get("hypotheses", []):
-        print(f"  • {h}")
-    mutations = diagnosis.get("mutations_applied", [])
-    if mutations:
-        print("\nMutations-Hints:")
-        for m in mutations:
-            print(f"  → {m}")
+        print(f"  * {rc}")
+    for c in diagnosis.get("config_changes", []):
+        print(f"  ⚙ {c}")
+    for h in diagnosis.get("mutations_applied", []):
+        print(f"  → {h}")
+    if diagnosis.get("hint_impact"):
+        print(f"  Impact: {diagnosis['hint_impact']}")
 
     send_strategy_telegram(diagnosis)
     print(f"\nDiagnose: {DIAGNOSIS_FILE}")
