@@ -32,7 +32,7 @@ MAX_POSITION_EUR: float = 250.0    # Max 5% of 5000 EUR capital
 FALLBACK_POSITION_EUR: float = 75.0
 
 # Use Quarter-Kelly until model is calibrated
-KELLY_FRACTION: float = 0.28
+KELLY_FRACTION: float = 0.25
 
 
 # =============================================================================
