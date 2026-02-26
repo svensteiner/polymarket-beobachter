@@ -40,6 +40,7 @@ CONFIG_FILE  = PROJECT_ROOT / "config" / "weather.yaml"
 HINTS_FILE   = PROJECT_ROOT / "data" / "evolution" / "strategy_hints.json"
 DIAGNOSIS_FILE    = PROJECT_ROOT / "data" / "evolution" / "strategy_diagnosis.json"
 CONFIG_LOG_FILE      = PROJECT_ROOT / "data" / "evolution" / "config_change_log.jsonl"
+CODE_PATCH_LOG_FILE  = PROJECT_ROOT / "data" / "evolution" / "code_patch_log.jsonl"
 GOALS_FILE           = PROJECT_ROOT / "data" / "evolution" / "goals.json"
 AB_TEST_FILE         = PROJECT_ROOT / "data" / "evolution" / "ab_test.json"
 CODE_PROPOSALS_FILE  = PROJECT_ROOT / "data" / "evolution" / "code_proposals.jsonl"
@@ -87,6 +88,30 @@ CONFIG_PARAMS: dict[str, dict] = {
 
 # Max Aenderung pro Call: 25% des aktuellen Wertes
 MAX_CHANGE_PCT = 0.25
+
+# =============================================================================
+# CODE-PATCH WHITELIST
+# Nur diese Konstanten in diesen Dateien darf der Agent auto-editieren.
+# =============================================================================
+
+CODE_PATCH_WHITELIST: dict[str, dict] = {
+    "paper_trader/kelly.py": {
+        "MIN_POSITION_EUR":     {"min": 10.0,  "max": 150.0,  "desc": "Min Position EUR"},
+        "MAX_POSITION_EUR":     {"min": 100.0, "max": 500.0,  "desc": "Max Position EUR"},
+        "KELLY_FRACTION":       {"min": 0.10,  "max": 0.50,   "desc": "Kelly-Bruch"},
+        "FALLBACK_POSITION_EUR":{"min": 25.0,  "max": 150.0,  "desc": "Fallback Position EUR"},
+    },
+    "paper_trader/position_manager.py": {
+        "TP1_PCT":       {"min": 0.05, "max": 0.20,  "desc": "Take-Profit 1 (erste Teilschliessung)"},
+        "TP2_PCT":       {"min": 0.10, "max": 0.30,  "desc": "Take-Profit 2"},
+        "TP3_PCT":       {"min": 0.15, "max": 0.40,  "desc": "Take-Profit 3"},
+        "STOP_LOSS_PCT": {"min": -0.40,"max": -0.10, "desc": "Stop-Loss (negativ)"},
+    },
+    "paper_trader/averaging_down.py": {
+        "MIN_PRICE_DROP_PCT":   {"min": 0.05, "max": 0.25, "desc": "Min Kursrueckgang fuer Nachkauf"},
+        "MIN_EDGE_IMPROVEMENT": {"min": 0.02, "max": 0.15, "desc": "Min Edge-Verbesserung fuer Nachkauf"},
+    },
+}
 
 # =============================================================================
 # TOOL DEFINITIONS  (OpenAI Function-Calling Format)
@@ -319,6 +344,44 @@ TOOLS = [
             },
         },
     },
+    # --- AUTO CODE EDIT ---
+    {
+        "type": "function",
+        "function": {
+            "name": "apply_code_patch",
+            "description": (
+                "Aendere eine Konstante DIREKT im Python-Code (Whitelist). "
+                "Fuehrt Syntax-Check durch, committed automatisch via Git. "
+                "Nur fuer kalibrierbare Zahlen-Konstanten (Kelly, TP/SL, Sizing). "
+                "Telegram-Alert wird gesendet."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "file": {
+                        "type": "string",
+                        "description": (
+                            "Relative Datei. Erlaubt: "
+                            + ", ".join(CODE_PATCH_WHITELIST.keys())
+                        ),
+                    },
+                    "constant": {
+                        "type": "string",
+                        "description": "Name der Konstante (z.B. KELLY_FRACTION, STOP_LOSS_PCT)",
+                    },
+                    "value": {
+                        "type": "number",
+                        "description": "Neuer Wert",
+                    },
+                    "reason": {
+                        "type": "string",
+                        "description": "Datenbasierte Begruendung",
+                    },
+                },
+                "required": ["file", "constant", "value", "reason"],
+            },
+        },
+    },
     # --- WRITE TOOLS ---
     {
         "type": "function",
@@ -338,6 +401,8 @@ TOOLS = [
                                          "description": "Bewertung ob letzte Hints geholfen haben"},
                     "goals_status":      {"type": "string",
                                          "description": "Kurz-Status der aktiven Ziele"},
+                    "code_patches":      {"type": "array", "items": {"type": "string"},
+                                         "description": "Liste der auto-editierten Code-Konstanten"},
                     "code_proposals":    {"type": "array", "items": {"type": "string"},
                                          "description": "Titel der vorgeschlagenen Code-Aenderungen"},
                     "grade": {"type": "string", "enum": ["HEALTHY", "DEGRADED", "CRITICAL"]},
@@ -877,6 +942,133 @@ def _execute_tool(name: str, inputs: dict) -> Any:
             "note": "Vorschlag gespeichert + Telegram-Alert gesendet. Mensch entscheidet.",
         }
 
+    elif name == "apply_code_patch":
+        file_rel = inputs.get("file", "")
+        constant = inputs.get("constant", "")
+        value    = inputs.get("value")
+        reason   = inputs.get("reason", "")
+
+        # Whitelist-Check
+        if file_rel not in CODE_PATCH_WHITELIST:
+            return {"error": f"Datei '{file_rel}' nicht in Whitelist. Erlaubt: {list(CODE_PATCH_WHITELIST.keys())}"}
+
+        allowed = CODE_PATCH_WHITELIST[file_rel]
+        if constant not in allowed:
+            return {"error": f"Konstante '{constant}' nicht erlaubt in {file_rel}. Erlaubt: {list(allowed.keys())}"}
+
+        value = float(value)
+        meta  = allowed[constant]
+
+        # Range-Check
+        if value < meta["min"] or value > meta["max"]:
+            return {"error": f"{constant}={value} ausserhalb Range [{meta['min']}, {meta['max']}]"}
+
+        # Datei lesen
+        target_file = PROJECT_ROOT / file_rel
+        if not target_file.exists():
+            return {"error": f"Datei nicht gefunden: {file_rel}"}
+
+        original_text = target_file.read_text(encoding="utf-8")
+
+        # Aktuellen Wert lesen
+        # Erkennt: "CONST = 0.25", "CONST: float = 0.25", "    CONST = 0.25" (class-level)
+        pattern = rf"(\b{re.escape(constant)}(?:\s*:\s*\w+)?\s*=\s*)([-]?[\d.]+)"
+        m = re.search(pattern, original_text)
+        if not m:
+            return {"error": f"Konstante '{constant}' nicht in {file_rel} gefunden (Pattern-Match fehlgeschlagen)"}
+
+        old_value = float(m.group(2))
+
+        # Max-Change-Check (25%)
+        if old_value != 0:
+            change_pct = abs(value - old_value) / abs(old_value)
+            if change_pct > MAX_CHANGE_PCT:
+                return {
+                    "error": f"Aenderung {change_pct:.0%} > Max {MAX_CHANGE_PCT:.0%}. "
+                             f"Aktuell: {old_value}, Erlaubt: [{round(old_value*(1-MAX_CHANGE_PCT),4)}, {round(old_value*(1+MAX_CHANGE_PCT),4)}]"
+                }
+
+        # Replacement
+        new_text = re.sub(pattern, rf"\g<1>{value}", original_text, count=1)
+
+        # Syntax-Check
+        import py_compile, tempfile as tmpmod
+        with tmpmod.NamedTemporaryFile(suffix=".py", delete=False, mode="w", encoding="utf-8") as tmp:
+            tmp.write(new_text)
+            tmp_path = tmp.name
+        try:
+            py_compile.compile(tmp_path, doraise=True)
+        except py_compile.PyCompileError as e:
+            import os as _os
+            _os.unlink(tmp_path)
+            return {"error": f"Syntax-Check fehlgeschlagen: {e}"}
+        import os as _os
+        _os.unlink(tmp_path)
+
+        # Backup
+        backup = target_file.with_suffix(f".py.bak_{datetime.now().strftime('%Y%m%d_%H%M%S')}")
+        shutil.copy2(target_file, backup)
+
+        # Schreiben
+        target_file.write_text(new_text, encoding="utf-8")
+
+        # Git-Commit
+        git_msg = f"auto: {constant} {old_value}→{value} in {file_rel} [{reason[:60]}]"
+        try:
+            import subprocess
+            subprocess.run(
+                ["git", "add", file_rel],
+                cwd=str(PROJECT_ROOT), capture_output=True, timeout=15
+            )
+            subprocess.run(
+                ["git", "commit", "-m", git_msg,
+                 "--author=StrategyAgent <agent@polymarket-beobachter>"],
+                cwd=str(PROJECT_ROOT), capture_output=True, timeout=15
+            )
+        except Exception as git_err:
+            logger.warning(f"Git-Commit fehlgeschlagen (Code wurde trotzdem geschrieben): {git_err}")
+
+        # Patch-Log
+        log_entry = {
+            "timestamp": datetime.now().isoformat(),
+            "file": file_rel,
+            "constant": constant,
+            "old_value": old_value,
+            "new_value": value,
+            "reason": reason,
+            "git_msg": git_msg,
+        }
+        CODE_PATCH_LOG_FILE.parent.mkdir(parents=True, exist_ok=True)
+        with open(CODE_PATCH_LOG_FILE, "a", encoding="utf-8") as f:
+            f.write(json.dumps(log_entry, ensure_ascii=False) + "\n")
+
+        # Telegram Alert
+        try:
+            from notifications.telegram import send_message, is_configured
+            if is_configured():
+                nl = "\n"
+                msg = (
+                    f"🤖 <b>AUTO CODE PATCH</b>{nl}"
+                    f"📄 <code>{file_rel}</code>{nl}"
+                    f"<b>{constant}</b>: {old_value} → {value}{nl}"
+                    f"💡 {reason[:200]}{nl}"
+                    f"<i>Syntax-Check: OK | Git-Commit: OK</i>"
+                )
+                send_message(msg)
+        except Exception:
+            pass
+
+        logger.info(f"Code-Patch: {constant} {old_value}→{value} in {file_rel}")
+        return {
+            "ok": True,
+            "file": file_rel,
+            "constant": constant,
+            "old_value": old_value,
+            "new_value": value,
+            "action": f"{file_rel}: {constant} {old_value} → {value}",
+            "note": "Syntax-Check OK, Git-Commit erstellt, wirksam ab naechstem Import",
+        }
+
     elif name == "write_diagnosis":
         diagnosis = {**inputs, "generated_at": datetime.now().isoformat()}
         DIAGNOSIS_FILE.parent.mkdir(parents=True, exist_ok=True)
@@ -904,16 +1096,18 @@ ABLAUF:
 6. run_backtest (optional) → Alternativ: einfacher Backtest
 7. adjust_config (0-2x) → Direkter Eingriff wenn Daten es begruenden
 8. set_mutation_bias (0-2x) → Langfristige Evolution lenken
-9. set_goal (0-1x) → Ziel setzen/aktualisieren wenn sinnvoll
-10. propose_code_change (0-1x) → Groessere Aenderungen vorschlagen
-11. write_diagnosis → Immer als letztes
+9. apply_code_patch (0-1x) → Direkte Code-Aenderung (Kelly, TP/SL, Sizing)
+10. set_goal (0-1x) → Ziel setzen/aktualisieren wenn sinnvoll
+11. propose_code_change (0-1x) → Groessere Aenderungen die nicht auto-editierbar sind
+12. write_diagnosis → Immer als letztes
 
 REGELN:
-- NUR aendern wenn Daten es begruenden
-- Max 2 Config-Aenderungen pro Diagnose, Max 25% pro Parameter
-- Bei < 10 Trades: KEINE Config-Aenderungen, nur Ziel setzen + beobachten
-- Vor adjust_config: Immer start_ab_test oder run_backtest
-- propose_code_change fuer: Kelly-Formel-Aenderungen, neue Exit-Logik, neue Datenquellen
+- NUR aendern wenn Daten es begruenden, max 25% pro Parameter
+- Bei < 10 Trades: KEINE Eingriffe, nur Ziel setzen + beobachten
+- Vor adjust_config/apply_code_patch: Immer start_ab_test oder run_backtest
+- apply_code_patch fuer: KELLY_FRACTION, MAX_POSITION_EUR, STOP_LOSS_PCT, TP-Levels
+- propose_code_change fuer: neue Logik, neue Module, strukturelle Aenderungen
+- Wirkungsbereich: adjust_config wirkt sofort, apply_code_patch ab naechstem Import
 
 PARAMETER-WIRKUNGEN:
 - MIN_EDGE hoeher → weniger aber bessere Trades (bei niedriger Win-Rate)
@@ -990,6 +1184,7 @@ def run_strategy_agent(max_iterations: int = 15) -> dict:
 
     diagnosis: dict = {}
     config_changes: list[str] = []
+    code_patches: list[str] = []
     hints_applied: list[str] = []
 
     for i in range(max_iterations):
@@ -1069,6 +1264,8 @@ def run_strategy_agent(max_iterations: int = 15) -> dict:
                     diagnosis = tool_inputs
                 elif tc.function.name == "adjust_config" and result.get("ok"):
                     config_changes.append(result.get("action", ""))
+                elif tc.function.name == "apply_code_patch" and result.get("ok"):
+                    code_patches.append(result.get("action", ""))
                 elif tc.function.name == "set_mutation_bias" and result.get("ok"):
                     hints_applied.append(result.get("action", ""))
 
@@ -1078,6 +1275,7 @@ def run_strategy_agent(max_iterations: int = 15) -> dict:
 
     if diagnosis:
         diagnosis["config_changes"]    = config_changes
+        diagnosis["code_patches"]      = code_patches
         diagnosis["mutations_applied"] = hints_applied
         diagnosis["provider"]          = active_provider["name"]
 
@@ -1111,6 +1309,12 @@ def send_strategy_telegram(diagnosis: dict) -> None:
 
         for rc in diagnosis.get("root_causes", [])[:3]:
             lines.append(f"• {rc}")
+
+        patches = diagnosis.get("code_patches", [])
+        if patches:
+            lines += ["", "<b>Code auto-editiert:</b>"]
+            for p in patches[:3]:
+                lines.append(f"🔧 {p}")
 
         changes = diagnosis.get("config_changes", [])
         if changes:
