@@ -2,8 +2,13 @@
 # LLM STRATEGY AGENT
 # =============================================================================
 #
-# Ein Claude-Haiku-basierter Agent der die System-Performance analysiert,
+# Claude/GPT/Kimi-basierter Agent der die System-Performance analysiert,
 # Root Causes erkennt und gerichtete Mutations-Hints setzt.
+#
+# Provider-Prioritaet (Fallback):
+#   1. Kimi (moonshot-v1-8k, sehr guenstig)
+#   2. OpenAI (gpt-4o-mini, guenstig + zuverlaessig)
+#   3. OpenRouter (anthropic/claude-haiku-4-5, Claude-native)
 #
 # Ablauf:
 #   1. Lese Performance, Positionen, Population, Marktbedingung via Tools
@@ -12,7 +17,6 @@
 #   4. Schreibe Diagnose-Report + Telegram-Alert
 #
 # Wird nach jedem Evolutions-Tick aufgerufen (alle 50 Pipeline-Runs).
-# Benutzt Claude Haiku (guenstig: ~$0.001 pro Aufruf).
 #
 # =============================================================================
 
@@ -32,122 +36,156 @@ HINTS_FILE = PROJECT_ROOT / "data" / "evolution" / "strategy_hints.json"
 DIAGNOSIS_FILE = PROJECT_ROOT / "data" / "evolution" / "strategy_diagnosis.json"
 
 # =============================================================================
-# TOOL DEFINITIONS (Claude Tool-Use Schema)
+# PROVIDER CONFIGURATION
+# =============================================================================
+
+PROVIDERS = [
+    {
+        "name": "Kimi",
+        "env_key": "KIMI_API_KEY",
+        "base_url": "https://api.moonshot.cn/v1",
+        "model": "moonshot-v1-8k",
+    },
+    {
+        "name": "OpenRouter",
+        "env_key": "OPENROUTER_API_KEY",
+        "base_url": "https://openrouter.ai/api/v1",
+        "model": "openai/gpt-4o-mini",
+    },
+    {
+        "name": "OpenAI",
+        "env_key": "OPENAI_API_KEY",
+        "base_url": None,  # default
+        "model": "gpt-4o-mini",
+    },
+]
+
+# =============================================================================
+# TOOL DEFINITIONS (OpenAI Function-Calling Format)
 # =============================================================================
 
 TOOLS = [
     {
-        "name": "read_performance",
-        "description": (
-            "Lese den aktuellen Performance-Report: Win-Rate, PnL, Profit-Factor, "
-            "Drawdown, Brier Score, Strategy Attribution und Performance nach Stadt."
-        ),
-        "input_schema": {"type": "object", "properties": {}, "required": []},
-    },
-    {
-        "name": "read_recent_positions",
-        "description": "Lese die letzten N abgeschlossenen Positionen (CLOSED/RESOLVED).",
-        "input_schema": {
-            "type": "object",
-            "properties": {
-                "n": {
-                    "type": "integer",
-                    "description": "Anzahl Positionen (default: 30)",
-                }
-            },
-            "required": [],
+        "type": "function",
+        "function": {
+            "name": "read_performance",
+            "description": (
+                "Lese den aktuellen Performance-Report: Win-Rate, PnL, Profit-Factor, "
+                "Drawdown, Brier Score, Strategy Attribution und Performance nach Stadt."
+            ),
+            "parameters": {"type": "object", "properties": {}, "required": []},
         },
     },
     {
-        "name": "read_population_status",
-        "description": (
-            "Lese den aktuellen Status der Evolution-Population: "
-            "Generation, Champion, Fitness-Scores, Parameter aller aktiven Agenten."
-        ),
-        "input_schema": {"type": "object", "properties": {}, "required": []},
-    },
-    {
-        "name": "read_market_condition",
-        "description": "Lese die aktuelle Marktbedingung (BULLISH/BEARISH/WATCH etc.).",
-        "input_schema": {"type": "object", "properties": {}, "required": []},
-    },
-    {
-        "name": "read_previous_diagnosis",
-        "description": "Lese die letzte Diagnose um Fortschritt zu beurteilen.",
-        "input_schema": {"type": "object", "properties": {}, "required": []},
-    },
-    {
-        "name": "set_mutation_bias",
-        "description": (
-            "Setze einen gerichteten Bias fuer die naechste Mutation. "
-            "Die Evolution wird in die angegebene Richtung gelenkt. "
-            "direction='up' erhoeht den Parameter, 'down' verringert ihn, "
-            "'reset' entfernt den Bias."
-        ),
-        "input_schema": {
-            "type": "object",
-            "properties": {
-                "param": {
-                    "type": "string",
-                    "description": (
-                        "Parameter-Name. Gueltige Werte: min_edge, min_edge_absolute, "
-                        "kelly_fraction, max_odds, take_profit_pct, stop_loss_pct, "
-                        "avg_down_threshold_pct, variance_threshold, "
-                        "medium_confidence_multiplier, min_liquidity"
-                    ),
+        "type": "function",
+        "function": {
+            "name": "read_recent_positions",
+            "description": "Lese die letzten N abgeschlossenen Positionen (CLOSED/RESOLVED).",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "n": {"type": "integer", "description": "Anzahl Positionen (default: 30)"}
                 },
-                "direction": {
-                    "type": "string",
-                    "enum": ["up", "down", "reset"],
-                    "description": "Richtung der Mutation",
-                },
-                "strength": {
-                    "type": "number",
-                    "description": "Staerke des Bias 0.1-1.0 (default: 0.5)",
-                },
-                "reason": {
-                    "type": "string",
-                    "description": "Kurze Begruendung fuer den Bias",
-                },
+                "required": [],
             },
-            "required": ["param", "direction"],
         },
     },
     {
-        "name": "write_diagnosis",
-        "description": (
-            "Schreibe die finale Diagnose mit Zusammenfassung, Root Causes, "
-            "Hypothesen und Status. IMMER als letztes Tool aufrufen."
-        ),
-        "input_schema": {
-            "type": "object",
-            "properties": {
-                "summary": {
-                    "type": "string",
-                    "description": "Kurze Zusammenfassung in 2-3 Saetzen",
+        "type": "function",
+        "function": {
+            "name": "read_population_status",
+            "description": (
+                "Lese den Status der Evolution-Population: Generation, Champion, "
+                "Fitness-Scores und Parameter aller aktiven Agenten."
+            ),
+            "parameters": {"type": "object", "properties": {}, "required": []},
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "read_market_condition",
+            "description": "Lese die aktuelle Marktbedingung (BULLISH/BEARISH/WATCH etc.).",
+            "parameters": {"type": "object", "properties": {}, "required": []},
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "read_previous_diagnosis",
+            "description": "Lese die letzte Diagnose um Fortschritt zu beurteilen.",
+            "parameters": {"type": "object", "properties": {}, "required": []},
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "set_mutation_bias",
+            "description": (
+                "Setze einen gerichteten Bias fuer die naechste Mutation. "
+                "direction='up' erhoeht den Parameter, 'down' verringert, 'reset' entfernt."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "param": {
+                        "type": "string",
+                        "description": (
+                            "Parameter-Name. Gueltig: min_edge, min_edge_absolute, "
+                            "kelly_fraction, max_odds, take_profit_pct, stop_loss_pct, "
+                            "avg_down_threshold_pct, variance_threshold, "
+                            "medium_confidence_multiplier, min_liquidity"
+                        ),
+                    },
+                    "direction": {
+                        "type": "string",
+                        "enum": ["up", "down", "reset"],
+                    },
+                    "strength": {
+                        "type": "number",
+                        "description": "Staerke 0.1-1.0 (default: 0.5)",
+                    },
+                    "reason": {
+                        "type": "string",
+                        "description": "Kurze Begruendung",
+                    },
                 },
-                "root_causes": {
-                    "type": "array",
-                    "items": {"type": "string"},
-                    "description": "Erkannte Hauptursachen fuer aktuelle Performance",
-                },
-                "hypotheses": {
-                    "type": "array",
-                    "items": {"type": "string"},
-                    "description": "Konkrete Hypothesen die getestet werden sollen",
-                },
-                "mutations_applied": {
-                    "type": "array",
-                    "items": {"type": "string"},
-                    "description": "Liste der gesetzten Mutations-Hints",
-                },
-                "grade": {
-                    "type": "string",
-                    "enum": ["HEALTHY", "DEGRADED", "CRITICAL"],
-                    "description": "Aktueller Systemstatus",
-                },
+                "required": ["param", "direction"],
             },
-            "required": ["summary", "root_causes", "hypotheses", "grade"],
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "write_diagnosis",
+            "description": "Schreibe die finale Diagnose. IMMER als letztes Tool aufrufen.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "summary": {"type": "string", "description": "Zusammenfassung 2-3 Saetze"},
+                    "root_causes": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Erkannte Hauptursachen",
+                    },
+                    "hypotheses": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Hypothesen zum Testen",
+                    },
+                    "mutations_applied": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Liste der gesetzten Mutations-Hints",
+                    },
+                    "grade": {
+                        "type": "string",
+                        "enum": ["HEALTHY", "DEGRADED", "CRITICAL"],
+                        "description": "Systemstatus",
+                    },
+                },
+                "required": ["summary", "root_causes", "hypotheses", "grade"],
+            },
         },
     },
 ]
@@ -164,8 +202,6 @@ VALID_PARAMS = {
 
 
 def _execute_tool(name: str, inputs: dict) -> Any:
-    """Fuehre ein Tool aus und gib das Ergebnis zurueck."""
-
     if name == "read_performance":
         report_file = PROJECT_ROOT / "analytics" / "performance_report.json"
         if report_file.exists():
@@ -179,7 +215,7 @@ def _execute_tool(name: str, inputs: dict) -> Any:
         n = inputs.get("n", 30)
         positions_file = PROJECT_ROOT / "paper_trader" / "logs" / "paper_positions.jsonl"
         if not positions_file.exists():
-            return {"positions": [], "count": 0, "error": "Keine Positionen-Datei"}
+            return {"positions": [], "count": 0}
 
         by_id: dict[str, dict] = {}
         try:
@@ -196,14 +232,8 @@ def _execute_tool(name: str, inputs: dict) -> Any:
         except Exception as e:
             return {"error": f"Lesefehler: {e}"}
 
-        closed = [
-            p for p in by_id.values()
-            if p.get("status") in ("CLOSED", "RESOLVED")
-        ]
+        closed = [p for p in by_id.values() if p.get("status") in ("CLOSED", "RESOLVED")]
         closed.sort(key=lambda p: p.get("exit_time", ""), reverse=True)
-        recent = closed[:n]
-
-        # Komprimiere fuer Kontext-Effizienz
         summary = [
             {
                 "market": p.get("market_question", "?")[:60],
@@ -216,18 +246,16 @@ def _execute_tool(name: str, inputs: dict) -> Any:
                 "city": p.get("city"),
                 "confidence": p.get("confidence_level"),
             }
-            for p in recent
+            for p in closed[:n]
         ]
         return {"positions": summary, "count": len(summary)}
 
     elif name == "read_population_status":
         pop_file = PROJECT_ROOT / "data" / "evolution" / "population.json"
         if not pop_file.exists():
-            return {"error": "Keine Population gefunden"}
+            return {"error": "Keine Population"}
         try:
             pop = json.loads(pop_file.read_text(encoding="utf-8"))
-
-            # Lade Fitness-Daten der aktiven Agenten
             agents_dir = PROJECT_ROOT / "data" / "evolution" / "agents"
             agent_summaries = []
             for aid in pop.get("agents", []):
@@ -241,20 +269,17 @@ def _execute_tool(name: str, inputs: dict) -> Any:
                             "status": a.get("status"),
                             "fitness": a.get("fitness", {}),
                             "params": a.get("params", {}),
-                            "notes": a.get("notes", ""),
                         })
                     except Exception:
                         pass
-
             return {
                 "generation": pop.get("generation"),
                 "total_runs": pop.get("total_runs"),
                 "champion_id": pop.get("champion_id"),
-                "agent_count": len(pop.get("agents", [])),
                 "agents": agent_summaries,
             }
         except Exception as e:
-            return {"error": f"Lesefehler: {e}"}
+            return {"error": str(e)}
 
     elif name == "read_market_condition":
         cond_file = PROJECT_ROOT / "data" / "market_condition.json"
@@ -263,7 +288,7 @@ def _execute_tool(name: str, inputs: dict) -> Any:
                 return json.loads(cond_file.read_text(encoding="utf-8"))
             except Exception:
                 pass
-        return {"condition": "UNKNOWN", "error": "Keine Marktbedingung-Datei"}
+        return {"condition": "UNKNOWN"}
 
     elif name == "read_previous_diagnosis":
         if DIAGNOSIS_FILE.exists():
@@ -280,10 +305,9 @@ def _execute_tool(name: str, inputs: dict) -> Any:
         reason = inputs.get("reason", "")
 
         if param not in VALID_PARAMS:
-            return {"error": f"Ungueltiger Parameter: {param}. Gueltig: {sorted(VALID_PARAMS)}"}
+            return {"error": f"Ungueltiger Parameter: {param}"}
 
         strength = max(0.1, min(1.0, strength))
-
         hints: dict = {}
         if HINTS_FILE.exists():
             try:
@@ -301,21 +325,20 @@ def _execute_tool(name: str, inputs: dict) -> Any:
                 "reason": reason,
                 "set_at": datetime.now().isoformat(),
             }
-            action = f"Bias '{direction}' fuer '{param}' gesetzt (strength={strength:.1f})"
+            action = f"'{param}' → {direction} (strength={strength:.1f}): {reason}"
 
         HINTS_FILE.parent.mkdir(parents=True, exist_ok=True)
         HINTS_FILE.write_text(json.dumps(hints, indent=2, ensure_ascii=False), encoding="utf-8")
-        logger.info(f"Strategy Hint: {action} — {reason}")
+        logger.info(f"Strategy Hint: {action}")
         return {"ok": True, "action": action, "total_hints": len(hints)}
 
     elif name == "write_diagnosis":
-        diagnosis = {
-            **inputs,
-            "generated_at": datetime.now().isoformat(),
-        }
+        diagnosis = {**inputs, "generated_at": datetime.now().isoformat()}
         DIAGNOSIS_FILE.parent.mkdir(parents=True, exist_ok=True)
-        DIAGNOSIS_FILE.write_text(json.dumps(diagnosis, indent=2, ensure_ascii=False), encoding="utf-8")
-        logger.info(f"Diagnose geschrieben: {inputs.get('grade')} — {inputs.get('summary', '')[:80]}")
+        DIAGNOSIS_FILE.write_text(
+            json.dumps(diagnosis, indent=2, ensure_ascii=False), encoding="utf-8"
+        )
+        logger.info(f"Diagnose: {inputs.get('grade')} — {inputs.get('summary', '')[:80]}")
         return {"ok": True}
 
     return {"error": f"Unbekanntes Tool: {name}"}
@@ -328,124 +351,192 @@ def _execute_tool(name: str, inputs: dict) -> Any:
 SYSTEM_PROMPT = """Du bist ein Strategie-Analyst fuer ein Polymarket Weather-Betting System (Paper Trading).
 
 Deine Aufgabe:
-1. Analysiere Performance-Daten, Positionen, Evolution-Status und Marktbedingung
-2. Erkenne Muster und Root Causes fuer Gewinne/Verluste
-3. Setze gerichtete Mutations-Hints um die Parameter-Evolution zu lenken
-4. Schreibe eine klare, praxisorientierte Diagnose
+1. Analysiere Performance-Daten, Positionen, Population und Marktbedingung via Tools
+2. Erkenne Root Causes fuer Gewinne/Verluste
+3. Setze gerichtete Mutations-Hints (1-3 Stueck, nur datenbasiert)
+4. Schliesse mit write_diagnosis ab
 
-Parameter-Wirkungsweise:
-- min_edge: Hoeher = weniger aber qualitativ hochwertigere Trades
-- min_edge_absolute: Mindestabstand zu Market Price (verhindert False Positives)
-- kelly_fraction: Hoeher = groessere Positionen = mehr Risiko und Chance
-- max_odds: Hoeher = auch Favoriten handelbar (max empfohlen: 0.45)
-- take_profit_pct: Fruehzeitiger Exit sichert Gewinne, verringert aber Upside
-- stop_loss_pct: Eng = viele SL-Exits; Weit = grosse Einzelverluste moeglich
-- avg_down_threshold_pct: Ab wann wird nachgekauft (bei Kursrueckgang)
-- variance_threshold: Hoeher = mehr Ensemble-Unsicherheit toleriert
-- min_liquidity: Hoeher = nur liquide Maerkte (reduziert Slippage)
+Parameter-Wirkung:
+- min_edge hoeher → weniger aber qualitativ bessere Trades
+- kelly_fraction hoeher → groessere Positionen, mehr Risiko
+- max_odds hoeher → auch Favoriten handelbar
+- take_profit_pct niedriger → fruehzeitiger sicherer Exit
+- stop_loss_pct hoeher → weniger voreilige SL-Exits
+- min_liquidity hoeher → nur gute Maerkte, weniger Slippage
 
 Typische Problemmuster:
-- Viele Stop-Losses → min_edge erhoehen ODER stop_loss_pct erhoehen
+- Viele SL-Exits → stop_loss_pct erhoehen ODER min_edge erhoehen
 - Niedrige Win-Rate → min_edge erhoehen, max_odds senken
 - Kein Trade-Flow → min_edge senken ODER min_liquidity senken
-- Hoher Drawdown → kelly_fraction senken, stop_loss_pct senken
-- Schlechter Brier Score → Forecast-Kalibrierung pruefen (variance_threshold anpassen)
-- Take-Profit wird selten erreicht → take_profit_pct senken
+- Hoher Drawdown → kelly_fraction senken
+- Wenig Daten → noch keine Hints setzen, nur beobachten
 
-Vorgehensweise:
-1. Zuerst: read_performance
-2. Dann: read_recent_positions (schaue auf Exit-Gruende)
-3. Dann: read_population_status (welche Parameter performieren gut?)
-4. Optional: read_market_condition, read_previous_diagnosis
-5. Setze 1-3 set_mutation_bias Calls basierend auf Analyse
-6. Abschliessen mit write_diagnosis
-
-Antworte kurz und praezise. Setze NUR Hints die durch Daten belegbar sind."""
+Reihenfolge: read_performance → read_recent_positions → read_population_status → (optional weitere) → set_mutation_bias (0-3x) → write_diagnosis"""
 
 
 # =============================================================================
-# MAIN AGENT LOOP
+# PROVIDER CLIENT
+# =============================================================================
+
+def _get_client(provider: dict):
+    """Erstelle OpenAI-kompatiblen Client fuer den Provider."""
+    from openai import OpenAI
+
+    api_key = os.environ.get(provider["env_key"], "").strip()
+    if not api_key:
+        return None
+
+    kwargs = {"api_key": api_key}
+    if provider["base_url"]:
+        kwargs["base_url"] = provider["base_url"]
+
+    return OpenAI(**kwargs)
+
+
+# =============================================================================
+# AGENT LOOP
 # =============================================================================
 
 def run_strategy_agent(max_iterations: int = 12) -> dict:
     """
-    Starte den LLM Strategy Agent mit Tool-Use.
+    Starte den LLM Strategy Agent mit Tool-Use und Provider-Fallback.
+
+    Reihenfolge: Kimi → OpenAI → OpenRouter
 
     Returns:
-        Diagnosis dict oder {"error": ...} bei Fehler
+        Diagnosis dict oder {"error": ...}
     """
-    api_key = os.environ.get("ANTHROPIC_API_KEY", "").strip()
-    if not api_key:
-        logger.warning("ANTHROPIC_API_KEY nicht gesetzt - Strategy Agent deaktiviert")
-        return {"error": "ANTHROPIC_API_KEY nicht gesetzt"}
+    # .env laden falls noch nicht geschehen
+    env_file = PROJECT_ROOT / ".env"
+    if env_file.exists():
+        for line in env_file.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if line and not line.startswith("#") and "=" in line:
+                k, _, v = line.partition("=")
+                os.environ.setdefault(k.strip(), v.strip())
 
     try:
-        import anthropic
+        from openai import OpenAI  # noqa: F401
     except ImportError:
-        logger.warning("anthropic Paket nicht installiert (pip install anthropic)")
-        return {"error": "anthropic nicht installiert"}
+        return {"error": "openai Paket nicht installiert (pip install openai)"}
 
-    client = anthropic.Anthropic(api_key=api_key)
+    # Provider mit Fallback durchprobieren
+    client = None
+    active_provider = None
+    for provider in PROVIDERS:
+        c = _get_client(provider)
+        if c is not None:
+            client = c
+            active_provider = provider
+            break
+
+    if client is None:
+        logger.warning("Kein LLM-Provider konfiguriert (KIMI/OPENAI/OPENROUTER Key fehlt)")
+        return {"error": "Kein LLM-Provider verfuegbar"}
+
+    logger.info(f"Strategy Agent gestartet via {active_provider['name']} ({active_provider['model']})")
 
     messages = [
+        {"role": "system", "content": SYSTEM_PROMPT},
         {
             "role": "user",
             "content": (
                 "Analysiere die aktuelle System-Performance und gib gezielte Empfehlungen. "
                 "Nutze die Tools in der beschriebenen Reihenfolge."
             ),
-        }
+        },
     ]
 
     diagnosis: dict = {}
     hints_applied: list[str] = []
 
-    logger.info("Strategy Agent gestartet (claude-haiku-4-5)")
-
     for i in range(max_iterations):
         try:
-            response = client.messages.create(
-                model="claude-haiku-4-5-20251001",
-                max_tokens=2048,
-                system=SYSTEM_PROMPT,
-                tools=TOOLS,
+            response = client.chat.completions.create(
+                model=active_provider["model"],
                 messages=messages,
+                tools=TOOLS,
+                tool_choice="auto",
+                max_tokens=2048,
+                temperature=0.2,
             )
         except Exception as e:
-            logger.error(f"Claude API Fehler: {e}")
-            return {"error": str(e)}
+            logger.warning(f"{active_provider['name']} fehlgeschlagen: {e}")
 
-        # Agenten-Antwort zur Message-History hinzufuegen
-        messages.append({"role": "assistant", "content": response.content})
+            # Fallback: naechsten Provider versuchen
+            current_idx = PROVIDERS.index(active_provider)
+            for fallback in PROVIDERS[current_idx + 1:]:
+                c = _get_client(fallback)
+                if c is not None:
+                    logger.info(f"Fallback auf {fallback['name']} ({fallback['model']})")
+                    client = c
+                    active_provider = fallback
+                    try:
+                        response = client.chat.completions.create(
+                            model=active_provider["model"],
+                            messages=messages,
+                            tools=TOOLS,
+                            tool_choice="auto",
+                            max_tokens=2048,
+                            temperature=0.2,
+                        )
+                        break
+                    except Exception as e2:
+                        logger.warning(f"{fallback['name']} auch fehlgeschlagen: {e2}")
+                        continue
+            else:
+                return {"error": f"Alle Provider fehlgeschlagen. Letzter Fehler: {e}"}
 
-        if response.stop_reason == "end_turn":
+        choice = response.choices[0]
+
+        # Assistenten-Nachricht korrekt aufbauen (content kann None sein bei tool_calls)
+        asst_msg: dict = {"role": "assistant", "content": choice.message.content or ""}
+        if choice.message.tool_calls:
+            asst_msg["tool_calls"] = [
+                {
+                    "id": tc.id,
+                    "type": "function",
+                    "function": {"name": tc.function.name, "arguments": tc.function.arguments},
+                }
+                for tc in choice.message.tool_calls
+            ]
+        messages.append(asst_msg)
+
+        if choice.finish_reason == "stop":
             break
 
-        if response.stop_reason == "tool_use":
+        if choice.finish_reason == "tool_calls" and choice.message.tool_calls:
             tool_results = []
-            for block in response.content:
-                if block.type == "tool_use":
-                    result = _execute_tool(block.name, block.input)
-                    tool_results.append(
-                        {
-                            "type": "tool_result",
-                            "tool_use_id": block.id,
-                            "content": json.dumps(result, ensure_ascii=False, default=str),
-                        }
-                    )
-                    if block.name == "write_diagnosis":
-                        diagnosis = block.input
-                    elif block.name == "set_mutation_bias" and result.get("ok"):
-                        hints_applied.append(result.get("action", ""))
+            for tc in choice.message.tool_calls:
+                try:
+                    inputs = json.loads(tc.function.arguments)
+                except Exception:
+                    inputs = {}
 
-            messages.append({"role": "user", "content": tool_results})
+                result = _execute_tool(tc.function.name, inputs)
+
+                tool_results.append({
+                    "role": "tool",
+                    "tool_call_id": tc.id,
+                    "content": json.dumps(result, ensure_ascii=False, default=str),
+                })
+
+                if tc.function.name == "write_diagnosis":
+                    diagnosis = inputs
+                elif tc.function.name == "set_mutation_bias" and result.get("ok"):
+                    hints_applied.append(result.get("action", ""))
+
+            messages.extend(tool_results)
         else:
-            # Kein weiterer Tool-Call erwartet
             break
+
+    if diagnosis:
+        diagnosis["mutations_applied"] = hints_applied
+        diagnosis["provider"] = active_provider["name"]
 
     logger.info(
         f"Strategy Agent fertig: grade={diagnosis.get('grade', '?')}, "
-        f"hints={len(hints_applied)}, iterations={i + 1}"
+        f"hints={len(hints_applied)}, provider={active_provider['name']}, iter={i + 1}"
     )
     return diagnosis
 
@@ -462,11 +553,12 @@ def send_strategy_telegram(diagnosis: dict) -> None:
             return
 
         grade = diagnosis.get("grade", "?")
+        provider = diagnosis.get("provider", "?")
         grade_emoji = {"HEALTHY": "✅", "DEGRADED": "⚠️", "CRITICAL": "🚨"}.get(grade, "❓")
 
         nl = "\n"
         lines = [
-            f"{grade_emoji} <b>STRATEGY AGENT — {grade}</b>",
+            f"{grade_emoji} <b>STRATEGY AGENT — {grade}</b> <i>({provider})</i>",
             "",
             f"<i>{diagnosis.get('summary', '')}</i>",
         ]
@@ -479,7 +571,7 @@ def send_strategy_telegram(diagnosis: dict) -> None:
 
         mutations = diagnosis.get("mutations_applied", [])
         if mutations:
-            lines += ["", "<b>Mutations-Hints gesetzt:</b>"]
+            lines += ["", "<b>Mutations-Hints:</b>"]
             for m in mutations[:4]:
                 lines.append(f"→ {m}")
 
@@ -508,15 +600,6 @@ def main():
         datefmt="%H:%M:%S",
     )
 
-    # Lade .env falls vorhanden
-    env_file = PROJECT_ROOT / ".env"
-    if env_file.exists():
-        for line in env_file.read_text(encoding="utf-8").splitlines():
-            line = line.strip()
-            if line and not line.startswith("#") and "=" in line:
-                k, _, v = line.partition("=")
-                os.environ.setdefault(k.strip(), v.strip())
-
     print("Strategy Agent wird gestartet...")
     diagnosis = run_strategy_agent()
 
@@ -524,8 +607,9 @@ def main():
         print(f"FEHLER: {diagnosis['error']}")
         sys.exit(1)
 
-    print(f"\nGrade: {diagnosis.get('grade')}")
-    print(f"Summary: {diagnosis.get('summary')}")
+    print(f"\nProvider: {diagnosis.get('provider')}")
+    print(f"Grade:    {diagnosis.get('grade')}")
+    print(f"Summary:  {diagnosis.get('summary')}")
     print("\nRoot Causes:")
     for rc in diagnosis.get("root_causes", []):
         print(f"  • {rc}")
@@ -539,7 +623,7 @@ def main():
             print(f"  → {m}")
 
     send_strategy_telegram(diagnosis)
-    print(f"\nDiagnose gespeichert: {DIAGNOSIS_FILE}")
+    print(f"\nDiagnose: {DIAGNOSIS_FILE}")
 
 
 if __name__ == "__main__":
