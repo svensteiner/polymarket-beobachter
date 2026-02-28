@@ -142,6 +142,17 @@ class Orchestrator:
         result.add_step(proposal_result)
         print(f" {'OK' if proposal_result.success else 'FAIL'} ({proposal_result.message})")
 
+        # Step 3b: Evolution Agent Simulator - Entries (non-blocking)
+        # Jeder Agent bewertet Proposals nach seinen eigenen Parametern
+        try:
+            from evolution.agent_simulator import simulate_agents_entry
+            agent_entries = simulate_agents_entry()
+            total_agent_entries = sum(agent_entries.values())
+            if total_agent_entries > 0:
+                logger.info(f"[EVOLUTION] Agent-Entries: {agent_entries}")
+        except Exception as e:
+            logger.debug(f"Evolution Agent Entry fehlgeschlagen (unkritisch): {e}")
+
         # Step 4: Paper Trader (mit DrawdownProtector-Snapshot)
         print("[4/6] Paper Trader: Trades simulieren ...", end="", flush=True)
         self._record_equity_snapshot("pre_paper_trader")
@@ -155,7 +166,18 @@ class Orchestrator:
         result.add_step(outcome_result)
         print(f" {'OK' if outcome_result.success else 'FAIL'} ({outcome_result.message})")
 
-        # Step 5b: Outcome Analyser (nach jedem Run aktualisieren)
+        # Step 5b: Evolution Agent Simulator - Closes (non-blocking)
+        # Schliesst Agenten-Positionen fuer aufgeloeste Maerkte
+        try:
+            from evolution.agent_simulator import simulate_agents_close
+            agent_closes = simulate_agents_close()
+            total_agent_closes = sum(agent_closes.values())
+            if total_agent_closes > 0:
+                logger.info(f"[EVOLUTION] Agent-Closes: {agent_closes}")
+        except Exception as e:
+            logger.debug(f"Evolution Agent Close fehlgeschlagen (unkritisch): {e}")
+
+        # Step 5c: Outcome Analyser (nach jedem Run aktualisieren)
         self._run_outcome_analyser()
 
         # Step 5c: Arbitrage Scan (READ-ONLY, non-blocking)
@@ -187,7 +209,19 @@ class Orchestrator:
         except Exception as e:
             logger.debug(f"Telegram Pipeline Summary fehlgeschlagen: {e}")
 
-        # Evolution Tick (non-blocking, triggert alle 50 Runs automatisch)
+        # Feedback-Loop: Rule-Based Check nach jeder neuen geschlossenen Position
+        # Reagiert schneller als der Evolution-Tick (der alle 10 Runs laeuft)
+        paper_closes = result.summary.get("paper_closes", 0) if result.summary else 0
+        if paper_closes > 0:
+            try:
+                from evolution.strategy_agent import _run_rule_based_checks
+                rule_actions = _run_rule_based_checks()
+                if rule_actions:
+                    logger.info(f"[FEEDBACK-LOOP] {paper_closes} Positionen geschlossen → Regel-Aktionen: {rule_actions}")
+            except Exception as e:
+                logger.debug(f"Feedback-Loop Rule-Check fehlgeschlagen (unkritisch): {e}")
+
+        # Evolution Tick (non-blocking, triggert alle 10 Runs automatisch)
         try:
             from evolution.tournament import cmd_tick
             import types
@@ -201,6 +235,9 @@ class Orchestrator:
             self._cleanup_old_audit_logs(max_age_days=90)
         except Exception as e:
             logger.warning(f"Audit-Log cleanup fehlgeschlagen: {e}")
+
+        # Self-Improvement-Cycle: kontinuierliche Parameter-Optimierung
+        self._run_improvement_cycle()
 
         logger.info(f"=== Pipeline END === run_id={run_id} state={result.state.value}")
 
@@ -861,6 +898,19 @@ class Orchestrator:
 
         except Exception as e:
             logger.error(f"Audit log failed: {e}")
+
+    def _run_improvement_cycle(self) -> None:
+        """Self-Improvement: LLM-gestützte Parameter-Optimierung (non-blocking)."""
+        try:
+            from analytics.improvement_agent import run_improvement_cycle
+            result = run_improvement_cycle()
+            action = result.get("action", "none")
+            if action not in ("none", "waiting_for_data", "experiment_running"):
+                logger.info(f"[IMPROVEMENT] {action}: {result.get('param', '')} "
+                            f"{result.get('old', '')} → {result.get('new', '')} "
+                            f"| {result.get('reasoning', result.get('reason', ''))}")
+        except Exception as e:
+            logger.debug(f"Improvement Cycle fehlgeschlagen (unkritisch): {e}")
 
     def _cleanup_old_audit_logs(self, max_age_days=90):
         """Loesche Audit-Logs aelter als max_age_days."""
