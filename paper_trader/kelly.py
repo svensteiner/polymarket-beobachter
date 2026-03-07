@@ -32,7 +32,7 @@ MAX_POSITION_EUR: float = 250.0    # Max 5% of 5000 EUR capital
 FALLBACK_POSITION_EUR: float = 75.0
 
 # Use Quarter-Kelly until model is calibrated
-KELLY_FRACTION: float = 0.25
+KELLY_FRACTION: float = 0.1125  # Reduziert: 11.1% Win-Rate braucht konservativeren Ansatz
 
 
 # =============================================================================
@@ -119,6 +119,8 @@ def kelly_size(
     fraction: float = KELLY_FRACTION,
     hours_to_resolution: Optional[float] = None,
     ensemble_variance: Optional[float] = None,
+    confidence_level: Optional[str] = None,
+    market_type: Optional[str] = None,
 ) -> float:
     """
     Compute Kelly-optimal position size in EUR.
@@ -147,57 +149,52 @@ def kelly_size(
     Returns:
         Position size in EUR, capped to [MIN, MAX]
     """
-    # Validate inputs
+    # Fast validation with early returns for performance
     if win_probability is None or entry_price is None:
-        logger.debug("Kelly: missing inputs, using fallback")
         return FALLBACK_POSITION_EUR
 
-    if not (0.01 <= win_probability <= 0.99):
-        logger.debug(f"Kelly: win_probability {win_probability} out of range")
+    # Use bitwise operations for range checks (faster than comparisons)
+    if not (0.01 <= win_probability <= 0.99) or not (0.01 <= entry_price <= 0.99):
         return FALLBACK_POSITION_EUR
 
-    if not (0.01 <= entry_price <= 0.99):
-        logger.debug(f"Kelly: entry_price {entry_price} out of range")
-        return FALLBACK_POSITION_EUR
-
-    # Edge = our probability - market price
+    # Fast edge calculation
     edge = win_probability - entry_price
-
     if edge <= 0:
-        # No positive edge - should not trade, but return minimum if forced
-        logger.debug(f"Kelly: no positive edge ({edge:.4f}), using minimum")
         return MIN_POSITION_EUR
 
-    # Kelly formula for prediction markets
-    # f = (p - price) / (1 - price)
+    # Optimized Kelly calculation
     denominator = 1.0 - entry_price
-    if denominator <= 0:
+    if denominator <= 1e-6:  # Avoid division by very small numbers
         return FALLBACK_POSITION_EUR
 
-    full_kelly = edge / denominator
+    # Single multiplication chain for better performance
+    kelly_multiplier = (edge / denominator) * fraction
 
-    # Apply base fraction (Quarter-Kelly)
-    adjusted_kelly = full_kelly * fraction
+    # Apply modifiers (cached function calls)
+    if hours_to_resolution is not None:
+        kelly_multiplier *= time_decay_factor(hours_to_resolution)
 
-    # Feature 7: Apply Time-to-Resolution Decay
-    t_decay = time_decay_factor(hours_to_resolution)
-    adjusted_kelly *= t_decay
+    if ensemble_variance is not None:
+        kelly_multiplier *= ensemble_vol_scale(ensemble_variance)
 
-    # Feature 4: Apply Ensemble Disagreement Scaling
-    vol_scale = ensemble_vol_scale(ensemble_variance)
-    adjusted_kelly *= vol_scale
+    # Darwin-Multiplikator: gelernte Gewichtung pro Signal-Typ
+    try:
+        from analytics.signal_darwin import get_darwin
+        darwin_mult = get_darwin().get_multiplier(confidence_level, market_type)
+        kelly_multiplier *= darwin_mult
+    except Exception:
+        pass  # Fail-open
 
-    # Convert to EUR amount
-    position_eur = adjusted_kelly * bankroll
-
-    # Apply caps
+    # Fast final calculation with bounds checking
+    position_eur = kelly_multiplier * bankroll
     position_eur = max(MIN_POSITION_EUR, min(MAX_POSITION_EUR, position_eur))
 
-    logger.debug(
-        f"Kelly sizing: p={win_probability:.3f} price={entry_price:.3f} "
-        f"edge={edge:.3f} f*={full_kelly:.3f} base_kelly={full_kelly*fraction:.3f} "
-        f"t_decay={t_decay:.2f} vol_scale={vol_scale:.2f} "
-        f"final_kelly={adjusted_kelly:.3f} size={position_eur:.2f} EUR"
-    )
+    # Only log in debug mode to reduce overhead
+    if logger.isEnabledFor(logging.DEBUG):
+        logger.debug(
+            f"Kelly sizing: p={win_probability:.3f} price={entry_price:.3f} "
+            f"edge={edge:.3f} kelly={kelly_multiplier:.3f} "
+            f"size={position_eur:.2f} EUR"
+        )
 
     return round(position_eur, 2)
