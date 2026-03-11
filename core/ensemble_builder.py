@@ -18,7 +18,7 @@ import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Optional, Dict, List, Any
+from typing import Optional, Dict, List, Any, Tuple
 
 from .forecast_sources import SourceForecast, ForecastSourceBase
 from .forecast_sources.open_meteo_client import OpenMeteoSource
@@ -131,6 +131,7 @@ class EnsembleBuilder:
         target_time: datetime,
         threshold_f: float,
         event_type: str = "exceeds",
+        threshold_high_f: Optional[float] = None,
     ) -> Optional[EnsembleForecast]:
         """
         Build an ensemble forecast for a city/threshold.
@@ -154,16 +155,34 @@ class EnsembleBuilder:
         days = hours / 24
         sigma = self._calculate_sigma(days)
 
-        # Compute per-source probabilities
+        # Compute per-source probabilities (optimized batch processing)
         per_source_probs: Dict[str, float] = {}
-        for sf in forecasts:
-            prob = compute_probability_from_forecast_temp(
-                temperature_f=sf.temperature_f,
-                threshold_f=threshold_f,
-                sigma=sigma,
-                event_type=event_type,
+
+        # Use batch processing for better cache utilization
+        try:
+            from .performance_cache import batch_probability_calculations
+            temperatures = [sf.temperature_f for sf in forecasts]
+            thresholds = [threshold_f] * len(forecasts)
+            sigmas = [sigma] * len(forecasts)
+            event_types = [event_type] * len(forecasts)
+
+            batch_probs = batch_probability_calculations(
+                temperatures, thresholds, sigmas, event_types
             )
-            per_source_probs[sf.source_name] = prob
+
+            for sf, prob in zip(forecasts, batch_probs):
+                per_source_probs[sf.source_name] = prob
+        except ImportError:
+            # Fallback to original sequential processing
+            for sf in forecasts:
+                prob = compute_probability_from_forecast_temp(
+                    temperature_f=sf.temperature_f,
+                    threshold_f=threshold_f,
+                    sigma=sigma,
+                    event_type=event_type,
+                    threshold_high_f=threshold_high_f,
+                )
+                per_source_probs[sf.source_name] = prob
 
         # Compute weights (correlated models share weight)
         weights = self._compute_weights(forecasts)

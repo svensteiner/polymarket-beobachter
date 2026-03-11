@@ -116,14 +116,24 @@ class SlippageModel:
         if not snapshot.has_valid_prices():
             return None
 
-        # Get base price
-        if snapshot.best_ask is not None:
-            base_price = snapshot.best_ask  # Start from ask (worst for buyer)
-        elif snapshot.mid_price is not None:
-            # If only mid_price, add half spread estimate
-            base_price = snapshot.mid_price * 1.01  # 1% above mid
+        # Get base price (in terms of the side we're buying)
+        if side == "NO":
+            # NO price = 1 - YES price
+            # Worst case for NO buyer: use YES bid (lowest YES price = highest NO ask)
+            if snapshot.best_bid is not None:
+                base_price = 1.0 - snapshot.best_bid  # NO ask = 1 - YES bid
+            elif snapshot.mid_price is not None:
+                base_price = 1.0 - (snapshot.mid_price * 0.99)
+            else:
+                return None
         else:
-            return None
+            # YES entry: pay YES ask (worst for buyer)
+            if snapshot.best_ask is not None:
+                base_price = snapshot.best_ask
+            elif snapshot.mid_price is not None:
+                base_price = snapshot.mid_price * 1.01  # 1% above mid
+            else:
+                return None
 
         # Get slippage rate
         slippage_rate = self.get_slippage_rate(snapshot.liquidity_bucket)
@@ -137,7 +147,7 @@ class SlippageModel:
         # Cap slippage
         slippage_amount = min(slippage_amount, base_price * MAXIMUM_SLIPPAGE)
 
-        # Calculate entry price (price we pay)
+        # Calculate entry price (price we pay for our side)
         entry_price = base_price + slippage_amount
 
         # Clamp to valid range [0, 1] for prediction markets
@@ -178,14 +188,23 @@ class SlippageModel:
         if not snapshot.has_valid_prices():
             return None
 
-        # Get base price
-        if snapshot.best_bid is not None:
-            base_price = snapshot.best_bid  # Start from bid (worst for seller)
-        elif snapshot.mid_price is not None:
-            # If only mid_price, subtract half spread estimate
-            base_price = snapshot.mid_price * 0.99  # 1% below mid
+        # Get base price (in terms of the side we're selling)
+        if side == "NO":
+            # Selling NO = worst case: use YES ask (highest YES price = lowest NO bid)
+            if snapshot.best_ask is not None:
+                base_price = 1.0 - snapshot.best_ask  # NO bid = 1 - YES ask
+            elif snapshot.mid_price is not None:
+                base_price = 1.0 - (snapshot.mid_price * 1.01)
+            else:
+                return None
         else:
-            return None
+            # YES exit: receive YES bid (worst for seller)
+            if snapshot.best_bid is not None:
+                base_price = snapshot.best_bid
+            elif snapshot.mid_price is not None:
+                base_price = snapshot.mid_price * 0.99
+            else:
+                return None
 
         # Get slippage rate
         slippage_rate = self.get_slippage_rate(snapshot.liquidity_bucket)
@@ -199,7 +218,7 @@ class SlippageModel:
         # Cap slippage
         slippage_amount = min(slippage_amount, base_price * MAXIMUM_SLIPPAGE)
 
-        # Calculate exit price (price we receive)
+        # Calculate exit price (price we receive for our side)
         exit_price = base_price - slippage_amount
 
         # Clamp to valid range [0, 1]

@@ -59,6 +59,8 @@ class WeatherMarket:
     # Extracted fields (populated by filter)
     detected_city: Optional[str] = None
     detected_threshold: Optional[float] = None
+    detected_threshold_high: Optional[float] = None  # Upper bound for "between X-Y" markets
+    detected_event_type: Optional[str] = None  # "exceeds", "below", or "between_range"
     detected_metric: Optional[str] = None
 
     def to_dict(self) -> Dict[str, Any]:
@@ -346,6 +348,8 @@ class WeatherMarketFilter:
             if market_type == "CITY_TEMPERATURE":
                 resolution_check = filter_details.get("resolution_check", {})
                 market.detected_threshold = resolution_check.get("threshold_f")
+                market.detected_threshold_high = resolution_check.get("threshold_f_high")
+                market.detected_event_type = resolution_check.get("event_type", "exceeds")
 
         return FilterResult(
             passed=passed,
@@ -485,11 +489,14 @@ class WeatherMarketFilter:
         Detect city name from market text.
 
         Returns standardized city name or None if not detected.
+
+        Uses word-boundary matching to avoid false positives:
+        e.g., "la" must not match "dallas" or "atlanta".
         """
         combined_text = f"{market.question} {market.description}".lower()
 
         for pattern, city_name in self.CITY_PATTERNS.items():
-            if pattern in combined_text:
+            if re.search(r'\b' + re.escape(pattern) + r'\b', combined_text):
                 return city_name
 
         return None
@@ -526,39 +533,131 @@ class WeatherMarketFilter:
                     "reason": f"Contains vague term: '{vague}'",
                 }
 
-        # Try to extract temperature threshold
+        # ---------------------------------------------------------------
+        # Priority 1: "between X-Y°F/C" → interval market P(X <= T <= Y)
+        # ---------------------------------------------------------------
+        between_pattern = re.compile(r'between\s*(\d+\.?\d*)\s*-\s*(\d+\.?\d*)\s*°?\s*([FC])', re.I)
+        between_match = between_pattern.search(combined_text)
+        if between_match:
+            low_val = float(between_match.group(1))
+            high_val = float(between_match.group(2))
+            unit = between_match.group(3).upper()
+            if unit == 'C':
+                low_f = low_val * 9/5 + 32
+                high_f = high_val * 9/5 + 32
+            else:
+                low_f = low_val
+                high_f = high_val
+            return {
+                "is_explicit": True,
+                "threshold_f": low_f,
+                "threshold_f_high": high_f,
+                "metric": "temperature",
+                "event_type": "between_range",
+                "original_value": low_val,
+                "original_unit": unit,
+            }
+
+        # ---------------------------------------------------------------
+        # Priority 2: "be X°F or below/lower" → one-sided below market
+        # ---------------------------------------------------------------
+        below_be_pat = re.compile(r'\bbe\s+(\d+\.?\d*)\s*°?\s*([FC])\s+or\s+(?:below|lower)\b', re.I)
+        below_be_match = below_be_pat.search(combined_text)
+        if below_be_match:
+            val = float(below_be_match.group(1))
+            unit = below_be_match.group(2).upper()
+            threshold_f = val * 9/5 + 32 if unit == 'C' else val
+            return {
+                "is_explicit": True,
+                "threshold_f": threshold_f,
+                "threshold_f_high": None,
+                "metric": "temperature",
+                "event_type": "below",
+                "original_value": val,
+                "original_unit": unit,
+            }
+
+        # ---------------------------------------------------------------
+        # Priority 3: "be X°F or higher/above" → one-sided exceeds market
+        # ---------------------------------------------------------------
+        above_be_pat = re.compile(r'\bbe\s+(\d+\.?\d*)\s*°?\s*([FC])\s+or\s+(?:higher|above)\b', re.I)
+        above_be_match = above_be_pat.search(combined_text)
+        if above_be_match:
+            val = float(above_be_match.group(1))
+            unit = above_be_match.group(2).upper()
+            threshold_f = val * 9/5 + 32 if unit == 'C' else val
+            return {
+                "is_explicit": True,
+                "threshold_f": threshold_f,
+                "threshold_f_high": None,
+                "metric": "temperature",
+                "event_type": "exceeds",
+                "original_value": val,
+                "original_unit": unit,
+            }
+
+        # ---------------------------------------------------------------
+        # Priority 4: "be X°F/C" with no directional modifier
+        #              → narrow 1-degree band: P(X <= T < X+1)
+        # This is how Polymarket weather markets work: "be 22°C" means
+        # the high temperature falls exactly in the 22-23°C range.
+        # ---------------------------------------------------------------
+        exact_be_pat = re.compile(
+            r'\bbe\s+(\d+\.?\d*)\s*°?\s*([FC])(?!\s*(?:or|to|\+|-))', re.I
+        )
+        exact_be_match = exact_be_pat.search(combined_text)
+        if exact_be_match:
+            val = float(exact_be_match.group(1))
+            unit = exact_be_match.group(2).upper()
+            if unit == 'C':
+                low_f = val * 9/5 + 32
+                high_f = (val + 1) * 9/5 + 32
+            else:
+                low_f = val
+                high_f = val + 1
+            return {
+                "is_explicit": True,
+                "threshold_f": low_f,
+                "threshold_f_high": high_f,
+                "metric": "temperature",
+                "event_type": "between_range",
+                "original_value": val,
+                "original_unit": unit,
+            }
+
+        # ---------------------------------------------------------------
+        # Priority 5: One-sided patterns (above/exceed/below/reach)
+        # ---------------------------------------------------------------
         for pattern in self.TEMPERATURE_PATTERNS:
             match = pattern.search(combined_text)
             if match:
                 groups = match.groups()
-
-                # Extract threshold value
                 threshold = None
                 unit = None
+                has_below = False
 
-                for group in groups:
-                    if group is None:
-                        continue
-                    # Check if it's a number
+                groups_str = [g for g in groups if g is not None]
+                for group in groups_str:
                     try:
                         threshold = float(group)
                     except ValueError:
                         pass
-                    # Check if it's a unit
                     if group.upper() in ('F', 'C'):
                         unit = group.upper()
+                    if group.lower() in ('below', 'lower', 'under'):
+                        has_below = True
 
                 if threshold is not None and unit is not None:
-                    # Convert to Fahrenheit if needed
                     if unit == 'C':
                         threshold_f = threshold * 9/5 + 32
                     else:
                         threshold_f = threshold
-
                     return {
                         "is_explicit": True,
                         "threshold_f": threshold_f,
+                        "threshold_f_high": None,
                         "metric": "temperature",
+                        "event_type": "below" if has_below else "exceeds",
                         "original_value": threshold,
                         "original_unit": unit,
                     }

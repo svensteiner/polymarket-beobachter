@@ -148,8 +148,14 @@ def normal_cdf(x: float, mean: float, sigma: float) -> float:
     if sigma <= 0:
         raise ValueError(f"sigma must be positive, got {sigma}")
 
-    z = (x - mean) / sigma
-    return standard_normal_cdf(z)
+    # Use optimized cache for common values
+    try:
+        from .performance_cache import fast_normal_cdf
+        return fast_normal_cdf(x, mean, sigma)
+    except ImportError:
+        # Fallback to original implementation
+        z = (x - mean) / sigma
+        return standard_normal_cdf(z)
 
 
 def probability_exceeds(
@@ -188,6 +194,30 @@ def probability_below(
         Probability P(X < threshold)
     """
     return normal_cdf(threshold, mean, sigma)
+
+
+def probability_between(
+    low: float, high: float, mean: float, sigma: float
+) -> float:
+    """
+    Compute probability that value falls within interval [low, high].
+
+    P(low <= X <= high) = CDF(high) - CDF(low)
+
+    This is the correct function for "between X-Y" prediction markets.
+
+    Args:
+        low: Lower bound of interval
+        high: Upper bound of interval
+        mean: Expected value
+        sigma: Standard deviation
+
+    Returns:
+        Probability P(low <= X <= high)
+    """
+    if low >= high:
+        return 0.0
+    return normal_cdf(high, mean, sigma) - normal_cdf(low, mean, sigma)
 
 
 # =============================================================================
@@ -257,6 +287,7 @@ class WeatherProbabilityModel:
         forecast: ForecastData,
         threshold_f: float,
         event_type: str = "exceeds",
+        threshold_high_f: Optional[float] = None,
     ) -> ProbabilityResult:
         """
         Compute fair probability for a weather event.
@@ -289,7 +320,13 @@ class WeatherProbabilityModel:
         sigma = self._calculate_adjusted_sigma(days_to_resolution)
 
         # Compute probability based on event type
-        if event_type == "exceeds":
+        if event_type == "between_range":
+            if threshold_high_f is None:
+                raise ValueError("threshold_high_f required for event_type='between_range'")
+            fair_prob = probability_between(
+                threshold_f, threshold_high_f, forecast.temperature_f, sigma
+            )
+        elif event_type == "exceeds":
             fair_prob = probability_exceeds(
                 threshold_f, forecast.temperature_f, sigma
             )
@@ -424,6 +461,7 @@ def compute_probability_from_forecast_temp(
     threshold_f: float,
     sigma: float,
     event_type: str = "exceeds",
+    threshold_high_f: Optional[float] = None,
 ) -> float:
     """
     Compute event probability from a forecast temperature.
@@ -432,9 +470,10 @@ def compute_probability_from_forecast_temp(
 
     Args:
         temperature_f: Forecast temperature in Fahrenheit
-        threshold_f: Threshold temperature in Fahrenheit
+        threshold_f: Threshold temperature in Fahrenheit (lower bound for "between_range")
         sigma: Adjusted standard deviation
-        event_type: "exceeds" or "below"
+        event_type: "exceeds", "below", or "between_range"
+        threshold_high_f: Upper bound for "between_range" markets
 
     Returns:
         Probability of the event
@@ -442,12 +481,24 @@ def compute_probability_from_forecast_temp(
     if sigma <= 0:
         raise ValueError(f"sigma must be positive, got {sigma}")
 
-    if event_type == "exceeds":
-        return probability_exceeds(threshold_f, temperature_f, sigma)
-    elif event_type == "below":
-        return probability_below(threshold_f, temperature_f, sigma)
-    else:
-        raise ValueError(f"Unknown event_type: {event_type}")
+    # Use optimized calculation with caching
+    try:
+        from .performance_cache import fast_probability_calculation
+        return fast_probability_calculation(
+            temperature_f, threshold_f, sigma, event_type, threshold_high_f
+        )
+    except ImportError:
+        # Fallback to original implementation
+        if event_type == "between_range":
+            if threshold_high_f is None:
+                raise ValueError("threshold_high_f required for event_type='between_range'")
+            return probability_between(threshold_f, threshold_high_f, temperature_f, sigma)
+        elif event_type == "exceeds":
+            return probability_exceeds(threshold_f, temperature_f, sigma)
+        elif event_type == "below":
+            return probability_below(threshold_f, temperature_f, sigma)
+        else:
+            raise ValueError(f"Unknown event_type: {event_type}")
 
 
 def compute_edge(
@@ -481,23 +532,32 @@ def meets_edge_threshold(
     """
     Check if edge meets threshold for given confidence level.
 
-    For MEDIUM confidence, require higher edge (multiplier applied).
+    Supports both YES bets (positive edge) and NO bets (negative edge).
+    For MEDIUM confidence, require higher |edge| (multiplier applied).
     For LOW confidence, always return False.
 
     Args:
-        edge: Computed edge
-        min_edge: Minimum required edge
+        edge: Computed edge (positive = market underpriced, negative = market overpriced)
+        min_edge: Minimum required |edge|
         confidence: Model confidence level
         medium_confidence_multiplier: Multiplier for MEDIUM confidence
 
     Returns:
-        True if edge meets threshold
+        True if |edge| meets threshold (regardless of direction)
     """
-    if confidence == WeatherConfidence.LOW:
-        return False
+    # Use optimized threshold checking with early returns
+    try:
+        from .performance_cache import fast_edge_threshold_check
+        return fast_edge_threshold_check(
+            edge, min_edge, confidence.value, medium_confidence_multiplier
+        )
+    except ImportError:
+        # Fallback to original implementation
+        if confidence == WeatherConfidence.LOW:
+            return False
 
-    required_edge = min_edge
-    if confidence == WeatherConfidence.MEDIUM:
-        required_edge = min_edge * medium_confidence_multiplier
+        required_edge = min_edge
+        if confidence == WeatherConfidence.MEDIUM:
+            required_edge = min_edge * medium_confidence_multiplier
 
-    return edge >= required_edge
+        return abs(edge) >= required_edge

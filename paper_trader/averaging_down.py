@@ -35,6 +35,7 @@ from paper_trader.snapshot_client import get_market_snapshots
 from paper_trader.capital_manager import get_capital_manager, allocate_capital
 from paper_trader.slippage import calculate_entry_price
 from paper_trader.kelly import kelly_size
+from paper_trader.bot_health_monitor import check_can_open_entry
 
 logger = logging.getLogger(__name__)
 
@@ -172,6 +173,17 @@ def check_averaging_down() -> Dict[str, Any]:
 
     if not open_positions:
         return {"checked": 0, "addons": 0, "skipped": 0, "cost_eur": 0.0}
+
+    health_ok, health_reason = check_can_open_entry(is_addon=True)
+    if not health_ok:
+        logger.info("Averaging down uebersprungen: %s", health_reason)
+        return {
+            "checked": len(open_positions),
+            "addons": 0,
+            "skipped": len(open_positions),
+            "cost_eur": 0.0,
+            "reason": health_reason,
+        }
 
     # Get snapshots for all open positions
     market_ids = [p.market_id for p in open_positions]
@@ -350,6 +362,11 @@ def _execute_addon(
         return None
 
     entry_price, slippage = price_result
+
+    health_ok, health_reason = check_can_open_entry(entry_price=entry_price, is_addon=True)
+    if not health_ok:
+        logger.info("Addon blockiert: %s", health_reason)
+        return None
 
     # Position sizing via Kelly
     try:

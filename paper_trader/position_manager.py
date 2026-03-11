@@ -181,17 +181,17 @@ class PositionManager:
         return summary
 
     # ==========================================================================
-    # GESTAFFELTE TAKE-PROFIT SCHWELLEN (adaptiert aus tradingbot/risk_engine.py)
+    # GESTAFFELTE TAKE-PROFIT SCHWELLEN - Strategie: Kleine konstante Gewinne
     # ==========================================================================
-    # TP1: +10% -> 40% der Position verkaufen, Trailing Stop auf Entry setzen
-    # TP2: +18% -> weitere 40% verkaufen, Trailing Stop anpassen
-    # TP3: +25% -> Restliche 20% vollstaendig schliessen
-    # Stop-Loss: -25% (unveraendert)
-    TP1_PCT = 0.10
-    TP1_FRACTION = 0.40   # 40% bei TP1 verkaufen
-    TP2_PCT = 0.18
-    TP2_FRACTION = 0.40   # 40% bei TP2 verkaufen (kumuliert: 80%)
-    TP3_PCT = 0.25        # Restliche 20% bei TP3 schliessen
+    # TP1: +7%  -> 50% der Position verkaufen (schneller erster Gewinn)
+    # TP2: +12% -> weitere 35% verkaufen (kumuliert: 85%)
+    # TP3: +18% -> Restliche 15% schliessen
+    # Stop-Loss: -35% (breit genug fuer Wetter-Volatilitaet)
+    TP1_PCT = 0.07
+    TP1_FRACTION = 0.50   # 50% bei TP1 verkaufen
+    TP2_PCT = 0.12
+    TP2_FRACTION = 0.35   # 35% bei TP2 verkaufen (kumuliert: 85%)
+    TP3_PCT = 0.18        # Restliche 15% bei TP3 schliessen
     STOP_LOSS_PCT = -0.35
 
     def _calc_unrealized_pct(self, position: PaperPosition, current_price: float) -> float:
@@ -333,6 +333,11 @@ class PositionManager:
             exit_reason=reason,
             realized_pnl_eur=remaining_pnl,
             pnl_pct=pnl_pct,
+            confidence_level=position.confidence_level,
+            market_type=position.market_type,
+            proposal_edge=getattr(position, "proposal_edge", None),
+            hours_to_resolution=getattr(position, "hours_to_resolution", None),
+            edge_bucket=getattr(position, "edge_bucket", None),
         )
 
         record = PaperTradeRecord(
@@ -356,6 +361,19 @@ class PositionManager:
         release_capital(remaining_cost, remaining_pnl, f"Final exit: {reason}")
         log_position(closed_position)
         log_trade(record)
+
+        # Darwin-Feedback: Signal-Typ lernt aus Trade-Ergebnis
+        try:
+            from analytics.signal_darwin import get_darwin
+            darwin = get_darwin()
+            darwin.record_result(
+                confidence_level=getattr(position, "confidence_level", None),
+                market_type=getattr(position, "market_type", None),
+                win=remaining_pnl > 0,
+            )
+            darwin.maybe_rebalance()
+        except Exception:
+            pass  # Fail-open
 
         logger.info(
             f"FINAL_EXIT (rest {remaining_fraction:.0%}): {position.market_id} | "

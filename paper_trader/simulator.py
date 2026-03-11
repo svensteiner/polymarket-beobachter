@@ -51,6 +51,9 @@ from paper_trader.capital_manager import (
 )
 from paper_trader.kelly import kelly_size, FALLBACK_POSITION_EUR
 from paper_trader.drawdown_protector import check_can_open_position
+from paper_trader.bot_health_monitor import check_can_open_entry
+from paper_trader.high_conviction import evaluate_high_conviction_exception
+from analytics.edge_memory import assess_proposal_edge, classify_bucket
 
 
 logger = logging.getLogger(__name__)
@@ -69,6 +72,23 @@ SIMULATED_SPREAD_PCT: Final[float] = 4.0
 # Diversification limits
 MAX_POSITIONS_PER_CITY_DATE: Final[int] = 1  # Exclusive markets: only 1 per city+date
 MAX_POSITIONS_PER_CITY: Final[int] = 3        # Max positions per city overall
+
+
+def _detect_market_type(market_question: str) -> str:
+    """
+    Detect the type of weather market from the question text.
+    Used to track which market types our model predicts best.
+    """
+    q = market_question.lower()
+    if re.search(r'between\s+\d', q):
+        return "between"
+    if re.search(r'or\s+below|or\s+less|or\s+under|or\s+lower', q):
+        return "at_or_below"
+    if re.search(r'or\s+above|or\s+higher|or\s+more|or\s+over|be\s+above|exceed', q):
+        return "at_or_above"
+    if re.search(r'\bbe\s+\d+|\bexactly\s+\d+', q):
+        return "exact"
+    return "unknown"
 
 
 def _extract_city_date(market_question: str) -> tuple:
@@ -149,6 +169,8 @@ class ExecutionSimulator:
             Position is None if entry was skipped.
         """
         now = datetime.now().isoformat()
+        exception_allowed, exception_reason = evaluate_high_conviction_exception(proposal)
+        exception_tag = ""
 
         # Check position limit BEFORE attempting entry
         open_positions = self._paper_logger.get_open_positions()
@@ -174,7 +196,7 @@ class ExecutionSimulator:
 
         # DrawdownProtector: Keine neuen Positionen im Recovery-Modus
         dd_ok, dd_reason = check_can_open_position()
-        if not dd_ok:
+        if not dd_ok and not exception_allowed:
             record = PaperTradeRecord(
                 record_id=generate_record_id(),
                 timestamp=now,
@@ -192,6 +214,41 @@ class ExecutionSimulator:
             log_trade(record)
             logger.warning(f"SKIP (DrawdownProtector): {dd_reason} for {proposal.market_id}")
             return (None, record)
+        if not dd_ok and exception_allowed:
+            logger.warning(
+                "Recovery-Bypass fuer %s: %s | %s",
+                proposal.market_id,
+                dd_reason,
+                exception_reason,
+            )
+
+        # BotHealthMonitor: temporäre Schutzregeln ohne Config-Mutation
+        health_ok, health_reason = check_can_open_entry(is_addon=False)
+        if not health_ok and not exception_allowed:
+            record = PaperTradeRecord(
+                record_id=generate_record_id(),
+                timestamp=now,
+                proposal_id=proposal.proposal_id,
+                market_id=proposal.market_id,
+                action=TradeAction.SKIP.value,
+                reason=health_reason,
+                position_id=None,
+                snapshot_time=None,
+                entry_price=None,
+                exit_price=None,
+                slippage_applied=None,
+                pnl_eur=None,
+            )
+            log_trade(record)
+            logger.warning(f"SKIP (BotHealthMonitor): {health_reason} for {proposal.market_id}")
+            return (None, record)
+        if not health_ok and exception_allowed:
+            logger.warning(
+                "BotHealth-Bypass fuer %s: %s | %s",
+                proposal.market_id,
+                health_reason,
+                exception_reason,
+            )
 
         # Check diversification: max positions per city+date (exclusive markets)
         new_city, new_date = _extract_city_date(proposal.market_question)
@@ -335,6 +392,26 @@ class ExecutionSimulator:
         # Positive edge (model > implied) = buy YES
         # Negative edge (model < implied) = buy NO
         side = "YES" if proposal.edge > 0 else "NO"
+        market_type = _detect_market_type(proposal.market_question)
+        edge_verdict = assess_proposal_edge(proposal, market_type=market_type)
+        if not edge_verdict["allowed"]:
+            record = PaperTradeRecord(
+                record_id=generate_record_id(),
+                timestamp=now,
+                proposal_id=proposal.proposal_id,
+                market_id=proposal.market_id,
+                action=TradeAction.SKIP.value,
+                reason=f"Edge memory blocked bucket {edge_verdict['bucket']}",
+                position_id=None,
+                snapshot_time=snapshot.snapshot_time,
+                entry_price=None,
+                exit_price=None,
+                slippage_applied=None,
+                pnl_eur=None,
+            )
+            log_trade(record)
+            logger.warning("SKIP (EdgeMemory): %s for %s", edge_verdict["reason"], proposal.market_id)
+            return (None, record)
 
         # Kelly position sizing: use model probability and market price
         win_prob = proposal.model_probability if hasattr(proposal, 'model_probability') else None
@@ -351,7 +428,10 @@ class ExecutionSimulator:
             bankroll=available,
             hours_to_resolution=hours_to_res,
             ensemble_variance=ens_variance,
+            confidence_level=getattr(proposal, "confidence_level", None),
+            market_type=market_type,
         )
+        position_eur *= float(edge_verdict.get("position_scale", 1.0) or 1.0)
 
         # Calculate entry price with slippage
         price_result = calculate_entry_price(snapshot, side)
@@ -377,6 +457,40 @@ class ExecutionSimulator:
             return (None, record)
 
         entry_price, slippage_applied = price_result
+        entry_exception_allowed, entry_exception_reason = evaluate_high_conviction_exception(
+            proposal,
+            entry_price=entry_price,
+        )
+        if entry_exception_allowed:
+            exception_tag = " | HighConvictionException"
+
+        # BotHealthMonitor: bei schwacher Gesundheit hohe Entry-Preise deckeln
+        health_ok, health_reason = check_can_open_entry(entry_price=entry_price, is_addon=False)
+        if not health_ok and not entry_exception_allowed:
+            record = PaperTradeRecord(
+                record_id=generate_record_id(),
+                timestamp=now,
+                proposal_id=proposal.proposal_id,
+                market_id=proposal.market_id,
+                action=TradeAction.SKIP.value,
+                reason=health_reason,
+                position_id=None,
+                snapshot_time=snapshot.snapshot_time,
+                entry_price=entry_price,
+                exit_price=None,
+                slippage_applied=slippage_applied,
+                pnl_eur=None,
+            )
+            log_trade(record)
+            logger.warning(f"SKIP (BotHealthMonitor): {health_reason} for {proposal.market_id}")
+            return (None, record)
+        if not health_ok and entry_exception_allowed:
+            logger.warning(
+                "BotHealth-Preisdeckel-Bypass fuer %s: %s | %s",
+                proposal.market_id,
+                health_reason,
+                entry_exception_reason,
+            )
 
         # Calculate position size
         # In prediction markets: price is probability, contracts pay $1 if correct
@@ -422,6 +536,20 @@ class ExecutionSimulator:
             realized_pnl_eur=None,
             pnl_pct=None,
             model_probability=getattr(proposal, 'model_probability', None),
+            confidence_level=getattr(proposal, "confidence_level", None),
+            market_type=market_type,
+            proposal_edge=float(getattr(proposal, "edge", 0.0) or 0.0),
+            hours_to_resolution=hours_to_res,
+            edge_bucket=str(
+                edge_verdict.get("bucket")
+                or classify_bucket(
+                    confidence_level=getattr(proposal, "confidence_level", None),
+                    market_type=market_type,
+                    side=side,
+                    edge=getattr(proposal, "edge", None),
+                    hours_to_resolution=hours_to_res,
+                )
+            ),
         )
 
         # Create trade record
@@ -431,7 +559,10 @@ class ExecutionSimulator:
             proposal_id=proposal.proposal_id,
             market_id=proposal.market_id,
             action=TradeAction.PAPER_ENTER.value,
-            reason=f"Paper entry: {side} at {entry_price:.4f} ({size_contracts:.2f} contracts)",
+            reason=(
+                f"Paper entry{exception_tag}: {side} at {entry_price:.4f} "
+                f"({size_contracts:.2f} contracts)"
+            ),
             position_id=position_id,
             snapshot_time=snapshot.snapshot_time,
             entry_price=entry_price,
@@ -521,6 +652,11 @@ class ExecutionSimulator:
             exit_reason=reason,
             realized_pnl_eur=realized_pnl,
             pnl_pct=pnl_pct,
+            confidence_level=position.confidence_level,
+            market_type=position.market_type,
+            proposal_edge=position.proposal_edge,
+            hours_to_resolution=position.hours_to_resolution,
+            edge_bucket=position.edge_bucket,
         )
 
         record = PaperTradeRecord(
@@ -612,6 +748,11 @@ class ExecutionSimulator:
             exit_reason=f"Market resolved: {snapshot.resolved_outcome}",
             realized_pnl_eur=realized_pnl,
             pnl_pct=pnl_pct,
+            confidence_level=position.confidence_level,
+            market_type=position.market_type,
+            proposal_edge=position.proposal_edge,
+            hours_to_resolution=position.hours_to_resolution,
+            edge_bucket=position.edge_bucket,
         )
 
         # Create trade record

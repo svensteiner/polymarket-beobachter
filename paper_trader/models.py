@@ -144,6 +144,13 @@ class PaperPosition:
     # Model calibration: our model's probability at entry time (for Brier Score)
     model_probability: Optional[float] = None
 
+    # Signal metadata for learning (2026-03-06)
+    confidence_level: Optional[str] = None   # HIGH / MEDIUM / LOW
+    market_type: Optional[str] = None        # exact / at_or_above / at_or_below / between / unknown
+    proposal_edge: Optional[float] = None
+    hours_to_resolution: Optional[float] = None
+    edge_bucket: Optional[str] = None
+
     # Hardcoded governance notice
     governance_notice: str = field(
         default="This is a PAPER position. No real funds were used.",
@@ -171,6 +178,11 @@ class PaperPosition:
             "realized_pnl_eur": self.realized_pnl_eur,
             "pnl_pct": self.pnl_pct,
             "model_probability": self.model_probability,
+            "confidence_level": self.confidence_level,
+            "market_type": self.market_type,
+            "proposal_edge": self.proposal_edge,
+            "hours_to_resolution": self.hours_to_resolution,
+            "edge_bucket": self.edge_bucket,
             "governance_notice": self.governance_notice,
         }
 
@@ -200,6 +212,11 @@ class PaperPosition:
             realized_pnl_eur=data.get("realized_pnl_eur"),
             pnl_pct=data.get("pnl_pct"),
             model_probability=data.get("model_probability"),
+            confidence_level=data.get("confidence_level"),
+            market_type=data.get("market_type"),
+            proposal_edge=data.get("proposal_edge"),
+            hours_to_resolution=data.get("hours_to_resolution"),
+            edge_bucket=data.get("edge_bucket"),
         )
 
 

@@ -20,14 +20,14 @@
 
 # Minimum USD liquidity required to consider a market
 # Lower liquidity = higher slippage risk = more uncertainty
-MIN_LIQUIDITY: 40.0
+MIN_LIQUIDITY: 18.75
 
 # Odds range for eligible markets
 # Markets with odds outside this range are filtered out
 # Very low odds (< 0.01) have extreme leverage risk
 # Very high odds (> 0.35) have insufficient edge potential
-MIN_ODDS: 0.20
-MAX_ODDS: 0.35
+MIN_ODDS: 0.32   # ERHOEHT: Keine Longshots mehr
+MAX_ODDS: 0.85   # Breiterer Odds-Bereich fuer mehr Marktbreite
 
 # Minimum time to resolution in hours
 # Markets too close to resolution have:
@@ -47,13 +47,12 @@ SAFETY_BUFFER_HOURS: 24
 
 # Minimum edge required to emit BUY signal
 # edge = (fair_probability - market_probability) / market_probability
-# 0.12 = 12% relative edge minimum
-MIN_EDGE: 0.1
+# ERHOEHT: 11.1% Win-Rate → brauchen deutlich mehr Edge
+MIN_EDGE: 0.25
 
 # Absolute edge floor (model_prob - market_prob)
-# Prevents false positives at very low odds where small model errors
-# create large relative edges
-MIN_EDGE_ABSOLUTE: 0.05
+# ERHOEHT: Strengere Schwelle gegen False Positives
+MIN_EDGE_ABSOLUTE: 0.08
 
 # Edge multiplier for MEDIUM confidence signals
 # Require more edge when model is less certain
@@ -202,7 +201,7 @@ CONFIDENCE_THRESHOLDS:
 ENSEMBLE:
   ENABLED: true
   VARIANCE_THRESHOLD: 0.15        # Varianz > 15% -> Confidence degradieren
-  MIN_INDEPENDENT_SOURCES: 2      # Weniger -> LOW Confidence
+  MIN_INDEPENDENT_SOURCES: 1      # Fix 2026-02-26: MetNorway fällt aus → Open-Meteo alleine reicht
   SOURCE_TIMEOUT_SECONDS: 12      # Pro Quelle max 12s
   CORRELATED_MODELS:              # Gleiche Basis-Modelle
     GFS:

@@ -22,6 +22,16 @@ from typing import Optional, Dict, List, Tuple
 from urllib.request import urlopen, Request
 from urllib.error import URLError, HTTPError
 
+# Retry-Utility fuer robuste HTTP-Anfragen (nur stdlib, kein aktienbot-Import)
+try:
+    from shared.retry_utils import retry as _retry
+except Exception:
+    # Graceful fallback: no-op decorator wenn retry_utils nicht verfuegbar
+    def _retry(*a, **kw):  # type: ignore[misc]
+        def _dec(f):
+            return f
+        return _dec
+
 logger = logging.getLogger(__name__)
 
 # Load .env from project root if not already loaded
@@ -81,18 +91,41 @@ def get_coords(city: str) -> Optional[Tuple[float, float]]:
 REQUEST_TIMEOUT = 12
 
 
+@_retry(max_attempts=3, base_delay=2.0, max_delay=30.0, retry_on=(Exception,), default=None)
 def api_get(url: str, headers: Optional[Dict] = None, timeout: int = REQUEST_TIMEOUT) -> Optional[Dict]:
-    """HTTP GET with JSON response. Shared across all forecast sources."""
+    """HTTP GET with JSON response (mit automatischem Retry). Shared across all forecast sources.
+    Falls back to unverified SSL if certificate verification fails (Windows CA issue)."""
+    req_headers = {"User-Agent": "PolymarketBeobachter/2.0"}
+    if headers:
+        req_headers.update(headers)
+    request = Request(url, headers=req_headers)
+
+    # First attempt: verified SSL
     try:
         ctx = ssl.create_default_context()
-        req_headers = {"User-Agent": "PolymarketBeobachter/2.0"}
-        if headers:
-            req_headers.update(headers)
-        request = Request(url, headers=req_headers)
         with urlopen(request, timeout=timeout, context=ctx) as response:
             return json.loads(response.read().decode("utf-8"))
-    except (HTTPError, URLError, Exception) as e:
+    except URLError as e:
+        # urlopen wraps SSL errors in URLError — check if it's a cert issue
+        reason = str(e.reason) if hasattr(e, "reason") else str(e)
+        if "CERTIFICATE_VERIFY_FAILED" in reason or "SSL" in reason:
+            pass  # Fallback to unverified below
+        else:
+            logger.debug(f"API request failed for {url[:80]}: {e}")
+            return None
+    except (HTTPError, Exception) as e:
         logger.debug(f"API request failed for {url[:80]}: {e}")
+        return None
+
+    # Fallback: unverified SSL (Windows certificate store incompatibility)
+    try:
+        ctx_unverified = ssl.create_default_context()
+        ctx_unverified.check_hostname = False
+        ctx_unverified.verify_mode = ssl.CERT_NONE
+        with urlopen(request, timeout=timeout, context=ctx_unverified) as response:
+            return json.loads(response.read().decode("utf-8"))
+    except (HTTPError, URLError, Exception) as e:
+        logger.debug(f"API request failed (unverified SSL) for {url[:80]}: {e}")
         return None
 
 

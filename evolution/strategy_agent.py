@@ -45,29 +45,31 @@ GOALS_FILE           = PROJECT_ROOT / "data" / "evolution" / "goals.json"
 AB_TEST_FILE         = PROJECT_ROOT / "data" / "evolution" / "ab_test.json"
 CODE_PROPOSALS_FILE  = PROJECT_ROOT / "data" / "evolution" / "code_proposals.jsonl"
 POSITIONS_FILE       = PROJECT_ROOT / "paper_trader" / "logs" / "paper_positions.jsonl"
+CHANGE_BASELINE_FILE = PROJECT_ROOT / "data" / "evolution" / "change_baseline.json"
 
 # =============================================================================
 # PROVIDER CONFIGURATION
 # =============================================================================
 
+# 3-Tier: Tier2=Kimi Primary, Tier1=OpenAI Fallback, Tier3=OpenAI gpt-5.1
 PROVIDERS = [
     {
-        "name": "Kimi",
+        "name": "Kimi",          # Tier 2: mittel (Analyse, Strategy)
         "env_key": "KIMI_API_KEY",
-        "base_url": "https://api.moonshot.cn/v1",
-        "model": "moonshot-v1-8k",
+        "base_url": "https://api.moonshot.ai/v1",
+        "model": "moonshot-v1-32k",
     },
     {
-        "name": "OpenRouter",
-        "env_key": "OPENROUTER_API_KEY",
-        "base_url": "https://openrouter.ai/api/v1",
-        "model": "openai/gpt-4o-mini",
-    },
-    {
-        "name": "OpenAI",
+        "name": "OpenAI",        # Tier 1 Fallback: leicht
         "env_key": "OPENAI_API_KEY",
         "base_url": None,
-        "model": "gpt-4o-mini",
+        "model": "gpt-4.1-mini",
+    },
+    {
+        "name": "OpenAI-Code",   # Tier 3: wichtig (Code-Evolution)
+        "env_key": "OPENAI_API_KEY",
+        "base_url": None,
+        "model": "gpt-5.1",
     },
 ]
 
@@ -80,7 +82,8 @@ PROVIDERS = [
 CONFIG_PARAMS: dict[str, dict] = {
     "MIN_EDGE":                       {"min": 0.06,  "max": 0.30,  "desc": "Relativer Edge-Floor"},
     "MIN_EDGE_ABSOLUTE":              {"min": 0.02,  "max": 0.12,  "desc": "Absoluter Edge-Floor"},
-    "MAX_ODDS":                       {"min": 0.20,  "max": 0.50,  "desc": "Maximale Market-Odds"},
+    "MIN_ODDS":                       {"min": 0.05,  "max": 0.40,  "desc": "Minimale Market-Odds (Longshot-Schutz)"},
+    "MAX_ODDS":                       {"min": 0.15,  "max": 0.50,  "desc": "Maximale Market-Odds"},
     "MIN_LIQUIDITY":                  {"min": 10.0,  "max": 500.0, "desc": "Mindest-Liquiditaet USD"},
     "MEDIUM_CONFIDENCE_EDGE_MULTIPLIER": {"min": 1.0, "max": 2.5,  "desc": "Edge-Multiplikator MEDIUM"},
     "SAFETY_BUFFER_HOURS":            {"min": 6.0,   "max": 48.0,  "desc": "Safety-Buffer vor Resolution"},
@@ -417,6 +420,135 @@ TOOLS = [
 # HELPER: POSITIONS LADEN
 # =============================================================================
 
+def _snapshot_current_metrics() -> dict:
+    """Erstelle Snapshot aktueller Metriken + letzter Position-ID (fuer Before/After-Vergleich)."""
+    positions = _load_all_positions_raw()
+    closed = [p for p in positions if p.get("status") in ("CLOSED", "RESOLVED")]
+    closed.sort(key=lambda p: p.get("exit_time", ""))
+
+    pnls = [p.get("realized_pnl_eur") or p.get("pnl_eur") or 0 for p in closed]
+    wins = [x for x in pnls if x > 0]
+
+    perf_file = PROJECT_ROOT / "analytics" / "performance_report.json"
+    total_pnl = 0.0
+    if perf_file.exists():
+        try:
+            perf = json.loads(perf_file.read_text(encoding="utf-8"))
+            total_pnl = float(perf.get("metrics", {}).get("total_pnl_eur", 0) or 0)
+        except Exception:
+            total_pnl = sum(pnls)
+
+    return {
+        "timestamp": datetime.now().isoformat(),
+        "total_closed_trades": len(closed),
+        "win_rate": round(len(wins) / len(closed), 4) if closed else 0.0,
+        "total_pnl_eur": round(total_pnl, 2),
+        "last_position_id": closed[-1].get("position_id", "") if closed else "",
+        "last_exit_time": closed[-1].get("exit_time", "") if closed else "",
+    }
+
+
+def _write_change_baseline(param: str, old_value: float, new_value: float, reason: str) -> None:
+    """Speichere Baseline-Snapshot wenn eine Config-Aenderung gemacht wird."""
+    snapshot = _snapshot_current_metrics()
+    baseline = {
+        "param": param,
+        "old_value": old_value,
+        "new_value": new_value,
+        "reason": reason,
+        "changed_at": datetime.now().isoformat(),
+        **{f"before_{k}": v for k, v in snapshot.items() if k != "timestamp"},
+    }
+    CHANGE_BASELINE_FILE.parent.mkdir(parents=True, exist_ok=True)
+    CHANGE_BASELINE_FILE.write_text(json.dumps(baseline, indent=2, ensure_ascii=False), encoding="utf-8")
+
+
+def _evaluate_change_impact_detailed() -> dict:
+    """
+    Echter Before/After-Vergleich: Trades vor vs. nach letzter Config-Aenderung.
+    Nutzt Timestamps um Trades korrekt zu bucketen.
+    """
+    if not CHANGE_BASELINE_FILE.exists():
+        return {"error": "Kein Baseline-Snapshot gefunden. Noch keine Config-Aenderung mit Tracking."}
+
+    baseline = json.loads(CHANGE_BASELINE_FILE.read_text(encoding="utf-8"))
+    changed_at = baseline.get("changed_at", "")
+    if not changed_at:
+        return {"error": "Baseline hat keinen Timestamp"}
+
+    positions = _load_all_positions_raw()
+    closed = [p for p in positions if p.get("status") in ("CLOSED", "RESOLVED")]
+
+    before = [p for p in closed if (p.get("exit_time") or "") < changed_at]
+    after  = [p for p in closed if (p.get("exit_time") or "") >= changed_at]
+
+    def _stats(ps: list) -> dict:
+        pnls = [p.get("realized_pnl_eur") or p.get("pnl_eur") or 0 for p in ps]
+        wins = [x for x in pnls if x > 0]
+        losses = [x for x in pnls if x < 0]
+        return {
+            "trades": len(ps),
+            "wins": len(wins),
+            "losses": len(losses),
+            "win_rate": round(len(wins) / len(ps), 3) if ps else 0.0,
+            "total_pnl_eur": round(sum(pnls), 2),
+            "avg_pnl_eur": round(sum(pnls) / len(ps), 2) if ps else 0.0,
+        }
+
+    before_stats = _stats(before)
+    after_stats  = _stats(after)
+
+    # Urteil
+    verdict = "INSUFFICIENT_DATA"
+    if after_stats["trades"] >= 5:
+        if after_stats["win_rate"] > before_stats["win_rate"] * 1.1:
+            verdict = "IMPROVED"
+        elif after_stats["win_rate"] < before_stats["win_rate"] * 0.8 and after_stats["trades"] >= 10:
+            verdict = "DEGRADED"
+        else:
+            verdict = "NEUTRAL"
+
+    return {
+        "change": {
+            "param": baseline.get("param"),
+            "old_value": baseline.get("old_value"),
+            "new_value": baseline.get("new_value"),
+            "changed_at": changed_at[:16],
+            "reason": baseline.get("reason", "")[:100],
+        },
+        "before": before_stats,
+        "after": after_stats,
+        "verdict": verdict,
+        "recommendation": {
+            "IMPROVED":           "Aenderung hat geholfen. Ggf. weitergehen.",
+            "DEGRADED":           "Aenderung hat geschadet. Revert empfohlen.",
+            "NEUTRAL":            "Kein klarer Effekt. Weiter beobachten.",
+            "INSUFFICIENT_DATA":  f"Nur {after_stats['trades']} Trades nach Aenderung. Mind. 5 noetig.",
+        }.get(verdict, ""),
+    }
+
+
+def _load_all_positions_raw() -> list[dict]:
+    """Lade alle Positionen (inkl. OPEN) ohne Dedup."""
+    if not POSITIONS_FILE.exists():
+        return []
+    result = []
+    try:
+        for line in POSITIONS_FILE.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                p = json.loads(line)
+                if p.get("_type") != "LOG_HEADER" and p.get("position_id"):
+                    result.append(p)
+            except Exception:
+                pass
+    except Exception:
+        return []
+    return result
+
+
 def _load_all_positions() -> list[dict]:
     """Lade alle abgeschlossenen Positionen."""
     if not POSITIONS_FILE.exists():
@@ -503,6 +635,16 @@ def _execute_tool(name: str, inputs: dict) -> Any:
         n = inputs.get("n", 30)
         positions = _load_all_positions()
         positions.sort(key=lambda p: p.get("exit_time", ""), reverse=True)
+        # Entry-Price Verteilung berechnen (kritisch für Longshot-Diagnose)
+        all_entries = [p.get("entry_price") or 0 for p in positions if p.get("entry_price")]
+        entry_buckets = {
+            "under_5pct":  sum(1 for e in all_entries if e < 0.05),
+            "5_to_15pct":  sum(1 for e in all_entries if 0.05 <= e < 0.15),
+            "15_to_30pct": sum(1 for e in all_entries if 0.15 <= e < 0.30),
+            "over_30pct":  sum(1 for e in all_entries if e >= 0.30),
+        }
+        avg_entry = round(sum(all_entries) / len(all_entries), 4) if all_entries else 0
+
         return {
             "positions": [
                 {
@@ -510,7 +652,7 @@ def _execute_tool(name: str, inputs: dict) -> Any:
                     "side": p.get("side"),
                     "entry": p.get("entry_price"),
                     "exit": p.get("exit_price"),
-                    "pnl_eur": p.get("pnl_eur"),
+                    "pnl_eur": p.get("realized_pnl_eur") or p.get("pnl_eur"),
                     "pnl_pct": p.get("pnl_pct"),
                     "exit_reason": p.get("exit_reason"),
                     "city": p.get("city"),
@@ -520,6 +662,9 @@ def _execute_tool(name: str, inputs: dict) -> Any:
                 for p in positions[:n]
             ],
             "count": len(positions),
+            "entry_price_distribution": entry_buckets,
+            "avg_entry_price": avg_entry,
+            "longshot_warning": entry_buckets["under_5pct"] > len(all_entries) * 0.3 if all_entries else False,
         }
 
     elif name == "read_population_status":
@@ -573,37 +718,8 @@ def _execute_tool(name: str, inputs: dict) -> Any:
     # ---- ANALYZE TOOLS ----
 
     elif name == "evaluate_hint_impact":
-        """Vergleiche ob letzte Diagnose/Hints Wirkung gezeigt haben."""
-        if not DIAGNOSIS_FILE.exists():
-            return {"error": "Keine vorherige Diagnose zum Vergleichen"}
-
-        prev = json.loads(DIAGNOSIS_FILE.read_text(encoding="utf-8"))
-        prev_grade = prev.get("grade", "?")
-        prev_time = prev.get("generated_at", "?")
-        prev_hints = prev.get("mutations_applied", [])
-        prev_config = prev.get("config_changes", [])
-
-        # Aktuelle Metriken
-        perf_file = PROJECT_ROOT / "analytics" / "performance_report.json"
-        if perf_file.exists():
-            perf = json.loads(perf_file.read_text(encoding="utf-8"))
-            metrics = perf.get("metrics", {})
-        else:
-            metrics = {}
-
-        return {
-            "previous_grade": prev_grade,
-            "previous_diagnosis_time": prev_time,
-            "hints_set_then": prev_hints,
-            "config_changes_then": prev_config,
-            "current_metrics": {
-                "win_rate": metrics.get("win_rate_pct", 0),
-                "profit_factor": metrics.get("profit_factor", 0),
-                "total_trades": metrics.get("total_trades", 0),
-                "total_pnl_eur": metrics.get("total_pnl_eur", 0),
-            },
-            "note": "Vergleiche ob sich Win-Rate/PnL seit letzter Diagnose verbessert hat.",
-        }
+        """Echter Before/After-Vergleich anhand Timestamps der letzten Config-Aenderung."""
+        return _evaluate_change_impact_detailed()
 
     elif name == "run_backtest":
         """Mini-Backtest: Replay historischer Positionen mit neuen Parametern."""
@@ -646,14 +762,14 @@ def _execute_tool(name: str, inputs: dict) -> Any:
                 "note": "Kein Trade wuerde die neuen Filter passieren",
             }
 
-        pnls   = [p.get("pnl_eur", 0) or 0 for p in taken]
+        pnls   = [p.get("realized_pnl_eur") or p.get("pnl_eur") or 0 for p in taken]
         wins   = [x for x in pnls if x > 0]
         losses = [x for x in pnls if x < 0]
         win_rate = len(wins) / len(taken) if taken else 0
         pf = (sum(wins) / abs(sum(losses))) if losses else (5.0 if wins else 0.0)
 
         # Vergleich: aktuelle Parameter
-        current_pnls = [p.get("pnl_eur", 0) or 0 for p in positions]
+        current_pnls = [p.get("realized_pnl_eur") or p.get("pnl_eur") or 0 for p in positions]
         current_wins = [x for x in current_pnls if x > 0]
 
         return {
@@ -709,7 +825,17 @@ def _execute_tool(name: str, inputs: dict) -> Any:
         if not success:
             return {"error": f"Konnte '{param}' nicht in weather.yaml schreiben"}
 
-        # Change-Log
+        # Baseline-Snapshot fuer spaeteres Before/After-Tracking
+        try:
+            _write_change_baseline(param, current, value, reason)
+        except Exception as e:
+            logger.debug(f"Baseline-Snapshot fehlgeschlagen (unkritisch): {e}")
+
+        # Change-Log (mit Metriken zum Zeitpunkt der Aenderung)
+        try:
+            snap = _snapshot_current_metrics()
+        except Exception:
+            snap = {}
         log_entry = {
             "timestamp": datetime.now().isoformat(),
             "param": param,
@@ -717,6 +843,9 @@ def _execute_tool(name: str, inputs: dict) -> Any:
             "new_value": value,
             "reason": reason,
             "backup": backup_path,
+            "trades_at_change": snap.get("total_closed_trades"),
+            "win_rate_at_change": snap.get("win_rate"),
+            "pnl_at_change": snap.get("total_pnl_eur"),
         }
         CONFIG_LOG_FILE.parent.mkdir(parents=True, exist_ok=True)
         with open(CONFIG_LOG_FILE, "a", encoding="utf-8") as f:
@@ -1094,7 +1223,7 @@ ABLAUF:
 4. read_current_config → Aktuelle Werte?
 5. start_ab_test (optional) → Hypothese mit A/B-Test validieren
 6. run_backtest (optional) → Alternativ: einfacher Backtest
-7. adjust_config (0-2x) → Direkter Eingriff wenn Daten es begruenden
+7. adjust_config (0-3x) → Direkter Eingriff wenn Daten es begruenden
 8. set_mutation_bias (0-2x) → Langfristige Evolution lenken
 9. apply_code_patch (0-1x) → Direkte Code-Aenderung (Kelly, TP/SL, Sizing)
 10. set_goal (0-1x) → Ziel setzen/aktualisieren wenn sinnvoll
@@ -1104,23 +1233,182 @@ ABLAUF:
 REGELN:
 - NUR aendern wenn Daten es begruenden, max 25% pro Parameter
 - Bei < 10 Trades: KEINE Eingriffe, nur Ziel setzen + beobachten
-- Vor adjust_config/apply_code_patch: Immer start_ab_test oder run_backtest
+- Bei KRITISCHEN Problemen (Win-Rate 0%, alle Stop-Losses): SOFORT eingreifen ohne A/B-Test
 - apply_code_patch fuer: KELLY_FRACTION, MAX_POSITION_EUR, STOP_LOSS_PCT, TP-Levels
 - propose_code_change fuer: neue Logik, neue Module, strukturelle Aenderungen
 - Wirkungsbereich: adjust_config wirkt sofort, apply_code_patch ab naechstem Import
 
 PARAMETER-WIRKUNGEN:
+- MIN_ODDS hoeher → nur hoehere Wahrscheinlichkeiten (SCHUTZ vor Longshot-Falle)
+- MIN_ODDS niedriger → auch Longshots erlaubt (gefaehrlich bei schlechter Win-Rate)
 - MIN_EDGE hoeher → weniger aber bessere Trades (bei niedriger Win-Rate)
 - MIN_EDGE niedriger → mehr Trades (bei Null Trade-Flow)
 - MAX_ODDS hoeher → auch Favoriten (z.B. >30% Odds)
 - MIN_LIQUIDITY hoeher → nur liquide Maerkte
 - SAFETY_BUFFER_HOURS niedriger → auch kurzfristige Maerkte
 
+!! NOTFALL-PROTOKOLL: LONGSHOT-FALLE !!
+Symptome: Win-Rate 0%, alle Trades gehen sofort in Stop-Loss, entry_price < 0.05 (5%) bei vielen Trades.
+Ursache: MIN_ODDS zu niedrig → System kauft nahezu-unmogliche Ereignisse die nie eintreten.
+Sofortmassnahme (OHNE A/B-Test, SOFORT):
+  1. read_current_config → Prüfe MIN_ODDS (Zielwert: >= 0.15)
+  2. adjust_config(MIN_ODDS, neuer_wert, reason) → Auf 0.15-0.25 setzen
+  3. adjust_config(MAX_ODDS, neuer_wert) → Auf max 0.40 setzen (damit Markt existiert zwischen MIN und MAX)
+  4. set_mutation_bias(min_odds/max_odds, up) → Evolution in gleiche Richtung lenken
+Diagnostik: read_recent_positions gibt entry_price_distribution und longshot_warning.
+Wenn longshot_warning=True oder >30% der Trades unter 5% entry_price: LONGSHOT-FALLE aktiv → sofort korrigieren.
+
 TYPISCHE PROBLEME:
 - Keine Trades → MIN_EDGE senken ODER MIN_LIQUIDITY senken
-- Viele Stop-Losses → MIN_EDGE erhoehen (hoeherer Qualitaetsfilter)
-- Niedrige Win-Rate → MIN_EDGE erhoehen + MAX_ODDS senken
-- Hoher Drawdown → (kelly_fraction via Mutation-Hint)"""
+- Viele Stop-Losses + niedrige entry_price → MIN_ODDS erhoehen (LONGSHOT-FALLE)
+- Viele Stop-Losses + normale entry_price → MIN_EDGE erhoehen
+- Niedrige Win-Rate → MIN_ODDS erhoehen + MIN_EDGE erhoehen + MAX_ODDS senken
+- Hoher Drawdown → kelly_fraction via apply_code_patch senken"""
+
+
+# =============================================================================
+# REGELBASIERTER PRE-CHECK  (deterministisch, kein LLM noetig)
+# Faengt kritische Situationen ab bevor der LLM ueberhaupt dran kommt.
+# =============================================================================
+
+def _run_rule_based_checks() -> list[str]:
+    """
+    Pruefe offensichtliche Probleme anhand harter Schwellwerte und handle sofort.
+    Gibt Liste der durchgefuehrten Aktionen zurueck (fuer Diagnose-Kontext).
+    """
+    actions: list[str] = []
+
+    # Daten laden
+    pos_data = _execute_tool("read_recent_positions", {"n": 50})
+    perf_file = PROJECT_ROOT / "analytics" / "performance_report.json"
+    perf: dict = {}
+    if perf_file.exists():
+        try:
+            perf = json.loads(perf_file.read_text(encoding="utf-8"))
+        except Exception:
+            pass
+
+    metrics = perf.get("metrics", {})
+    win_rate = float(metrics.get("win_rate_pct", 0) or 0)
+    total_trades = int(metrics.get("total_trades", 0) or 0)
+    total_pnl = float(metrics.get("total_pnl_eur", 0) or 0)
+
+    entry_dist = pos_data.get("entry_price_distribution", {})
+    longshot_warning = pos_data.get("longshot_warning", False)
+    under_5pct = entry_dist.get("under_5pct", 0)
+    total_entries = sum(entry_dist.values()) if entry_dist else 0
+
+    cfg = _read_config_values()
+    current_min_odds = cfg.get("MIN_ODDS", 0.01)
+    current_max_odds = cfg.get("MAX_ODDS", 0.35)
+
+    # --- REGEL 1: LONGSHOT-FALLE ---
+    # Bedingung: >30% Trades unter 5% entry_price UND Win-Rate 0% UND >= 10 Trades
+    longshot_ratio = under_5pct / total_entries if total_entries > 0 else 0
+    if longshot_ratio > 0.30 and win_rate == 0.0 and total_trades >= 10:
+        # Direktes Schreiben (kein 25%-Limit) — Notfall-Override
+        target_min_odds = 0.15  # Fester Zielwert: keine Longshots unter 15%
+        target_min_odds = min(target_min_odds, CONFIG_PARAMS["MIN_ODDS"]["max"])
+        reason = (
+            f"NOTFALL-REGEL: Longshot-Falle. {under_5pct}/{total_entries} Trades "
+            f"({longshot_ratio:.0%}) unter 5% entry_price. Win-Rate=0% bei {total_trades} Trades. "
+            f"MIN_ODDS {current_min_odds} -> {target_min_odds}."
+        )
+        backup_path = _backup_config()
+        if _write_config_value("MIN_ODDS", target_min_odds):
+            # Baseline-Snapshot fuer Before/After-Tracking
+            try:
+                _write_change_baseline("MIN_ODDS", current_min_odds, target_min_odds, reason)
+            except Exception:
+                pass
+            # Log-Eintrag mit Metriken
+            try:
+                snap = _snapshot_current_metrics()
+            except Exception:
+                snap = {}
+            log_entry = {
+                "timestamp": datetime.now().isoformat(),
+                "param": "MIN_ODDS",
+                "old_value": current_min_odds,
+                "new_value": target_min_odds,
+                "reason": reason,
+                "source": "rule_based_check",
+                "backup": backup_path,
+                "trades_at_change": snap.get("total_closed_trades"),
+                "win_rate_at_change": snap.get("win_rate"),
+                "pnl_at_change": snap.get("total_pnl_eur"),
+            }
+            CONFIG_LOG_FILE.parent.mkdir(parents=True, exist_ok=True)
+            with open(CONFIG_LOG_FILE, "a", encoding="utf-8") as f:
+                f.write(json.dumps(log_entry, ensure_ascii=False) + "\n")
+            actions.append(f"[RULE:LONGSHOT] MIN_ODDS {current_min_odds} -> {target_min_odds}")
+            current_min_odds = target_min_odds
+            logger.info(f"[RULE-CHECK] Longshot-Falle BEHOBEN: MIN_ODDS -> {target_min_odds}")
+
+        # MAX_ODDS muss groesser als MIN_ODDS bleiben (min. 15% Abstand)
+        if current_max_odds < current_min_odds + 0.15:
+            target_max_odds = round(min(current_min_odds + 0.20, 0.45), 3)
+            if _write_config_value("MAX_ODDS", target_max_odds):
+                log_entry = {
+                    "timestamp": datetime.now().isoformat(),
+                    "param": "MAX_ODDS",
+                    "old_value": current_max_odds,
+                    "new_value": target_max_odds,
+                    "reason": f"NOTFALL-REGEL: MAX_ODDS muss > MIN_ODDS+15%. MIN_ODDS={current_min_odds}",
+                    "source": "rule_based_check",
+                }
+                with open(CONFIG_LOG_FILE, "a", encoding="utf-8") as f:
+                    f.write(json.dumps(log_entry, ensure_ascii=False) + "\n")
+                actions.append(f"[RULE:ODDS-SPREAD] MAX_ODDS {current_max_odds} -> {target_max_odds}")
+
+        # Evolution in richtige Richtung lenken
+        _execute_tool("set_mutation_bias", {
+            "param": "min_odds",
+            "direction": "up",
+            "strength": 0.8,
+            "reason": "Longshot-Falle: min_odds muss hoeher evoluieren",
+        })
+        actions.append("[RULE:MUTATION] min_odds bias -> up (0.8)")
+
+    # --- REGEL 2: AUTO-REVERT ---
+    # Bedingung: letzte Config-Aenderung hat Performance klar verschlechtert (>= 10 Trades danach)
+    if not longshot_ratio > 0.30:  # Nur wenn kein akuterer Notfall aktiv ist
+        try:
+            impact = _evaluate_change_impact_detailed()
+            if impact.get("verdict") == "DEGRADED":
+                baseline_data = json.loads(CHANGE_BASELINE_FILE.read_text(encoding="utf-8"))
+                param = baseline_data.get("param", "")
+                old_val = baseline_data.get("old_value")
+                after_trades = impact.get("after", {}).get("trades", 0)
+                if param and old_val is not None and param in CONFIG_PARAMS:
+                    meta = CONFIG_PARAMS[param]
+                    revert_val = float(old_val)
+                    revert_val = max(meta["min"], min(meta["max"], revert_val))
+                    if _write_config_value(param, revert_val):
+                        revert_reason = (
+                            f"AUTO-REVERT: {param} hat Performance verschlechtert. "
+                            f"{after_trades} Trades nach Aenderung: "
+                            f"Win-Rate {impact['after']['win_rate']:.1%} vs vorher {impact['before']['win_rate']:.1%}. "
+                            f"Revert auf {revert_val}."
+                        )
+                        log_entry = {
+                            "timestamp": datetime.now().isoformat(),
+                            "param": param,
+                            "old_value": baseline_data.get("new_value"),
+                            "new_value": revert_val,
+                            "reason": revert_reason,
+                            "source": "auto_revert",
+                        }
+                        with open(CONFIG_LOG_FILE, "a", encoding="utf-8") as f:
+                            f.write(json.dumps(log_entry, ensure_ascii=False) + "\n")
+                        # Baseline zuruecksetzen
+                        CHANGE_BASELINE_FILE.unlink(missing_ok=True)
+                        actions.append(f"[RULE:REVERT] {param} {baseline_data.get('new_value')} -> {revert_val}")
+                        logger.info(f"[RULE-CHECK] Auto-Revert: {param} -> {revert_val}")
+        except Exception as e:
+            logger.debug(f"[RULE-CHECK] Auto-Revert-Check fehlgeschlagen (unkritisch): {e}")
+
+    return actions
 
 
 # =============================================================================
@@ -1154,7 +1442,7 @@ def run_strategy_agent(max_iterations: int = 15) -> dict:
             line = line.strip()
             if line and not line.startswith("#") and "=" in line:
                 k, _, v = line.partition("=")
-                os.environ.setdefault(k.strip(), v.strip())
+                os.environ[k.strip()] = v.strip()  # .env hat immer Vorrang
 
     try:
         from openai import OpenAI  # noqa
@@ -1177,13 +1465,31 @@ def run_strategy_agent(max_iterations: int = 15) -> dict:
 
     logger.info(f"Strategy Agent via {active_provider['name']} ({active_provider['model']})")
 
+    # --- Regelbasierter Pre-Check (deterministisch, kein LLM) ---
+    try:
+        rule_actions = _run_rule_based_checks()
+        if rule_actions:
+            logger.info(f"[RULE-CHECK] Automatische Eingriffe: {rule_actions}")
+    except Exception as e:
+        rule_actions = []
+        logger.warning(f"[RULE-CHECK] Fehlgeschlagen (unkritisch): {e}")
+
+    # LLM bekommt Kontext ueber bereits durchgefuehrte Regel-Aktionen
+    rule_context = ""
+    if rule_actions:
+        rule_context = (
+            "\n\nHINWEIS: Der regelbasierte Pre-Check hat bereits folgende Eingriffe durchgefuehrt:\n"
+            + "\n".join(f"  - {a}" for a in rule_actions)
+            + "\nBitte beziehe dies in deine Analyse ein und pruefe ob weitere Massnahmen noetig sind."
+        )
+
     messages = [
         {"role": "system", "content": SYSTEM_PROMPT},
-        {"role": "user", "content": "Analysiere die Performance und handle falls noetig."},
+        {"role": "user", "content": "Analysiere die Performance und handle falls noetig." + rule_context},
     ]
 
     diagnosis: dict = {}
-    config_changes: list[str] = []
+    config_changes: list[str] = list(rule_actions)  # Regel-Aktionen vorbelegen
     code_patches: list[str] = []
     hints_applied: list[str] = []
 
@@ -1278,6 +1584,14 @@ def run_strategy_agent(max_iterations: int = 15) -> dict:
         diagnosis["code_patches"]      = code_patches
         diagnosis["mutations_applied"] = hints_applied
         diagnosis["provider"]          = active_provider["name"]
+        # Re-save: write_diagnosis wurde während Loop geschrieben, aber actions fehlten noch
+        try:
+            DIAGNOSIS_FILE.parent.mkdir(parents=True, exist_ok=True)
+            DIAGNOSIS_FILE.write_text(
+                json.dumps(diagnosis, indent=2, ensure_ascii=False), encoding="utf-8"
+            )
+        except Exception as e:
+            logger.warning(f"Diagnose-Re-Save fehlgeschlagen: {e}")
 
     logger.info(
         f"Strategy Agent: grade={diagnosis.get('grade','?')}, "

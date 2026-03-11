@@ -52,11 +52,18 @@ def weather_observation_to_proposal(observation) -> Optional["Proposal"]:
     if not market_id:
         return None
 
-    model_prob = observation.model_probability
-    market_prob = observation.market_probability
-    edge = observation.edge
+    model_prob = float(observation.model_probability)
+    market_prob = float(observation.market_probability)
+    edge = float(observation.edge)
 
-    if model_prob <= 0 or edge <= 0:
+    # OBSERVE kann sowohl starke YES- als auch starke NO-Fehlbewertungen bedeuten.
+    # Der Paper-Trader waehlt spaeter ueber proposal.edge > 0 => YES, sonst NO.
+    if abs(edge) <= 0:
+        return None
+
+    # Sanity-Check: Edge > 1.5 (150% relativ) ist verdaechtig → wahrscheinlich Modell-Fehler
+    if edge > 1.5:
+        logger.warning(f"[SANITY] Edge {edge:.3f} > 150% fuer market {market_id} - uebersprungen")
         return None
 
     # Create core criteria (all pass for weather observations with edge)
@@ -68,7 +75,7 @@ def weather_observation_to_proposal(observation) -> Optional["Proposal"]:
     )
 
     # Map confidence
-    confidence = observation.confidence or "MEDIUM"
+    confidence = getattr(observation.confidence, "value", observation.confidence) or "MEDIUM"
     if confidence not in ("LOW", "MEDIUM", "HIGH"):
         confidence = "MEDIUM"
 
@@ -77,7 +84,8 @@ def weather_observation_to_proposal(observation) -> Optional["Proposal"]:
     forecast_f = getattr(observation, 'forecast_temperature_f', None)
     threshold_f = getattr(observation, 'threshold_temperature_f', None)
 
-    justification = f"Weather model for {city}"
+    implied_side = "YES" if edge > 0 else "NO"
+    justification = f"Weather model for {city} ({implied_side})"
     if forecast_f and threshold_f:
         justification += f": Forecast {forecast_f}°F vs threshold {threshold_f}°F"
 

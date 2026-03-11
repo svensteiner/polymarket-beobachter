@@ -62,6 +62,27 @@ from .weather_probability_model import (
 )
 from .ensemble_builder import EnsembleBuilder, EnsembleForecast, degrade_confidence
 
+# Performance monitoring
+try:
+    from .performance_monitor import performance_monitor, performance_context, monitor
+    PERFORMANCE_MONITORING_AVAILABLE = True
+except ImportError:
+    PERFORMANCE_MONITORING_AVAILABLE = False
+    # Fallback no-op decorator
+    def performance_monitor(name=None):
+        def decorator(func):
+            return func
+        return decorator
+
+    class DummyContext:
+        def __enter__(self):
+            return self
+        def __exit__(self, *args):
+            pass
+
+    def performance_context(name, metadata=None):
+        return DummyContext()
+
 logger = logging.getLogger(__name__)
 
 
@@ -192,6 +213,7 @@ class WeatherEngine:
             f"config_hash={self._config_hash}"
         )
 
+    @performance_monitor("weather_engine.run")
     def run(self) -> EngineRunResult:
         """
         Execute the weather observer pipeline.
@@ -235,7 +257,7 @@ class WeatherEngine:
         )
 
         # =====================================================================
-        # STEP 3: Process each filtered market
+        # STEP 3: Process filtered markets (parallel for performance)
         # =====================================================================
         # Reset global forecast timer before processing markets
         try:
@@ -244,13 +266,46 @@ class WeatherEngine:
         except ImportError:
             pass
 
-        for market in filtered_markets:
-            observation = self._process_market(market)
-            observations.append(observation)
+        # Use parallel processing for multiple markets
+        if len(filtered_markets) >= 3:
+            try:
+                from .parallel_processor import process_markets_adaptive
+                processing_results = process_markets_adaptive(
+                    filtered_markets,
+                    self._process_market,
+                    strategy="io"  # Weather APIs are I/O bound
+                )
 
-            # Log observation if configured
-            if self.log_all_observations or observation.has_edge:
-                self._log_observation(observation)
+                # Extract observations from results
+                for result in processing_results:
+                    if result.success and result.result is not None:
+                        observation = result.result
+                        observations.append(observation)
+
+                        # Log observation if configured
+                        if self.log_all_observations or observation.has_edge:
+                            self._log_observation(observation)
+                    else:
+                        # Create NO_SIGNAL for failed processing
+                        failed_observation = create_no_signal(
+                            market_id=result.market_id,
+                            city="Unknown",
+                            event_description="Processing failed",
+                            market_probability=0.0,
+                            reason=f"Parallel processing error: {result.error}",
+                            config_snapshot=self.config,
+                        )
+                        observations.append(failed_observation)
+
+                logger.info(f"Parallel processing: {len([r for r in processing_results if r.success])}/{len(filtered_markets)} markets succeeded")
+
+            except ImportError:
+                # Fallback to sequential processing
+                logger.info("Parallel processing not available, using sequential")
+                self._process_markets_sequential(filtered_markets, observations)
+        else:
+            # Sequential processing for small batches (overhead not worth it)
+            self._process_markets_sequential(filtered_markets, observations)
 
         # =====================================================================
         # STEP 4: Build result
@@ -277,6 +332,17 @@ class WeatherEngine:
 
         return result
 
+    def _process_markets_sequential(self, filtered_markets, observations):
+        """Sequential market processing (fallback method)."""
+        for market in filtered_markets:
+            observation = self._process_market(market)
+            observations.append(observation)
+
+            # Log observation if configured
+            if self.log_all_observations or observation.has_edge:
+                self._log_observation(observation)
+
+    @performance_monitor("weather_engine.process_market")
     def _process_market(self, market: WeatherMarket) -> WeatherObservation:
         """
         Process a single market through the probability pipeline.
@@ -303,11 +369,14 @@ class WeatherEngine:
                 config_snapshot=self.config,
             )
 
+        # Determine event type from filter result (between_range / exceeds / below)
+        event_type = getattr(market, 'detected_event_type', None) or "exceeds"
+
         # -----------------------------------------------------------------
         # ENSEMBLE PATH (preferred when enabled)
         # -----------------------------------------------------------------
         if self._ensemble_enabled and self._ensemble_builder is not None:
-            ensemble_result = self._try_ensemble(market, city)
+            ensemble_result = self._try_ensemble(market, city, event_type)
             if ensemble_result is not None:
                 return ensemble_result
             # Ensemble returned None (0 sources) -> fall through to single-source
@@ -315,9 +384,9 @@ class WeatherEngine:
         # -----------------------------------------------------------------
         # SINGLE-SOURCE FALLBACK PATH
         # -----------------------------------------------------------------
-        return self._process_market_single_source(market, city)
+        return self._process_market_single_source(market, city, event_type)
 
-    def _try_ensemble(self, market: WeatherMarket, city: str) -> Optional[WeatherObservation]:
+    def _try_ensemble(self, market: WeatherMarket, city: str, event_type: str = "exceeds") -> Optional[WeatherObservation]:
         """
         Try to process market via ensemble. Returns None if ensemble has no data.
         """
@@ -326,7 +395,8 @@ class WeatherEngine:
                 city=city,
                 target_time=market.resolution_time,
                 threshold_f=market.detected_threshold,
-                event_type="exceeds",
+                event_type=event_type,
+                threshold_high_f=market.detected_threshold_high,
             )
         except Exception as e:
             logger.warning(f"Ensemble build failed for {market.market_id}: {e}")
@@ -424,7 +494,7 @@ class WeatherEngine:
             ensemble_max_deviation=ensemble.max_source_deviation,
         )
 
-    def _process_market_single_source(self, market: WeatherMarket, city: str) -> WeatherObservation:
+    def _process_market_single_source(self, market: WeatherMarket, city: str, event_type: str = "exceeds") -> WeatherObservation:
         """Original single-source processing path (fallback)."""
         if self._forecast_fetcher is None:
             return create_no_signal(
@@ -460,7 +530,8 @@ class WeatherEngine:
             prob_result = self._model.compute_probability(
                 forecast=forecast,
                 threshold_f=market.detected_threshold,
-                event_type="exceeds",
+                event_type=event_type,
+                threshold_high_f=market.detected_threshold_high,
             )
         except Exception as e:
             logger.error(f"Probability computation failed: {e}")

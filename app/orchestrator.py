@@ -29,6 +29,17 @@ from typing import Dict, Any, Optional, List
 from dataclasses import dataclass, field
 from enum import Enum
 
+# Import performance optimizers
+try:
+    from shared.memory_optimizer import get_memory_monitor, get_memory_report
+    from shared.cpu_optimizer import get_thread_pool, get_async_manager, get_performance_report
+    from shared.control_events import append_control_event
+    from shared.log_manager import get_log_manager
+    HAS_OPTIMIZERS = True
+except ImportError:
+    HAS_OPTIMIZERS = False
+    from shared.control_events import append_control_event
+
 logger = logging.getLogger(__name__)
 
 
@@ -87,7 +98,7 @@ class Orchestrator:
 
     def run_pipeline(self) -> PipelineResult:
         """
-        Execute the weather observer pipeline.
+        Execute the weather observer pipeline with performance optimization.
 
         Steps:
         1. Collector: Fetch weather markets
@@ -106,6 +117,12 @@ class Orchestrator:
         # Generate correlation ID for this pipeline run
         run_id = f"RUN-{datetime.now().strftime('%Y%m%d-%H%M%S')}-{uuid.uuid4().hex[:6]}"
         logger.info(f"=== Pipeline START === run_id={run_id}")
+
+        # Initialize performance monitoring for this run
+        if HAS_OPTIMIZERS:
+            memory_monitor = get_memory_monitor()
+            thread_pool = get_thread_pool()
+            memory_before = memory_monitor.get_memory_stats()
 
         result = PipelineResult(
             state=RunState.OK,
@@ -156,7 +173,7 @@ class Orchestrator:
         # Step 4: Paper Trader (mit DrawdownProtector-Snapshot)
         print("[4/6] Paper Trader: Trades simulieren ...", end="", flush=True)
         self._record_equity_snapshot("pre_paper_trader")
-        paper_result = self._run_paper_trader()
+        paper_result = self._run_paper_trader(run_id=run_id)
         result.add_step(paper_result)
         print(f" {'OK' if paper_result.success else 'FAIL'} ({paper_result.message})")
 
@@ -180,17 +197,54 @@ class Orchestrator:
         # Step 5c: Outcome Analyser (nach jedem Run aktualisieren)
         self._run_outcome_analyser()
 
-        # Step 5c: Arbitrage Scan (READ-ONLY, non-blocking)
+        # Step 5d: Segmentanalyse fuer Entry-Qualitaet aktualisieren
+        self._run_segment_analysis()
+
+        # Step 5e: Strategy Advisor (persistente Empfehlungen, read-only)
+        self._run_strategy_advisor()
+
+        # Step 5f: Arbitrage Scan (READ-ONLY, non-blocking)
         self._run_arbitrage_scan(weather_result.data)
 
-        # Step 5d: Gamma Discovery (suche neue Maerkte, non-blocking)
+        # Step 5g: Gamma Discovery (suche neue Maerkte, non-blocking)
         self._run_gamma_discovery()
 
         # Build summary with pipeline duration
         duration_seconds = round(time.perf_counter() - pipeline_start, 2)
         result.summary = self._build_summary(result)
+        bot_health = self._run_bot_health_monitor(result.summary)
+        result.summary["bot_health_status"] = bot_health.get("status", "HEALTHY")
+        result.summary["bot_health_summary"] = bot_health.get("summary", "")
+        result.summary["bot_health_guardrails_active"] = bot_health.get("guardrails_active", False)
         result.summary["run_id"] = run_id
         result.summary["duration_seconds"] = duration_seconds
+
+        # Add performance metrics if optimizers available
+        if HAS_OPTIMIZERS:
+            memory_after = memory_monitor.get_memory_stats()
+            performance_report = get_performance_report()
+
+            result.summary["performance"] = {
+                "memory_before_mb": memory_before["current_mb"],
+                "memory_after_mb": memory_after["current_mb"],
+                "memory_peak_mb": memory_after["peak_mb"],
+                "memory_pressure": memory_after["pressure_level"],
+                "cpu_utilization": performance_report["system"]["cpu_percent"],
+                "thread_pool_stats": performance_report.get("thread_pool", {}),
+                "gc_collections": memory_after.get("gc_stats", {}).get("forced_collections", 0)
+            }
+
+        policy = self._refresh_agent_policy(result.summary)
+        result.summary["agent_policy_mode"] = policy.get("mode", "UNKNOWN")
+        result.summary["agent_policy_city_cooldowns"] = len(policy.get("cooldown_cities", []))
+        result.summary["agent_policy_max_entry_price"] = policy.get("max_entry_price", 1.0)
+
+        # Agent Core (Sprint 1): read-only Diagnose, Gedächtnis und Action-Proposals
+        agent_result = self._run_agent_loop(result.summary)
+        result.summary["agent_mode"] = agent_result.get("mode", "UNKNOWN")
+        result.summary["agent_summary"] = agent_result.get("summary", "")
+        result.summary["agent_hypothesis"] = agent_result.get("hypothesis", "")
+        result.summary["agent_proposed_actions"] = len(agent_result.get("proposed_actions", []))
 
         # Step 6: Write status
         print("[6/6] Status schreiben ...", end="", flush=True)
@@ -456,8 +510,8 @@ class Orchestrator:
                 try:
                     market_id = data.get("market_id", "")
 
-                    # Get real odds and liquidity if available
-                    odds_yes = 0.05  # Default fallback
+                    # Get real odds and liquidity - SKIP if price unavailable
+                    odds_yes = None
                     liquidity_usd = 100.0  # Default fallback
 
                     if market_id in real_prices:
@@ -478,6 +532,11 @@ class Orchestrator:
                                 liquidity_usd = float(liq)
                             except Exception:
                                 pass
+
+                    # Skip markets without live price - can't compute edge without it
+                    if odds_yes is None:
+                        logger.debug(f"Skipping {market_id}: no live price available")
+                        continue
 
                     market = WeatherMarket(
                         market_id=market_id,
@@ -580,7 +639,7 @@ class Orchestrator:
                 error=str(e)
             )
 
-    def _run_paper_trader(self) -> StepResult:
+    def _run_paper_trader(self, run_id: str | None = None) -> StepResult:
         """
         Run paper trading cycle.
 
@@ -594,6 +653,9 @@ class Orchestrator:
             from paper_trader.position_manager import check_and_close_resolved, check_mid_trade_exits
             from paper_trader.averaging_down import check_averaging_down
             from paper_trader.edge_reversal import check_edge_reversal_exits
+            from paper_trader.drawdown_protector import get_drawdown_status
+            from paper_trader.guardrail_audit import build_guardrail_summary
+            from paper_trader.logger import get_paper_logger
 
             # Step 1: Check mid-trade exits FIRST (take-profit / stop-loss)
             mid_trade = check_mid_trade_exits()
@@ -619,8 +681,25 @@ class Orchestrator:
                     f"cost: {avg_down['cost_eur']:.2f} EUR"
                 )
 
+            # Step 3.5: Refresh active entry policy before proposal intake.
+            # Uses latest persisted advisor/segment data plus current drawdown state.
+            try:
+                from agentic.policy import AgentPolicyEngine
+
+                dd = get_drawdown_status()
+                pre_trade_summary = {
+                    "drawdown_recovery_mode": dd.get("is_recovery_mode", False),
+                    "drawdown_pct": dd.get("current_dd_pct", 0.0),
+                    "bot_health_guardrails_active": False,
+                    "bot_health_status": "UNKNOWN",
+                }
+                AgentPolicyEngine(self.base_dir).build_and_save(pre_trade_summary)
+            except Exception as e:
+                logger.debug(f"Pre-trade policy refresh fehlgeschlagen (unkritisch): {e}")
+
             # Step 4: Get eligible proposals for new entries
-            eligible = get_eligible_proposals()
+            eligible = get_eligible_proposals(run_id=run_id)
+            guardrail_summary = build_guardrail_summary(run_id=run_id)
             logger.info(f"Found {len(eligible)} eligible proposals for paper trading")
 
             # Simulate entries
@@ -637,6 +716,8 @@ class Orchestrator:
 
             # Step 5: Check and close resolved positions
             close_summary = check_and_close_resolved()
+            open_positions = get_paper_logger().get_open_positions()
+            high_price_open_positions = sum(1 for pos in open_positions if (pos.entry_price or 0.0) >= 0.85)
 
             return StepResult(
                 name="paper_trader",
@@ -648,6 +729,11 @@ class Orchestrator:
                 ),
                 data={
                     "proposals_eligible": len(eligible),
+                    "guardrail_allowed_count": guardrail_summary.get("allowed_count", 0),
+                    "guardrail_blocked_count": guardrail_summary.get("blocked_count", 0),
+                    "guardrail_blocked_ratio": guardrail_summary.get("blocked_ratio", 0.0),
+                    "shadow_eligible_without_inventory": guardrail_summary.get("shadow_allowed_without_inventory", 0),
+                    "shadow_eligible_ratio_without_inventory": guardrail_summary.get("shadow_allowed_ratio_without_inventory", 0.0),
                     "positions_entered": entered,
                     "positions_skipped": skipped,
                     "addon_entries": avg_down["addons"],
@@ -660,6 +746,7 @@ class Orchestrator:
                     "positions_checked": close_summary['checked'],
                     "positions_closed": close_summary['closed'],
                     "positions_still_open": close_summary['still_open'],
+                    "high_price_open_positions": high_price_open_positions,
                     "total_pnl_eur": close_summary['total_pnl_eur'],
                 }
             )
@@ -698,12 +785,12 @@ class Orchestrator:
                         event_id=f"EVT-{obs.market_id}-{datetime.now().strftime('%Y%m%d%H%M')}",
                         timestamp_utc=datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S") + "Z",
                         market_id=obs.market_id,
-                        question=obs.market_question,
+                        question=obs.event_description,
                         outcomes=["YES", "NO"],
-                        market_price_yes=obs.implied_probability,
-                        market_price_no=1.0 - obs.implied_probability if obs.implied_probability else None,
+                        market_price_yes=obs.market_probability,
+                        market_price_no=1.0 - obs.market_probability if obs.market_probability is not None else None,
                         our_estimate_yes=obs.model_probability,
-                        estimate_confidence=obs.confidence_level if hasattr(obs, 'confidence_level') else None,
+                        estimate_confidence=obs.confidence.value if hasattr(obs.confidence, 'value') else None,
                         decision="TRADE" if obs.edge and abs(obs.edge) >= 0.12 else "NO_TRADE",
                         decision_reasons=[f"Edge: {obs.edge:+.2%}" if obs.edge else "No edge"],
                         engine_context=EngineContext(
@@ -763,6 +850,83 @@ class Orchestrator:
         except Exception as e:
             logger.debug(f"Outcome-Analyser fehlgeschlagen (unkritisch): {e}")
 
+    def _run_strategy_advisor(self) -> None:
+        """Schreibe persistente Strategie-Empfehlungen auf Basis der aktuellen Daten."""
+        try:
+            from analytics.strategy_advisor import run_strategy_advisor
+            advice = run_strategy_advisor()
+            logger.info(
+                "[ADVISOR] %s | %s",
+                str(advice.get("mode", "observe")).upper(),
+                advice.get("summary", ""),
+            )
+        except Exception as e:
+            logger.debug(f"Strategy Advisor fehlgeschlagen (unkritisch): {e}")
+
+    def _run_segment_analysis(self) -> None:
+        """Aktualisiere Segmentanalyse fuer Entry-Qualitaet (non-blocking)."""
+        try:
+            from analytics.segment_analyser import run_segment_analysis
+            analysis = run_segment_analysis()
+            risky_cities = analysis.get("risk_flags", {}).get("suggested_city_cooldowns", [])
+            logger.info(
+                "[SEGMENTS] %s closed positions | risky cities: %s",
+                analysis.get("positions_considered", 0),
+                ", ".join(risky_cities[:3]) if risky_cities else "none",
+            )
+        except Exception as e:
+            logger.debug(f"Segmentanalyse fehlgeschlagen (unkritisch): {e}")
+
+    def _refresh_agent_policy(self, summary: Dict[str, Any]) -> Dict[str, Any]:
+        """Baue aktive Entry-Policy aus Advisor + Segmentanalyse."""
+        try:
+            from agentic.policy import AgentPolicyEngine
+
+            policy = AgentPolicyEngine(self.base_dir).build_and_save(summary)
+            logger.info(
+                "[AGENT-POLICY] %s | max_entry=%.3f | city_cooldowns=%s",
+                policy.get("mode", "UNKNOWN"),
+                float(policy.get("max_entry_price", 1.0)),
+                len(policy.get("cooldown_cities", [])),
+            )
+            return policy
+        except Exception as e:
+            logger.debug(f"Agent Policy Refresh fehlgeschlagen (unkritisch): {e}")
+            return {}
+
+    def _run_bot_health_monitor(self, summary: Dict[str, Any]) -> Dict[str, Any]:
+        """Aktualisiere temporäre Guardrails auf Basis der aktuellen Bot-Gesundheit."""
+        try:
+            from paper_trader.bot_health_monitor import update_bot_health
+            health = update_bot_health(summary)
+            logger.info(
+                "[BOT-HEALTH] %s | %s",
+                health.get("status", "HEALTHY"),
+                health.get("summary", ""),
+            )
+            return health
+        except Exception as e:
+            logger.debug(f"Bot Health Monitor fehlgeschlagen (unkritisch): {e}")
+            return {"status": "UNKNOWN", "summary": "", "guardrails_active": False}
+
+    def _load_strategy_advice_summary(self) -> Dict[str, Any]:
+        """Lade die letzte Strategy-Advisor-Zusammenfassung fuer Status-Ausgaben."""
+        try:
+            from analytics.strategy_advisor import load_latest_advice
+            advice = load_latest_advice()
+            recommendations = advice.get("recommendations", [])
+            top_action = ""
+            if recommendations:
+                top_action = str(recommendations[0].get("action", ""))
+            return {
+                "mode": str(advice.get("mode", "observe")).upper(),
+                "summary": str(advice.get("summary", "")),
+                "top_action": top_action,
+            }
+        except Exception as e:
+            logger.debug(f"Strategy-Advice Summary nicht verfuegbar: {e}")
+            return {"mode": "N/A", "summary": "", "top_action": ""}
+
     def _get_drawdown_summary(self) -> Dict[str, Any]:
         """Hole aktuellen Drawdown-Status fuer Summary."""
         try:
@@ -783,6 +947,7 @@ class Orchestrator:
         dd = self._get_drawdown_summary()
         from core.market_condition import load_last_condition
         mc = load_last_condition()
+        advisor = self._load_strategy_advice_summary()
         return {
             "run_date": date.today().isoformat(),
             "run_time": result.timestamp,
@@ -795,12 +960,44 @@ class Orchestrator:
             "paper_positions_entered": paper_step.data.get("positions_entered", 0) if paper_step else 0,
             "paper_positions_closed": paper_step.data.get("positions_closed", 0) if paper_step else 0,
             "paper_pnl_eur": paper_step.data.get("total_pnl_eur", 0) if paper_step else 0,
+            "high_price_open_positions": paper_step.data.get("high_price_open_positions", 0) if paper_step else 0,
+            "guardrail_allowed_count": paper_step.data.get("guardrail_allowed_count", 0) if paper_step else 0,
+            "guardrail_blocked_count": paper_step.data.get("guardrail_blocked_count", 0) if paper_step else 0,
+            "guardrail_blocked_ratio": paper_step.data.get("guardrail_blocked_ratio", 0.0) if paper_step else 0.0,
+            "shadow_eligible_without_inventory": paper_step.data.get("shadow_eligible_without_inventory", 0) if paper_step else 0,
+            "shadow_eligible_ratio_without_inventory": paper_step.data.get("shadow_eligible_ratio_without_inventory", 0.0) if paper_step else 0.0,
             "resolutions_updated": outcome_step.data.get("resolutions_updated", 0) if outcome_step else 0,
             "drawdown_pct": dd.get("current_dd_pct", 0.0),
             "drawdown_recovery_mode": dd.get("is_recovery_mode", False),
             "drawdown_size_factor": dd.get("size_factor", 1.0),
             "market_condition": mc.get("condition", "WATCH"),
+            "strategy_advisor_mode": advisor.get("mode", "N/A"),
+            "strategy_advisor_summary": advisor.get("summary", ""),
+            "strategy_advisor_top_action": advisor.get("top_action", ""),
         }
+
+    def _run_agent_loop(self, summary: Dict[str, Any]) -> Dict[str, Any]:
+        """Execute the read-only agent loop for diagnostics and memory."""
+        try:
+            from agentic.agent_loop import AgentLoop
+
+            agent = AgentLoop(self.base_dir)
+            result = agent.run(summary)
+            logger.info(
+                "[AGENT] %s | %s",
+                result.get("mode", "UNKNOWN"),
+                result.get("summary", ""),
+            )
+            return result
+        except Exception as e:
+            logger.debug(f"Agent Loop fehlgeschlagen (unkritisch): {e}")
+            return {
+                "mode": "UNAVAILABLE",
+                "summary": "",
+                "hypothesis": "",
+                "proposed_actions": [],
+                "blocked_actions": [],
+            }
 
     @staticmethod
     def _rotate_if_needed(filepath, max_size_mb=5):
@@ -836,11 +1033,25 @@ class Orchestrator:
                 f"Edge detected:        {result.summary.get('edge_observations', 0)}",
                 f"Proposals generated:  {result.summary.get('proposals_generated', 0)}",
                 f"Paper positions:      {result.summary.get('paper_positions_entered', 0)} entered, {result.summary.get('paper_positions_closed', 0)} closed",
+                f"Guardrails:           {result.summary.get('guardrail_allowed_count', 0)} pass, "
+                f"{result.summary.get('guardrail_blocked_count', 0)} blocked "
+                f"({result.summary.get('guardrail_blocked_ratio', 0.0):.0%})",
+                f"Shadow Eligible:      {result.summary.get('shadow_eligible_without_inventory', 0)} "
+                f"without inventory ({result.summary.get('shadow_eligible_ratio_without_inventory', 0.0):.0%})",
                 f"Paper P&L (EUR):      {result.summary.get('paper_pnl_eur', 0):+.2f}",
                 f"Resolutions updated:  {result.summary.get('resolutions_updated', 0)}",
                 f"Drawdown:             {result.summary.get('drawdown_pct', 0.0):.1f}% "
                 f"{'[RECOVERY MODE]' if result.summary.get('drawdown_recovery_mode') else '[OK]'}",
                 f"Market Condition:     {result.summary.get('market_condition', 'WATCH')}",
+                f"Strategy Advisor:     {result.summary.get('strategy_advisor_mode', 'N/A')} | "
+                f"{result.summary.get('strategy_advisor_top_action', 'keine Empfehlung')}",
+                f"Agent Policy:         {result.summary.get('agent_policy_mode', 'N/A')} | "
+                f"max entry {result.summary.get('agent_policy_max_entry_price', 1.0):.2f} | "
+                f"{result.summary.get('agent_policy_city_cooldowns', 0)} city cooldown(s)",
+                f"Agent Mode:           {result.summary.get('agent_mode', 'N/A')} | "
+                f"{result.summary.get('agent_proposed_actions', 0)} Proposal(s)",
+                f"Bot Health:           {result.summary.get('bot_health_status', 'N/A')} | "
+                f"{'Guardrails aktiv' if result.summary.get('bot_health_guardrails_active') else 'keine Guardrails'}",
             ]
 
             errors = [s for s in result.steps if not s.success]
@@ -895,6 +1106,27 @@ class Orchestrator:
 
             with open(audit_file, 'a', encoding='utf-8') as f:
                 f.write(json.dumps(entry) + '\n')
+            append_control_event(
+                "pipeline_run",
+                component="orchestrator",
+                status=result.state.value,
+                level="INFO" if result.state == RunState.OK else "WARNING",
+                message=f"run_id={result.summary.get('run_id', '')}",
+                metrics={
+                    "markets_fetched": result.summary.get("markets_fetched", 0),
+                    "edge_observations": result.summary.get("edge_observations", 0),
+                    "proposals_generated": result.summary.get("proposals_generated", 0),
+                    "paper_positions_entered": result.summary.get("paper_positions_entered", 0),
+                    "paper_positions_closed": result.summary.get("paper_positions_closed", 0),
+                    "paper_pnl_eur": result.summary.get("paper_pnl_eur", 0),
+                    "duration_seconds": result.summary.get("duration_seconds", 0),
+                },
+                context={
+                    "run_id": result.summary.get("run_id", ""),
+                    "market_condition": result.summary.get("market_condition", ""),
+                    "bot_health_status": result.summary.get("bot_health_status", ""),
+                },
+            )
 
         except Exception as e:
             logger.error(f"Audit log failed: {e}")

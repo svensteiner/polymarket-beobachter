@@ -40,9 +40,15 @@ def polymarket_taker_fee(price: float) -> float:
     Returns:
         Fee als Dezimalzahl (z.B. 0.02 = 2%)
     """
-    p = max(0.001, min(0.999, price))
-    fee = POLYMARKET_TAKER_FEE_RATE * p * (1.0 - p) / 0.25
-    return fee
+    # Use optimized cached calculation for common values
+    try:
+        from .performance_cache import fast_polymarket_fee
+        return fast_polymarket_fee(price)
+    except ImportError:
+        # Fallback to original implementation
+        p = max(0.001, min(0.999, price))
+        fee = POLYMARKET_TAKER_FEE_RATE * p * (1.0 - p) / 0.25
+        return fee
 
 
 def net_edge_after_fee(model_prob: float, market_prob: float) -> float:
@@ -56,14 +62,25 @@ def net_edge_after_fee(model_prob: float, market_prob: float) -> float:
     Returns:
         Netto-Edge (kann negativ sein wenn Fee > Raw Edge)
     """
-    raw_edge = model_prob - market_prob
-    fee = polymarket_taker_fee(market_prob)
-    net = raw_edge - fee  # Netto-Edge nach Fee
-    logger.debug(
-        f"Fee-Aware Edge: raw={raw_edge:+.4f} fee={fee:.4f} net={net:+.4f} "
-        f"(model={model_prob:.4f} market={market_prob:.4f})"
-    )
-    return net
+    # Use optimized cached calculation
+    try:
+        from .performance_cache import fast_edge_calculation
+        raw_edge, fee, net = fast_edge_calculation(model_prob, market_prob)
+        logger.debug(
+            f"Fee-Aware Edge: raw={raw_edge:+.4f} fee={fee:.4f} net={net:+.4f} "
+            f"(model={model_prob:.4f} market={market_prob:.4f})"
+        )
+        return net
+    except ImportError:
+        # Fallback to original implementation
+        raw_edge = model_prob - market_prob
+        fee = polymarket_taker_fee(market_prob)
+        net = raw_edge - fee
+        logger.debug(
+            f"Fee-Aware Edge: raw={raw_edge:+.4f} fee={fee:.4f} net={net:+.4f} "
+            f"(model={model_prob:.4f} market={market_prob:.4f})"
+        )
+        return net
 
 
 def is_edge_profitable_after_fee(

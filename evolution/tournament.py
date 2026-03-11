@@ -135,7 +135,89 @@ def cmd_tick(args):
         except Exception as e:
             logger.debug(f"Strategy Agent fehlgeschlagen (unkritisch): {e}")
 
+        # Champion Auto-Promote: Wenn klarer Gewinner, Key-Params in weather.yaml uebernehmen
+        try:
+            _maybe_promote_champion(pop)
+        except Exception as e:
+            logger.debug(f"Champion-Promote fehlgeschlagen (unkritisch): {e}")
+
+    # Strategy Agent auch ohne Evolution alle 5 Ticks (unabhaengige Diagnose)
+    elif runs % 5 == 0:
+        try:
+            from evolution.strategy_agent import run_strategy_agent
+            run_strategy_agent()
+        except Exception as e:
+            logger.debug(f"Strategy Agent (mid-cycle) fehlgeschlagen: {e}")
+
     return runs
+
+
+def _maybe_promote_champion(pop) -> None:
+    """
+    Wenn ein Champion-Agent genug Fitness hat, uebernehme seine
+    Kern-Parameter (min_edge, max_odds, kelly_fraction) in weather.yaml.
+    Sicherheitsgrenzen werden strikt eingehalten.
+    """
+    import re
+
+    if not pop.champion_id:
+        return
+
+    from evolution.agent import Agent
+    champ = Agent.load(pop.champion_id)
+    if champ is None:
+        return
+
+    # Nur promoten wenn genuegend Trades und Fitness > 0.3
+    fitness = champ.fitness
+    if fitness is None or fitness.composite_score < 0.3:
+        logger.debug(f"[PROMOTE] Champion {champ.agent_id} Score {getattr(fitness, 'composite_score', 0):.3f} < 0.3 - kein Promote")
+        return
+    if getattr(fitness, "total_trades", 0) < 3:
+        logger.debug(f"[PROMOTE] Champion {champ.agent_id} zu wenig Trades - kein Promote")
+        return
+
+    params = champ.params
+
+    # Nur diese 3 Parameter uebertragen (Safety: keine Risiko-Params)
+    PROMOTE_MAP = {
+        "min_edge":       ("MIN_EDGE",       0.06, 0.25),   # (yaml-key, min, max)
+        "max_odds":       ("MAX_ODDS",       0.15, 0.45),
+        "kelly_fraction": ("KELLY_FRACTION", 0.10, 0.35),
+    }
+
+    config_path = PROJECT_ROOT / "config" / "weather.yaml"
+    if not config_path.exists():
+        return
+
+    text = config_path.read_text(encoding="utf-8")
+    changed = []
+
+    for param_key, (yaml_key, lo, hi) in PROMOTE_MAP.items():
+        val = params.get(param_key)
+        if val is None:
+            continue
+        val = float(val)
+        val = max(lo, min(hi, val))  # Safety clamp
+        val = round(val, 4)
+
+        # Ersetze Zeile: "KEY: 0.xxx" oder "KEY: 0.xxx  # kommentar"
+        pattern = rf"^({yaml_key}:\s*)[\d.]+(.*)$"
+        new_line = rf"\g<1>{val}\g<2>"
+        new_text, n = re.subn(pattern, new_line, text, flags=re.MULTILINE)
+        if n > 0 and new_text != text:
+            text = new_text
+            changed.append(f"{yaml_key}: {val}")
+
+    if not changed:
+        return
+
+    # Backup + Schreiben
+    backup = config_path.with_suffix(".yaml.champion_backup")
+    backup.write_text(config_path.read_text(encoding="utf-8"), encoding="utf-8")
+    config_path.write_text(text, encoding="utf-8")
+
+    logger.info(f"[PROMOTE] Champion {champ.agent_id} (Score={fitness.composite_score:.3f}) -> weather.yaml: {changed}")
 
 
 def main():

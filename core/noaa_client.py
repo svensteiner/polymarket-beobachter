@@ -21,6 +21,16 @@ from urllib.error import URLError, HTTPError
 
 from .weather_probability_model import ForecastData
 
+# Retry-Utility fuer robuste HTTP-Anfragen (nur stdlib, kein aktienbot-Import)
+try:
+    from shared.retry_utils import retry as _retry
+except Exception:
+    # Graceful fallback: no-op decorator wenn retry_utils nicht verfuegbar
+    def _retry(*a, **kw):  # type: ignore[misc]
+        def _dec(f):
+            return f
+        return _dec
+
 logger = logging.getLogger(__name__)
 
 
@@ -107,12 +117,13 @@ def geocode_city(city_name: str) -> Optional[Tuple[float, float]]:
 # =============================================================================
 
 NOAA_API_BASE = "https://api.weather.gov"
-REQUEST_TIMEOUT = 15  # seconds
+REQUEST_TIMEOUT = 10  # seconds
 
 
+@_retry(max_attempts=2, base_delay=1.0, max_delay=5.0, retry_on=(Exception,), default=None)
 def _noaa_request(url: str) -> Optional[Dict]:
     """
-    Make a GET request to the NOAA API.
+    Make a GET request to the NOAA API (mit automatischem Retry).
 
     Args:
         url: Full URL

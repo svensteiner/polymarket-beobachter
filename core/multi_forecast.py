@@ -21,6 +21,16 @@ import ssl
 import time
 from pathlib import Path
 
+# Retry-Utility fuer robuste HTTP-Anfragen (nur stdlib, kein aktienbot-Import)
+try:
+    from shared.retry_utils import retry as _retry
+except Exception:
+    # Graceful fallback: no-op decorator wenn retry_utils nicht verfuegbar
+    def _retry(*a, **kw):  # type: ignore[misc]
+        def _dec(f):
+            return f
+        return _dec
+
 # Load .env from project root if not already loaded
 try:
     from dotenv import load_dotenv
@@ -38,10 +48,10 @@ from .weather_probability_model import ForecastData
 
 logger = logging.getLogger(__name__)
 
-REQUEST_TIMEOUT = 15
-MAX_MARKET_FORECAST_SECONDS = 30   # Max time for all API calls per single market
-MAX_TOTAL_FORECAST_SECONDS = 300   # Max time for all markets combined (5 minutes)
-API_CALL_DELAY = 0.2               # 200ms between consecutive API calls
+REQUEST_TIMEOUT = 10
+MAX_MARKET_FORECAST_SECONDS = 15   # Max time for all API calls per single market
+MAX_TOTAL_FORECAST_SECONDS = 180   # Max time for all markets combined (3 minutes)
+API_CALL_DELAY = 0.05              # 50ms between consecutive API calls
 
 # Global forecast start time - reset by caller or at first use
 _forecast_global_start: float = 0.0
@@ -100,8 +110,9 @@ def _get_coords(city: str) -> Optional[tuple]:
     return GLOBAL_CITY_COORDINATES.get(key)
 
 
+@_retry(max_attempts=2, base_delay=1.0, max_delay=5.0, retry_on=(Exception,), default=None)
 def _api_get(url: str, headers: Optional[Dict] = None, timeout: int = REQUEST_TIMEOUT) -> Optional[Dict]:
-    """HTTP GET with JSON response."""
+    """HTTP GET with JSON response (mit automatischem Retry)."""
     try:
         ctx = ssl.create_default_context()
         req_headers = {"User-Agent": "PolymarketBeobachter/2.0"}

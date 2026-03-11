@@ -46,9 +46,9 @@ class PolymarketClient:
     MAX_BACKOFF = 30.0  # seconds
 
     # Delay between paginated API requests (seconds)
-    API_DELAY_SECONDS = 0.5
+    API_DELAY_SECONDS = 0.1
     # Delay between batch event fetches (seconds)
-    BATCH_DELAY_SECONDS = 0.3
+    BATCH_DELAY_SECONDS = 0.1
 
     def __init__(
         self,
@@ -294,8 +294,24 @@ class PolymarketClient:
                 else:
                     continue
 
+                # Normalize outcomePrices to always be [YES_price, NO_price]
+                # Some Polymarket markets have outcomes: ["No", "Yes"] instead of ["Yes", "No"]
+                raw_prices = market.get("outcomePrices")
+                outcomes = market.get("outcomes")
+                if raw_prices and outcomes:
+                    try:
+                        prices_list = json.loads(raw_prices) if isinstance(raw_prices, str) else raw_prices
+                        outcomes_list = json.loads(outcomes) if isinstance(outcomes, str) else outcomes
+                        if (len(prices_list) == 2 and len(outcomes_list) == 2
+                                and str(outcomes_list[0]).lower() in ("no", "false")):
+                            # Swap: [NO, YES] → [YES, NO]
+                            raw_prices = json.dumps([prices_list[1], prices_list[0]])
+                            logger.debug(f"Swapped outcomePrices for {market_id}: outcomes={outcomes_list}")
+                    except Exception:
+                        pass
+
                 prices[market_id] = {
-                    "outcomePrices": market.get("outcomePrices"),
+                    "outcomePrices": raw_prices,
                     "bestBid": market.get("bestBid"),
                     "bestAsk": market.get("bestAsk"),
                     "lastTradePrice": market.get("lastTradePrice"),

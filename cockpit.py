@@ -39,10 +39,33 @@ try:
 except ImportError:
     pass
 
+# Initialize optimized logging and memory management
+try:
+    from shared.memory_optimizer import start_memory_monitoring, stop_memory_monitoring
+    from shared.log_manager import get_log_manager, shutdown_log_manager
+    import atexit
+
+    # Auto-cleanup on exit
+    atexit.register(stop_memory_monitoring)
+    atexit.register(shutdown_log_manager)
+except ImportError:
+    # Graceful fallback if optimization modules unavailable
+    def start_memory_monitoring(): pass
+    def stop_memory_monitoring(): pass
+    def shutdown_log_manager(): pass
+
 LOCKFILE = BASE_DIR / "cockpit.lock"
 HEARTBEAT_FILE = BASE_DIR / "logs" / "heartbeat.txt"
 CRASH_LOG = BASE_DIR / "logs" / "crash.log"
 BOT_STATUS_FILE = BASE_DIR / "logs" / "bot_status.json"
+
+# Heartbeat-JSON fuer Dashboard (kompatibel mit aktienbot-Format)
+try:
+    from shared.heartbeat import write_heartbeat as _write_heartbeat_json
+except Exception:
+    # Graceful fallback falls shared.heartbeat nicht importierbar
+    def _write_heartbeat_json(status="running", detail="", extra=None):  # type: ignore[misc]
+        pass
 
 
 # =============================================================================
@@ -55,11 +78,17 @@ def _pid_alive(pid: int) -> bool:
         import ctypes
         kernel32 = ctypes.windll.kernel32
         PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
+        STILL_ACTIVE = 259
         handle = kernel32.OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, False, pid)
-        if handle:
+        if not handle:
+            return False
+        try:
+            exit_code = ctypes.c_ulong(0)
+            if kernel32.GetExitCodeProcess(handle, ctypes.byref(exit_code)):
+                return exit_code.value == STILL_ACTIVE
+            return False
+        finally:
             kernel32.CloseHandle(handle)
-            return True
-        return False
     except Exception:
         # Fallback: os.kill with signal 0 (works on Unix, raises on Windows if no process)
         try:
@@ -209,6 +238,8 @@ def write_bot_status(
                 "markets_fetched": summary.get("markets_fetched", 0),
                 "edge_observations": summary.get("edge_observations", 0),
                 "paper_positions_entered": summary.get("paper_positions_entered", 0),
+                "bot_health_status": summary.get("bot_health_status", "UNKNOWN"),
+                "bot_health_guardrails_active": summary.get("bot_health_guardrails_active", False),
                 "failed_steps": failed,
             }
         elif error is not None:
@@ -382,6 +413,18 @@ def run_once() -> int:
         write_heartbeat()
         write_bot_status(1, 0, start_time, result=result)
 
+        # JSON-Heartbeat fuer Dashboard schreiben
+        _write_heartbeat_json(
+            status="idle",
+            detail=f"run_once abgeschlossen: {result.state.value}",
+            extra={
+                "run_count": 1,
+                "consecutive_errors": 0,
+                "markets_fetched": result.summary.get("markets_fetched", 0),
+                "edge_observations": result.summary.get("edge_observations", 0),
+            },
+        )
+
         if result.state.value == "OK":
             return 0
         elif result.state.value == "DEGRADED":
@@ -392,11 +435,13 @@ def run_once() -> int:
     except Exception as e:
         print(f"{C.RED}Pipeline failed: {e}{C.RESET}")
         write_bot_status(1, 1, start_time, error=e)
+        # Heartbeat auch bei Fehler schreiben
+        _write_heartbeat_json(status="error", detail=str(e)[:200], extra={"consecutive_errors": 1})
         return 1
 
 
 def run_scheduler(interval_seconds: int = 900) -> int:
-    """Run pipeline on a schedule with crash resilience."""
+    """Run pipeline on a schedule with crash resilience and resource optimization."""
     run_count = 0
     consecutive_errors = 0
     start_time = datetime.now()
@@ -408,7 +453,11 @@ def run_scheduler(interval_seconds: int = 900) -> int:
     print(f"  PID:      {os.getpid()}")
     print(f"\n{C.DIM}Press Ctrl+C to stop{C.RESET}\n")
 
-    write_heartbeat()  # Initial heartbeat
+    # Start resource monitoring
+    start_memory_monitoring()
+
+    write_heartbeat()  # Initial heartbeat (txt)
+    _write_heartbeat_json(status="running", detail="Scheduler gestartet", extra={"run_count": 0})
 
     try:
         while True:
@@ -424,10 +473,32 @@ def run_scheduler(interval_seconds: int = 900) -> int:
                 print_run_result(result)
                 consecutive_errors = 0
                 write_bot_status(run_count, consecutive_errors, start_time, result=result)
+                # JSON-Heartbeat nach erfolgreichem Run schreiben
+                _write_heartbeat_json(
+                    status="running",
+                    detail=f"Run #{run_count} abgeschlossen: {result.state.value}",
+                    extra={
+                        "run_count": run_count,
+                        "consecutive_errors": 0,
+                        "markets_fetched": result.summary.get("markets_fetched", 0),
+                        "edge_observations": result.summary.get("edge_observations", 0),
+                        "uptime_seconds": round((datetime.now() - start_time).total_seconds(), 1),
+                    },
+                )
             except Exception as e:
                 consecutive_errors += 1
                 print(f"{C.RED}Pipeline error ({consecutive_errors}x): {e}{C.RESET}")
                 write_bot_status(run_count, consecutive_errors, start_time, error=e)
+                # JSON-Heartbeat auch bei Fehler schreiben
+                _write_heartbeat_json(
+                    status="error",
+                    detail=f"Run #{run_count} fehlgeschlagen: {str(e)[:150]}",
+                    extra={
+                        "run_count": run_count,
+                        "consecutive_errors": consecutive_errors,
+                        "uptime_seconds": round((datetime.now() - start_time).total_seconds(), 1),
+                    },
+                )
                 # Log to crash log as well
                 try:
                     CRASH_LOG.parent.mkdir(parents=True, exist_ok=True)
@@ -440,7 +511,7 @@ def run_scheduler(interval_seconds: int = 900) -> int:
                 except Exception as e:
                     logger.warning("Fehler beim Crash-Log schreiben (Scheduler): %s", e)
 
-            # Always write heartbeat - proves the scheduler loop is alive
+            # Immer txt-Heartbeat schreiben – beweist dass Scheduler-Loop lebt
             write_heartbeat()
 
             # Back off if too many consecutive errors
@@ -472,6 +543,11 @@ def run_scheduler(interval_seconds: int = 900) -> int:
         print(f"\n\n{C.YELLOW}Scheduler stopped{C.RESET}")
         print(f"  Total runs: {run_count}")
         print(f"  Duration:   {str(datetime.now() - start_time).split('.')[0]}")
+
+        # Cleanup resources
+        stop_memory_monitoring()
+        shutdown_log_manager()
+
         return 0
     except SystemExit as e:
         return e.code if isinstance(e.code, int) else 1

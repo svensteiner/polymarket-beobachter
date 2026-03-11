@@ -18,7 +18,7 @@ POPULATION_FILE = PROJECT_ROOT / "data" / "evolution" / "population.json"
 HISTORY_FILE = PROJECT_ROOT / "data" / "evolution" / "history.jsonl"
 DEFAULT_POPULATION_SIZE = 8
 CAPITAL_PER_AGENT = 625.0
-EVOLUTION_TRIGGER_RUNS = 50
+EVOLUTION_TRIGGER_RUNS = 10
 
 
 class Population:

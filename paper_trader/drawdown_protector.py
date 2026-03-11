@@ -27,7 +27,7 @@ from typing import Tuple
 
 logger = logging.getLogger(__name__)
 
-# Schwellwerte (matching Tradingbot-Logik)
+# Schwellwerte (gelockert: Bot darf handeln, aber mit Sicherheitsnetz)
 RECOVERY_THRESHOLD_PCT: float = 15.0   # Ab 15% DD: keine neuen Positionen
 REDUCE_THRESHOLD_PCT: float = 25.0    # Ab 25% DD: lineare Größenreduktion
 
