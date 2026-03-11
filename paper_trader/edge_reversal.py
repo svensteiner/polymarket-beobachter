@@ -17,6 +17,7 @@
 #
 # =============================================================================
 
+import re
 import sys
 import logging
 from datetime import datetime, timedelta, timezone
@@ -38,8 +39,30 @@ logger = logging.getLogger(__name__)
 # CONSTANTS
 # =============================================================================
 
-# Default forecast target: days from now for resolution approximation
-MIN_FORECAST_AGE_DAYS = 2
+# Fallback forecast target if resolution date cannot be parsed
+FALLBACK_FORECAST_DAYS = 1
+
+
+def _parse_resolution_date(market_question: str) -> Optional[datetime]:
+    """Parse resolution date from market question like 'on March 12' or 'on February 28'."""
+    match = re.search(
+        r'\bon\s+(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{1,2})\b',
+        market_question, re.IGNORECASE
+    )
+    if not match:
+        return None
+    month_name, day_str = match.group(1), match.group(2)
+    now = datetime.now(timezone.utc)
+    try:
+        # Parse month+day, assume current year (or next year if date is in the past)
+        target = datetime.strptime(f"{month_name} {day_str}", "%B %d").replace(
+            year=now.year, hour=23, minute=59, tzinfo=timezone.utc
+        )
+        if target < now - timedelta(days=30):
+            target = target.replace(year=now.year + 1)
+        return target
+    except ValueError:
+        return None
 
 
 # =============================================================================
@@ -115,9 +138,14 @@ def check_edge_reversal_exits() -> Dict[str, Any]:
             skipped_count += 1
             continue
 
-        # Fetch fresh forecast
+        # Fetch fresh forecast for RESOLUTION date (not arbitrary +N days)
         try:
-            target_time = datetime.now(timezone.utc) + timedelta(days=MIN_FORECAST_AGE_DAYS)
+            resolution_date = _parse_resolution_date(position.market_question)
+            if resolution_date is not None:
+                target_time = resolution_date
+            else:
+                target_time = datetime.now(timezone.utc) + timedelta(days=FALLBACK_FORECAST_DAYS)
+                logger.debug(f"Edge reversal: could not parse resolution date, using fallback +{FALLBACK_FORECAST_DAYS}d")
             forecast = fetch_forecast_multi(city, target_time)
         except Exception as e:
             logger.debug(f"Edge reversal: forecast fetch failed for {city}: {e}")

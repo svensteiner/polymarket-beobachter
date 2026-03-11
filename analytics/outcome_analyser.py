@@ -394,9 +394,9 @@ def _compute_brier_score(positions: list[dict]) -> dict[str, Any]:
         else:
             continue  # Unklar (Mid-Trade Exit), skip
 
-        # Unser Forecast: entry_price repraesentiert die market probability
-        # Unser Modell dachte wir haetten Edge, also model_prob > entry_price (bei YES)
-        forecast = entry_price  # Bester verfuegbarer Proxy
+        # Unser Modell-Forecast: model_probability ist unsere eigene Einschaetzung
+        # Fallback auf entry_price fuer alte Positionen ohne model_probability
+        forecast = pos.get("model_probability") or entry_price
 
         brier_sq = (forecast - outcome) ** 2
         scored.append({

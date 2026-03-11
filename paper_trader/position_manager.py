@@ -192,7 +192,7 @@ class PositionManager:
     TP2_PCT = 0.18
     TP2_FRACTION = 0.40   # 40% bei TP2 verkaufen (kumuliert: 80%)
     TP3_PCT = 0.25        # Restliche 20% bei TP3 schliessen
-    STOP_LOSS_PCT = -0.25
+    STOP_LOSS_PCT = -0.35
 
     def _calc_unrealized_pct(self, position: PaperPosition, current_price: float) -> float:
         """Berechne unrealisierten P&L in Prozent (relativ zu Entry)."""

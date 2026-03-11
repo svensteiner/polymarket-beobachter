@@ -162,6 +162,11 @@ def check_averaging_down() -> Dict[str, Any]:
     Returns:
         Summary dict with counts
     """
+    # DEAKTIVIERT bis Win-Rate > 40% nachgewiesen - bei 2.2% Win-Rate
+    # verdoppelt Averaging Down nur die Verluste
+    logger.info("Averaging down DISABLED (requires proven calibration, win_rate > 40%%)")
+    return {"checked": 0, "addons": 0, "skipped": 0, "cost_eur": 0.0}
+
     paper_logger = get_paper_logger()
     open_positions = paper_logger.get_open_positions()
 

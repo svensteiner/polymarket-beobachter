@@ -141,6 +141,9 @@ class PaperPosition:
     realized_pnl_eur: Optional[float]
     pnl_pct: Optional[float]
 
+    # Model calibration: our model's probability at entry time (for Brier Score)
+    model_probability: Optional[float] = None
+
     # Hardcoded governance notice
     governance_notice: str = field(
         default="This is a PAPER position. No real funds were used.",
@@ -167,6 +170,7 @@ class PaperPosition:
             "exit_reason": self.exit_reason,
             "realized_pnl_eur": self.realized_pnl_eur,
             "pnl_pct": self.pnl_pct,
+            "model_probability": self.model_probability,
             "governance_notice": self.governance_notice,
         }
 
@@ -195,6 +199,7 @@ class PaperPosition:
             exit_reason=data.get("exit_reason"),
             realized_pnl_eur=data.get("realized_pnl_eur"),
             pnl_pct=data.get("pnl_pct"),
+            model_probability=data.get("model_probability"),
         )
 
 

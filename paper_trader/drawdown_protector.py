@@ -28,8 +28,8 @@ from typing import Tuple
 logger = logging.getLogger(__name__)
 
 # Schwellwerte (matching Tradingbot-Logik)
-RECOVERY_THRESHOLD_PCT: float = 5.0   # Ab 5% DD: keine neuen Positionen
-REDUCE_THRESHOLD_PCT: float = 10.0    # Ab 10% DD: lineare Größenreduktion
+RECOVERY_THRESHOLD_PCT: float = 15.0   # Ab 15% DD: keine neuen Positionen
+REDUCE_THRESHOLD_PCT: float = 25.0    # Ab 25% DD: lineare Größenreduktion
 
 # Mindestanzahl Datenpunkte für verlässliche Berechnung
 MIN_DATA_POINTS: int = 3

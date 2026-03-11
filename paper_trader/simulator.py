@@ -421,6 +421,7 @@ class ExecutionSimulator:
             exit_reason=None,
             realized_pnl_eur=None,
             pnl_pct=None,
+            model_probability=getattr(proposal, 'model_probability', None),
         )
 
         # Create trade record

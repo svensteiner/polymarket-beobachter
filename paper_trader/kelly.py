@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 
 # Position size caps
 MIN_POSITION_EUR: float = 25.0
-MAX_POSITION_EUR: float = 250.0    # Max 5% of 5000 EUR capital
+MAX_POSITION_EUR: float = 150.0    # Max 3% of 5000 EUR capital (konservativ bis Win-Rate steigt)
 FALLBACK_POSITION_EUR: float = 75.0
 
 # Use Quarter-Kelly until model is calibrated
