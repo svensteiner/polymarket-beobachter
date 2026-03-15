@@ -782,6 +782,361 @@ def health_check() -> Dict[str, Any]:
 
 
 # =============================================================================
+# AUTONOMOUS EXECUTION TOOLS
+# =============================================================================
+
+EXPERIMENTS_DIR = DATA_DIR / "experiments"
+
+
+@mcp.tool()
+def run_pipeline(mode: str = "observe") -> Dict[str, Any]:
+    """
+    Führe die Bot-Pipeline direkt aus.
+
+    Args:
+        mode: "observe" (nur beobachten) oder "paper" (mit Paper Trading)
+
+    Returns:
+        Pipeline-Ergebnis mit Statistiken
+
+    GOVERNANCE:
+    - Nur PAPER Mode erlaubt (kein Live Trading)
+    - Ergebnis wird geloggt
+    """
+    import subprocess
+
+    if mode not in ("observe", "paper"):
+        return {"success": False, "error": "Mode must be 'observe' or 'paper'"}
+
+    _log_action("run_pipeline", {"mode": mode})
+
+    try:
+        cmd = ["python", "cockpit.py", "--run-once", "--no-color"]
+        result = subprocess.run(
+            cmd,
+            cwd=str(PROJECT_ROOT),
+            capture_output=True,
+            text=True,
+            timeout=300,  # 5 min timeout
+        )
+
+        output_lines = result.stdout.strip().split("\n") if result.stdout else []
+
+        # Parse summary from output
+        summary = {}
+        for line in output_lines:
+            if "Markets fetched:" in line:
+                summary["markets_fetched"] = int(line.split(":")[1].strip())
+            elif "Edge detected:" in line:
+                summary["edge_detected"] = int(line.split(":")[1].strip())
+            elif "Entered:" in line:
+                # Parse "[4/6] Paper Trader: ... OK (Entered: 1 | ...)"
+                import re
+                match = re.search(r"Entered:\s*(\d+)", line)
+                if match:
+                    summary["trades_entered"] = int(match.group(1))
+
+        return {
+            "success": result.returncode == 0,
+            "mode": mode,
+            "return_code": result.returncode,
+            "summary": summary,
+            "output_lines": output_lines[-20:],  # Last 20 lines
+            "stderr": result.stderr[-500:] if result.stderr else None,
+        }
+
+    except subprocess.TimeoutExpired:
+        return {"success": False, "error": "Pipeline timeout (5 min)"}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+@mcp.tool()
+def run_experiment(
+    experiment_name: str,
+    param_changes: Dict[str, Any],
+    description: str = "",
+) -> Dict[str, Any]:
+    """
+    Führe ein Experiment mit geänderten Parametern durch.
+
+    Args:
+        experiment_name: Eindeutiger Name für das Experiment
+        param_changes: Dict mit Parameter-Änderungen, z.B. {"MIN_EDGE": 0.15}
+        description: Beschreibung des Experiments
+
+    Returns:
+        Experiment-ID und erste Ergebnisse
+
+    WORKFLOW:
+    1. Speichere aktuelle Config als Backup
+    2. Wende param_changes an
+    3. Führe Pipeline aus
+    4. Speichere Ergebnisse
+    5. Stelle Original-Config wieder her
+
+    GOVERNANCE:
+    - Nur erlaubte Parameter
+    - Original wird immer wiederhergestellt
+    """
+    import uuid
+    import shutil
+
+    experiment_id = f"exp_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:6]}"
+
+    EXPERIMENTS_DIR.mkdir(parents=True, exist_ok=True)
+    experiment_file = EXPERIMENTS_DIR / f"{experiment_id}.json"
+
+    # Allowed parameters for experiments
+    ALLOWED_PARAMS = {
+        "MIN_EDGE", "MIN_EDGE_ABSOLUTE", "MAX_ODDS", "MIN_ODDS",
+        "KELLY_FRACTION", "MAX_POSITION_EUR",
+    }
+
+    # Validate param_changes
+    for param in param_changes:
+        if param not in ALLOWED_PARAMS:
+            return {"success": False, "error": f"Parameter '{param}' not allowed in experiments"}
+
+    _log_action("run_experiment", {
+        "experiment_id": experiment_id,
+        "name": experiment_name,
+        "param_changes": param_changes,
+    })
+
+    # Load current config
+    original_config = _load_yaml(WEATHER_CONFIG)
+    if not original_config:
+        return {"success": False, "error": "Could not load weather.yaml"}
+
+    # Backup
+    backup_path = WEATHER_CONFIG.with_suffix(".yaml.experiment_backup")
+    shutil.copy2(WEATHER_CONFIG, backup_path)
+
+    experiment_result = {
+        "experiment_id": experiment_id,
+        "name": experiment_name,
+        "description": description,
+        "param_changes": param_changes,
+        "original_values": {p: original_config.get(p) for p in param_changes},
+        "started_at": datetime.now(timezone.utc).isoformat(),
+        "status": "RUNNING",
+    }
+
+    try:
+        # Apply changes
+        modified_config = original_config.copy()
+        for param, value in param_changes.items():
+            modified_config[param] = value
+
+        _save_yaml(WEATHER_CONFIG, modified_config)
+
+        # Run pipeline
+        pipeline_result = run_pipeline(mode="paper")
+
+        experiment_result["pipeline_result"] = pipeline_result
+        experiment_result["status"] = "COMPLETED" if pipeline_result.get("success") else "FAILED"
+        experiment_result["completed_at"] = datetime.now(timezone.utc).isoformat()
+
+    except Exception as e:
+        experiment_result["status"] = "ERROR"
+        experiment_result["error"] = str(e)
+
+    finally:
+        # ALWAYS restore original config
+        shutil.copy2(backup_path, WEATHER_CONFIG)
+        backup_path.unlink(missing_ok=True)
+
+    # Save experiment result
+    _save_json(experiment_file, experiment_result)
+
+    return {
+        "success": experiment_result["status"] == "COMPLETED",
+        "experiment_id": experiment_id,
+        "status": experiment_result["status"],
+        "param_changes": param_changes,
+        "pipeline_summary": experiment_result.get("pipeline_result", {}).get("summary", {}),
+    }
+
+
+@mcp.tool()
+def get_experiments(limit: int = 20) -> Dict[str, Any]:
+    """
+    Hole die letzten Experimente.
+
+    Args:
+        limit: Maximale Anzahl
+
+    Returns:
+        Liste der Experimente mit Ergebnissen
+    """
+    if not EXPERIMENTS_DIR.exists():
+        return {"experiments": [], "count": 0}
+
+    experiments = []
+    for exp_file in sorted(EXPERIMENTS_DIR.glob("exp_*.json"), reverse=True)[:limit]:
+        exp_data = _load_json(exp_file)
+        if exp_data:
+            experiments.append({
+                "experiment_id": exp_data.get("experiment_id"),
+                "name": exp_data.get("name"),
+                "status": exp_data.get("status"),
+                "param_changes": exp_data.get("param_changes"),
+                "started_at": exp_data.get("started_at"),
+                "pipeline_summary": exp_data.get("pipeline_result", {}).get("summary", {}),
+            })
+
+    return {"experiments": experiments, "count": len(experiments)}
+
+
+@mcp.tool()
+def compare_experiments(experiment_ids: List[str]) -> Dict[str, Any]:
+    """
+    Vergleiche mehrere Experimente.
+
+    Args:
+        experiment_ids: Liste von Experiment-IDs zum Vergleichen
+
+    Returns:
+        Vergleichstabelle mit Parametern und Ergebnissen
+    """
+    if not EXPERIMENTS_DIR.exists():
+        return {"error": "No experiments directory"}
+
+    comparisons = []
+    for exp_id in experiment_ids:
+        exp_file = EXPERIMENTS_DIR / f"{exp_id}.json"
+        if not exp_file.exists():
+            continue
+
+        exp_data = _load_json(exp_file)
+        if exp_data:
+            comparisons.append({
+                "experiment_id": exp_id,
+                "name": exp_data.get("name"),
+                "param_changes": exp_data.get("param_changes"),
+                "status": exp_data.get("status"),
+                "edge_detected": exp_data.get("pipeline_result", {}).get("summary", {}).get("edge_detected", 0),
+                "trades_entered": exp_data.get("pipeline_result", {}).get("summary", {}).get("trades_entered", 0),
+            })
+
+    return {"comparisons": comparisons, "count": len(comparisons)}
+
+
+@mcp.tool()
+def run_parameter_sweep(
+    param_name: str,
+    values: List[Any],
+    base_experiment_name: str = "sweep",
+) -> Dict[str, Any]:
+    """
+    Führe einen Parameter-Sweep durch (teste mehrere Werte).
+
+    Args:
+        param_name: Name des Parameters (z.B. "MIN_EDGE")
+        values: Liste von Werten zum Testen
+        base_experiment_name: Basis-Name für die Experimente
+
+    Returns:
+        Ergebnisse aller Durchläufe
+
+    Beispiel:
+        run_parameter_sweep("MIN_EDGE", [0.10, 0.12, 0.15, 0.18])
+    """
+    if len(values) > 5:
+        return {"success": False, "error": "Maximum 5 values per sweep"}
+
+    _log_action("run_parameter_sweep", {
+        "param_name": param_name,
+        "values": values,
+    })
+
+    results = []
+    for i, value in enumerate(values):
+        exp_name = f"{base_experiment_name}_{param_name}_{value}"
+        result = run_experiment(
+            experiment_name=exp_name,
+            param_changes={param_name: value},
+            description=f"Sweep {i+1}/{len(values)}: {param_name}={value}",
+        )
+        results.append({
+            "value": value,
+            "experiment_id": result.get("experiment_id"),
+            "success": result.get("success"),
+            "edge_detected": result.get("pipeline_summary", {}).get("edge_detected", 0),
+            "trades_entered": result.get("pipeline_summary", {}).get("trades_entered", 0),
+        })
+
+    # Find best result
+    best = max(results, key=lambda r: r.get("edge_detected", 0)) if results else None
+
+    return {
+        "param_name": param_name,
+        "results": results,
+        "best_value": best.get("value") if best else None,
+        "best_edge_detected": best.get("edge_detected") if best else 0,
+    }
+
+
+@mcp.tool()
+def apply_experiment_result(experiment_id: str, reason: str) -> Dict[str, Any]:
+    """
+    Wende die Parameter eines erfolgreichen Experiments dauerhaft an.
+
+    Args:
+        experiment_id: ID des Experiments
+        reason: Begründung für die Änderung
+
+    GOVERNANCE:
+    - Experiment muss COMPLETED sein
+    - Alle Änderungen werden geloggt
+    """
+    exp_file = EXPERIMENTS_DIR / f"{experiment_id}.json"
+
+    if not exp_file.exists():
+        return {"success": False, "error": f"Experiment {experiment_id} not found"}
+
+    exp_data = _load_json(exp_file)
+
+    if not exp_data:
+        return {"success": False, "error": "Could not load experiment data"}
+
+    if exp_data.get("status") != "COMPLETED":
+        return {"success": False, "error": f"Experiment status is {exp_data.get('status')}, not COMPLETED"}
+
+    param_changes = exp_data.get("param_changes", {})
+
+    if not param_changes:
+        return {"success": False, "error": "No parameter changes in experiment"}
+
+    # Apply each parameter change
+    applied = []
+    for param, value in param_changes.items():
+        result = update_strategy_param(
+            param_name=param,
+            new_value=value,
+            reason=f"Applied from experiment {experiment_id}: {reason}",
+        )
+        applied.append({
+            "param": param,
+            "value": value,
+            "success": result.get("success"),
+        })
+
+    _log_action("apply_experiment_result", {
+        "experiment_id": experiment_id,
+        "param_changes": param_changes,
+        "reason": reason,
+    })
+
+    return {
+        "success": all(a["success"] for a in applied),
+        "experiment_id": experiment_id,
+        "applied_changes": applied,
+    }
+
+
+# =============================================================================
 # SERVER ENTRY POINT
 # =============================================================================
 
