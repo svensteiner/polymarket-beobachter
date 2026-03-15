@@ -58,6 +58,7 @@ LOCKFILE = BASE_DIR / "cockpit.lock"
 HEARTBEAT_FILE = BASE_DIR / "logs" / "heartbeat.txt"
 CRASH_LOG = BASE_DIR / "logs" / "crash.log"
 BOT_STATUS_FILE = BASE_DIR / "logs" / "bot_status.json"
+BOT_CONTROL_FILE = BASE_DIR / "logs" / "bot_control.json"
 
 # Heartbeat-JSON fuer Dashboard (kompatibel mit aktienbot-Format)
 try:
@@ -66,6 +67,32 @@ except Exception:
     # Graceful fallback falls shared.heartbeat nicht importierbar
     def _write_heartbeat_json(status="running", detail="", extra=None):  # type: ignore[misc]
         pass
+
+
+# =============================================================================
+# BOT CONTROL (MCP Integration)
+# =============================================================================
+
+def check_bot_paused() -> tuple[bool, str]:
+    """Check if bot is paused via MCP control.
+
+    Returns:
+        Tuple of (is_paused, reason)
+    """
+    if not BOT_CONTROL_FILE.exists():
+        return False, ""
+
+    try:
+        control = json.loads(BOT_CONTROL_FILE.read_text(encoding="utf-8"))
+        if control.get("paused", False):
+            reason = control.get("reason", "No reason provided")
+            paused_at = control.get("paused_at", "Unknown")
+            paused_by = control.get("paused_by", "Unknown")
+            return True, f"Paused at {paused_at} by {paused_by}: {reason}"
+        return False, ""
+    except Exception as e:
+        logger.warning("Fehler beim Lesen von bot_control.json: %s", e)
+        return False, ""
 
 
 # =============================================================================
@@ -407,6 +434,14 @@ def run_once() -> int:
     print_header()
     start_time = datetime.now()
 
+    # Check if bot is paused via MCP
+    is_paused, pause_reason = check_bot_paused()
+    if is_paused:
+        print(f"{C.YELLOW}Bot is PAUSED - cannot run{C.RESET}")
+        print(f"  {C.DIM}{pause_reason}{C.RESET}")
+        print(f"\n{C.DIM}Use MCP server to resume the bot{C.RESET}")
+        return 3  # Special exit code for paused state
+
     try:
         result = run_pipeline_with_progress()
         print_run_result(result)
@@ -467,6 +502,23 @@ def run_scheduler(interval_seconds: int = 900) -> int:
             print(f"\n{C.BOLD}{C.CYAN}{'='*50}{C.RESET}")
             print(f"{C.BOLD}Run #{run_count}{C.RESET} - {run_start.strftime('%Y-%m-%d %H:%M:%S')}")
             print(f"{C.BOLD}{C.CYAN}{'='*50}{C.RESET}\n")
+
+            # Check if bot is paused via MCP
+            is_paused, pause_reason = check_bot_paused()
+            if is_paused:
+                print(f"{C.YELLOW}Bot is PAUSED - skipping run{C.RESET}")
+                print(f"  {C.DIM}{pause_reason}{C.RESET}")
+                write_heartbeat()
+                _write_heartbeat_json(
+                    status="paused",
+                    detail=pause_reason[:150],
+                    extra={"run_count": run_count, "paused": True},
+                )
+                # Still wait for next interval
+                next_run = datetime.now() + timedelta(seconds=interval_seconds)
+                print(f"\n{C.DIM}Next check: {next_run.strftime('%H:%M:%S')}{C.RESET}")
+                time.sleep(interval_seconds)
+                continue
 
             try:
                 result = run_pipeline_with_progress()
