@@ -147,3 +147,52 @@ def get_bucket_statistics() -> Dict[str, Dict[str, Any]]:
         }
         for bucket, (low, high) in EDGE_BUCKETS.items()
     }
+
+
+def detect_market_type(market_question: str) -> str:
+    """
+    Detect the type of weather market from the question.
+
+    Args:
+        market_question: The market question text
+
+    Returns:
+        Market type: "temperature", "precipitation", "wind", "snow", "unknown"
+    """
+    if not market_question:
+        return "unknown"
+
+    question_lower = market_question.lower()
+
+    # Temperature markets
+    temp_keywords = [
+        "temperature", "degrees", "celsius", "fahrenheit",
+        "hot", "cold", "warm", "cool", "heat", "°f", "°c",
+        "high of", "low of", "reach", "exceed", "above", "below",
+    ]
+    for keyword in temp_keywords:
+        if keyword in question_lower:
+            return "temperature"
+
+    # Precipitation markets
+    precip_keywords = [
+        "rain", "precipitation", "rainfall", "inch", "inches",
+        "mm of", "wet", "shower", "storm", "thunderstorm",
+    ]
+    for keyword in precip_keywords:
+        if keyword in question_lower:
+            return "precipitation"
+
+    # Snow markets
+    snow_keywords = ["snow", "snowfall", "blizzard", "flurries", "accumulation"]
+    for keyword in snow_keywords:
+        if keyword in question_lower:
+            return "snow"
+
+    # Wind markets
+    wind_keywords = ["wind", "mph", "gust", "breeze", "hurricane", "tornado"]
+    for keyword in wind_keywords:
+        if keyword in question_lower:
+            return "wind"
+
+    return "unknown"

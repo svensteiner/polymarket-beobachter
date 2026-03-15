@@ -66,7 +66,7 @@ CONTROL_FILE = PROJECT_ROOT / "bot_control.json"
 
 mcp = FastMCP(
     "polymarket-beobachter",
-    description="MCP Server für Polymarket Weather Bot - Claude als Führungskraft"
+    instructions="MCP Server für Polymarket Weather Bot - Claude als Führungskraft"
 )
 
 # =============================================================================
