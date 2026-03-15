@@ -293,6 +293,16 @@ class Orchestrator:
         # Self-Improvement-Cycle: kontinuierliche Parameter-Optimierung
         self._run_improvement_cycle()
 
+        # Notify Self-Healing System about run result
+        try:
+            from analytics.improvement_agent import notify_pipeline_success, notify_pipeline_failure
+            if result.state == RunState.OK:
+                notify_pipeline_success()
+            elif result.state == RunState.FAIL:
+                notify_pipeline_failure("UNKNOWN")
+        except Exception as e:
+            logger.debug(f"Self-Healing Notification fehlgeschlagen: {e}")
+
         logger.info(f"=== Pipeline END === run_id={run_id} state={result.state.value}")
 
         return result
@@ -1132,13 +1142,23 @@ class Orchestrator:
             logger.error(f"Audit log failed: {e}")
 
     def _run_improvement_cycle(self) -> None:
-        """Self-Improvement: LLM-gestützte Parameter-Optimierung (non-blocking)."""
+        """Self-Improvement + Self-Healing: Parameter-Optimierung (non-blocking)."""
         try:
             from analytics.improvement_agent import run_improvement_cycle
             result = run_improvement_cycle()
+
+            # Log health status
+            health_status = result.get("health_status", "UNKNOWN")
+            health_issues = result.get("health_issues", [])
+            health_actions = result.get("health_actions", [])
+
+            if health_issues:
+                logger.info(f"[SELF-HEALING] Status={health_status} | Issues={health_issues} | Actions={len(health_actions)}")
+
+            # Log improvement action
             action = result.get("action", "none")
-            if action not in ("none", "waiting_for_data", "experiment_running"):
-                logger.info(f"[IMPROVEMENT] {action}: {result.get('param', '')} "
+            if action not in ("none", "waiting_for_data", "waiting", "experiment_running"):
+                logger.info(f"[AUTO-IMPROVE] {action}: {result.get('param', '')} "
                             f"{result.get('old', '')} → {result.get('new', '')} "
                             f"| {result.get('reasoning', result.get('reason', ''))}")
         except Exception as e:
