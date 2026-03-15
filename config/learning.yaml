@@ -1,0 +1,133 @@
+# =============================================================================
+# LEARNING SYSTEM CONFIGURATION
+# =============================================================================
+#
+# This configuration controls the intelligent learning system that helps
+# the bot improve over time.
+#
+# =============================================================================
+
+# Master switch - disable to turn off all learning
+enabled: true
+
+# =============================================================================
+# OUTCOME TRACKING
+# =============================================================================
+# Foundation for all learning - tracks predictions vs actual outcomes
+
+outcome_tracking:
+  enabled: true
+  # How often to check for resolved markets (seconds)
+  resolution_check_interval_seconds: 300
+  # Maximum unresolved predictions to track
+  max_unresolved: 1000
+
+# =============================================================================
+# TIME URGENCY
+# =============================================================================
+# Trade more aggressively as markets approach resolution
+
+time_urgency:
+  enabled: true
+
+  # Phase definitions (hours until resolution)
+  phases:
+    critical:
+      # 0-2 hours: Maximum intensity
+      hours_max: 2
+      edge_multiplier: 0.5      # Accept 50% of normal edge
+      position_multiplier: 1.5  # 50% larger positions
+      confidence_floor: 0.70    # Require higher confidence
+
+    urgent:
+      # 2-8 hours: High intensity
+      hours_max: 8
+      edge_multiplier: 0.7      # Accept 70% of normal edge
+      position_multiplier: 1.3  # 30% larger positions
+      confidence_floor: 0.65
+
+    approaching:
+      # 8-24 hours: Elevated intensity
+      hours_max: 24
+      edge_multiplier: 0.85     # Accept 85% of normal edge
+      position_multiplier: 1.1  # 10% larger positions
+      confidence_floor: 0.60
+
+    normal:
+      # 24-72 hours: Standard trading
+      hours_max: 72
+      edge_multiplier: 1.0      # Normal edge threshold
+      position_multiplier: 1.0  # Normal position size
+      confidence_floor: 0.60
+
+    distant:
+      # 72+ hours: Conservative trading
+      hours_max: null           # No upper limit
+      edge_multiplier: 1.2      # Require MORE edge (distant = uncertain)
+      position_multiplier: 0.8  # Smaller positions
+      confidence_floor: 0.70    # Higher confidence needed
+
+# =============================================================================
+# CALIBRATION
+# =============================================================================
+# Adjust confidence based on historical accuracy
+
+calibration:
+  enabled: true
+  # Minimum samples per bucket for valid calibration
+  min_samples_per_bucket: 30
+  # Width of confidence buckets (10% = 0.1)
+  bucket_width: 0.1
+  # How often to recalibrate (hours)
+  recalibrate_interval_hours: 24
+  # Drift threshold that triggers a proposal
+  drift_threshold: 0.10
+
+# =============================================================================
+# PATTERN DETECTION
+# =============================================================================
+# Identify systematic patterns by city, weather type, season
+
+pattern_detection:
+  enabled: true
+  # Minimum trades to consider a pattern valid
+  min_sample_size: 20
+  # Statistical significance threshold (p-value)
+  significance_threshold: 0.05
+  # Dimensions to analyze
+  dimensions:
+    - city
+    - weather_type
+    - season
+  # Maximum edge adjustment from patterns
+  max_edge_adjustment: 0.05
+
+# =============================================================================
+# PROPOSAL GENERATION
+# =============================================================================
+# Controls when the learning system generates proposals for human review
+
+proposals:
+  auto_generate: true
+  output_path: proposals/
+
+  # Thresholds for generating proposals
+  thresholds:
+    # Generate proposal if calibration is off by this much
+    calibration_drift: 0.10
+    # Generate proposal if pattern edge exceeds this
+    pattern_edge: 0.03
+    # Minimum sample size for pattern proposals
+    min_pattern_samples: 30
+
+# =============================================================================
+# DATABASE
+# =============================================================================
+# Learning data storage
+
+database:
+  path: data/learning.db
+  # Enable WAL mode for better performance
+  wal_mode: true
+  # Maximum database size (MB) before archiving
+  max_size_mb: 100
