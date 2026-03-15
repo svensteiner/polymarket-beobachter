@@ -26,6 +26,7 @@ from trading.polymarket_client import (
     OrderResult,
     OrderStatus,
 )
+from trading.telegram_approval import request_trade_approval
 
 logger = logging.getLogger(__name__)
 
@@ -61,10 +62,12 @@ class LiveTrader:
         max_position_size_eur: float = 100.0,
         max_open_positions: int = 10,
         min_edge_threshold: float = 0.15,
+        require_telegram_approval: bool = True,
     ):
         self.max_position_size_eur = max_position_size_eur
         self.max_open_positions = max_open_positions
         self.min_edge_threshold = min_edge_threshold
+        self.require_telegram_approval = require_telegram_approval
 
         # Safety check
         self.live_enabled = os.getenv("LIVE_TRADING_ENABLED", "false").lower() == "true"
@@ -103,6 +106,23 @@ class LiveTrader:
         if edge < self.min_edge_threshold:
             logger.info(f"Skipping {market_id}: Edge {edge:.1%} < threshold {self.min_edge_threshold:.1%}")
             return None
+
+        # LIVE TRADING: Require Telegram approval
+        if self.live_enabled and self.require_telegram_approval:
+            import uuid
+            trade_id = proposal.get("proposal_id") or str(uuid.uuid4())
+
+            # Add position size to proposal for display
+            proposal["position_size_eur"] = self.max_position_size_eur
+
+            logger.info(f"Requesting Telegram approval for trade {trade_id[:8]}...")
+            approved, reason = request_trade_approval(proposal, trade_id)
+
+            if not approved:
+                logger.info(f"Trade rejected: {reason}")
+                return None
+
+            logger.info(f"Trade approved: {reason}")
 
         # Determine order parameters
         side = OrderSide.BUY if "BUY" in direction else OrderSide.SELL

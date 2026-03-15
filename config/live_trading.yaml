@@ -1,0 +1,50 @@
+# =============================================================================
+# LIVE TRADING KONFIGURATION
+# =============================================================================
+#
+# WICHTIG: Start mit kleinen Betraegen!
+# Ziel: Jeden Tag ein bisschen verdienen, Risiko minimieren
+#
+# =============================================================================
+
+# Aktivierung (beide muessen true sein fuer echten Live-Handel)
+enabled: false  # Auf true setzen wenn bereit
+require_telegram_approval: true  # IMMER true lassen!
+
+# Kapital und Position Sizing
+capital:
+  initial_eur: 100  # Start mit nur 100 EUR
+  max_position_eur: 25  # Max 25 EUR pro Trade
+  max_open_positions: 3  # Max 3 offene Positionen
+  max_daily_trades: 5  # Max 5 Trades pro Tag
+  max_daily_loss_eur: 30  # Stop wenn -30 EUR am Tag
+
+# Entry-Kriterien (konservativ)
+entry:
+  min_edge: 0.15  # 15% minimum Edge
+  min_edge_absolute: 0.08  # 8% absoluter Edge
+  max_odds: 0.35  # Nur Odds unter 35%
+  min_confidence: "MEDIUM"  # Mindestens MEDIUM Konfidenz
+  min_time_to_resolution_hours: 6  # Min 6h bis Aufloesung
+
+# Exit-Kriterien
+exit:
+  take_profit_pct: 0.15  # +15% Take Profit
+  stop_loss_pct: -0.20  # -20% Stop Loss (enger als Paper)
+  edge_reversal: true  # Exit wenn Edge verschwindet
+
+# Risiko-Management
+risk:
+  kelly_fraction: 0.2  # Nur 20% Kelly (sehr konservativ)
+  max_correlation: 2  # Max 2 Positionen gleiche Stadt
+  time_decay_factor: true  # Reduziere Kelly bei kurzer Zeit
+
+# Polymarket Wallet (wird aus .env gelesen)
+# POLYMARKET_PRIVATE_KEY=xxx
+# POLYMARKET_WALLET_ADDRESS=xxx
+
+# Telegram Approval
+telegram:
+  approval_timeout_seconds: 300  # 5 Minuten
+  notify_on_skip: true  # Benachrichtigung wenn Trade uebersprungen
+  daily_summary_hour: 8  # Taegliche Summary um 8 Uhr
