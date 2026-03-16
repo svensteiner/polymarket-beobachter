@@ -55,7 +55,8 @@ def send_telegram(msg):
 
 def check_health():
     """Prueft ob Bot laeuft."""
-    heartbeat = PROJECT_ROOT / "heartbeat.txt"
+    # Cockpit schreibt nach logs/heartbeat.txt
+    heartbeat = PROJECT_ROOT / "logs" / "heartbeat.txt"
     if not heartbeat.exists():
         return False, "Kein Heartbeat"
     

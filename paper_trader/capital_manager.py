@@ -92,6 +92,22 @@ class CapitalManager:
             max_daily_trades=data.get("max_daily_trades", 10),
         )
 
+        # Sanity-Check: Werte muessen zusammenpassen
+        total_equity = self._state.available_capital_eur + self._state.allocated_capital_eur
+        expected_equity = self._state.initial_capital_eur + self._state.realized_pnl_eur
+        diff = abs(total_equity - expected_equity)
+        if diff > 1.0:
+            logger.warning(
+                f"Kapital-Inkonsistenz: total={total_equity:.2f}, "
+                f"expected={expected_equity:.2f}, diff={diff:.2f} EUR - wird bei reconcile() korrigiert"
+            )
+
+        # Sanity-Check: Keine negativen Werte
+        if self._state.available_capital_eur < 0:
+            logger.error(f"Negative available_capital: {self._state.available_capital_eur:.2f} EUR!")
+        if self._state.allocated_capital_eur < 0:
+            logger.error(f"Negative allocated_capital: {self._state.allocated_capital_eur:.2f} EUR!")
+
         logger.info(
             f"Capital loaded: {self._state.available_capital_eur:.2f} EUR available, "
             f"{self._state.allocated_capital_eur:.2f} EUR allocated"
@@ -375,6 +391,7 @@ class CapitalManager:
         Reset capital to initial state.
 
         WARNING: This clears all P&L and resets to starting capital.
+        Schreibt automatisch einen equity_snapshot mit reason="capital_reset".
 
         Args:
             initial_amount_eur: New initial capital amount
@@ -392,6 +409,13 @@ class CapitalManager:
             )
             self._save_config(f"Capital reset to {initial_amount_eur:.2f} EUR")
             logger.warning(f"Capital RESET to {initial_amount_eur:.2f} EUR")
+
+            # Schreibe expliziten Reset-Snapshot fuer DrawdownProtector
+            try:
+                from paper_trader.drawdown_protector import record_equity_snapshot
+                record_equity_snapshot(initial_amount_eur, "capital_reset")
+            except Exception as e:
+                logger.debug(f"Equity-Snapshot bei Reset fehlgeschlagen: {e}")
 
 
 # =============================================================================

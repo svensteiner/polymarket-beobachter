@@ -54,8 +54,9 @@ PROPOSALS_DIR = PROJECT_ROOT / "proposals"
 # Config files
 CAPITAL_CONFIG = DATA_DIR / "capital_config.json"
 WEATHER_CONFIG = CONFIG_DIR / "weather.yaml"
+LOGS_DIR = PROJECT_ROOT / "logs"
 BOT_STATUS_FILE = PROJECT_ROOT / "bot_status.json"
-HEARTBEAT_FILE = PROJECT_ROOT / "heartbeat.txt"
+HEARTBEAT_FILE = LOGS_DIR / "heartbeat.txt"  # Cockpit schreibt nach logs/
 
 # Control file for pause/resume
 CONTROL_FILE = PROJECT_ROOT / "bot_control.json"

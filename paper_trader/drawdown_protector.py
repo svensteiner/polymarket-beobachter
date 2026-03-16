@@ -34,6 +34,9 @@ REDUCE_THRESHOLD_PCT: float = 25.0    # Ab 25% DD: lineare Größenreduktion
 # Mindestanzahl Datenpunkte für verlässliche Berechnung
 MIN_DATA_POINTS: int = 3
 
+# Sprung-Validierung: Ignoriere Aenderungen > 50% (Config-Reset, nicht echter Verlust)
+MAX_VALID_CHANGE_PCT: float = 50.0
+
 EQUITY_LOG_PATH = Path(__file__).parent.parent / "data" / "equity_snapshots.jsonl"
 
 
@@ -48,20 +51,45 @@ def record_equity_snapshot(equity_eur: float, reason: str = "") -> None:
     Wird einmal pro Pipeline-Run aufgerufen, NACHDEM Capital-Manager
     den State aktualisiert hat.
 
+    Erkennt automatisch Config-Resets bei extremen Spruengen (>50%).
+
     Args:
         equity_eur: Aktueller Gesamtwert (available + allocated)
         reason: Optionale Beschreibung (z.B. "pipeline_run")
     """
+    # Sanity-Check: Equity muss positiv sein
+    if equity_eur <= 0:
+        logger.warning(f"Equity-Snapshot ignoriert: {equity_eur:.2f} EUR (nicht positiv)")
+        return
+
     EQUITY_LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
+
+    # Pruefe ob dies ein Reset ist (Sprung > 50% gegenueber letztem Wert)
+    actual_reason = reason
+    try:
+        history = _load_equity_history(max_entries=1)
+        if history:
+            last_equity = history[-1]
+            if last_equity > 0:
+                change_pct = abs(equity_eur - last_equity) / last_equity * 100.0
+                if change_pct > MAX_VALID_CHANGE_PCT:
+                    actual_reason = "capital_reset"
+                    logger.warning(
+                        f"Grosser Equity-Sprung erkannt: {last_equity:.0f} -> {equity_eur:.0f} EUR "
+                        f"({change_pct:.0f}%) - markiere als capital_reset"
+                    )
+    except Exception as e:
+        logger.debug(f"Reset-Check fehlgeschlagen: {e}")
+
     entry = {
         "timestamp": datetime.now().isoformat(),
         "equity_eur": round(equity_eur, 2),
-        "reason": reason,
+        "reason": actual_reason,
     }
     try:
         with open(EQUITY_LOG_PATH, "a", encoding="utf-8") as f:
             f.write(json.dumps(entry) + "\n")
-        logger.debug(f"Equity-Snapshot: {equity_eur:.2f} EUR ({reason})")
+        logger.debug(f"Equity-Snapshot: {equity_eur:.2f} EUR ({actual_reason})")
     except OSError as e:
         logger.warning(f"Equity-Snapshot nicht gespeichert: {e}")
 
@@ -69,6 +97,9 @@ def record_equity_snapshot(equity_eur: float, reason: str = "") -> None:
 def _load_equity_history(max_entries: int = 500) -> list:
     """
     Lade Equity-History aus Log-Datei.
+
+    Filtert extreme Spruenge (>50%) die auf Config-Resets hindeuten.
+    Bei einem Reset wird die History ab dem Reset-Punkt neu gestartet.
 
     Args:
         max_entries: Maximal letzte N Eintraege laden
@@ -79,7 +110,7 @@ def _load_equity_history(max_entries: int = 500) -> list:
     if not EQUITY_LOG_PATH.exists():
         return []
 
-    entries = []
+    raw_entries = []
     try:
         with open(EQUITY_LOG_PATH, "r", encoding="utf-8") as f:
             for line in f:
@@ -89,13 +120,41 @@ def _load_equity_history(max_entries: int = 500) -> list:
                 try:
                     obj = json.loads(line)
                     equity = float(obj["equity_eur"])
+                    reason = obj.get("reason", "")
                     if equity > 0:
-                        entries.append(equity)
+                        raw_entries.append((equity, reason))
                 except (json.JSONDecodeError, KeyError, ValueError):
                     pass
     except OSError as e:
         logger.warning(f"Equity-Log nicht lesbar: {e}")
         return []
+
+    if not raw_entries:
+        return []
+
+    # Finde den letzten Reset-Punkt (Sprung > MAX_VALID_CHANGE_PCT oder reason="capital_reset")
+    entries = []
+    last_reset_idx = 0
+
+    for i in range(1, len(raw_entries)):
+        prev_equity = raw_entries[i - 1][0]
+        curr_equity, reason = raw_entries[i]
+
+        # Expliziter Reset oder extremer Sprung
+        if reason == "capital_reset":
+            last_reset_idx = i
+            logger.info(f"Equity-Reset erkannt bei Index {i}: {prev_equity:.0f} -> {curr_equity:.0f} EUR")
+        elif prev_equity > 0:
+            change_pct = abs(curr_equity - prev_equity) / prev_equity * 100.0
+            if change_pct > MAX_VALID_CHANGE_PCT:
+                last_reset_idx = i
+                logger.warning(
+                    f"Extremer Equity-Sprung ignoriert: {prev_equity:.0f} -> {curr_equity:.0f} EUR "
+                    f"({change_pct:.0f}% > {MAX_VALID_CHANGE_PCT}% Schwelle) - Reset Peak"
+                )
+
+    # Nur Eintraege ab dem letzten Reset verwenden
+    entries = [e[0] for e in raw_entries[last_reset_idx:]]
 
     # Letzte N Eintraege
     return entries[-max_entries:] if len(entries) > max_entries else entries
