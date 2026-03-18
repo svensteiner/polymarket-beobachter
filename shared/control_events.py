@@ -25,6 +25,7 @@ def append_control_event(
     event_type: str,
     data: Optional[Dict[str, Any]] = None,
     log_path: Optional[Path] = None,
+    **kwargs: Any,
 ) -> None:
     """
     Append a control event to the audit log.
@@ -33,14 +34,17 @@ def append_control_event(
         event_type: Type of control event (e.g., "guardrail_activated")
         data: Additional event data
         log_path: Optional custom log path
+        **kwargs: Extra fields (component, status, level, message, metrics, ...)
     """
     path = log_path or CONTROL_EVENTS_PATH
     path.parent.mkdir(parents=True, exist_ok=True)
 
+    merged_data = {**(data or {}), **kwargs}
+
     event = {
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "event_type": event_type,
-        "data": data or {},
+        "data": merged_data,
     }
 
     try:
