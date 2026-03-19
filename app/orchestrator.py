@@ -315,14 +315,33 @@ class Orchestrator:
             from datetime import date
             from pathlib import Path
 
-            # Lade aktuelle Kandidaten
-            candidates_root = self.data_dir / "collector" / "candidates"
+            # Lade aktuelle Kandidaten - Gamma bevorzugen (enthaelt outcomePrices)
             today = date.today().isoformat()
-            candidates_file = candidates_root / today / "candidates.jsonl"
+            gamma_root = self.data_dir / "collector" / "gamma"
+            candidates_root = self.data_dir / "collector" / "candidates"
 
-            if not candidates_file.exists():
-                # Fallback auf letzten verfuegbaren Tag
-                if candidates_root.exists():
+            candidates_file = None
+            use_gamma = False
+
+            # Gamma-Datei hat Preisdaten → fuer Arbitrage bevorzugen
+            gamma_today = gamma_root / today / "gamma_candidates.jsonl"
+            if gamma_today.exists() and gamma_today.stat().st_size > 0:
+                candidates_file = gamma_today
+                use_gamma = True
+            elif gamma_root.exists():
+                for day_dir in sorted(gamma_root.iterdir(), reverse=True):
+                    f = day_dir / "gamma_candidates.jsonl"
+                    if f.exists() and f.stat().st_size > 0:
+                        candidates_file = f
+                        use_gamma = True
+                        break
+
+            # Fallback auf sanitierte Kandidaten
+            if not candidates_file:
+                sanitized_today = candidates_root / today / "candidates.jsonl"
+                if sanitized_today.exists():
+                    candidates_file = sanitized_today
+                elif candidates_root.exists():
                     for day_dir in sorted(candidates_root.iterdir(), reverse=True):
                         f = day_dir / "candidates.jsonl"
                         if f.exists() and f.stat().st_size > 0:
@@ -330,7 +349,8 @@ class Orchestrator:
                             break
 
             candidates = []
-            if candidates_file.exists():
+            if candidates_file and candidates_file.exists():
+                logger.debug(f"Arbitrage Quelle: {'Gamma' if use_gamma else 'Sanitiert'} ({candidates_file.name})")
                 with open(candidates_file, "r", encoding="utf-8") as f:
                     for line in f:
                         line = line.strip()

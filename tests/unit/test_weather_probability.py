@@ -20,6 +20,7 @@ from core.weather_probability_model import (
     normal_cdf,
     probability_exceeds,
     probability_below,
+    probability_between,
     compute_edge,
     meets_edge_threshold,
 )
@@ -535,6 +536,64 @@ def test_determine_confidence_direct():
     # LOW confidence: > 168 hours
     assert model._determine_confidence(200.0) == WeatherConfidence.LOW
     assert model._determine_confidence(500.0) == WeatherConfidence.LOW
+
+
+# =============================================================================
+# REGRESSION TESTS - CRITICAL BUG FIXES (2026-03-03)
+# =============================================================================
+
+def test_probability_between_basic():
+    """P(low <= X <= high) sollte < P(X > low) sein (Intervall schmaler als Überschreitung)."""
+    mean, sigma = 75.0, 3.5
+    # "between 78-79" als Band, nicht als Überschreitung
+    p_between = probability_between(78.0, 79.0, mean, sigma)
+    p_exceeds_low = probability_exceeds(78.0, mean, sigma)
+    assert p_between < p_exceeds_low, "P(78<=T<=79) muss < P(T>78) sein"
+    assert p_between > 0.0, "P(between) soll > 0 sein"
+
+
+def test_probability_between_symmetry():
+    """Intervall zentriert auf den Mittelwert → symmetrisch, höhere Wahrscheinlichkeit."""
+    mean, sigma = 75.0, 3.5
+    p_sym = probability_between(72.5, 77.5, mean, sigma)
+    assert p_sym > 0.5, "5-Grad-Band um Mittelwert soll > 50% sein"
+
+
+def test_probability_between_invalid_bounds():
+    """low >= high → 0.0 (kein Intervall)."""
+    mean, sigma = 75.0, 3.5
+    assert probability_between(80.0, 78.0, mean, sigma) == 0.0
+    assert probability_between(78.0, 78.0, mean, sigma) == 0.0
+
+
+def test_probability_between_not_equal_to_exceeds():
+    """Kritischer Bugfix: 'between 78-79°F' darf NICHT als P(T>78) berechnet werden."""
+    mean, sigma = 75.0, 3.5
+    p_between = probability_between(78.0, 79.0, mean, sigma)
+    p_exceeds = probability_exceeds(78.0, mean, sigma)
+    # Diese müssen VERSCHIEDEN sein (war vorher der Bug)
+    assert abs(p_between - p_exceeds) > 0.05, (
+        f"probability_between({p_between:.4f}) ist zu ähnlich zu probability_exceeds({p_exceeds:.4f})"
+    )
+
+
+def test_probability_between_consistent_with_cdf():
+    """P(low<=X<=high) = CDF(high) - CDF(low) — direkte Verifikation."""
+    mean, sigma = 75.0, 3.5
+    low, high = 73.0, 79.0
+    expected = normal_cdf(high, mean, sigma) - normal_cdf(low, mean, sigma)
+    result = probability_between(low, high, mean, sigma)
+    assert abs(result - expected) < 1e-10
+
+
+def test_meets_edge_threshold_no_bet():
+    """Kritischer Bugfix: Negative Edge (NO-Bet) soll |edge| prüfen, nicht edge >= 0."""
+    from core.weather_signal import WeatherConfidence
+    # Starke negative Edge (NO-Bet Opportunity)
+    assert meets_edge_threshold(-0.20, 0.12, WeatherConfidence.HIGH)
+    assert meets_edge_threshold(-0.15, 0.12, WeatherConfidence.HIGH)
+    # Zu kleine negative Edge
+    assert not meets_edge_threshold(-0.05, 0.12, WeatherConfidence.HIGH)
 
 
 # =============================================================================

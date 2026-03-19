@@ -596,6 +596,70 @@ def test_all_city_patterns():
 
 
 # =============================================================================
+# REGRESSION TESTS - CITY DETECTION WORD-BOUNDARY BUG (2026-03-03)
+# =============================================================================
+
+def _make_filter_with_cities(cities):
+    config = create_test_config()
+    config["ALLOWED_CITIES"] = cities
+    return WeatherMarketFilter(config)
+
+
+def _make_market(question):
+    return WeatherMarket(
+        market_id="test-city",
+        question=question,
+        resolution_text="Test",
+        description="Test",
+        category="WEATHER",
+        is_binary=True,
+        liquidity_usd=200.0,
+        odds_yes=0.05,
+        resolution_time=datetime.utcnow() + timedelta(hours=72),
+    )
+
+
+def test_la_does_not_match_dallas():
+    """Kritischer Bugfix: 'la' als Substring-Pattern soll Dallas nicht als LA erkennen."""
+    f = _make_filter_with_cities(["Los Angeles", "Dallas"])
+    result = f.filter_market(_make_market("Will the temperature in Dallas be above 90°F?"))
+    detected = result.filter_details.get("detected_city")
+    assert detected == "Dallas", f"Dallas wurde fälschlich als '{detected}' erkannt (Word-Boundary Bug)"
+
+
+def test_la_does_not_match_atlanta():
+    """'la' als Substring-Pattern soll Atlanta nicht als LA erkennen."""
+    f = _make_filter_with_cities(["Los Angeles", "Atlanta"])
+    result = f.filter_market(_make_market("Will the temperature in Atlanta be above 90°F?"))
+    detected = result.filter_details.get("detected_city")
+    assert detected == "Atlanta", f"Atlanta wurde fälschlich als '{detected}' erkannt"
+
+
+def test_la_does_not_match_philadelphia():
+    """'la' als Substring-Pattern soll Philadelphia nicht als LA erkennen."""
+    f = _make_filter_with_cities(["Los Angeles", "Philadelphia"])
+    result = f.filter_market(_make_market("Will the temperature in Philadelphia be above 50°F?"))
+    detected = result.filter_details.get("detected_city")
+    assert detected == "Philadelphia", f"Philadelphia wurde fälschlich als '{detected}' erkannt"
+
+
+def test_la_matches_los_angeles():
+    """'la' soll Los Angeles korrekt erkennen wenn als eigenes Wort."""
+    f = _make_filter_with_cities(["Los Angeles"])
+    result = f.filter_market(_make_market("Will LA temperature exceed 90°F?"))
+    detected = result.filter_details.get("detected_city")
+    assert detected == "Los Angeles", f"Los Angeles wurde nicht erkannt: '{detected}'"
+
+
+def test_la_matches_los_angeles_full_name():
+    """'Los Angeles' vollständiger Name soll erkannt werden."""
+    f = _make_filter_with_cities(["Los Angeles"])
+    result = f.filter_market(_make_market("Will Los Angeles temperature reach 100°F?"))
+    detected = result.filter_details.get("detected_city")
+    assert detected == "Los Angeles", f"Los Angeles wurde nicht erkannt: '{detected}'"
+
+
+# =============================================================================
 # TEST REGISTRY
 # =============================================================================
 
