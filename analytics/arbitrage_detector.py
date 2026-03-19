@@ -109,11 +109,12 @@ def _extract_temperature_threshold(question: str) -> Tuple[Optional[float], str]
         r"at\s+least\s+(\d+(?:\.\d+)?)",
     ]
 
+    celsius_indices = {3, 4, 5}  # patterns for celsius, [cC]\b, degrees [cC]
     for i, pattern in enumerate(patterns):
         m = re.search(pattern, q)
         if m:
             val = float(m.group(1))
-            if "celsius" in pattern or r"\bc\b" in pattern.lower():
+            if i in celsius_indices:
                 val = val * 9 / 5 + 32
             elif i >= 6 and val < 50:
                 val = val * 9 / 5 + 32
