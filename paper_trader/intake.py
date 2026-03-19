@@ -319,6 +319,3 @@ def get_eligible_proposals(run_id: str | None = None) -> List[Proposal]:
     return get_intake().get_eligible_proposals(run_id=run_id)
 
 
-def is_proposal_eligible(proposal: Proposal) -> tuple:
-    """Convenience function to check proposal eligibility."""
-    return get_intake().is_proposal_eligible(proposal)
