@@ -417,7 +417,15 @@ class ExecutionSimulator:
             return (None, record)
 
         # Kelly position sizing: use model probability and market price
-        win_prob = proposal.model_probability if hasattr(proposal, 'model_probability') else None
+        # For NO bets, use complementary probabilities (1-p, 1-price)
+        yes_prob = proposal.model_probability if hasattr(proposal, 'model_probability') else None
+        yes_price = snapshot.mid_price
+        if side == "NO" and yes_prob is not None:
+            win_prob = 1.0 - yes_prob
+            kelly_price = 1.0 - yes_price
+        else:
+            win_prob = yes_prob
+            kelly_price = yes_price
         try:
             available = self._capital_manager.get_state().available_capital_eur
         except Exception:
@@ -427,7 +435,7 @@ class ExecutionSimulator:
         ens_variance = getattr(proposal, 'ensemble_variance', None)
         position_eur = kelly_size(
             win_probability=win_prob,
-            entry_price=snapshot.mid_price,
+            entry_price=kelly_price,
             bankroll=available,
             hours_to_resolution=hours_to_res,
             ensemble_variance=ens_variance,

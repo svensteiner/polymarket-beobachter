@@ -149,6 +149,19 @@ class TestKellyIntegration:
         result = kelly_size(0.20, 0.30, 5000)
         assert result == MIN_POSITION_EUR
 
+    def test_kelly_no_bet_complementary_sizing(self):
+        """Kritischer Bugfix: NO-Bet Kelly nutzt (1-yes_prob, 1-yes_price)."""
+        from paper_trader.kelly import kelly_size, MIN_POSITION_EUR
+        # Model: YES bei 10%, Markt: YES bei 35% → starker NO-Edge
+        # YES Kelly würde negative Edge → MIN_POSITION zurückgeben
+        yes_kelly = kelly_size(win_probability=0.10, entry_price=0.35, bankroll=5000)
+        assert yes_kelly == MIN_POSITION_EUR  # YES-side hat negative Edge
+
+        # NO Kelly nutzt (1-0.10=0.90, 1-0.35=0.65) → positiver Edge
+        no_kelly = kelly_size(win_probability=0.90, entry_price=0.65, bankroll=5000)
+        assert no_kelly > MIN_POSITION_EUR  # NO-side soll sinnvoll groß sein
+        assert no_kelly >= MIN_POSITION_EUR
+
 
 # ============================================================
 # FEATURE 2: BRIER SCORE
