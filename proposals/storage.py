@@ -297,21 +297,3 @@ def get_storage() -> ProposalStorage:
     return _storage_instance
 
 
-def save_proposal_and_review(proposal: Proposal, review: ReviewResult) -> bool:
-    """
-    Convenience function to save both proposal and review.
-
-    GOVERNANCE:
-    Atomic-like operation - both are saved together.
-
-    Args:
-        proposal: The Proposal
-        review: The ReviewResult
-
-    Returns:
-        True if both saved successfully
-    """
-    storage = get_storage()
-    proposal_saved = storage.save_proposal(proposal)
-    review_saved = storage.save_review(proposal, review)
-    return proposal_saved and review_saved
