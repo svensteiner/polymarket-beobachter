@@ -363,7 +363,13 @@ def _execute_addon(
 
     entry_price, slippage = price_result
 
-    health_ok, health_reason = check_can_open_entry(entry_price=entry_price, is_addon=True)
+    health_ok, health_reason = check_can_open_entry(
+        entry_price=entry_price,
+        is_addon=True,
+        market_question=base_position.market_question,
+        market_type=getattr(base_position, "market_type", None),
+        city=city,
+    )
     if not health_ok:
         logger.info("Addon blockiert: %s", health_reason)
         return None

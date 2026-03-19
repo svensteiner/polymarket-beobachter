@@ -24,7 +24,7 @@ from __future__ import annotations
 import json
 import logging
 from collections import defaultdict
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Optional
 
@@ -325,14 +325,26 @@ def _compute_monthly_performance(positions: list[dict]) -> dict[str, Any]:
     }
 
 
-# =============================================================================
-# HAUPTFUNKTION
-# =============================================================================
+def _compute_period_performance(positions: list[dict], days: int) -> dict[str, Any]:
+    """Win-Rate und P&L fuer die letzten N Tage."""
+    cutoff = datetime.now() - timedelta(days=days)
+    recent = []
+    for pos in positions:
+        ts = pos.get("exit_time") or pos.get("entry_time") or ""
+        try:
+            if datetime.fromisoformat(ts.replace("Z", "+00:00")).replace(tzinfo=None) >= cutoff:
+                recent.append(pos)
+        except (ValueError, TypeError):
+            continue
+    if not recent:
+        return {"trades": 0, "win_rate_pct": None, "total_pnl_eur": 0.0}
+    wins = sum(1 for p in recent if p["realized_pnl_eur"] > 0)
+    return {
+        "trades": len(recent),
+        "win_rate_pct": round(wins / len(recent) * 100, 1),
+        "total_pnl_eur": round(sum(p["realized_pnl_eur"] for p in recent), 2),
+    }
 
-
-# =============================================================================
-# FEATURE 2: BRIER SCORE KALIBRIERUNG
-# =============================================================================
 
 def _compute_brier_score(positions: list[dict]) -> dict[str, Any]:
     """
@@ -501,6 +513,8 @@ def run_analysis() -> dict[str, Any]:
     cities = _compute_city_performance(positions)
     monthly = _compute_monthly_performance(positions)
     brier = _compute_brier_score(positions)
+    period_7d = _compute_period_performance(positions, days=7)
+    period_30d = _compute_period_performance(positions, days=30)
 
     # Bewertung
     win_rate = base["win_rate_pct"]
@@ -519,6 +533,10 @@ def run_analysis() -> dict[str, Any]:
         "governance_notice": "PAPER TRADING ANALYSIS - No real funds",
         "health": health,
         "metrics": base,
+        "recent_performance": {
+            "last_7_days": period_7d,
+            "last_30_days": period_30d,
+        },
         "drawdown": drawdown,
         "strategy_attribution": attribution,
         "performance_by_city": cities,

@@ -1,429 +1,460 @@
-# =============================================================================
-# POLYMARKET BEOBACHTER - BOT HEALTH MONITOR (v2)
-# =============================================================================
-#
-# GOVERNANCE INTENT:
-# This module provides temporary guardrails based on bot health metrics.
-# It can temporarily restrict new entries without mutating the main config.
-#
-# FEATURES (v2):
-# - Echte Metriken aus Position-Log (Win Rate, Consecutive Losses)
-# - Persistenz (State ueberlebt Neustart)
-# - Telegram Alerts bei Health-Aenderung
-# - Cooldown vor Recovery (X gesunde Runs)
-#
-# =============================================================================
+"""
+paper_trader/bot_health_monitor.py - Temporäre Guardrails auf Basis der Bot-Gesundheit.
+
+Ziel:
+- Wiederkehrende Verlust- oder Failure-Muster erkennen
+- Zeitlich begrenzte Schutzregeln aktivieren
+- Keine persistente Strategie-Config mutieren
+
+Schutzregeln wirken nur im Paper-Trader:
+- Neue Entries optional blockieren
+- Averaging Down optional blockieren
+- Maximale erlaubte Entry-Preise temporär deckeln
+"""
+
+from __future__ import annotations
 
 import json
 import logging
-from dataclasses import dataclass, asdict
-from datetime import datetime
+import re
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from typing import Tuple, Optional, Dict, Any, List
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
-# Pfade
-DATA_DIR = Path(__file__).parent.parent / "data"
-HEALTH_STATE_PATH = DATA_DIR / "bot_health_state.json"
+PROJECT_ROOT = Path(__file__).parent.parent
+STATE_FILE = PROJECT_ROOT / "logs" / "bot_health.json"
+AUDIT_DIR = PROJECT_ROOT / "logs" / "audit"
+POSITIONS_FILE = PROJECT_ROOT / "paper_trader" / "logs" / "paper_positions.jsonl"
+REPORT_FILE = PROJECT_ROOT / "analytics" / "performance_report.json"
+ADVICE_FILE = PROJECT_ROOT / "output" / "strategy_advice.json"
 
-# Schwellwerte
-CONSECUTIVE_LOSSES_THRESHOLD = 3  # Ab 3 Verlusten: DEGRADED
-WIN_RATE_THRESHOLD = 0.35  # Unter 35% Win Rate: DEGRADED
-MIN_TRADES_FOR_WIN_RATE = 5  # Mindestens 5 Trades fuer Win Rate
-DAILY_DRAWDOWN_THRESHOLD = 5.0  # Ab 5% Daily DD: DEGRADED
-RECOVERY_RUNS_REQUIRED = 3  # 3 gesunde Runs vor Recovery
+RISK_HEALTHY = "HEALTHY"
+RISK_ELEVATED = "ELEVATED"
+RISK_CRITICAL = "CRITICAL"
 
-
-@dataclass
-class BotHealthState:
-    """Current health state of the bot."""
-    status: str = "HEALTHY"  # HEALTHY, DEGRADED, CRITICAL
-    is_healthy: bool = True
-    consecutive_losses: int = 0
-    win_rate: float = 1.0
-    total_closed_trades: int = 0
-    daily_drawdown_pct: float = 0.0
-    max_entry_price: Optional[float] = None
-    guardrails_active: bool = False
-    reasons: List[str] = None
-    healthy_runs_count: int = 0  # Zaehler fuer Recovery
-    last_status: str = "HEALTHY"  # Fuer Alert-Vergleich
-    last_alert_time: str = ""  # Wann letzter Alert gesendet (Anti-Spam)
-    last_updated: str = ""
-
-    def __post_init__(self):
-        if self.reasons is None:
-            self.reasons = []
+_RECENT_RUN_WINDOW = 8
+_RECENT_CLOSED_WINDOW = 8
 
 
-# Minimum Zeit zwischen Alerts (in Sekunden)
-ALERT_COOLDOWN_SECONDS = 3600  # 1 Stunde
+def _extract_city(question: str) -> str | None:
+    if not question:
+        return None
+    match = re.search(r"temperature in ([A-Za-z\s]+?)\s+be", question, re.IGNORECASE)
+    if match:
+        return match.group(1).strip()
+    return None
 
 
-def _load_health_state() -> BotHealthState:
-    """Lade persistierten Health State."""
-    if not HEALTH_STATE_PATH.exists():
-        return BotHealthState()
+def _detect_market_type(question: str) -> str:
+    if not question:
+        return "unknown"
+    q = question.lower()
+    if "between" in q:
+        return "between"
+    if any(token in q for token in ("or below", "or less", "or under", "or lower")):
+        return "at_or_below"
+    if any(token in q for token in ("or above", "or higher", "or more", "or over", "be above", "exceed")):
+        return "at_or_above"
+    if re.search(r"\bbe\s+\d+|\bexactly\s+\d+", q):
+        return "exact"
+    return "unknown"
 
+
+def _price_band(entry_price: float | None) -> str | None:
+    if entry_price is None:
+        return None
+    price = float(entry_price)
+    bands = [
+        (0.00, 0.10),
+        (0.10, 0.20),
+        (0.20, 0.35),
+        (0.35, 0.50),
+        (0.50, 0.70),
+        (0.70, 0.85),
+        (0.85, 1.00),
+    ]
+    for low, high in bands:
+        if low <= price < high or (high == 1.00 and price <= high):
+            return f"{low:.2f}-{high:.2f}"
+    return None
+
+
+def _normalized_unique(items: list[Any] | None) -> list[str]:
+    normalized: list[str] = []
+    for item in items or []:
+        text = str(item).strip()
+        if text and text not in normalized:
+            normalized.append(text)
+    return normalized
+
+
+def _utc_now() -> datetime:
+    return datetime.now(UTC)
+
+
+def _iso_now() -> str:
+    return _utc_now().isoformat()
+
+
+def _load_json(path: Path) -> dict[str, Any]:
     try:
-        with open(HEALTH_STATE_PATH, "r", encoding="utf-8") as f:
-            data = json.load(f)
-        return BotHealthState(
-            status=data.get("status", "HEALTHY"),
-            is_healthy=data.get("is_healthy", True),
-            consecutive_losses=data.get("consecutive_losses", 0),
-            win_rate=data.get("win_rate", 1.0),
-            total_closed_trades=data.get("total_closed_trades", 0),
-            daily_drawdown_pct=data.get("daily_drawdown_pct", 0.0),
-            max_entry_price=data.get("max_entry_price"),
-            guardrails_active=data.get("guardrails_active", False),
-            reasons=data.get("reasons", []),
-            healthy_runs_count=data.get("healthy_runs_count", 0),
-            last_status=data.get("last_status", "HEALTHY"),
-            last_alert_time=data.get("last_alert_time", ""),
-            last_updated=data.get("last_updated", ""),
-        )
-    except Exception as e:
-        logger.warning(f"Health State nicht lesbar: {e}")
-        return BotHealthState()
+        if path.exists():
+            data = json.loads(path.read_text(encoding="utf-8"))
+            if isinstance(data, dict):
+                return data
+    except Exception as exc:
+        logger.debug("JSON-Load fehlgeschlagen (%s): %s", path, exc)
+    return {}
 
 
-def _save_health_state(state: BotHealthState) -> None:
-    """Speichere Health State persistent."""
-    DATA_DIR.mkdir(parents=True, exist_ok=True)
-    state.last_updated = datetime.now().isoformat()
+def _atomic_write(path: Path, data: dict[str, Any]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    tmp.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
+    tmp.replace(path)
 
+
+def _parse_iso(value: str | None) -> datetime | None:
+    if not value:
+        return None
     try:
-        with open(HEALTH_STATE_PATH, "w", encoding="utf-8") as f:
-            json.dump(asdict(state), f, indent=2, default=str)
-    except Exception as e:
-        logger.warning(f"Health State nicht speicherbar: {e}")
+        dt = datetime.fromisoformat(value)
+    except ValueError:
+        return None
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=UTC)
+    return dt.astimezone(UTC)
 
 
-def _compute_metrics_from_positions() -> Dict[str, Any]:
-    """
-    Berechne echte Metriken aus dem Position-Log.
+def _load_recent_runs(max_runs: int = _RECENT_RUN_WINDOW) -> list[dict[str, Any]]:
+    if not AUDIT_DIR.exists():
+        return []
 
-    Returns:
-        Dict mit win_rate, consecutive_losses, total_closed
-    """
+    entries: list[dict[str, Any]] = []
+    audit_files = sorted(AUDIT_DIR.glob("observer_*.jsonl"))[-5:]
+    for audit_file in audit_files:
+        try:
+            with open(audit_file, "r", encoding="utf-8") as handle:
+                for line in handle:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    try:
+                        data = json.loads(line)
+                    except json.JSONDecodeError:
+                        continue
+                    if isinstance(data, dict) and data.get("event") == "OBSERVER_RUN":
+                        entries.append(data)
+        except OSError as exc:
+            logger.debug("Audit-Read fehlgeschlagen (%s): %s", audit_file, exc)
+
+    return entries[-max_runs:]
+
+
+def _load_recent_closed_positions(max_positions: int = _RECENT_CLOSED_WINDOW) -> list[dict[str, Any]]:
+    if not POSITIONS_FILE.exists():
+        return []
+
+    latest: dict[str, dict[str, Any]] = {}
     try:
-        from paper_trader.logger import PaperTradingLogger
+        with open(POSITIONS_FILE, "r", encoding="utf-8") as handle:
+            for line in handle:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    data = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                if data.get("_type") == "LOG_HEADER":
+                    continue
+                position_id = data.get("position_id")
+                if position_id:
+                    latest[position_id] = data
+    except OSError as exc:
+        logger.debug("Positions-Read fehlgeschlagen: %s", exc)
+        return []
 
-        paper_logger = PaperTradingLogger()
-        all_positions = paper_logger.read_all_positions()
+    def _close_ts(item: dict[str, Any]) -> datetime:
+        return _parse_iso(item.get("exit_time")) or datetime.min.replace(tzinfo=UTC)
 
-        # Nur geschlossene Positionen (haben exit_time und realized_pnl)
-        closed = [p for p in all_positions if p.status == "CLOSED" and p.realized_pnl_eur is not None]
-
-        if not closed:
-            return {
-                "win_rate": 1.0,
-                "consecutive_losses": 0,
-                "total_closed": 0,
-                "recent_pnl": [],
-            }
-
-        # Sortiere nach Exit-Zeit (neueste zuerst)
-        closed_sorted = sorted(
-            closed,
-            key=lambda p: p.exit_time or "",
-            reverse=True
-        )
-
-        # Win Rate (letzte 20 Trades)
-        recent = closed_sorted[:20]
-        wins = sum(1 for p in recent if (p.realized_pnl_eur or 0) > 0)
-        win_rate = wins / len(recent) if recent else 1.0
-
-        # Consecutive Losses (von neueste rueckwaerts zaehlen)
-        consecutive_losses = 0
-        for p in closed_sorted:
-            if (p.realized_pnl_eur or 0) < 0:
-                consecutive_losses += 1
-            else:
-                break  # Erster Gewinn stoppt die Zaehlung
-
-        # Recent P&L fuer Trend-Analyse
-        recent_pnl = [(p.realized_pnl_eur or 0) for p in closed_sorted[:10]]
-
-        return {
-            "win_rate": round(win_rate, 3),
-            "consecutive_losses": consecutive_losses,
-            "total_closed": len(closed),
-            "recent_pnl": recent_pnl,
-        }
-
-    except Exception as e:
-        logger.warning(f"Metriken-Berechnung fehlgeschlagen: {e}")
-        return {
-            "win_rate": 1.0,
-            "consecutive_losses": 0,
-            "total_closed": 0,
-            "recent_pnl": [],
-        }
+    closed = [
+        item for item in latest.values()
+        if str(item.get("status", "")).upper() in {"CLOSED", "RESOLVED", "EXPIRED"}
+        and item.get("realized_pnl_eur") is not None
+    ]
+    closed.sort(key=_close_ts, reverse=True)
+    return closed[:max_positions]
 
 
-def _send_health_alert(old_status: str, new_status: str, reasons: List[str]) -> bool:
-    """
-    Sende Telegram Alert bei Status-Aenderung.
-
-    Returns:
-        True wenn Alert gesendet wurde, False wenn uebersprungen
-    """
-    try:
-        from notifications.telegram import send_message, is_configured
-
-        if not is_configured():
-            return False
-
-        # Check 1: Kein Alert wenn Status gleich
-        if old_status == new_status:
-            return False
-
-        # Check 2: Cooldown pruefen (Anti-Spam)
-        state = _load_health_state()
-        if state.last_alert_time:
-            try:
-                last_alert = datetime.fromisoformat(state.last_alert_time)
-                seconds_since = (datetime.now() - last_alert).total_seconds()
-                if seconds_since < ALERT_COOLDOWN_SECONDS:
-                    logger.debug(
-                        f"Alert uebersprungen: Cooldown ({seconds_since:.0f}s < {ALERT_COOLDOWN_SECONDS}s)"
-                    )
-                    return False
-            except ValueError:
-                pass  # Ungültiges Datum, ignorieren
-
-        # Emoji basierend auf Richtung
-        if new_status == "HEALTHY":
-            emoji = "✅"
-            title = "BOT RECOVERED"
-        elif new_status == "DEGRADED":
-            emoji = "⚠️"
-            title = "BOT DEGRADED"
-        else:  # CRITICAL
-            emoji = "🚨"
-            title = "BOT CRITICAL"
-
-        reason_text = ", ".join(reasons) if reasons else "OK"
-
-        text = (
-            f"{emoji} <b>{title}</b>\n"
-            f"Status: {old_status} → {new_status}\n"
-            f"Grund: {reason_text}"
-        )
-
-        # Bei CRITICAL mit Ton, sonst leise
-        silent = new_status != "CRITICAL"
-        send_message(text, disable_notification=silent)
-
-        logger.info(f"Health Alert gesendet: {old_status} -> {new_status}")
-        return True
-
-    except Exception as e:
-        logger.debug(f"Health Alert fehlgeschlagen: {e}")
-        return False
-
-
-def check_can_open_entry(
-    entry_price: Optional[float] = None,
-    is_addon: bool = False,
-) -> Tuple[bool, str]:
-    """
-    Check if a new entry (or addon) is allowed based on current bot health.
-
-    Args:
-        entry_price: The proposed entry price (optional)
-        is_addon: Whether this is an addon to existing position
-
-    Returns:
-        Tuple of (is_allowed, reason)
-    """
-    state = _load_health_state()
-
-    # If bot is healthy, allow all entries
-    if state.is_healthy:
-        return (True, "OK")
-
-    # If max_entry_price is set and entry_price exceeds it
-    if (
-        entry_price is not None
-        and state.max_entry_price is not None
-        and entry_price > state.max_entry_price
-    ):
-        return (
-            False,
-            f"Entry {entry_price:.2f} > Health-Limit {state.max_entry_price:.2f}"
-        )
-
-    # Check consecutive losses
-    if state.consecutive_losses >= 5:
-        return (
-            False,
-            f"Zu viele Verluste ({state.consecutive_losses}x)"
-        )
-
-    # Check daily drawdown
-    if state.daily_drawdown_pct >= 10.0:
-        return (
-            False,
-            f"Daily DD zu hoch ({state.daily_drawdown_pct:.1f}%)"
-        )
-
-    return (True, "OK - mit Einschraenkungen")
-
-
-def update_bot_health(summary: Dict[str, Any]) -> Dict[str, Any]:
-    """
-    Update bot health state based on real metrics from position log.
-
-    Args:
-        summary: Performance summary dict from orchestrator
-
-    Returns:
-        Dict with status, summary, guardrails_active keys for orchestrator
-    """
-    # Lade vorherigen State fuer Vergleich
-    prev_state = _load_health_state()
-    old_status = prev_state.status
-
-    # Berechne echte Metriken aus Position-Log
-    metrics = _compute_metrics_from_positions()
-
-    # Zusaetzliche Metriken aus Summary
-    drawdown_pct = summary.get("drawdown_pct", 0.0)
-    drawdown_recovery = summary.get("drawdown_recovery_mode", False)
-
-    # Bestimme Health Status
-    is_healthy = True
-    reasons = []
-
-    # Check 1: Consecutive Losses
-    if metrics["consecutive_losses"] >= CONSECUTIVE_LOSSES_THRESHOLD:
-        is_healthy = False
-        reasons.append(f"{metrics['consecutive_losses']}x Verlust")
-
-    # Check 2: Win Rate (nur wenn genug Trades)
-    if metrics["total_closed"] >= MIN_TRADES_FOR_WIN_RATE:
-        if metrics["win_rate"] < WIN_RATE_THRESHOLD:
-            is_healthy = False
-            reasons.append(f"WR {metrics['win_rate']:.0%}")
-
-    # Check 3: Drawdown
-    if drawdown_pct >= DAILY_DRAWDOWN_THRESHOLD:
-        is_healthy = False
-        reasons.append(f"DD {drawdown_pct:.1f}%")
-
-    # Check 4: Recovery Mode
-    if drawdown_recovery:
-        is_healthy = False
-        reasons.append("Recovery-Mode")
-
-    # Bestimme Status-Level
-    if is_healthy:
-        status = "HEALTHY"
-    elif len(reasons) >= 2 or metrics["consecutive_losses"] >= 5:
-        status = "CRITICAL"
-    else:
-        status = "DEGRADED"
-
-    # Recovery-Logik: Zaehle gesunde Runs
-    if is_healthy:
-        healthy_runs = prev_state.healthy_runs_count + 1
-    else:
-        healthy_runs = 0
-
-    # Guardrails
-    guardrails_active = False
-    max_entry_price = None
-
-    if not is_healthy:
-        guardrails_active = True
-        if status == "CRITICAL":
-            max_entry_price = 0.25  # Sehr konservativ
+def _count_consecutive(values: list[bool], *, predicate_value: bool = True) -> int:
+    streak = 0
+    for value in values:
+        if value is predicate_value:
+            streak += 1
         else:
-            max_entry_price = 0.35  # Moderat konservativ
+            break
+    return streak
 
-    # Telegram Alert bei Status-Aenderung (VOR State-Update fuer Cooldown-Check)
-    alert_sent = False
-    if status != old_status:
-        alert_sent = _send_health_alert(old_status, status, reasons)
 
-    # Neuer State
-    new_state = BotHealthState(
-        status=status,
-        is_healthy=is_healthy,
-        consecutive_losses=metrics["consecutive_losses"],
-        win_rate=metrics["win_rate"],
-        total_closed_trades=metrics["total_closed"],
-        daily_drawdown_pct=drawdown_pct,
-        max_entry_price=max_entry_price,
-        guardrails_active=guardrails_active,
-        reasons=reasons,
-        healthy_runs_count=healthy_runs,
-        last_status=old_status,
-        last_alert_time=datetime.now().isoformat() if alert_sent else prev_state.last_alert_time,
+def derive_bot_health(
+    current_summary: dict[str, Any],
+    recent_runs: list[dict[str, Any]],
+    performance_report: dict[str, Any],
+    strategy_advice: dict[str, Any],
+    recent_closed_positions: list[dict[str, Any]],
+) -> dict[str, Any]:
+    metrics = performance_report.get("metrics", {}) if isinstance(performance_report.get("metrics"), dict) else {}
+    attribution = (
+        performance_report.get("strategy_attribution", {})
+        if isinstance(performance_report.get("strategy_attribution"), dict)
+        else {}
     )
 
-    # Speichern
-    _save_health_state(new_state)
+    total_trades = int(metrics.get("total_trades", 0) or 0)
+    win_rate = float(metrics.get("win_rate_pct", 0.0) or 0.0)
+    stop_loss_count = int((attribution.get("stop_loss") or {}).get("count", 0) or 0)
+    stop_loss_ratio = (stop_loss_count / total_trades) if total_trades else 0.0
+    drawdown_pct = float(current_summary.get("drawdown_pct", 0.0) or 0.0)
+    advisor_mode = str(strategy_advice.get("mode", "observe")).upper()
+    segment_risk_flags = (
+        strategy_advice.get("segment_risk_flags", {})
+        if isinstance(strategy_advice.get("segment_risk_flags"), dict)
+        else {}
+    )
+    suggested_city_cooldowns = _normalized_unique(segment_risk_flags.get("suggested_city_cooldowns", []))
+    suggested_market_type_cooldowns = _normalized_unique(segment_risk_flags.get("suggested_market_type_cooldowns", []))
+    suggested_price_band_blocks = _normalized_unique(segment_risk_flags.get("suggested_price_band_blocks", []))
 
-    reason_text = ", ".join(reasons) if reasons else "OK"
-
-    logger.info(
-        "Bot health: %s (WR=%.0f%%, Losses=%d, DD=%.1f%%, Runs=%d)",
-        status,
-        metrics["win_rate"] * 100,
-        metrics["consecutive_losses"],
-        drawdown_pct,
-        healthy_runs,
+    run_summaries = [entry.get("summary", {}) for entry in recent_runs if isinstance(entry, dict)]
+    consecutive_non_ok_runs = _count_consecutive(
+        [str(summary.get("state", "OK")).upper() != "OK" for summary in reversed(run_summaries)]
+    )
+    consecutive_zero_edge_runs = _count_consecutive(
+        [int(summary.get("edge_observations", 0) or 0) == 0 for summary in reversed(run_summaries)]
+    )
+    failure_runs_in_window = sum(
+        1 for summary in run_summaries
+        if str(summary.get("state", "OK")).upper() != "OK"
     )
 
-    # Return dict for orchestrator compatibility
+    recent_pnls = [float(pos.get("realized_pnl_eur", 0.0) or 0.0) for pos in recent_closed_positions]
+    recent_loss_streak = _count_consecutive([pnl <= 0.0 for pnl in recent_pnls])
+    high_price_open_positions = int(current_summary.get("high_price_open_positions", 0) or 0)
+
+    status = RISK_HEALTHY
+    ttl_hours = 0
+    triggers: list[str] = []
+    guardrails = {
+        "block_new_entries": False,
+        "block_averaging_down": False,
+        "max_entry_price": None,
+        "blocked_cities": [],
+        "blocked_market_types": [],
+        "blocked_price_bands": [],
+    }
+
+    if (
+        drawdown_pct >= 20.0
+        or recent_loss_streak >= 4
+        or consecutive_non_ok_runs >= 2
+        or (advisor_mode == "PROTECT" and win_rate < 10.0)
+    ):
+        status = RISK_CRITICAL
+        ttl_hours = 6
+        guardrails = {
+            "block_new_entries": True,
+            "block_averaging_down": True,
+            "max_entry_price": 0.75,
+            "blocked_cities": suggested_city_cooldowns[:3],
+            "blocked_market_types": suggested_market_type_cooldowns[:3],
+            "blocked_price_bands": suggested_price_band_blocks[:3],
+        }
+        if drawdown_pct >= 20.0:
+            triggers.append(f"drawdown_{drawdown_pct:.1f}pct")
+        if recent_loss_streak >= 4:
+            triggers.append(f"loss_streak_{recent_loss_streak}")
+        if consecutive_non_ok_runs >= 2:
+            triggers.append(f"non_ok_runs_{consecutive_non_ok_runs}")
+        if advisor_mode == "PROTECT" and win_rate < 10.0:
+            triggers.append("advisor_protect_with_low_wr")
+    elif (
+        drawdown_pct >= 10.0
+        or recent_loss_streak >= 2
+        or consecutive_zero_edge_runs >= 4
+        or stop_loss_ratio >= 0.60
+        or advisor_mode == "PROTECT"
+        or high_price_open_positions >= 2
+    ):
+        status = RISK_ELEVATED
+        ttl_hours = 4
+        guardrails = {
+            "block_new_entries": False,
+            "block_averaging_down": True,
+            "max_entry_price": 0.85,
+            "blocked_cities": suggested_city_cooldowns[:2],
+            "blocked_market_types": suggested_market_type_cooldowns[:2],
+            "blocked_price_bands": suggested_price_band_blocks[:2],
+        }
+        if drawdown_pct >= 10.0:
+            triggers.append(f"drawdown_{drawdown_pct:.1f}pct")
+        if recent_loss_streak >= 2:
+            triggers.append(f"loss_streak_{recent_loss_streak}")
+        if consecutive_zero_edge_runs >= 4:
+            triggers.append(f"edge_drought_{consecutive_zero_edge_runs}")
+        if stop_loss_ratio >= 0.60:
+            triggers.append(f"stop_loss_ratio_{stop_loss_ratio:.0%}")
+        if advisor_mode == "PROTECT":
+            triggers.append("advisor_protect")
+        if high_price_open_positions >= 2:
+            triggers.append(f"high_price_opens_{high_price_open_positions}")
+
+    active_until = (_utc_now() + timedelta(hours=ttl_hours)).isoformat() if ttl_hours else None
+    active_guardrails = [
+        name for name, enabled in guardrails.items()
+        if enabled not in (False, None)
+    ]
+    if guardrails.get("max_entry_price") is not None:
+        active_guardrails.append(f"max_entry_price<={guardrails['max_entry_price']:.2f}")
+    if guardrails.get("blocked_cities"):
+        active_guardrails.append(f"cities={len(guardrails['blocked_cities'])}")
+    if guardrails.get("blocked_market_types"):
+        active_guardrails.append(f"market_types={len(guardrails['blocked_market_types'])}")
+    if guardrails.get("blocked_price_bands"):
+        active_guardrails.append(f"price_bands={len(guardrails['blocked_price_bands'])}")
+
+    summary = (
+        f"{status}: DD {drawdown_pct:.1f}% | WR {win_rate:.1f}% | "
+        f"Loss-Streak {recent_loss_streak} | Guardrails {', '.join(active_guardrails) if active_guardrails else 'none'}"
+    )
+
     return {
+        "generated_at": _iso_now(),
         "status": status,
-        "summary": reason_text,
-        "guardrails_active": guardrails_active,
-        "is_healthy": is_healthy,
-        "consecutive_losses": metrics["consecutive_losses"],
-        "win_rate": metrics["win_rate"],
-        "total_closed_trades": metrics["total_closed"],
-        "daily_drawdown_pct": drawdown_pct,
-        "max_entry_price": max_entry_price,
-        "healthy_runs_count": healthy_runs,
+        "summary": summary,
+        "active_until": active_until,
+        "guardrails": guardrails,
+        "guardrails_active": status in {RISK_ELEVATED, RISK_CRITICAL},
+        "triggers": triggers,
+        "metrics_snapshot": {
+            "drawdown_pct": round(drawdown_pct, 2),
+            "win_rate_pct": round(win_rate, 2),
+            "stop_loss_ratio": round(stop_loss_ratio, 3),
+            "recent_loss_streak": recent_loss_streak,
+            "consecutive_non_ok_runs": consecutive_non_ok_runs,
+            "consecutive_zero_edge_runs": consecutive_zero_edge_runs,
+            "failure_runs_in_window": failure_runs_in_window,
+            "high_price_open_positions": high_price_open_positions,
+            "advisor_mode": advisor_mode,
+            "blocked_cities_count": len(guardrails.get("blocked_cities", [])),
+            "blocked_market_types_count": len(guardrails.get("blocked_market_types", [])),
+            "blocked_price_bands_count": len(guardrails.get("blocked_price_bands", [])),
+        },
     }
 
 
-def get_health_state() -> BotHealthState:
-    """Get current bot health state (from persistent storage)."""
-    return _load_health_state()
+def load_bot_health() -> dict[str, Any]:
+    state = _load_json(STATE_FILE)
+    if not state:
+        return {
+            "status": RISK_HEALTHY,
+            "summary": "HEALTHY: no active guardrails",
+            "active_until": None,
+            "guardrails": {
+                "block_new_entries": False,
+                "block_averaging_down": False,
+                "max_entry_price": None,
+                "blocked_cities": [],
+                "blocked_market_types": [],
+                "blocked_price_bands": [],
+            },
+            "guardrails_active": False,
+            "triggers": [],
+            "metrics_snapshot": {},
+        }
+
+    expiry = _parse_iso(state.get("active_until"))
+    if expiry and _utc_now() > expiry:
+        state["guardrails_active"] = False
+        state["guardrails"] = {
+            "block_new_entries": False,
+            "block_averaging_down": False,
+            "max_entry_price": None,
+            "blocked_cities": [],
+            "blocked_market_types": [],
+            "blocked_price_bands": [],
+        }
+        state["summary"] = f"{state.get('status', RISK_HEALTHY)}: guardrails expired"
+    return state
 
 
-def reset_health_state() -> None:
-    """Reset health state to default (healthy)."""
-    new_state = BotHealthState()
-    _save_health_state(new_state)
-    logger.info("Bot health state reset to healthy")
+def update_bot_health(current_summary: dict[str, Any]) -> dict[str, Any]:
+    performance_report = _load_json(REPORT_FILE)
+    strategy_advice = _load_json(ADVICE_FILE)
+    recent_runs = _load_recent_runs()
+    recent_closed_positions = _load_recent_closed_positions()
 
-    # Alert senden
-    _send_health_alert("UNKNOWN", "HEALTHY", ["Manual Reset"])
+    state = derive_bot_health(
+        current_summary=current_summary,
+        recent_runs=recent_runs,
+        performance_report=performance_report,
+        strategy_advice=strategy_advice,
+        recent_closed_positions=recent_closed_positions,
+    )
+    _atomic_write(STATE_FILE, state)
+    logger.info(
+        "BotHealthMonitor: status=%s triggers=%s",
+        state.get("status"),
+        ",".join(state.get("triggers", [])) or "none",
+    )
+    return state
 
 
-def get_health_summary() -> str:
-    """Kurze Zusammenfassung fuer Status-Ausgabe."""
-    state = _load_health_state()
+def check_can_open_entry(
+    *,
+    entry_price: float | None = None,
+    is_addon: bool = False,
+    market_question: str | None = None,
+    market_type: str | None = None,
+    city: str | None = None,
+) -> tuple[bool, str]:
+    state = load_bot_health()
+    if not state.get("guardrails_active", False):
+        return True, "OK"
 
-    parts = [state.status]
+    guardrails = state.get("guardrails", {}) if isinstance(state.get("guardrails"), dict) else {}
+    status = state.get("status", RISK_HEALTHY)
+    triggers = ", ".join(state.get("triggers", [])) or "none"
 
-    if state.total_closed_trades > 0:
-        parts.append(f"WR:{state.win_rate:.0%}")
+    if is_addon and guardrails.get("block_averaging_down", False):
+        return False, f"BotHealthMonitor {status}: averaging down temporarily blocked ({triggers})"
 
-    if state.consecutive_losses > 0:
-        parts.append(f"L:{state.consecutive_losses}")
+    if not is_addon and guardrails.get("block_new_entries", False):
+        return False, f"BotHealthMonitor {status}: new entries temporarily blocked ({triggers})"
 
-    if state.guardrails_active:
-        parts.append("Guardrails")
+    blocked_cities = _normalized_unique(guardrails.get("blocked_cities", []))
+    blocked_market_types = _normalized_unique(guardrails.get("blocked_market_types", []))
+    blocked_price_bands = _normalized_unique(guardrails.get("blocked_price_bands", []))
 
-    return " | ".join(parts)
+    resolved_city = city or _extract_city(market_question or "")
+    if resolved_city and any(resolved_city.lower() == blocked.lower() for blocked in blocked_cities):
+        return False, f"BotHealthMonitor {status}: city {resolved_city} temporarily blocked ({triggers})"
+
+    resolved_market_type = market_type or _detect_market_type(market_question or "")
+    if resolved_market_type and any(resolved_market_type.lower() == blocked.lower() for blocked in blocked_market_types):
+        return False, f"BotHealthMonitor {status}: market type {resolved_market_type} temporarily blocked ({triggers})"
+
+    resolved_price_band = _price_band(entry_price)
+    if resolved_price_band and resolved_price_band in blocked_price_bands:
+        return False, f"BotHealthMonitor {status}: price band {resolved_price_band} temporarily blocked ({triggers})"
+
+    max_entry_price = guardrails.get("max_entry_price")
+    if entry_price is not None and max_entry_price is not None and entry_price > float(max_entry_price):
+        return (
+            False,
+            f"BotHealthMonitor {status}: entry price {entry_price:.4f} exceeds temporary cap {float(max_entry_price):.4f}",
+        )
+
+    return True, "OK"

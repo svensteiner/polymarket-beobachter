@@ -223,7 +223,10 @@ class ExecutionSimulator:
             )
 
         # BotHealthMonitor: temporäre Schutzregeln ohne Config-Mutation
-        health_ok, health_reason = check_can_open_entry(is_addon=False)
+        health_ok, health_reason = check_can_open_entry(
+            is_addon=False,
+            market_question=proposal.market_question,
+        )
         if not health_ok and not exception_allowed:
             record = PaperTradeRecord(
                 record_id=generate_record_id(),
@@ -465,7 +468,13 @@ class ExecutionSimulator:
             exception_tag = " | HighConvictionException"
 
         # BotHealthMonitor: bei schwacher Gesundheit hohe Entry-Preise deckeln
-        health_ok, health_reason = check_can_open_entry(entry_price=entry_price, is_addon=False)
+        health_ok, health_reason = check_can_open_entry(
+            entry_price=entry_price,
+            is_addon=False,
+            market_question=proposal.market_question,
+            market_type=market_type,
+            city=new_city,
+        )
         if not health_ok and not entry_exception_allowed:
             record = PaperTradeRecord(
                 record_id=generate_record_id(),

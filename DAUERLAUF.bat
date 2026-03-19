@@ -1,4 +1,9 @@
 @echo off
+:: Auto-hide: bei normalem Start unsichtbar neu starten
+if "%~1" NEQ "hidden" (
+    powershell -WindowStyle Hidden -Command "Start-Process -FilePath 'cmd.exe' -ArgumentList '/c \"%~f0\" hidden' -WindowStyle Hidden -WorkingDirectory '%~dp0'"
+    exit /b
+)
 setlocal enableextensions enabledelayedexpansion
 title Polymarket Observer - Dauerlauf
 
