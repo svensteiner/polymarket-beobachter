@@ -25,7 +25,7 @@ from __future__ import annotations
 
 import json
 import logging
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from enum import Enum
 from pathlib import Path
 from typing import Any
@@ -75,8 +75,76 @@ def _get_drawdown_signal() -> dict[str, Any]:
         return {"current_dd_pct": 0.0, "sufficient_data": False}
 
 
+_POSITIONS_FILE = Path(__file__).parent.parent / "paper_trader" / "logs" / "paper_positions.jsonl"
+_PERF_LOOKBACK_DAYS = 7  # Only use trades closed within this window for win-rate signal
+
+
 def _get_performance_signal() -> dict[str, Any]:
-    """Hole Performance-Metriken aus Outcome-Analyser (wenn Report vorhanden)."""
+    """Hole Performance-Metriken aus den letzten N Tagen (time-windowed, nicht all-time).
+
+    Verhindert, dass historische Bug-Era-Daten dauerhaft UNFAVORABLE erzwingen.
+    Faellt auf all-time-Metriken zurueck wenn keine aktuellen Daten vorhanden.
+    """
+    cutoff = datetime.now(timezone.utc) - timedelta(days=_PERF_LOOKBACK_DAYS)
+
+    if _POSITIONS_FILE.exists():
+        try:
+            latest: dict[str, dict[str, Any]] = {}
+            with open(_POSITIONS_FILE, "r", encoding="utf-8") as fh:
+                for line in fh:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    try:
+                        data = json.loads(line)
+                    except json.JSONDecodeError:
+                        continue
+                    if data.get("_type") == "LOG_HEADER":
+                        continue
+                    pid = data.get("position_id")
+                    if pid:
+                        latest[pid] = data
+
+            recent_closed = []
+            for item in latest.values():
+                status = str(item.get("status", "")).upper()
+                if status not in {"CLOSED", "RESOLVED"}:
+                    continue
+                exit_str = item.get("exit_time")
+                if not exit_str:
+                    continue
+                try:
+                    exit_dt = datetime.fromisoformat(exit_str)
+                    if exit_dt.tzinfo is None:
+                        exit_dt = exit_dt.replace(tzinfo=timezone.utc)
+                    if exit_dt >= cutoff:
+                        recent_closed.append(item)
+                except ValueError:
+                    continue
+
+            if len(recent_closed) >= 5:
+                wins = sum(
+                    1 for p in recent_closed
+                    if float(p.get("realized_pnl_eur", 0.0) or 0.0) > 0
+                )
+                win_rate = wins / len(recent_closed) * 100.0
+                return {
+                    "win_rate_pct": win_rate,
+                    "total_trades": len(recent_closed),
+                    "profit_factor": 0.0,
+                }
+            else:
+                # Not enough recent data — skip win-rate signal to avoid stale-data false negatives
+                logger.debug(
+                    "Performance-Signal: Nur %d aktuelle Trades (< 5) — Win-Rate-Check uebersprungen",
+                    len(recent_closed),
+                )
+                return {"win_rate_pct": 0.0, "total_trades": 0, "profit_factor": 0.0}
+
+        except OSError as e:
+            logger.debug("Positions-File nicht lesbar: %s", e)
+
+    # Fallback: all-time metrics from report (only when no positions file available)
     report_path = Path(__file__).parent.parent / "analytics" / "performance_report.json"
     if not report_path.exists():
         return {"win_rate_pct": 0.0, "total_trades": 0, "profit_factor": 0.0}

@@ -475,7 +475,7 @@ def run_once() -> int:
         return 1
 
 
-def run_scheduler(interval_seconds: int = 900) -> int:
+def run_scheduler(interval_seconds: int = 900, enable_self_improve: bool = False) -> int:
     """Run pipeline on a schedule with crash resilience and resource optimization."""
     run_count = 0
     consecutive_errors = 0
@@ -565,6 +565,19 @@ def run_scheduler(interval_seconds: int = 900) -> int:
 
             # Immer txt-Heartbeat schreiben – beweist dass Scheduler-Loop lebt
             write_heartbeat()
+
+            # SelfImprover: alle 4 Runs einen Verbesserungszyklus ausfuehren
+            if enable_self_improve:
+                try:
+                    from meta.self_improver import should_run, run_improvement_cycle
+                    if should_run(run_count):
+                        print(f"\n{C.DIM}[SelfImprover] Starte Verbesserungszyklus (Run #{run_count})...{C.RESET}")
+                        improve_result = run_improvement_cycle(dry_run=False)
+                        outcome = improve_result.get("outcome", "?")
+                        issue = (improve_result.get("suggestion") or {}).get("issue", "")
+                        print(f"{C.DIM}[SelfImprover] Ergebnis: {outcome} — {issue[:60]}{C.RESET}")
+                except Exception as si_exc:
+                    logger.warning("SelfImprover Fehler (ignoriert): %s", si_exc)
 
             # Back off if too many consecutive errors
             if consecutive_errors >= 5:
@@ -724,6 +737,8 @@ Examples:
                         help='Interval between runs in seconds (default: 900)')
     parser.add_argument('--no-color', action='store_true',
                         help='Disable colors')
+    parser.add_argument('--self-improve', action='store_true',
+                        help='Aktiviere autonomen Code-Verbesserungs-Agent (alle 4 Runs)')
 
     args = parser.parse_args()
 
@@ -756,7 +771,7 @@ Examples:
         acquire_lock()
 
     if args.scheduler:
-        sys.exit(run_scheduler(args.interval))
+        sys.exit(run_scheduler(args.interval, enable_self_improve=getattr(args, 'self_improve', False)))
     elif args.run_once:
         sys.exit(run_once())
     elif args.status:

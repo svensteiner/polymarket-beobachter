@@ -36,6 +36,7 @@ RISK_CRITICAL = "CRITICAL"
 
 _RECENT_RUN_WINDOW = 8
 _RECENT_CLOSED_WINDOW = 8
+_RECENT_CLOSED_LOOKBACK_DAYS = 7  # Only count positions closed in last N days for streak/rate checks
 
 
 def _extract_city(question: str) -> str | None:
@@ -153,7 +154,10 @@ def _load_recent_runs(max_runs: int = _RECENT_RUN_WINDOW) -> list[dict[str, Any]
     return entries[-max_runs:]
 
 
-def _load_recent_closed_positions(max_positions: int = _RECENT_CLOSED_WINDOW) -> list[dict[str, Any]]:
+def _load_recent_closed_positions(
+    max_positions: int = _RECENT_CLOSED_WINDOW,
+    lookback_days: int = _RECENT_CLOSED_LOOKBACK_DAYS,
+) -> list[dict[str, Any]]:
     if not POSITIONS_FILE.exists():
         return []
 
@@ -180,10 +184,15 @@ def _load_recent_closed_positions(max_positions: int = _RECENT_CLOSED_WINDOW) ->
     def _close_ts(item: dict[str, Any]) -> datetime:
         return _parse_iso(item.get("exit_time")) or datetime.min.replace(tzinfo=UTC)
 
+    cutoff = _utc_now() - timedelta(days=lookback_days)
+
+    # Exclude EXPIRED (zombie cleanups) — these are not real trading results.
+    # Apply time window: only positions closed within the lookback period.
     closed = [
         item for item in latest.values()
-        if str(item.get("status", "")).upper() in {"CLOSED", "RESOLVED", "EXPIRED"}
+        if str(item.get("status", "")).upper() in {"CLOSED", "RESOLVED"}
         and item.get("realized_pnl_eur") is not None
+        and _close_ts(item) >= cutoff
     ]
     closed.sort(key=_close_ts, reverse=True)
     return closed[:max_positions]
@@ -244,6 +253,18 @@ def derive_bot_health(
     recent_loss_streak = _count_consecutive([pnl <= 0.0 for pnl in recent_pnls])
     high_price_open_positions = int(current_summary.get("high_price_open_positions", 0) or 0)
 
+    # Recent win rate — only computed when we have enough recent data (>= 5 positions in window).
+    # Uses time-windowed data, not all-time metrics, to avoid bug-era contamination.
+    _recent_wins = sum(1 for pnl in recent_pnls if pnl > 0)
+    recent_win_rate: float | None = (
+        (_recent_wins / len(recent_pnls) * 100.0) if len(recent_pnls) >= 5 else None
+    )
+    advisor_protect_wr_trigger = (
+        advisor_mode == "PROTECT"
+        and recent_win_rate is not None
+        and recent_win_rate < 10.0
+    )
+
     status = RISK_HEALTHY
     ttl_hours = 0
     triggers: list[str] = []
@@ -260,7 +281,7 @@ def derive_bot_health(
         drawdown_pct >= 20.0
         or recent_loss_streak >= 4
         or consecutive_non_ok_runs >= 2
-        or (advisor_mode == "PROTECT" and win_rate < 10.0)
+        or advisor_protect_wr_trigger
     ):
         status = RISK_CRITICAL
         ttl_hours = 6
@@ -278,7 +299,7 @@ def derive_bot_health(
             triggers.append(f"loss_streak_{recent_loss_streak}")
         if consecutive_non_ok_runs >= 2:
             triggers.append(f"non_ok_runs_{consecutive_non_ok_runs}")
-        if advisor_mode == "PROTECT" and win_rate < 10.0:
+        if advisor_protect_wr_trigger:
             triggers.append("advisor_protect_with_low_wr")
     elif (
         drawdown_pct >= 10.0
@@ -325,8 +346,9 @@ def derive_bot_health(
     if guardrails.get("blocked_price_bands"):
         active_guardrails.append(f"price_bands={len(guardrails['blocked_price_bands'])}")
 
+    recent_wr_display = f"{recent_win_rate:.1f}%" if recent_win_rate is not None else f"{win_rate:.1f}%(all-time)"
     summary = (
-        f"{status}: DD {drawdown_pct:.1f}% | WR {win_rate:.1f}% | "
+        f"{status}: DD {drawdown_pct:.1f}% | WR {recent_wr_display} | "
         f"Loss-Streak {recent_loss_streak} | Guardrails {', '.join(active_guardrails) if active_guardrails else 'none'}"
     )
 
