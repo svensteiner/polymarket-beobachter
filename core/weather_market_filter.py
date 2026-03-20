@@ -199,7 +199,6 @@ class WeatherMarketFilter:
         self.min_odds = config.get("MIN_ODDS", 0.01)
         self.max_odds = config.get("MAX_ODDS", 0.10)
         self.min_time_to_resolution_hours = config.get("MIN_TIME_TO_RESOLUTION_HOURS", 48)
-        self.safety_buffer_hours = config.get("SAFETY_BUFFER_HOURS", 48)
         self.allowed_cities = set(config.get("ALLOWED_CITIES", []))
 
         logger.info(
@@ -265,7 +264,10 @@ class WeatherMarketFilter:
         # CHECK 4: Resolution time is far enough
         # =====================================================================
         now = datetime.now(timezone.utc).replace(tzinfo=None)
-        hours_to_resolution = (market.resolution_time - now).total_seconds() / 3600
+        res_time = market.resolution_time
+        if hasattr(res_time, 'tzinfo') and res_time.tzinfo is not None:
+            res_time = res_time.replace(tzinfo=None)
+        hours_to_resolution = (res_time - now).total_seconds() / 3600
         filter_details["hours_to_resolution"] = hours_to_resolution
         filter_details["min_hours"] = self.min_time_to_resolution_hours
 

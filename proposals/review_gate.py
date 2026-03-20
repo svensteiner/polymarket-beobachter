@@ -309,19 +309,3 @@ class ReviewGate:
         return ReviewOutcome.REVIEW_HOLD
 
 
-def review_proposal(proposal: Proposal) -> ReviewResult:
-    """
-    Convenience function to review a proposal.
-
-    GOVERNANCE:
-    This is a STATELESS function.
-    Each call is independent.
-
-    Args:
-        proposal: The Proposal to review
-
-    Returns:
-        ReviewResult with classification and reasons
-    """
-    gate = ReviewGate()
-    return gate.review(proposal)

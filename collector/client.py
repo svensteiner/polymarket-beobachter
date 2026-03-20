@@ -327,42 +327,6 @@ class PolymarketClient:
         logger.info(f"Fetched prices for {len(prices)}/{len(market_ids)} markets")
         return prices
 
-    def get_market_odds_yes(self, market_id: str) -> Optional[float]:
-        """
-        Get current YES odds for a specific market.
-
-        Args:
-            market_id: Market ID
-
-        Returns:
-            YES probability (0.0-1.0) or None if not available
-        """
-        prices = self.fetch_market_prices([market_id])
-        if market_id not in prices:
-            return None
-
-        market_prices = prices[market_id]
-
-        # Try outcomePrices first (format: '["0.95", "0.05"]')
-        outcome_prices = market_prices.get("outcomePrices")
-        if outcome_prices:
-            try:
-                prices_list = json.loads(outcome_prices)
-                if len(prices_list) >= 1:
-                    return float(prices_list[0])
-            except (json.JSONDecodeError, ValueError, TypeError):
-                pass
-
-        # Fallback to lastTradePrice
-        last_price = market_prices.get("lastTradePrice")
-        if last_price:
-            try:
-                return float(last_price)
-            except (ValueError, TypeError):
-                pass
-
-        return None
-
     def _request(
         self,
         endpoint: str,

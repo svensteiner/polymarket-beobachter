@@ -21,7 +21,7 @@ import logging
 import os
 import shutil
 import tempfile
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from typing import List, Dict, Optional, Any
 
@@ -149,6 +149,23 @@ class PositionManager:
             snapshot = snapshots.get(position.market_id)
 
             if snapshot is None:
+                # Zombie check: daily temp markets resolve within 1-2 days.
+                # If entry_time is > 5 days ago and no snapshot available → expired.
+                try:
+                    entry_dt = datetime.fromisoformat(position.entry_time)
+                    if entry_dt.tzinfo is None:
+                        entry_dt = entry_dt.replace(tzinfo=timezone.utc)
+                    age_days = (datetime.now(timezone.utc) - entry_dt).days
+                    if age_days >= 5:
+                        logger.info(
+                            f"Zombie expiry: {position.market_id} | age={age_days}d | "
+                            f"no snapshot available"
+                        )
+                        self._paper_logger.expire_position(position)
+                        closed_count += 1
+                        continue
+                except Exception:
+                    pass
                 logger.debug(f"No snapshot for {position.market_id} - keeping open")
                 still_open += 1
                 continue

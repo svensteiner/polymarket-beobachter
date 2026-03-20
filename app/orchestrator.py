@@ -523,8 +523,41 @@ class Orchestrator:
                             except Exception as e:
                                 logger.debug(f"Skipping invalid candidate: {e}")
 
+            # Pre-filter: only fetch prices for markets with future resolution (saves API calls)
+            from datetime import timezone as _tz
+            _now_utc = datetime.now(_tz.utc)
+            _min_hours = weather_config.get("MIN_TIME_TO_RESOLUTION_HOURS", 24)
+            def _parse_end_date(raw: str) -> Optional[datetime]:
+                if not raw:
+                    return None
+                try:
+                    # Date-only format (e.g. "2026-03-21") → treat as end-of-day 23:59 UTC
+                    if len(raw) <= 10:
+                        raw = raw + "T23:59:00+00:00"
+                    dt = datetime.fromisoformat(raw)
+                    if dt.tzinfo is None:
+                        dt = dt.replace(tzinfo=_tz.utc)
+                    return dt
+                except Exception:
+                    return None
+
+            pre_filtered = []
+            skipped_stale = 0
+            for c in raw_candidates:
+                res_dt = _parse_end_date(c.get("end_date", ""))
+                if res_dt is None:
+                    pre_filtered.append(c)
+                    continue
+                hours_away = (res_dt - _now_utc).total_seconds() / 3600
+                if hours_away >= _min_hours:
+                    pre_filtered.append(c)
+                else:
+                    skipped_stale += 1
+            if skipped_stale:
+                logger.info(f"Pre-filtered {skipped_stale} stale candidates (resolution < {_min_hours}h away), {len(pre_filtered)} remain")
+
             # Step 2: Fetch real market odds from Polymarket API
-            market_ids = [c.get("market_id", "") for c in raw_candidates if c.get("market_id")]
+            market_ids = [c.get("market_id", "") for c in pre_filtered if c.get("market_id")]
             real_prices = {}
             if market_ids:
                 try:
@@ -536,7 +569,7 @@ class Orchestrator:
 
             # Step 3: Convert to WeatherMarket with real odds
             weather_markets = []
-            for data in raw_candidates:
+            for data in pre_filtered:
                 try:
                     market_id = data.get("market_id", "")
 
@@ -577,7 +610,7 @@ class Orchestrator:
                         is_binary=True,
                         liquidity_usd=liquidity_usd,
                         odds_yes=odds_yes,
-                        resolution_time=datetime.fromisoformat(data["end_date"]) if data.get("end_date") else datetime.now(),
+                        resolution_time=_parse_end_date(data.get("end_date", "")) or datetime.now(_tz.utc),
                     )
 
                     # Run through filter to populate detected_city and detected_threshold

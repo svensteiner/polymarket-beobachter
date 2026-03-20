@@ -177,6 +177,26 @@ class PaperTradingLogger:
             _logger.error(f"Failed to log position: {e}")
             return False
 
+    def expire_position(self, position) -> bool:
+        """
+        Mark an open position as EXPIRED (no PnL impact).
+
+        Used for zombie positions whose markets resolved in the past
+        but could not be fetched from the API.
+        """
+        from datetime import datetime as _dt
+        from paper_trader.models import PaperPosition
+        d = position.to_dict()
+        d["status"] = "EXPIRED"
+        d["exit_time"] = _dt.now().isoformat()
+        d["exit_price"] = position.entry_price
+        d["exit_slippage"] = 0.0
+        d["exit_reason"] = "zombie_expired"
+        d["realized_pnl_eur"] = 0.0
+        d["pnl_pct"] = 0.0
+        expired = PaperPosition.from_dict(d)
+        return self.log_position(expired)
+
     def read_all_trades(self) -> List[PaperTradeRecord]:
         """
         Read all trade records from log.

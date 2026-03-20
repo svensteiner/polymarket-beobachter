@@ -583,8 +583,8 @@ class TestProposalGeneration:
             market_id="test-market-123",
             city="New York",
             event_description="Will temperature in New York be above 90°F?",
-            market_probability=0.10,
-            model_probability=0.40,
+            market_probability=0.35,
+            model_probability=0.50,
             confidence=WeatherConfidence.HIGH,
             action=ObservationAction.OBSERVE,
             config_snapshot={"test": True},
@@ -599,8 +599,8 @@ class TestProposalGeneration:
         assert proposal is not None, "Proposal sollte erzeugt werden"
         assert proposal.market_id == "test-market-123"
         assert proposal.decision == "TRADE"
-        assert proposal.model_probability == 0.40
-        assert proposal.implied_probability == 0.10
+        assert proposal.model_probability == 0.50
+        assert proposal.implied_probability == 0.35
         assert proposal.edge > 0
         assert proposal.confidence_level in ("HIGH", "MEDIUM")
 

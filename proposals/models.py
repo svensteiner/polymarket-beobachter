@@ -170,10 +170,6 @@ class Proposal:
             "governance_notice": self.governance_notice
         }
 
-    def to_json(self, indent: int = 2) -> str:
-        """Serialize to JSON string."""
-        return json.dumps(self.to_dict(), indent=indent, ensure_ascii=False)
-
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "Proposal":
         """
