@@ -22,11 +22,16 @@ from typing import Optional, Dict, List, Any, Tuple
 
 from .forecast_sources import SourceForecast, ForecastSourceBase
 from .forecast_sources.open_meteo_client import OpenMeteoSource
+from .forecast_sources.open_meteo_ensemble import (
+    OpenMeteoEnsembleSource,
+    compute_ensemble_probability,
+)
 from .forecast_sources.met_norway_client import MetNorwaySource
 from .forecast_sources.openweather_client import OpenWeatherSource
 from .forecast_sources.tomorrow_client import TomorrowIoSource
 from .weather_probability_model import compute_probability_from_forecast_temp
 from .weather_signal import WeatherConfidence
+from .self_healer import validate_forecast_temperature, validate_ensemble_members
 
 logger = logging.getLogger(__name__)
 
@@ -118,7 +123,9 @@ class EnsembleBuilder:
                 self._model_to_group[m] = group
 
         # Register all available sources
+        # GFS Ensemble first (primary - 31 members for counting-based probability)
         self._sources: List[ForecastSourceBase] = [
+            OpenMeteoEnsembleSource(),
             OpenMeteoSource(),
             MetNorwaySource(),
             OpenWeatherSource(),
@@ -155,37 +162,62 @@ class EnsembleBuilder:
         days = hours / 24
         sigma = self._calculate_sigma(days)
 
-        # Compute per-source probabilities (optimized batch processing)
+        # Compute per-source probabilities
+        # PRIORITY: GFS Ensemble member-counting > Normal-CDF fallback
         per_source_probs: Dict[str, float] = {}
+        ensemble_member_prob: Optional[float] = None
 
-        # Use batch processing for better cache utilization
-        try:
-            from .performance_cache import batch_probability_calculations
-            temperatures = [sf.temperature_f for sf in forecasts]
-            thresholds = [threshold_f] * len(forecasts)
-            sigmas = [sigma] * len(forecasts)
-            event_types = [event_type] * len(forecasts)
-
-            batch_probs = batch_probability_calculations(
-                temperatures, thresholds, sigmas, event_types
-            )
-
-            for sf, prob in zip(forecasts, batch_probs):
-                per_source_probs[sf.source_name] = prob
-        except ImportError:
-            # Fallback to original sequential processing
-            for sf in forecasts:
-                prob = compute_probability_from_forecast_temp(
-                    temperature_f=sf.temperature_f,
+        for sf in forecasts:
+            # Try ensemble member counting first (much better calibrated)
+            if sf.source_name == "open_meteo_ensemble" and hasattr(sf, "ensemble_member_temps"):
+                ens_prob = compute_ensemble_probability(
+                    forecast=sf,
                     threshold_f=threshold_f,
-                    sigma=sigma,
                     event_type=event_type,
                     threshold_high_f=threshold_high_f,
                 )
-                per_source_probs[sf.source_name] = prob
+                if ens_prob is not None:
+                    per_source_probs[sf.source_name] = ens_prob
+                    ensemble_member_prob = ens_prob
+                    member_count = getattr(sf, "ensemble_member_count", 0)
+                    logger.info(
+                        f"Ensemble member-counting: P={ens_prob:.4f} "
+                        f"({member_count} members, {event_type} {threshold_f}°F)"
+                    )
+                    continue
+
+            # Fallback: Normal-CDF probability
+            prob = compute_probability_from_forecast_temp(
+                temperature_f=sf.temperature_f,
+                threshold_f=threshold_f,
+                sigma=sigma,
+                event_type=event_type,
+                threshold_high_f=threshold_high_f,
+            )
+            per_source_probs[sf.source_name] = prob
 
         # Compute weights (correlated models share weight)
         weights = self._compute_weights(forecasts)
+
+        # If we have GFS ensemble member-counting probability, use it directly
+        # The 31-member counting is fundamentally more accurate than Normal-CDF
+        # because it counts daily highs across ensemble members (= what Polymarket asks)
+        # while Normal-CDF computes probability at a single hour (= wrong question)
+        if ensemble_member_prob is not None:
+            ens_source = "open_meteo_ensemble"
+            # Give ensemble 85% weight, other sources 15% (slight hedge)
+            other_weight_sum = sum(
+                weights[sf.source_name] for sf in forecasts
+                if sf.source_name != ens_source and sf.source_name in weights
+            )
+            if other_weight_sum > 0:
+                weights[ens_source] = 0.85
+                scale_factor = 0.15 / other_weight_sum
+                for sf in forecasts:
+                    if sf.source_name != ens_source and sf.source_name in weights:
+                        weights[sf.source_name] *= scale_factor
+            else:
+                weights[ens_source] = 1.0
 
         # Weighted ensemble mean probability
         total_weight = sum(weights.values())
@@ -198,10 +230,32 @@ class EnsembleBuilder:
         ) / total_weight
 
         # Weighted variance
-        ensemble_var = sum(
-            weights[sf.source_name] * (per_source_probs[sf.source_name] - ensemble_mean) ** 2
-            for sf in forecasts
-        ) / total_weight
+        # When ensemble member-counting is available, compute variance from
+        # the ensemble's internal spread (members disagreeing with each other)
+        # rather than from CDF sources that answer a different question
+        if ensemble_member_prob is not None:
+            ens_source_obj = next(
+                (sf for sf in forecasts if sf.source_name == "open_meteo_ensemble"),
+                None
+            )
+            if ens_source_obj is not None:
+                daily_highs = getattr(ens_source_obj, "member_daily_highs", [])
+                if daily_highs and len(daily_highs) >= 5:
+                    # Internal ensemble variance: how much do members disagree?
+                    # Use probability variance from binomial: p*(1-p)/n
+                    # This is the natural uncertainty of member-counting
+                    p = ensemble_member_prob
+                    n = len(daily_highs)
+                    ensemble_var = p * (1 - p) / n
+                else:
+                    ensemble_var = 0.0
+            else:
+                ensemble_var = 0.0
+        else:
+            ensemble_var = sum(
+                weights[sf.source_name] * (per_source_probs[sf.source_name] - ensemble_mean) ** 2
+                for sf in forecasts
+            ) / total_weight
 
         # Max deviation
         max_dev = max(
@@ -264,6 +318,22 @@ class EnsembleBuilder:
                 try:
                     result = future.result(timeout=2)
                     if result is not None:
+                        # SELF-HEAL: Validate forecast temperature before accepting
+                        valid, reason = validate_forecast_temperature(result.temperature_f, city)
+                        if not valid:
+                            logger.warning(
+                                f"SELF-HEAL: Rejected {result.source_name} for {city}: {reason}"
+                            )
+                            continue
+                        # Validate ensemble member temps if present
+                        member_temps = getattr(result, "ensemble_member_temps", None)
+                        if member_temps:
+                            valid_e, reason_e = validate_ensemble_members(member_temps, city)
+                            if not valid_e:
+                                logger.warning(
+                                    f"SELF-HEAL: Rejected ensemble members for {city}: {reason_e}"
+                                )
+                                continue
                         results.append(result)
                 except Exception:
                     pass

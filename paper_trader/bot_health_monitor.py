@@ -17,7 +17,7 @@ from __future__ import annotations
 import json
 import logging
 import re
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
@@ -92,7 +92,7 @@ def _normalized_unique(items: list[Any] | None) -> list[str]:
 
 
 def _utc_now() -> datetime:
-    return datetime.now(UTC)
+    return datetime.now(timezone.utc)
 
 
 def _iso_now() -> str:
@@ -125,8 +125,8 @@ def _parse_iso(value: str | None) -> datetime | None:
     except ValueError:
         return None
     if dt.tzinfo is None:
-        return dt.replace(tzinfo=UTC)
-    return dt.astimezone(UTC)
+        return dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(timezone.utc)
 
 
 def _load_recent_runs(max_runs: int = _RECENT_RUN_WINDOW) -> list[dict[str, Any]]:
@@ -182,7 +182,7 @@ def _load_recent_closed_positions(
         return []
 
     def _close_ts(item: dict[str, Any]) -> datetime:
-        return _parse_iso(item.get("exit_time")) or datetime.min.replace(tzinfo=UTC)
+        return _parse_iso(item.get("exit_time")) or datetime.min.replace(tzinfo=timezone.utc)
 
     cutoff = _utc_now() - timedelta(days=lookback_days)
 

@@ -373,6 +373,27 @@ class WeatherEngine:
         event_type = getattr(market, 'detected_event_type', None) or "exceeds"
 
         # -----------------------------------------------------------------
+        # SKIP NARROW-BAND MARKETS (exact temp, 1-2°F ranges)
+        # These are fundamentally not modelable with ensemble counting:
+        # - 31 members rarely land in a 1-2°F band → always P≈0
+        # - Normal-CDF massively underestimates narrow-band probability
+        # - Paris 16°C already proved this: -89.9% stop-loss
+        # -----------------------------------------------------------------
+        if event_type == "between_range":
+            threshold_low = market.detected_threshold
+            threshold_high = market.detected_threshold_high
+            if threshold_low is not None and threshold_high is not None:
+                band_width = abs(threshold_high - threshold_low)
+                if band_width <= 2.5:  # ≤ 2.5°F (~1.4°C) → unmodelable
+                    return create_no_signal(
+                        market_id=market.market_id, city=city,
+                        event_description=market.question,
+                        market_probability=market.odds_yes,
+                        reason=f"Narrow-band market ({band_width:.1f}°F) - not modelable with ensemble",
+                        config_snapshot=self.config,
+                    )
+
+        # -----------------------------------------------------------------
         # ENSEMBLE PATH (preferred when enabled)
         # -----------------------------------------------------------------
         if self._ensemble_enabled and self._ensemble_builder is not None:
@@ -463,6 +484,27 @@ class WeatherEngine:
                 reason=f"Absolute edge too small: {absolute_edge:.2%} < {self.min_edge_absolute:.0%} (ensemble)",
                 config_snapshot=self.config,
             )
+
+        # SELF-HEAL: Model-Market Sanity Check
+        # Prevent trades where model massively disagrees with market (likely model error)
+        try:
+            from .self_healer import check_model_sanity
+            band_width = None
+            if market.detected_threshold_high and market.detected_threshold:
+                band_width = abs(market.detected_threshold_high - market.detected_threshold)
+            sane, sanity_reason = check_model_sanity(
+                fair_prob, market.odds_yes, event_type, band_width
+            )
+            if not sane:
+                return create_no_signal(
+                    market_id=market.market_id, city=city,
+                    event_description=market.question,
+                    market_probability=market.odds_yes,
+                    reason=f"SELF-HEAL sanity check failed: {sanity_reason}",
+                    config_snapshot=self.config,
+                )
+        except Exception as e:
+            logger.debug(f"Sanity check skipped: {e}")
 
         # Compute sigma for logging
         sigma = self._ensemble_builder._calculate_sigma(hours_to_res / 24)

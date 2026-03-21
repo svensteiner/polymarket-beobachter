@@ -27,48 +27,60 @@ logger = logging.getLogger(__name__)
 
 
 # Position size caps
-MIN_POSITION_EUR: float = 25.0
-MAX_POSITION_EUR: float = 150.0    # Max 3% of 5000 EUR capital (konservativ bis Win-Rate steigt)
-FALLBACK_POSITION_EUR: float = 75.0
+# Stark reduziert: Erst bei nachgewiesener Kalibrierung erhoehen
+MIN_POSITION_EUR: float = 15.0
+MAX_POSITION_EUR: float = 75.0     # Max 1.5% of 5000 EUR capital
+FALLBACK_POSITION_EUR: float = 40.0
 
-# Use Quarter-Kelly until model is calibrated
-KELLY_FRACTION: float = 0.1  # Reduziert: 11.1% Win-Rate braucht konservativeren Ansatz
+# 5% Kelly bis Ensemble-Kalibrierung bewiesen ist
+# (Profitable Bots nutzen 15% Kelly ABER mit besser kalibriertem Modell)
+KELLY_FRACTION: float = 0.05
 
 
 # =============================================================================
-# FEATURE 7: TIME-TO-RESOLUTION DECAY
+# FEATURE 7: TIME-TO-RESOLUTION URGENCY
 # =============================================================================
+# Inspiriert von: dylanpersonguy/Fully-Autonomous-Polymarket-AI-Trading-Bot
+# und suislanchez/polymarket-kalshi-weather-bot
+#
+# Kernidee: Wetter-Forecasts werden genauer je naeher die Resolution rueckt.
+# 1-2 Tage vor Resolution sind Forecasts 85-90% akkurat (NOAA-Daten).
+# Deshalb: MEHR traden kurz vor Resolution, WENIGER bei langer Laufzeit.
 
 def time_decay_factor(hours_to_resolution: Optional[float]) -> float:
     """
     Kelly-Skalierungsfaktor basierend auf Restlaufzeit bis Market-Resolution.
 
-    Rationale:
-    - Sehr kurze Maerkte (<6h): Markt bereits korrekt eingepreist, hohes Risiko
-    - Kurze Maerkte (<24h): Erhoehtes Risiko, reduzierter Kelly
-    - Optimale Maerkte (24-72h): Volle Kelly-Groesse
-    - Laengere Maerkte (72-168h): Leicht reduziert (Modell-Unsicherheit steigt)
-    - Sehr lange Maerkte (>168h): Stark reduziert (7 Tage = hohe Unsicherheit)
+    NEUE Logik (umgedreht gegenueber altem Ansatz):
+    - Forecasts werden genauer je naeher die Resolution rueckt
+    - 6-24h: Forecast sehr genau → Kelly ERHOEHEN (1.4x)
+    - 24-48h: Sweet Spot → volle Groesse (1.2x)
+    - 48-72h: Gut → Standard (1.0x)
+    - 72-168h: Mehr Unsicherheit → reduziert (0.7x)
+    - >168h: Zu unsicher → stark reduziert (0.4x)
+    - <6h: Markt oft schon eingepreist → leicht reduziert (0.8x)
 
     Args:
         hours_to_resolution: Stunden bis zur Market-Auflosung (None = kein Decay)
 
     Returns:
-        Skalierungsfaktor zwischen 0.2 und 1.0
+        Skalierungsfaktor zwischen 0.4 und 1.4
     """
     if hours_to_resolution is None or hours_to_resolution < 0:
         return 1.0  # Kein Decay wenn unbekannt
 
     if hours_to_resolution < 6:
-        factor = 0.3   # Sehr kurzfristig: stark reduziert
+        factor = 0.8   # Sehr kurzfristig: Markt oft korrekt, aber Forecast ist top
     elif hours_to_resolution < 24:
-        factor = 0.6   # Kurzfristig: reduziert
+        factor = 1.4   # PRIME TIME: Forecast extrem genau, Markt hinkt hinterher
+    elif hours_to_resolution < 48:
+        factor = 1.2   # Sweet Spot: sehr gute Forecasts
     elif hours_to_resolution < 72:
-        factor = 1.0   # Optimal: volle Groesse (24-72h)
+        factor = 1.0   # Standard: solide Forecasts
     elif hours_to_resolution < 168:
-        factor = 0.8   # Mittelfristig: leicht reduziert (3-7 Tage)
+        factor = 0.7   # Mittelfristig: zunehmende Unsicherheit
     else:
-        factor = 0.5   # Langfristig: stark reduziert (>7 Tage)
+        factor = 0.4   # Langfristig: Forecast zu unsicher fuer grosse Positionen
 
     logger.debug(
         f"Time-Decay: hours_to_resolution={hours_to_resolution:.1f}h -> factor={factor:.2f}"

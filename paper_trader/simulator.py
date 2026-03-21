@@ -311,6 +311,42 @@ class ExecutionSimulator:
                 logger.warning(f"SKIP: {skip_reason} for {proposal.market_id}")
                 return (None, record)
 
+        # LLM Trade Reasoning: GPT-5.4 mini Sanity-Check (non-blocking)
+        try:
+            from core.llm_trade_reasoning import evaluate_trade
+            llm_approved, llm_reason, llm_result = evaluate_trade(
+                market_question=proposal.market_question,
+                model_probability=proposal.model_probability,
+                market_price=proposal.implied_probability or 0.5,
+                side=proposal.side,
+                position_size_eur=getattr(proposal, "position_size_eur", 75),
+                edge=proposal.edge,
+                event_type=getattr(proposal, "event_type", ""),
+                city=getattr(proposal, "city", ""),
+                confidence=getattr(proposal, "confidence", ""),
+            )
+            if not llm_approved:
+                record = PaperTradeRecord(
+                    record_id=generate_record_id(),
+                    timestamp=now,
+                    proposal_id=proposal.proposal_id,
+                    market_id=proposal.market_id,
+                    action=TradeAction.SKIP.value,
+                    reason=f"LLM REJECT: {llm_reason}",
+                    position_id=None,
+                    snapshot_time=None,
+                    entry_price=None,
+                    exit_price=None,
+                    slippage_applied=None,
+                    pnl_eur=None,
+                )
+                log_trade(record)
+                logger.info(f"SKIP (LLM Reject): {llm_reason} for {proposal.market_id}")
+                return (None, record)
+        except Exception as e:
+            # LLM-Fehler blockiert NICHT den Trade (fail-open)
+            logger.debug(f"LLM Trade Reasoning uebersprungen: {e}")
+
         # Get market snapshot - or create simulated one from proposal
         snapshot = get_market_snapshot(proposal.market_id)
 

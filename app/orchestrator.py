@@ -129,9 +129,16 @@ class Orchestrator:
             timestamp=datetime.now().isoformat()
         )
 
-        # Step 1: Collector
+        # Step 1: Collector (mit Resilience)
         print("[1/6] Collector: Maerkte abrufen ...", end="", flush=True)
-        collector_result = self._run_collector()
+        try:
+            collector_result = self._run_collector()
+        except Exception as e:
+            logger.error(f"CRITICAL: Collector crashed: {e}")
+            collector_result = StepResult(
+                name="collector", success=False,
+                message=f"Crash: {str(e)[:100]}", error=str(e)
+            )
         result.add_step(collector_result)
         print(f" {'OK' if collector_result.success else 'FAIL'} ({collector_result.message})")
 
@@ -143,9 +150,17 @@ class Orchestrator:
         except Exception as e:
             logger.warning(f"Collector cleanup fehlgeschlagen: {e}")
 
-        # Step 2: Weather Observer
+        # Step 2: Weather Observer (mit Resilience)
         print("[2/6] Weather Observer: Analyse + Edge ...", end="", flush=True)
-        weather_result = self._run_weather_observer()
+        try:
+            weather_result = self._run_weather_observer()
+        except Exception as e:
+            logger.error(f"CRITICAL: Weather Observer crashed: {e}")
+            weather_result = StepResult(
+                name="weather_observer", success=False,
+                message=f"Crash: {str(e)[:100]}", error=str(e),
+                data={"observations": [], "edge_observations": 0}
+            )
         result.add_step(weather_result)
         print(f" {'OK' if weather_result.success else 'FAIL'} ({weather_result.message})")
 
@@ -170,10 +185,18 @@ class Orchestrator:
         except Exception as e:
             logger.debug(f"Evolution Agent Entry fehlgeschlagen (unkritisch): {e}")
 
-        # Step 4: Paper Trader (mit DrawdownProtector-Snapshot)
+        # Step 4: Paper Trader (mit DrawdownProtector-Snapshot + Resilience)
         print("[4/6] Paper Trader: Trades simulieren ...", end="", flush=True)
-        self._record_equity_snapshot("pre_paper_trader")
-        paper_result = self._run_paper_trader(run_id=run_id)
+        try:
+            self._record_equity_snapshot("pre_paper_trader")
+            paper_result = self._run_paper_trader(run_id=run_id)
+        except Exception as e:
+            logger.error(f"CRITICAL: Paper Trader crashed: {e}")
+            paper_result = StepResult(
+                name="paper_trader", success=False,
+                message=f"Crash: {str(e)[:100]}", error=str(e),
+                data={"entries": 0, "closes": 0, "pnl": 0.0}
+            )
         result.add_step(paper_result)
         print(f" {'OK' if paper_result.success else 'FAIL'} ({paper_result.message})")
 
@@ -290,6 +313,22 @@ class Orchestrator:
         except Exception as e:
             logger.warning(f"Audit-Log cleanup fehlgeschlagen: {e}")
 
+        # LLM Strategy Analyst: GPT-5.4 mini Analyse alle 10 Runs
+        try:
+            from core.llm_strategy_analyst import should_run_analysis, run_strategy_analysis
+            if should_run_analysis(run_count=getattr(self, '_run_count', 0)):
+                analysis = run_strategy_analysis(
+                    self.base_dir, result.summary,
+                    run_count=getattr(self, '_run_count', 0)
+                )
+                if analysis:
+                    result.summary["llm_assessment"] = analysis.get("overall_assessment", "?")
+                    result.summary["llm_live_readiness"] = analysis.get("live_readiness_pct", 0)
+                    if analysis.get("action_items"):
+                        logger.info(f"[LLM ANALYST] Actions: {analysis['action_items'][:3]}")
+        except Exception as e:
+            logger.debug(f"LLM Strategy Analyst uebersprungen: {e}")
+
         # Self-Improvement-Cycle: kontinuierliche Parameter-Optimierung
         self._run_improvement_cycle()
 
@@ -302,6 +341,19 @@ class Orchestrator:
                 notify_pipeline_failure("UNKNOWN")
         except Exception as e:
             logger.debug(f"Self-Healing Notification fehlgeschlagen: {e}")
+
+        # Self-Heal: Kapital-Reconciliation, Zombie-Detection, Error-Patterns
+        try:
+            from core.self_healer import run_self_heal
+            heal_report = run_self_heal(
+                self.base_dir,
+                run_result={"state": result.state.value, "summary": result.summary}
+            )
+            if heal_report.get("actions"):
+                result.summary["self_heal_actions"] = heal_report["actions"]
+                logger.info(f"Self-Heal: {len(heal_report['actions'])} Aktionen ausgefuehrt")
+        except Exception as e:
+            logger.debug(f"Self-Heal fehlgeschlagen (unkritisch): {e}")
 
         logger.info(f"=== Pipeline END === run_id={run_id} state={result.state.value}")
 

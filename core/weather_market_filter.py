@@ -664,6 +664,50 @@ class WeatherMarketFilter:
                         "original_unit": unit,
                     }
 
+        # Fallback: LLM Market-Parser (wenn Regex versagt)
+        try:
+            from .llm_market_parser import llm_parse_market
+            llm_result = llm_parse_market(combined_text)
+            if llm_result and llm_result.get("threshold_value") is not None:
+                val = float(llm_result["threshold_value"])
+                unit = llm_result.get("threshold_unit", "F").upper()
+                event_type = llm_result.get("event_type", "exceeds")
+                threshold_f = val * 9/5 + 32 if unit == "C" else val
+
+                threshold_high_f = None
+                if llm_result.get("threshold_high_value") is not None:
+                    high_val = float(llm_result["threshold_high_value"])
+                    threshold_high_f = high_val * 9/5 + 32 if unit == "C" else high_val
+
+                # Map LLM event types to internal types
+                type_map = {
+                    "exact": "between_range",
+                    "at_or_above": "exceeds",
+                    "at_or_below": "below",
+                }
+                internal_type = type_map.get(event_type, event_type)
+
+                # Fuer exact: 1-Grad-Band
+                if event_type == "exact" and threshold_high_f is None:
+                    if unit == "C":
+                        threshold_high_f = (val + 1) * 9/5 + 32
+                    else:
+                        threshold_high_f = threshold_f + 1
+
+                logger.info(f"LLM Fallback Parse: {event_type} {val}°{unit} -> {threshold_f:.1f}°F")
+                return {
+                    "is_explicit": True,
+                    "threshold_f": threshold_f,
+                    "threshold_f_high": threshold_high_f,
+                    "metric": "temperature",
+                    "event_type": internal_type,
+                    "original_value": val,
+                    "original_unit": unit,
+                    "parsed_by": "llm_fallback",
+                }
+        except Exception as e:
+            logger.debug(f"LLM Market Parser Fallback fehlgeschlagen: {e}")
+
         # No threshold detected
         return {
             "is_explicit": False,
