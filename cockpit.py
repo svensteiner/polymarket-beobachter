@@ -512,6 +512,12 @@ def run_scheduler(interval_seconds: int = 900, enable_self_improve: bool = False
                 print_run_result(result)
                 consecutive_errors = 0
                 write_bot_status(run_count, consecutive_errors, start_time, result=result)
+                # Goal Engine: Ziele prüfen + ggf. eskalieren (cooldown: 6h)
+                try:
+                    from shared.goal_engine import get_goal_engine
+                    get_goal_engine().run()
+                except Exception as _ge:
+                    logger.debug("Goal Engine fehlgeschlagen (unkritisch): %s", _ge)
                 # JSON-Heartbeat nach erfolgreichem Run schreiben
                 _write_heartbeat_json(
                     status="running",
