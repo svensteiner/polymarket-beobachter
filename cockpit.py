@@ -55,7 +55,6 @@ except ImportError:
     def shutdown_log_manager(): pass
 
 LOCKFILE = BASE_DIR / "cockpit.lock"
-HEARTBEAT_FILE = BASE_DIR / "logs" / "heartbeat.txt"
 CRASH_LOG = BASE_DIR / "logs" / "crash.log"
 BOT_STATUS_FILE = BASE_DIR / "logs" / "bot_status.json"
 BOT_CONTROL_FILE = BASE_DIR / "logs" / "bot_control.json"
@@ -174,15 +173,6 @@ def release_lock():
     except Exception as e:
         logger.warning("Fehler beim Lockfile entfernen: %s", e)
         LOCKFILE.unlink(missing_ok=True)
-
-
-def write_heartbeat():
-    """Write current timestamp to heartbeat file after each pipeline run."""
-    try:
-        HEARTBEAT_FILE.parent.mkdir(parents=True, exist_ok=True)
-        HEARTBEAT_FILE.write_text(datetime.now().isoformat())
-    except Exception as e:
-        logger.warning("Fehler beim Heartbeat schreiben: %s", e)
 
 
 def _rotate_crash_log():
@@ -445,7 +435,6 @@ def run_once() -> int:
     try:
         result = run_pipeline_with_progress()
         print_run_result(result)
-        write_heartbeat()
         write_bot_status(1, 0, start_time, result=result)
 
         # JSON-Heartbeat fuer Dashboard schreiben
@@ -491,7 +480,6 @@ def run_scheduler(interval_seconds: int = 900, enable_self_improve: bool = False
     # Start resource monitoring
     start_memory_monitoring()
 
-    write_heartbeat()  # Initial heartbeat (txt)
     _write_heartbeat_json(status="running", detail="Scheduler gestartet", extra={"run_count": 0})
 
     try:
@@ -508,7 +496,6 @@ def run_scheduler(interval_seconds: int = 900, enable_self_improve: bool = False
             if is_paused:
                 print(f"{C.YELLOW}Bot is PAUSED - skipping run{C.RESET}")
                 print(f"  {C.DIM}{pause_reason}{C.RESET}")
-                write_heartbeat()
                 _write_heartbeat_json(
                     status="paused",
                     detail=pause_reason[:150],
@@ -562,9 +549,6 @@ def run_scheduler(interval_seconds: int = 900, enable_self_improve: bool = False
                         traceback.print_exc(file=f)
                 except Exception as e:
                     logger.warning("Fehler beim Crash-Log schreiben (Scheduler): %s", e)
-
-            # Immer txt-Heartbeat schreiben – beweist dass Scheduler-Loop lebt
-            write_heartbeat()
 
             # SelfImprover: alle 4 Runs einen Verbesserungszyklus ausfuehren
             if enable_self_improve:
