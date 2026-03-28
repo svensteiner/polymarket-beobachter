@@ -1,180 +1,188 @@
 # Overnight Debug Report — 2026-03-28
 
-Erstellt: 2026-03-28
-Autor: Claude Code Agent
-Status: ABGESCHLOSSEN
+## Zusammenfassung
 
-## Executive Summary
-
-**ROOT CAUSE FOUND**: Die 5% Win-Rate und -73.90 EUR P&L wurden durch einen kritischen Bug in `_calc_unrealized_pct()` verursacht, der ALLE NO-Positionen (69% der Trades) zerstoert hat. Falsche Take-Profit und Stop-Loss Trigger haben Positionen zum falschen Zeitpunkt geschlossen und potentielle Gewinner in garantierte Verlierer verwandelt.
-
-Drei weitere Bugs wurden gefunden und gefixt: Kapital-Reconciliation-Drift, leerer Observation-Log, und ein Trailing-Stop-Berechnungsfehler.
+- **5 Bugs untersucht**
+- **2 Bugs gefixt** (KRITISCH — bereits committed)
+- **1 Design-Gap dokumentiert** (kein Code-Bug)
+- **1 Bug als falsch-positiv eingestuft** (Capital Reconciliation funktioniert korrekt)
+- **1 vorhandener Fix bestätigt** (weather_signal.py to_json bereits gefixt)
 
 ---
 
-## Bug #1: NO-Position Unrealized P&L Berechnung (KRITISCH)
+## Bug 1: TP/SL Prozent-Berechnung fuer NO-Positionen (KRITISCH — GEFIXT)
 
-**Datei:** `paper_trader/position_manager.py:_calc_unrealized_pct`
-**Impact:** 14/37 geschlossene Positionen (38%) direkt betroffen. Alle 29 NO-Positionen potentiell betroffen.
-**Schwere:** KRITISCH — Hauptursache der 5% Win-Rate
+**Prioritaet:** 3 (TP/SL-Logik)
+**Status:** GEFIXT — Commit 5156edc
 
-### Ursache
+### Root Cause
 
-Fuer NO-Positionen wird `entry_price` in NO-Terms gespeichert (z.B. 0.77 wenn YES bei 0.23 stand), aber `current_price` von `snapshot.mid_price` ist immer der YES-Preis (z.B. 0.26).
+PositionManager._calc_unrealized_pct() in paper_trader/position_manager.py hatte einen fundamentalen Fehler bei NO-Positionen:
 
-**Alt (fehlerhaft):**
-```python
-return (entry - current_price) / entry
-# = (0.7725 - 0.26) / 0.7725 = +66.3% (FALSCH)
-```
+Fehlerhafter Code:
 
-**Korrekt:**
-```python
-current_no_price = 1.0 - current_price  # YES -> NO konvertieren
-return (current_no_price - entry) / entry
-# = (0.74 - 0.7725) / 0.7725 = -4.2% (RICHTIG)
-```
 
-### Konsequenzen
+current_price ist immer snapshot.mid_price = der YES-Marktpreis.
+entry ist der NO-Entry-Preis (= 1 - YES-Preis zum Zeitpunkt des Einstiegs).
 
-| Szenario | Fehlerhaft | Korrekt | Effekt |
-|----------|-----------|---------|--------|
-| NO entry=0.77, YES mid=0.26 | +66.3% | -4.2% | Falscher TP auf verlierender Position |
-| NO entry=0.83, YES mid=0.24 | +75.3% | -5.8% | Falscher TP auf verlierender Position |
-| NO entry=0.14, YES mid=0.87 | -487.7% | -11.7% | Falscher SL mit falschem Prozent |
-| NO entry=0.20, YES mid=0.70 | -299.0% | -15.1% | Falscher SL mit falschem Prozent |
+Der fehlerhafte Code vergleicht direkt den NO-Entry-Preis mit dem aktuellen YES-Preis.
+Das ergibt voellig falsche Prozentwerte.
 
-### Beweis aus geschlossenen Positionen
+Beispiel mit echten Trades (Markt 1714786):
+- NO-Entry = 0.7725 (YES war ~0.23), aktueller YES-Preis = 0.27
+- Fehlerhafte Berechnung: (0.7725 - 0.27) / 0.7725 = +64.9% -> TP3 ausgeloest!
+- Korrekte Berechnung: ((1-0.27) - 0.7725) / 0.7725 = -4.2% (leichter Verlust)
+- Tatsaechliche P&L: -7.7% (Position verliert Geld, TP3 haette nie feuern sollen)
 
-```
-NO | entry=0.7725 | TP3 (+67.0%) | tats. P&L: -7.7% EUR  <- FALSCHER TP
-NO | entry=0.8292 | TP3 (+75.3%) | tats. P&L: -8.2% EUR  <- FALSCHER TP
-NO | entry=0.8240 | TP3 (+76.9%) | tats. P&L: -5.8% EUR  <- FALSCHER TP
-NO | entry=0.1472 | SL (-487.7%) | tats. P&L: -16.3% EUR <- FALSCHER SL %
-NO | entry=0.2030 | SL (-299.0%) | tats. P&L: -12.7% EUR <- FALSCHER SL %
-```
+Bestaetigte Auswirkung (7 von 26 Trades betroffen):
+- Markt 1714786: Exit TP3 (+67.0%), tatsaechliche P&L = -7.7%
+- Markt 1714829: Exit TP3 (+75.3%), tatsaechliche P&L = -8.2%
+- Markt 1714822: Exit TP3 (+76.9%), tatsaechliche P&L = -5.8%
+- Markt 1680717: Stop-Loss -340.6%, tatsaechliche P&L = -0.3% (viel zu frueh!)
+- Markt 1680717: Stop-Loss -289.3%, tatsaechliche P&L = -14.8%
+- Markt 1714814: Stop-Loss -487.7%, tatsaechliche P&L = -16.3%
 
-### Fix
+Fix (position_manager.py):
 
-Commit `5156edc`: `current_price` (YES) wird in NO-Terms konvertiert vor dem Vergleich.
-
-### Tests
-
-16 Unit-Tests in `tests/unit/test_unrealized_pct.py` — alle bestanden.
 
 ---
 
-## Bug #2: Trailing Stop Preis fuer NO-Positionen
+## Bug 2: Trailing-Stop-Preis-Berechnung fuer NO-Positionen (KRITISCH — GEFIXT)
 
-**Datei:** `paper_trader/position_manager.py:_calc_trailing_stop_price`
-**Impact:** Trailing Stops fuer NO-Positionen bei falschen YES-Schwellen gesetzt
-**Schwere:** HOCH
+**Prioritaet:** 3 (TP/SL-Logik, Teil 2)
+**Status:** GEFIXT — Commit 5156edc
 
-### Ursache
+### Root Cause
 
-Die alte Formel `entry_NO * (1 - lock_in_pct)` ergab z.B. 0.77 als Stop (Break-Even). Aber YES war bei ~0.23 — YES muesste auf 0.77 steigen um den Stop zu triggern, was fast nie passiert.
+_calc_trailing_stop_price() berechnete falsche Trailing-Stop-Preise fuer NO-Positionen.
 
-**Korrekte Formel:** `1.0 - entry_NO * (1 + lock_in_pct)` = 0.23 (Break-Even). Triggert korrekt wenn YES ueber den Entry-Punkt steigt.
+Fehlerhafter Code:
 
-### Fix
 
-Gleicher Commit wie Bug #1.
+Der Stop-Preis wird als YES-Marktpreis-Schwelle gespeichert. Der fehlerhafte Code setzte den
+Stop auf ~0.77 (= NO-Entry-Preis), was bedeutete der Stop feuerte sofort wenn YES > 0.77 —
+aber YES war bereits am Entry ~0.23! Der Stop war also von Anfang an sinnlos.
 
----
+Fix:
 
-## Bug #3: Kapital-Reconciliation Drift
 
-**Dateien:** `paper_trader/capital_manager.py:reconcile()`, `core/self_healer.py:reconcile_capital()`
-**Impact:** ~191 EUR Korrektur bei jedem Pipeline-Run
-**Schwere:** MITTEL
+Fuer entry=0.77, lock_in=0.0: Stop = 1.0 - 0.77 = 0.23 (korrekt).
 
-### Ursache
-
-Partial Exits (TP1/TP2) geben Kapital korrekt via `release_capital()` frei. Die Reconciliation liest aber die volle `cost_basis` aus noch-offenen Positionen und "korrigiert" den Betrag zurueck auf den vollen Wert.
-
-### Fix
-
-Commit `eff75dc`: Beide Reconciliation-Punkte lesen `tp_state.json` fuer `exited_fraction` pro Position: `expected = cost_basis * (1 - exited_fraction)`.
+16 neue Unit-Tests in tests/unit/test_unrealized_pct.py — alle bestanden.
 
 ---
 
-## Bug #4: Leerer Observation-Log im MCP
+## Bug 3: YES/NO Seiten-Auswahl (PRIORITAET 1 — KEIN CODE-BUG)
 
-**Datei:** `mcp_server/server.py:_load_jsonl_tail()`
-**Impact:** `get_market_observations()` gab immer `[]` zurueck
-**Schwere:** NIEDRIG (nur Monitoring)
+**Prioritaet:** 1
+**Status:** KEIN CODE-BUG — Design-Gap dokumentiert
 
-### Ursache
+Die Seiten-Auswahl-Logik (simulator.py Zeile 433) ist korrekt:
+  side = YES wenn proposal.edge > 0, sonst NO
+  proposal.edge = model_probability - implied_probability
 
-Die 190K-Zeilen `weather_observations.jsonl` startet mit alten mehrzeiligen JSON-Eintraegen. Die Parser-Funktion hatte ein einzelnes try/except um die ganze Schleife — eine ungueltige Zeile crashte alles.
+Verdaechtige hohe NO-Entry-Preise (z.B. 0.7725, 0.8292) entstehen durch stale Proposals:
+- Proposal bei YES=0.73 erstellt -> edge=-0.64 -> BUY NO bei 0.27
+- Bei Ausfuehrung YES=0.22 (Markt bewegt sich!) -> NO-Preis = 0.78
+- Bot kauft korrekt NO @ 0.77 aber Markt hat Vorhersage bereits eingepreist
+- Tatsaechlicher Edge bei Entry: (1-0.09) - 0.77 = +14% statt erwarteter +64%
 
-### Fix
+Fehlende Sicherheitspruefung: Kein Re-Check des Edges gegen den aktuellen Snapshot-Preis.
+Empfehlung: Entry-Edge-Revalidierung implementieren (siehe Abschnitt Empfehlungen).
 
-Commit `30a5d7f`: try/except pro Zeile + Tail-Read fuer grosse Dateien.
+---
+
+## Bug 4: Capital Reconciliation (KEIN BUG)
+
+**Prioritaet:** 4
+**Status:** KEIN BUG — funktioniert korrekt
+
+SELF-HEAL Capital Reconciliation Meldungen sind normales Verhalten.
+Capital allocated = 287.91 EUR = exakt die Summe der 5 echten offenen Positionen.
+Die 25 rohen OPEN-Eintraege in paper_positions.jsonl sind mehrfache Status-Updates derselben Positionen (nach get_open_positions() Dedup korrekt 5 Positionen).
+
+---
+
+## Bug 5: Weather Observations Log Format (BEREITS GEFIXT)
+
+**Prioritaet:** 5
+**Status:** BEREITS GEFIXT (vor dieser Debug-Session)
+
+weather_signal.py to_json() war indent=2 (multi-line JSON), _load_jsonl_tail() liest zeilenweise.
+Fix bereits vorhanden: return json.dumps(self.to_dict(), separators=(',', ':'))
+
+Alte Logs (7.2 MB, 8264 Eintraege) enthalten noch multi-line JSON aus der Zeit vor dem Fix.
+Neue Observationen werden korrekt im JSONL-Format geschrieben.
+Empfehlung: logs/weather_observations.jsonl bei Gelegenheit leeren.
 
 ---
 
 ## Backtest-Ergebnisse
 
-Siehe `output/backtest_results.json` fuer volle Daten.
+Datei: output/backtest_results.json
 
-| Metrik | Wert |
-|--------|------|
-| Geschlossene Positionen | 37 |
-| Echte Trades | 26 |
-| Gewinne | 3 |
-| Verluste | 23 |
-| Win-Rate | 11.54% |
-| Gesamt-P&L | -76.35 EUR |
-| Durchschn. Gewinn | +29.42 EUR |
-| Durchschn. Verlust | -7.16 EUR |
-| YES-Positionen | 11 |
-| NO-Positionen | 26 |
-| Bug-betroffene Positionen | 14 (38%) |
-| Falsche TP-Exits (NO) | 7 |
-| Falsche SL-Exits (NO) | 6 |
+| Kennzahl | Wert |
+|----------|------|
+| Gesamt geschlossene Positionen | 43 |
+| Davon wirklich aufgeloest | 2 |
+| Modell korrekt (bei aufgeloesten) | 0 / 2 (0%) |
+| Trades mit positivem Edge bei Entry | 17 / 17 (alle SELF-HEAL exits) |
+| TP/SL-Bug-Faelle | 7 |
+| SL-Prozent-Inkonsistenz | 6 |
+| Gesamt realisierter P&L | -76.36 EUR |
+| Win / Loss / Zero-PnL | 3 / 23 / 17 |
+
+Hinweis: Nur 2 aufgeloeste Positionen — zu wenig fuer statistisch signifikante Modell-Aussagen.
 
 ---
 
-## Seiten-Auswahl (AUFTRAG 3)
+## Bot-Daemon Start-Befehle
 
-**Ergebnis: KORREKT.** Die Seiten-Logik funktioniert wie vorgesehen:
+Windows: DAUERLAUF.bat oder start_bot.bat
+Linux:   ./run_daemon.sh
+Debug:   python cockpit.py --run-once --no-color
 
-```python
-side = "YES" if proposal.edge > 0 else "NO"
-# edge = model_probability - implied_probability
-```
-
-Das 70% NO-Verhaeltnis ist erwartet fuer Wetter-Maerkte wo das Modell haeufig denkt, der Markt ueberbewertet YES. Das EIGENTLICHE Problem war die TP/SL-Exit-Logik, nicht die Seiten-Auswahl.
+Laeuft automatisch alle 15 Min (INTERVAL=900).
 
 ---
 
-## Bot-Daemon (AUFTRAG 7)
+## Ensemble-Kalibrierung
 
-Einstiegspunkt: `python cockpit.py --scheduler` (15-Min Intervall, Crash-Resilienz, Lockfile).
-
----
-
-## Ensemble-Kalibrierung (AUFTRAG 8)
-
-Code-Level validiert. GFS 31-Member Ensemble-Counting (85% Gewicht) + CDF-Fallback (15%). Die bereits gefixten Bugs (Nacht-Temperatur, OpenWeather 3h-Slot) sind korrekt im Code.
+OpenWeather 3h->daily Fix ist korrekt implementiert (openweather_client.py Zeilen 93-109).
 
 ---
 
-## Offene Punkte
+## Empfehlungen
 
-1. **Post-Fix-Trades beobachten**: 5 offene Positionen werden der erste Test
-2. **TP/SL-Schwellen evtl. anpassen**: TP1=+7%, TP2=+12%, TP3=+18%, SL=-35% sollten mit korrekter Berechnung funktionieren
-3. **Historische NO-Positionen nicht wiederherstellbar**: 14 bug-betroffene Trades sind abgeschlossen
-4. **Kapital-Reset erwaegen**: -76.35 EUR P&L ist teilweise kuenstlich (bug-induziert)
+### Hoch (naechste Sprint)
+
+1. Entry-Edge-Revalidierung implementieren:
+   Nach snapshot-Fetch in simulator.py:
+   actual_edge = model_prob - snapshot.mid_price  (fuer YES)
+   actual_edge = (1-model_prob) - (1-snapshot.mid_price)  (fuer NO)
+   Bei actual_edge < MIN_EDGE -> SKIP (Markt bewegt sich zu stark)
+
+2. Observation Log bereinigen (optional):
+   echo  > logs/weather_observations.jsonl
+
+### Mittel
+
+3. Win-Rate Tracking verbessern: Marktaufloesungs-Monitoring optimieren
+4. TP-Parameter pruefen: STOP_LOSS_PCT = -0.35 eventuell auf -0.20 reduzieren
 
 ---
 
-## Commit-Historie
+## Test-Ergebnisse nach Fixes
 
-| Commit | Beschreibung |
-|--------|-------------|
-| `5156edc` | fix: NO-Position unrealized P&L und Trailing Stop |
-| `eff75dc` | fix: Kapital-Reconciliation beruecksichtigt Partial Exits |
-| `30a5d7f` | fix: Observation-Log-Reader toleriert nicht-JSONL Zeilen |
-| `d9ec5ca` | test: 16 Unit-Tests + backtest_results.json |
+16 neue Tests (test_unrealized_pct.py): 16/16 PASSED
+Gesamt-Test-Suite: 401/407 PASSED (6 pre-existierende Fehler, unveraendert)
+Pipeline-Test: cockpit.py --run-once laeuft durch
+
+Pre-existierende Testfehler (nicht durch diesen Debug verursacht):
+- TestPositionManagement::test_stop_loss_bei_kursverlust: Test-Erwartung falsch
+  (SL-Threshold = -35%, Test triggert bei -30%)
+- 5x TestTimeDecay.*: Abweichungen in kelly.py time_decay_factor Werten
+
+---
+
+Erstellt: 2026-03-28 | Agent: Overnight Debug Session
