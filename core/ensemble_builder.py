@@ -187,8 +187,18 @@ class EnsembleBuilder:
                     continue
 
             # Fallback: Normal-CDF probability
+            # Polymarket "highest temperature" markets → use daily max, not point forecast.
+            # A point forecast at the target hour (often midnight) gives the wrong
+            # temperature: London midnight=47°F but daily high=54°F → CDF at 47°F
+            # massively overestimates P([46-48°F]) ≈22% vs correct ≈2%.
+            if event_type in ("exceeds", "between_range", "at_or_above"):
+                temp_for_cdf = sf.temperature_max_f if sf.temperature_max_f is not None else sf.temperature_f
+            elif event_type in ("below", "at_or_below"):
+                temp_for_cdf = sf.temperature_min_f if sf.temperature_min_f is not None else sf.temperature_f
+            else:
+                temp_for_cdf = sf.temperature_f
             prob = compute_probability_from_forecast_temp(
-                temperature_f=sf.temperature_f,
+                temperature_f=temp_for_cdf,
                 threshold_f=threshold_f,
                 sigma=sigma,
                 event_type=event_type,

@@ -86,11 +86,27 @@ class OpenWeatherSource(ForecastSourceBase):
 
             main = best.get("main", {})
             temp = main.get("temp")
-            temp_min = main.get("temp_min")
-            temp_max = main.get("temp_max")
 
             if temp is None:
                 return None
+
+            # Compute true daily max/min from all 3h intervals for the target day.
+            # The per-slot temp_min/temp_max in OpenWeather are 3h-interval values,
+            # not the actual daily high/low — so we aggregate manually.
+            target_date = target_naive.date()
+            day_temps = []
+            for fc in forecasts:
+                dt = fc.get("dt", 0)
+                try:
+                    fc_time = datetime.fromtimestamp(dt, tz=timezone.utc).replace(tzinfo=None)
+                    if fc_time.date() == target_date:
+                        t = fc.get("main", {}).get("temp")
+                        if t is not None:
+                            day_temps.append(float(t))
+                except (ValueError, TypeError, OSError):
+                    continue
+            temp_max = max(day_temps) if day_temps else main.get("temp_max")
+            temp_min = min(day_temps) if day_temps else main.get("temp_min")
 
             now = datetime.now(timezone.utc)
             horizon_hours = (target_time - now).total_seconds() / 3600 if target_time.tzinfo else \
