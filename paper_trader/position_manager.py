@@ -212,12 +212,18 @@ class PositionManager:
     STOP_LOSS_PCT = -0.35
 
     def _calc_unrealized_pct(self, position: PaperPosition, current_price: float) -> float:
-        """Berechne unrealisierten P&L in Prozent (relativ zu Entry)."""
+        """Berechne unrealisierten P&L in Prozent (relativ zu Entry).
+
+        current_price ist immer der YES-Preis (snapshot.mid_price).
+        Fuer NO-Positionen wird er in den aktuellen NO-Preis umgerechnet.
+        """
         entry = position.entry_price
         if entry <= 0:
             return 0.0
         if position.side == "NO":
-            return (entry - current_price) / entry
+            # NO-Wert = 1 - YES-Preis; Vergleich mit dem NO-Entry-Preis
+            current_no_price = 1.0 - current_price
+            return (current_no_price - entry) / entry
         return (current_price - entry) / entry
 
     def _partial_exit(
@@ -570,18 +576,27 @@ class PositionManager:
         """
         Berechne Trailing Stop Preis der mindestens lock_in_pct Gewinn sichert.
 
+        Der Stop-Preis wird als YES-Marktpreis ausgedrueckt (snapshot.mid_price).
+        Bei YES: Stop = YES-Preis faellt unter Schwelle.
+        Bei NO: Stop = YES-Preis steigt ueber Schwelle
+                (da NO-Wert = 1 - YES-Preis, steigt YES -> faellt NO).
+
         Args:
             position: Offene Position
             lock_in_pct: Mindestgewinn der gesichert werden soll (z.B. 0.0 = Break-Even)
 
         Returns:
-            Stop-Preis (fuer YES: Minimum-Kurs, fuer NO: Maximum-Kurs)
+            Stop-Preis als YES-Marktpreis-Schwelle
         """
         entry = position.entry_price
         if position.side == "YES":
-            return entry * (1.0 + lock_in_pct)  # bei YES: stop UNTER entry*(1+pct)
+            # YES-Stop: Exit wenn YES-Preis unter entry*(1+lock_in_pct) faellt
+            return entry * (1.0 + lock_in_pct)
         else:
-            return entry * (1.0 - lock_in_pct)  # bei NO: stop UEBER entry*(1-pct)
+            # NO-Entry-Preis entsp. 1 - YES_entry_price
+            # Break-Even-NO-Preis: entry*(1+lock_in_pct)
+            # Als YES-Schwelle: YES > 1 - entry*(1+lock_in_pct)
+            return 1.0 - entry * (1.0 + lock_in_pct)
 
     def _cleanup_tp_state(self, tp_state: Dict[str, Any]) -> None:
         """Entferne TP-States fuer nicht mehr offene Positionen."""
