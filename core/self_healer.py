@@ -137,9 +137,26 @@ def reconcile_capital(base_dir: Path) -> Dict[str, Any]:
                 pos_map[pid] = p
         positions = list(pos_map.values())
 
-        # Calculate actual allocated capital from OPEN positions
+        # Calculate actual allocated capital from OPEN positions,
+        # accounting for partial exits tracked in tp_state.json
         open_positions = [p for p in positions if p.get("status") == "OPEN"]
-        actual_allocated = sum(p.get("cost_basis_eur", 0.0) for p in open_positions)
+        tp_state = {}
+        try:
+            tp_state_path = base_dir / "data" / "tp_state.json"
+            if tp_state_path.exists():
+                with open(tp_state_path) as tp_f:
+                    tp_state = json.load(tp_f)
+        except Exception:
+            pass
+        actual_allocated = 0.0
+        for p in open_positions:
+            cost = p.get("cost_basis_eur", 0.0)
+            pid = p.get("position_id", "")
+            exited_fraction = 0.0
+            tp_entry = tp_state.get(pid, {})
+            if isinstance(tp_entry, dict):
+                exited_fraction = float(tp_entry.get("exited_fraction", 0.0))
+            actual_allocated += cost * max(0.0, 1.0 - exited_fraction)
 
         # Calculate actual realized PnL from CLOSED positions
         closed_positions = [p for p in positions if p.get("status") in ("CLOSED", "RESOLVED")]

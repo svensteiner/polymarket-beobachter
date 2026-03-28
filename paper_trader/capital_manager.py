@@ -189,6 +189,11 @@ class CapitalManager:
 
         Prueft beim Start, ob allocated_capital mit den tatsaechlich
         offenen Positionen uebereinstimmt. Korrigiert bei Abweichung > 1 EUR.
+
+        BUGFIX 2026-03-28: Beruecksichtigt exited_fraction aus tp_state.json,
+        damit partielle Exits (TP1/TP2) nicht als "fehlend" gezaehlt werden.
+        Vorher wurde die volle cost_basis summiert, obwohl Teile davon bereits
+        per release_capital() freigegeben wurden.
         """
         if self._state is None:
             return
@@ -206,7 +211,27 @@ class CapitalManager:
             logger.debug("Reconciliation uebersprungen - Logger nicht verfuegbar: %s", e)
             return
 
-        expected_allocated = sum(p.cost_basis_eur for p in positions if p.cost_basis_eur is not None)
+        # Load TP state to account for partial exits
+        tp_state = {}
+        try:
+            tp_state_path = self._config_path.parent / "tp_state.json"
+            if tp_state_path.exists():
+                with open(tp_state_path, "r", encoding="utf-8") as f:
+                    tp_state = json.load(f)
+        except Exception as e:
+            logger.debug("tp_state.json nicht lesbar: %s", e)
+
+        # Calculate expected allocated capital accounting for partial exits
+        expected_allocated = 0.0
+        for p in positions:
+            if p.cost_basis_eur is None:
+                continue
+            exited_fraction = 0.0
+            tp_entry = tp_state.get(p.position_id, {})
+            if isinstance(tp_entry, dict):
+                exited_fraction = float(tp_entry.get("exited_fraction", 0.0))
+            remaining_fraction = max(0.0, 1.0 - exited_fraction)
+            expected_allocated += p.cost_basis_eur * remaining_fraction
 
         actual_allocated = self._state.allocated_capital_eur
         diff = abs(actual_allocated - expected_allocated)
