@@ -183,8 +183,8 @@ class WeatherObservation:
         }
 
     def to_json(self) -> str:
-        """Convert observation to JSON string."""
-        return json.dumps(self.to_dict(), indent=2)
+        """Convert observation to compact single-line JSON string (JSONL-kompatibel)."""
+        return json.dumps(self.to_dict(), separators=(',', ':'))
 
     @property
     def has_edge(self) -> bool:
