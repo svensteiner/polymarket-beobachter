@@ -132,16 +132,32 @@ def _save_yaml(path: Path, data: Dict) -> bool:
 
 
 def _load_jsonl_tail(path: Path, n: int = 50) -> List[Dict]:
-    """Load last N lines from JSONL file."""
+    """Load last N lines from JSONL file.
+
+    Tolerates non-JSONL lines (e.g. from old multi-line JSON entries)
+    by skipping lines that fail to parse. Reads from the end of the file
+    for efficiency on large files.
+    """
     if not path.exists():
         return []
     try:
+        # For large files, read only the tail to avoid loading 190K+ lines
+        file_size = path.stat().st_size
+        read_bytes = min(file_size, n * 2000)  # ~2KB per observation line
+
         lines = []
         with open(path, "r", encoding="utf-8") as f:
+            if read_bytes < file_size:
+                f.seek(file_size - read_bytes)
+                f.readline()  # skip partial first line
             for line in f:
                 line = line.strip()
-                if line:
+                if not line:
+                    continue
+                try:
                     lines.append(json.loads(line))
+                except (json.JSONDecodeError, ValueError):
+                    continue  # skip non-JSONL lines (old multi-line entries)
         return lines[-n:]
     except Exception as e:
         logger.error(f"Error loading {path}: {e}")
