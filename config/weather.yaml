@@ -30,11 +30,10 @@ MIN_ODDS: 0.2   # ERHOEHT: Keine Longshots mehr
 MAX_ODDS: 0.85   # Breiterer Odds-Bereich fuer mehr Marktbreite
 
 # Minimum time to resolution in hours
-# GEAENDERT: Von 24h auf 6h reduziert.
-# Grund: GFS Ensemble Forecasts sind 6-24h vor Resolution am genauesten.
-# Die profitabelsten Weather-Bots traden gerade in diesem Fenster.
-# Kelly time_decay_factor skaliert Positionsgroesse nach Restlaufzeit.
-MIN_TIME_TO_RESOLUTION_HOURS: 6
+# RESET 2026-03-28: Auf 12h erhöht für optimales GFS-Vorhersagefenster.
+# Backtests zeigen: 12-36h vor Resolution = höchste Forecast-Genauigkeit.
+# Trades sehr kurz vor Resolution haben schlechte Kalibrierung.
+MIN_TIME_TO_RESOLUTION_HOURS: 12
 
 # -----------------------------------------------------------------------------
 # EDGE CALCULATION PARAMETERS
@@ -42,12 +41,14 @@ MIN_TIME_TO_RESOLUTION_HOURS: 6
 
 # Minimum edge required to emit BUY signal
 # edge = (fair_probability - market_probability) / market_probability
-# ANGEPASST: Kleine konstante Gewinne → mehr Trades mit weniger Edge
-MIN_EDGE: 0.06
+# RESET 2026-03-28: Erhöht auf 10% — Qualität vor Quantität.
+# Bei 6% gab es zu viele falsche Signale (WR 5.9%). Höhere Schwelle → weniger aber
+# bessere Trades.
+MIN_EDGE: 0.10
 
 # Absolute edge floor (model_prob - market_prob)
-# 5% absoluter Edge minimum
-MIN_EDGE_ABSOLUTE: 0.05
+# RESET 2026-03-28: Erhöht auf 7% absolut
+MIN_EDGE_ABSOLUTE: 0.07
 
 # Edge multiplier for MEDIUM confidence signals
 # Require more edge when model is less certain
@@ -86,9 +87,9 @@ MAX_FORECAST_HORIZON_DAYS: 10
 # - Sufficient Polymarket market history
 
 ALLOWED_CITIES:
+  # Seoul entfernt 2026-03-28: 7 Trades, 14.3% WR, -123.58 EUR — schlechteste Stadt
   - London
   - New York
-  - Seoul
   - Los Angeles
   - Chicago
   - Miami
