@@ -190,7 +190,10 @@ def derive_strategy_advice(
     min_time = config_values.get("MIN_TIME_TO_RESOLUTION_HOURS", 24.0)
     safety_buffer = config_values.get("SAFETY_BUFFER_HOURS", 24.0)
 
-    if total_trades == 0:
+    # Mode selection requires sufficient data.  With fewer than 10 trades the
+    # win-rate and stop-loss-ratio metrics are statistically meaningless, so
+    # we stay in "observe" to avoid a permanent PROTECT deadlock.
+    if total_trades < 10:
         mode = "observe"
     elif win_rate < 20.0 or total_pnl <= -1000.0 or stop_loss_ratio >= 0.50:
         mode = "protect"

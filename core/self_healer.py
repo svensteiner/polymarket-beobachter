@@ -407,8 +407,8 @@ def run_self_heal(base_dir: Path, run_result: Optional[Dict] = None) -> Dict[str
         report["zombie_count"] = len(zombies)
         if zombies:
             report["actions"].append(f"Detected {len(zombies)} zombie positions")
-            # Auto-close zombies older than 7 days (168h)
-            _auto_close_zombies(base_dir, max_age_hours=168)
+            # Auto-close zombies at same threshold as detection (120h)
+            _auto_close_zombies(base_dir, max_age_hours=120)
     except Exception as e:
         logger.error(f"Self-heal zombie detection failed: {e}")
 

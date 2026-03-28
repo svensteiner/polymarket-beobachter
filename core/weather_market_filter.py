@@ -195,10 +195,10 @@ class WeatherMarketFilter:
         self.config = config
 
         # Extract filter parameters with defaults
-        self.min_liquidity = config.get("MIN_LIQUIDITY", 50)
-        self.min_odds = config.get("MIN_ODDS", 0.01)
-        self.max_odds = config.get("MAX_ODDS", 0.10)
-        self.min_time_to_resolution_hours = config.get("MIN_TIME_TO_RESOLUTION_HOURS", 48)
+        self.min_liquidity = float(config.get("MIN_LIQUIDITY", 50))
+        self.min_odds = float(config.get("MIN_ODDS", 0.01))
+        self.max_odds = float(config.get("MAX_ODDS", 0.10))
+        self.min_time_to_resolution_hours = float(config.get("MIN_TIME_TO_RESOLUTION_HOURS", 48))
         self.allowed_cities = set(config.get("ALLOWED_CITIES", []))
 
         logger.info(

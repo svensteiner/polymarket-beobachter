@@ -275,13 +275,20 @@ def derive_bot_health(
         "blocked_cities": [],
         "blocked_market_types": [],
         "blocked_price_bands": [],
+        "allowed_trades_per_cycle": None,  # None = unlimited
     }
+
+    # RECOVERY GUARD: With fewer than 10 total trades, the data is too thin
+    # for reliable loss-streak or win-rate signals.  Only hard drawdown and
+    # consecutive pipeline failures can escalate — everything else would
+    # create an unrecoverable Catch-22 (no trades → no data → no recovery).
+    _insufficient_data = total_trades < 10
 
     if (
         drawdown_pct >= 20.0
-        or recent_loss_streak >= 4
+        or (recent_loss_streak >= 4 and not _insufficient_data)
         or consecutive_non_ok_runs >= 2
-        or advisor_protect_wr_trigger
+        or (advisor_protect_wr_trigger and not _insufficient_data)
     ):
         status = RISK_CRITICAL
         ttl_hours = 6
@@ -292,21 +299,22 @@ def derive_bot_health(
             "blocked_cities": suggested_city_cooldowns[:3],
             "blocked_market_types": suggested_market_type_cooldowns[:3],
             "blocked_price_bands": suggested_price_band_blocks[:3],
+            "allowed_trades_per_cycle": 1,  # Always allow 1 trade to break deadlock
         }
         if drawdown_pct >= 20.0:
             triggers.append(f"drawdown_{drawdown_pct:.1f}pct")
-        if recent_loss_streak >= 4:
+        if recent_loss_streak >= 4 and not _insufficient_data:
             triggers.append(f"loss_streak_{recent_loss_streak}")
         if consecutive_non_ok_runs >= 2:
             triggers.append(f"non_ok_runs_{consecutive_non_ok_runs}")
-        if advisor_protect_wr_trigger:
+        if advisor_protect_wr_trigger and not _insufficient_data:
             triggers.append("advisor_protect_with_low_wr")
     elif (
         drawdown_pct >= 10.0
-        or recent_loss_streak >= 2
+        or (recent_loss_streak >= 2 and not _insufficient_data)
         or consecutive_zero_edge_runs >= 4
-        or stop_loss_ratio >= 0.60
-        or advisor_mode == "PROTECT"
+        or (stop_loss_ratio >= 0.60 and not _insufficient_data)
+        or (advisor_mode == "PROTECT" and not _insufficient_data)
         or high_price_open_positions >= 2
     ):
         status = RISK_ELEVATED
@@ -318,19 +326,22 @@ def derive_bot_health(
             "blocked_cities": suggested_city_cooldowns[:2],
             "blocked_market_types": suggested_market_type_cooldowns[:2],
             "blocked_price_bands": suggested_price_band_blocks[:2],
+            "allowed_trades_per_cycle": 2,  # Allow some trades even in ELEVATED
         }
         if drawdown_pct >= 10.0:
             triggers.append(f"drawdown_{drawdown_pct:.1f}pct")
-        if recent_loss_streak >= 2:
+        if recent_loss_streak >= 2 and not _insufficient_data:
             triggers.append(f"loss_streak_{recent_loss_streak}")
         if consecutive_zero_edge_runs >= 4:
             triggers.append(f"edge_drought_{consecutive_zero_edge_runs}")
-        if stop_loss_ratio >= 0.60:
+        if stop_loss_ratio >= 0.60 and not _insufficient_data:
             triggers.append(f"stop_loss_ratio_{stop_loss_ratio:.0%}")
-        if advisor_mode == "PROTECT":
+        if advisor_mode == "PROTECT" and not _insufficient_data:
             triggers.append("advisor_protect")
         if high_price_open_positions >= 2:
             triggers.append(f"high_price_opens_{high_price_open_positions}")
+    if _insufficient_data and status != RISK_HEALTHY:
+        triggers.append(f"note:insufficient_data({total_trades}_trades)")
 
     active_until = (_utc_now() + timedelta(hours=ttl_hours)).isoformat() if ttl_hours else None
     active_guardrails = [
@@ -425,6 +436,8 @@ def update_bot_health(current_summary: dict[str, Any]) -> dict[str, Any]:
         strategy_advice=strategy_advice,
         recent_closed_positions=recent_closed_positions,
     )
+    # Reset per-cycle trade counter on each new health evaluation
+    state["_trades_allowed_this_cycle"] = 0
     _atomic_write(STATE_FILE, state)
     logger.info(
         "BotHealthMonitor: status=%s triggers=%s",
@@ -449,6 +462,21 @@ def check_can_open_entry(
     guardrails = state.get("guardrails", {}) if isinstance(state.get("guardrails"), dict) else {}
     status = state.get("status", RISK_HEALTHY)
     triggers = ", ".join(state.get("triggers", [])) or "none"
+
+    # RECOVERY: Check allowed_trades_per_cycle — even in ELEVATED/CRITICAL,
+    # allow a limited number of trades per cycle to prevent permanent deadlock.
+    allowed_per_cycle = guardrails.get("allowed_trades_per_cycle")
+    if allowed_per_cycle is not None:
+        trades_this_cycle = state.get("_trades_allowed_this_cycle", 0)
+        if trades_this_cycle < int(allowed_per_cycle):
+            # Allow this trade and bump counter
+            state["_trades_allowed_this_cycle"] = trades_this_cycle + 1
+            _atomic_write(STATE_FILE, state)
+            logger.info(
+                "BotHealthMonitor: RECOVERY trade %d/%d allowed despite %s",
+                trades_this_cycle + 1, allowed_per_cycle, status,
+            )
+            return True, f"OK (recovery trade {trades_this_cycle + 1}/{allowed_per_cycle})"
 
     if is_addon and guardrails.get("block_averaging_down", False):
         return False, f"BotHealthMonitor {status}: averaging down temporarily blocked ({triggers})"

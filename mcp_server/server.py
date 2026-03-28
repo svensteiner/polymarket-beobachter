@@ -276,7 +276,7 @@ def get_open_positions() -> Dict[str, Any]:
             position_states.pop(pos_id, None)
 
     open_positions = list(position_states.values())
-    total_allocated = sum(p.get("cost_basis_eur", 0) for p in open_positions)
+    total_allocated = sum(float(p.get("cost_basis_eur") or 0) for p in open_positions)
 
     return {
         "positions": open_positions,
@@ -304,10 +304,14 @@ def get_recent_trades(limit: int = 20) -> Dict[str, Any]:
 
     trades = _load_jsonl_tail(trades_file, limit)
 
-    # Calculate stats
-    wins = sum(1 for t in trades if t.get("pnl_eur", 0) > 0)
-    losses = sum(1 for t in trades if t.get("pnl_eur", 0) < 0)
-    total_pnl = sum(t.get("pnl_eur", 0) for t in trades)
+    # Calculate stats — use `or 0` to handle None values (key exists but value is null)
+    def _pnl(t: Dict) -> float:
+        v = t.get("pnl_eur")
+        return float(v) if v is not None else 0.0
+
+    wins = sum(1 for t in trades if _pnl(t) > 0)
+    losses = sum(1 for t in trades if _pnl(t) < 0)
+    total_pnl = sum(_pnl(t) for t in trades)
 
     return {
         "trades": trades,
@@ -414,6 +418,20 @@ def update_strategy_param(param_name: str, new_value: Any, reason: str) -> Dict[
             }
 
     old_value = config.get(param_name)
+
+    # Coerce numeric parameters to proper types to prevent string-in-YAML bugs
+    NUMERIC_PARAMS = {
+        "MIN_EDGE", "MIN_EDGE_ABSOLUTE", "MAX_ODDS", "MIN_ODDS", "MIN_LIQUIDITY",
+        "KELLY_FRACTION", "SIGMA_F", "MEDIUM_CONFIDENCE_EDGE_MULTIPLIER",
+        "MIN_TIME_TO_RESOLUTION_HOURS", "MAX_FORECAST_HORIZON_DAYS",
+    }
+    if param_name in NUMERIC_PARAMS:
+        try:
+            coerced = float(new_value)
+            new_value = int(coerced) if coerced == int(coerced) and isinstance(old_value, int) else coerced
+        except (TypeError, ValueError):
+            pass
+
     config[param_name] = new_value
 
     if _save_yaml(WEATHER_CONFIG, config):

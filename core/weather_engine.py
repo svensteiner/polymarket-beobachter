@@ -195,11 +195,11 @@ class WeatherEngine:
         self._ensemble_builder = EnsembleBuilder(config) if self._ensemble_enabled else None
 
         # Extract config parameters
-        self.min_edge = config.get("MIN_EDGE", 0.25)
-        self.min_edge_absolute = config.get("MIN_EDGE_ABSOLUTE", 0.05)
-        self.medium_confidence_multiplier = config.get(
+        self.min_edge = float(config.get("MIN_EDGE", 0.25))
+        self.min_edge_absolute = float(config.get("MIN_EDGE_ABSOLUTE", 0.05))
+        self.medium_confidence_multiplier = float(config.get(
             "MEDIUM_CONFIDENCE_EDGE_MULTIPLIER", 1.5
-        )
+        ))
         self.log_all_observations = config.get("LOG_ALL_OBSERVATIONS", True)
         self.observation_log_path = config.get("OBSERVATION_LOG_PATH", "logs/weather_observations.jsonl")
 
