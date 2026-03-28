@@ -55,7 +55,7 @@ PROPOSALS_DIR = PROJECT_ROOT / "proposals"
 CAPITAL_CONFIG = DATA_DIR / "capital_config.json"
 WEATHER_CONFIG = CONFIG_DIR / "weather.yaml"
 LOGS_DIR = PROJECT_ROOT / "logs"
-BOT_STATUS_FILE = PROJECT_ROOT / "bot_status.json"
+BOT_STATUS_FILE = LOGS_DIR / "bot_status.json"
 HEARTBEAT_FILE = LOGS_DIR / "heartbeat.txt"  # Cockpit schreibt nach logs/
 
 # Control file for pause/resume
@@ -191,6 +191,8 @@ def get_bot_status() -> Dict[str, Any]:
             heartbeat_time = datetime.fromisoformat(
                 HEARTBEAT_FILE.read_text().strip().replace("Z", "+00:00")
             )
+            if heartbeat_time.tzinfo is None:
+                heartbeat_time = heartbeat_time.replace(tzinfo=timezone.utc)
             heartbeat_age = (datetime.now(timezone.utc) - heartbeat_time).total_seconds()
         except:
             pass
@@ -739,6 +741,8 @@ def health_check() -> Dict[str, Any]:
             heartbeat_time = datetime.fromisoformat(
                 HEARTBEAT_FILE.read_text().strip().replace("Z", "+00:00")
             )
+            if heartbeat_time.tzinfo is None:
+                heartbeat_time = heartbeat_time.replace(tzinfo=timezone.utc)
             age = (datetime.now(timezone.utc) - heartbeat_time).total_seconds()
             checks["heartbeat"] = {
                 "status": "OK" if age < 1200 else "STALE",
@@ -818,7 +822,7 @@ def run_pipeline(mode: str = "observe") -> Dict[str, Any]:
             cwd=str(PROJECT_ROOT),
             capture_output=True,
             text=True,
-            timeout=300,  # 5 min timeout
+            timeout=600,  # 10 min timeout
         )
 
         output_lines = result.stdout.strip().split("\n") if result.stdout else []
