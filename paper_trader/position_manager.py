@@ -456,6 +456,18 @@ class PositionManager:
             if entry_price <= 0:
                 continue
 
+            # Guard: skip SL/TP when API returns a boundary price (0.0 or 1.0).
+            # Gamma API occasionally returns mid_price > 1.0 for NO-dominant markets.
+            # _calc_unrealized_pct clamps to [0,1], but clamping to 1.0 gives
+            # current_no=0.0 → unrealized=-100% for NO positions, triggering
+            # a spurious SL exit. Prices at exact boundaries are invalid data.
+            if current_price <= 0.01 or current_price >= 0.99:
+                logger.warning(
+                    "Skipping SL/TP for %s: mid_price %.4f is at boundary "
+                    "(likely invalid API data)", position.market_id, current_price
+                )
+                continue
+
             unrealized_pct = self._calc_unrealized_pct(position, current_price)
             pos_id = position.position_id
             tp_entry = tp_state.get(pos_id, _default_tp_entry())
@@ -551,8 +563,12 @@ class PositionManager:
                 total_pnl += pnl
                 tp_count += 1
 
-                # Trailing Stop = Entry-Preis (Break-Even)
-                trailing_stop_price = self._calc_trailing_stop_price(position, 0.0)
+                # Trailing Stop = +3% above entry (lock-in minimum profit).
+                # Break-even (0.0) caused net losses: TP1 gain was eaten by the
+                # remaining half closing slightly below entry after a reversal.
+                # Locking in 3% ensures the net outcome is positive even if the
+                # trailing stop fires immediately after TP1.
+                trailing_stop_price = self._calc_trailing_stop_price(position, 0.03)
                 tp_state[pos_id] = {
                     **_default_tp_entry(),
                     "tp1_hit": True,

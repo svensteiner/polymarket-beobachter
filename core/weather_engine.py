@@ -201,7 +201,10 @@ class WeatherEngine:
             "MEDIUM_CONFIDENCE_EDGE_MULTIPLIER", 1.5
         ))
         self.log_all_observations = config.get("LOG_ALL_OBSERVATIONS", True)
-        self.observation_log_path = config.get("OBSERVATION_LOG_PATH", "logs/weather_observations.jsonl")
+        # Default resolves relative to project root so the path stays valid
+        # regardless of which directory the process was launched from.
+        _default_obs_path = str(Path(__file__).parent.parent / "logs" / "weather_observations.jsonl")
+        self.observation_log_path = config.get("OBSERVATION_LOG_PATH", _default_obs_path)
 
         # Compute config hash for audit
         config_json = json.dumps(config, sort_keys=True)
