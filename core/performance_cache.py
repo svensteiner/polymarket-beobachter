@@ -181,7 +181,13 @@ def cached_edge_with_fee(
 
     raw_edge = model_prob - market_prob
     fee = fast_polymarket_fee(market_prob)
-    net_edge = raw_edge - fee
+    # BUGFIX: Fee reduces edge magnitude regardless of direction.
+    # YES (raw >= 0): net = raw - fee
+    # NO (raw < 0): net = raw + fee (reduces negative magnitude)
+    if raw_edge >= 0:
+        net_edge = raw_edge - fee
+    else:
+        net_edge = raw_edge + fee
 
     return raw_edge, fee, net_edge
 

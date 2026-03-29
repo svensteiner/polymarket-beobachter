@@ -271,6 +271,9 @@ class MarketSnapshotClient:
 
                 if prices and len(prices) >= 1:
                     yes_price = float(prices[0])
+                    # BUGFIX: Clamp YES price to valid [0.01, 0.99] range.
+                    # Gamma API can return raw prices outside [0, 1].
+                    yes_price = max(0.01, min(0.99, yes_price))
                     # Use YES price as mid price, simulate spread
                     mid_price = yes_price
                     best_bid = max(0.01, yes_price - 0.01)

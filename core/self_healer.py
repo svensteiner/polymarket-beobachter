@@ -303,6 +303,15 @@ def check_model_sanity(model_prob: float, market_prob: float,
     if model_prob < 0.05 and market_prob > 0.25:
         return False, f"Model P={model_prob:.4f} vs Market P={market_prob:.2f}: extreme under-estimation"
 
+    # BUGFIX: Tighter check for near-zero model probabilities.
+    # Model assigning <3% while market prices at >10% signals model error,
+    # especially for narrow-band/exact markets where sigma=3.5°F is too wide.
+    if model_prob < 0.03 and market_prob > 0.10:
+        return False, (
+            f"Model P={model_prob:.4f} vs Market P={market_prob:.2f}: "
+            f"model near-zero while market non-trivial (likely sigma too wide for narrow band)"
+        )
+
     if model_prob > 0.95 and market_prob < 0.50:
         return False, f"Model P={model_prob:.4f} vs Market P={market_prob:.2f}: extreme over-estimation"
 
@@ -312,8 +321,15 @@ def check_model_sanity(model_prob: float, market_prob: float,
 
     # For narrow bands, even smaller disagreements are suspicious
     if band_width_f is not None and band_width_f <= 5.0:
-        if abs_diff > 0.25:
+        if abs_diff > 0.20:
             return False, f"Narrow-band ({band_width_f:.0f}°F): {abs_diff:.0%} model-market disagreement too large"
+
+    # Relative disagreement: if model is less than 20% of market value, model likely miscalibrated
+    if market_prob > 0.05 and model_prob / market_prob < 0.20:
+        return False, (
+            f"Model P={model_prob:.4f} is only {model_prob/market_prob:.0%} of Market P={market_prob:.2f}: "
+            f"extreme relative disagreement"
+        )
 
     return True, "OK"
 

@@ -55,6 +55,10 @@ def net_edge_after_fee(model_prob: float, market_prob: float) -> float:
     """
     Berechne den Netto-Edge nach Abzug der Polymarket Taker-Fee.
 
+    Fee reduziert die Edge-MAGNITUDE unabhaengig von der Richtung:
+    - YES bet (raw > 0): net = raw - fee
+    - NO bet (raw < 0): net = raw + fee (Betrag wird kleiner)
+
     Args:
         model_prob: Modell-Wahrscheinlichkeit (0.0 bis 1.0)
         market_prob: Markt-Wahrscheinlichkeit / Preis (0.0 bis 1.0)
@@ -75,7 +79,13 @@ def net_edge_after_fee(model_prob: float, market_prob: float) -> float:
         # Fallback to original implementation
         raw_edge = model_prob - market_prob
         fee = polymarket_taker_fee(market_prob)
-        net = raw_edge - fee
+        # BUGFIX: Fee reduces edge magnitude regardless of direction.
+        # YES (raw >= 0): net = raw - fee
+        # NO (raw < 0): net = raw + fee (reduces negative magnitude)
+        if raw_edge >= 0:
+            net = raw_edge - fee
+        else:
+            net = raw_edge + fee
         logger.debug(
             f"Fee-Aware Edge: raw={raw_edge:+.4f} fee={fee:.4f} net={net:+.4f} "
             f"(model={model_prob:.4f} market={market_prob:.4f})"

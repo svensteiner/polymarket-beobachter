@@ -58,6 +58,22 @@ LOCKFILE = BASE_DIR / "cockpit.lock"
 CRASH_LOG = BASE_DIR / "logs" / "crash.log"
 BOT_STATUS_FILE = BASE_DIR / "logs" / "bot_status.json"
 BOT_CONTROL_FILE = BASE_DIR / "logs" / "bot_control.json"
+HEARTBEAT_TXT = BASE_DIR / "logs" / "heartbeat.txt"
+
+
+def _write_heartbeat_txt():
+    """Write plain-text heartbeat for watchdog.ps1 compatibility.
+
+    BUGFIX: The watchdog checks logs/heartbeat.txt (plain ISO timestamp),
+    but the scheduler only wrote logs/heartbeat.json. This caused the
+    watchdog to always find a stale heartbeat and kill the bot every
+    5 minutes, creating the 'stirbt staendig' pattern.
+    """
+    try:
+        HEARTBEAT_TXT.parent.mkdir(parents=True, exist_ok=True)
+        HEARTBEAT_TXT.write_text(datetime.now().isoformat(), encoding="utf-8")
+    except Exception:
+        pass  # Non-critical - don't crash the bot for a heartbeat
 
 # Heartbeat-JSON fuer Dashboard (kompatibel mit aktienbot-Format)
 try:
@@ -423,6 +439,7 @@ def run_once() -> int:
     """Run pipeline once and return exit code."""
     print_header()
     start_time = datetime.now()
+    _write_heartbeat_txt()
 
     # Check if bot is paused via MCP
     is_paused, pause_reason = check_bot_paused()
@@ -481,6 +498,7 @@ def run_scheduler(interval_seconds: int = 900, enable_self_improve: bool = False
     start_memory_monitoring()
 
     _write_heartbeat_json(status="running", detail="Scheduler gestartet", extra={"run_count": 0})
+    _write_heartbeat_txt()
 
     try:
         while True:
@@ -501,6 +519,7 @@ def run_scheduler(interval_seconds: int = 900, enable_self_improve: bool = False
                     detail=pause_reason[:150],
                     extra={"run_count": run_count, "paused": True},
                 )
+                _write_heartbeat_txt()
                 # Still wait for next interval
                 next_run = datetime.now() + timedelta(seconds=interval_seconds)
                 print(f"\n{C.DIM}Next check: {next_run.strftime('%H:%M:%S')}{C.RESET}")
@@ -530,6 +549,7 @@ def run_scheduler(interval_seconds: int = 900, enable_self_improve: bool = False
                         "uptime_seconds": round((datetime.now() - start_time).total_seconds(), 1),
                     },
                 )
+                _write_heartbeat_txt()
             except Exception as e:
                 consecutive_errors += 1
                 print(f"{C.RED}Pipeline error ({consecutive_errors}x): {e}{C.RESET}")
@@ -544,6 +564,7 @@ def run_scheduler(interval_seconds: int = 900, enable_self_improve: bool = False
                         "uptime_seconds": round((datetime.now() - start_time).total_seconds(), 1),
                     },
                 )
+                _write_heartbeat_txt()
                 # Log to crash log as well
                 try:
                     CRASH_LOG.parent.mkdir(parents=True, exist_ok=True)
@@ -587,7 +608,9 @@ def run_scheduler(interval_seconds: int = 900, enable_self_improve: bool = False
                     if remaining > 0 and remaining % 60 == 0:
                         mins, secs = divmod(remaining, 60)
                         print(f"\r{C.DIM}Waiting: {mins:02d}:{secs:02d}{C.RESET}  ", end="", flush=True)
-                    time.sleep(min(10, max(1, remaining)))
+                        # BUGFIX: Refresh heartbeat.txt during wait so watchdog
+                        # doesn't kill the bot during the 15-minute interval.
+                        _write_heartbeat_txt()
                 print(f"\r{C.DIM}Waiting: 00:00{C.RESET}  ", end="", flush=True)
             except Exception as e:
                 # Even sleep errors shouldn't kill the scheduler

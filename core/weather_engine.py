@@ -195,7 +195,7 @@ class WeatherEngine:
         self._ensemble_builder = EnsembleBuilder(config) if self._ensemble_enabled else None
 
         # Extract config parameters
-        self.min_edge = float(config.get("MIN_EDGE", 0.25))
+        self.min_edge = float(config.get("MIN_EDGE", 0.12))
         self.min_edge_absolute = float(config.get("MIN_EDGE_ABSOLUTE", 0.05))
         self.medium_confidence_multiplier = float(config.get(
             "MEDIUM_CONFIDENCE_EDGE_MULTIPLIER", 1.5
@@ -434,7 +434,14 @@ class WeatherEngine:
         try:
             from .fee_model import polymarket_taker_fee
             fee = polymarket_taker_fee(market.odds_yes)
-            net_edge = edge - fee  # Netto-Edge nach Fee
+            # BUGFIX: Fee reduces edge magnitude regardless of direction.
+            # YES bets (edge >= 0): net = edge - fee (fee subtracted from positive edge)
+            # NO bets (edge < 0): net = edge + fee (fee reduces negative magnitude)
+            # Old code: net_edge = edge - fee (inflated NO edges, allowing bad trades)
+            if edge >= 0:
+                net_edge = edge - fee
+            else:
+                net_edge = edge + fee
             if abs(edge) > 0:
                 logger.debug(f"Fee-Aware: raw_edge={edge:.4f} fee={fee:.4f} net={net_edge:.4f}")
         except Exception:
@@ -577,7 +584,11 @@ class WeatherEngine:
         try:
             from .fee_model import polymarket_taker_fee
             fee = polymarket_taker_fee(market.odds_yes)
-            net_edge = edge - fee
+            # BUGFIX: Fee reduces edge magnitude regardless of direction
+            if edge >= 0:
+                net_edge = edge - fee
+            else:
+                net_edge = edge + fee
         except Exception:
             net_edge = edge
 

@@ -200,16 +200,16 @@ class PositionManager:
     # ==========================================================================
     # GESTAFFELTE TAKE-PROFIT SCHWELLEN - Strategie: Kleine konstante Gewinne
     # ==========================================================================
-    # TP1: +7%  -> 50% der Position verkaufen (schneller erster Gewinn)
-    # TP2: +12% -> weitere 35% verkaufen (kumuliert: 85%)
-    # TP3: +18% -> Restliche 15% schliessen
-    # Stop-Loss: -35% (breit genug fuer Wetter-Volatilitaet)
-    TP1_PCT = 0.07
+    # TP1: +15% -> 50% der Position verkaufen
+    # TP2: +20% -> weitere 35% verkaufen (kumuliert: 85%)
+    # TP3: +25% -> Restliche 15% schliessen
+    # Stop-Loss: -25% (Projektvorgabe)
+    TP1_PCT = 0.15
     TP1_FRACTION = 0.50   # 50% bei TP1 verkaufen
-    TP2_PCT = 0.12
+    TP2_PCT = 0.20
     TP2_FRACTION = 0.35   # 35% bei TP2 verkaufen (kumuliert: 85%)
-    TP3_PCT = 0.18        # Restliche 15% bei TP3 schliessen
-    STOP_LOSS_PCT = -0.35
+    TP3_PCT = 0.25        # Restliche 15% bei TP3 schliessen
+    STOP_LOSS_PCT = -0.25
 
     def _calc_unrealized_pct(self, position: PaperPosition, current_price: float) -> float:
         """Berechne unrealisierten P&L in Prozent (relativ zu Entry).
@@ -220,6 +220,9 @@ class PositionManager:
         entry = position.entry_price
         if entry <= 0:
             return 0.0
+        # BUGFIX: Clamp current_price to valid [0, 1] range.
+        # Gamma API can return prices > 1.0, causing impossible NO P&L.
+        current_price = max(0.0, min(1.0, current_price))
         if position.side == "NO":
             # NO-Wert = 1 - YES-Preis; Vergleich mit dem NO-Entry-Preis
             current_no_price = 1.0 - current_price
@@ -330,7 +333,14 @@ class PositionManager:
         remaining_cost = position.cost_basis_eur * remaining_fraction
         revenue = remaining_contracts * exit_price
         remaining_pnl = revenue - remaining_cost
-        pnl_pct = (remaining_pnl / remaining_cost * 100) if remaining_cost > 0 else 0.0
+
+        # BUGFIX: Include accumulated partial P&L from earlier TP exits (TP1, TP2)
+        # Without this, positions that went through staged TP show only the
+        # final portion's P&L, hiding profits from partial exits.
+        accumulated_pnl = tp_entry.get("accumulated_partial_pnl", 0.0)
+        total_pnl = remaining_pnl + accumulated_pnl
+        # P&L percentage based on FULL cost basis (not just remaining fraction)
+        pnl_pct = (total_pnl / position.cost_basis_eur * 100) if position.cost_basis_eur > 0 else 0.0
 
         now = datetime.now().isoformat()
 
@@ -354,7 +364,7 @@ class PositionManager:
             exit_price=exit_price,
             exit_slippage=exit_slippage,
             exit_reason=reason,
-            realized_pnl_eur=remaining_pnl,
+            realized_pnl_eur=total_pnl,
             pnl_pct=pnl_pct,
             confidence_level=position.confidence_level,
             market_type=position.market_type,
@@ -371,14 +381,15 @@ class PositionManager:
             action=TradeAction.PAPER_EXIT.value,
             reason=(
                 f"{reason} (rest {remaining_fraction:.0%}): "
-                f"exit @ {exit_price:.4f} | P&L: {remaining_pnl:+.2f} EUR"
+                f"exit @ {exit_price:.4f} | P&L: {total_pnl:+.2f} EUR "
+                f"(partial: {accumulated_pnl:+.2f} + final: {remaining_pnl:+.2f})"
             ),
             position_id=position.position_id,
             snapshot_time=snapshot.snapshot_time,
             entry_price=position.entry_price,
             exit_price=exit_price,
             slippage_applied=exit_slippage,
-            pnl_eur=remaining_pnl,
+            pnl_eur=total_pnl,
         )
 
         release_capital(remaining_cost, remaining_pnl, f"Final exit: {reason}")
@@ -392,7 +403,7 @@ class PositionManager:
             darwin.record_result(
                 confidence_level=getattr(position, "confidence_level", None),
                 market_type=getattr(position, "market_type", None),
-                win=remaining_pnl > 0,
+                win=total_pnl > 0,
             )
             darwin.maybe_rebalance()
         except Exception:
@@ -400,10 +411,11 @@ class PositionManager:
 
         logger.info(
             f"FINAL_EXIT (rest {remaining_fraction:.0%}): {position.market_id} | "
-            f"{reason} | P&L: {remaining_pnl:+.2f} EUR"
+            f"{reason} | total P&L: {total_pnl:+.2f} EUR "
+            f"(partial: {accumulated_pnl:+.2f} + final: {remaining_pnl:+.2f})"
         )
 
-        return remaining_pnl
+        return total_pnl
 
     def check_mid_trade_exits(self) -> Dict[str, Any]:
         """
