@@ -82,3 +82,81 @@ class TestStrategyAdvisor:
         assert "negative_edge_buckets" in advice["issues"]
         assert advice["metrics_snapshot"]["top_edge_bucket"] == "HIGH|at_or_above|YES|edge10p|time_24_72h"
         assert any("blocked_edge_buckets" in rec["suggested_changes"] for rec in advice["recommendations"])
+
+    def test_attack_mode_is_selected_for_strong_profile(self, monkeypatch):
+        from analytics.strategy_advisor import derive_strategy_advice
+
+        monkeypatch.setattr(
+            "analytics.edge_memory.get_edge_summary",
+            lambda **_: [
+                {"bucket": "HIGH|at_or_above|YES|edge10p|time_24_72h", "avg_pnl_eur": 14.0, "trade_count": 6, "win_rate": 0.83},
+                {"bucket": "HIGH|below|NO|edge5p|time_24_72h", "avg_pnl_eur": 8.0, "trade_count": 4, "win_rate": 0.75},
+            ],
+        )
+        monkeypatch.setattr(
+            "analytics.strategy_advisor._load_arbitrage_opportunities",
+            lambda: [
+                {
+                    "city": "Berlin",
+                    "direction": "above",
+                    "inconsistency_magnitude": 0.08,
+                    "market_id_lower": "low-1",
+                    "market_id_higher": "high-1",
+                }
+            ],
+        )
+        monkeypatch.setattr(
+            "analytics.strategy_advisor._load_smart_money_summary",
+            lambda: {
+                "total_wallets_tracked": 6,
+                "smart_money_wallets": 3,
+                "top_performers": [
+                    {"wallet": "0xabc", "signal_score": 0.91, "win_rate": 0.78, "total_profit_usd": 2500.0}
+                ],
+            },
+        )
+
+        advice = derive_strategy_advice(
+            report={
+                "metrics": {"total_trades": 48, "win_rate_pct": 67.0, "total_pnl_eur": 1450.0},
+                "strategy_attribution": {"stop_loss": {"count": 5}, "resolution_loss": {"count": 1}},
+                "calibration": {"interpretation": "GOOD"},
+            },
+            positions=[{"position_id": "open-1", "status": "OPEN", "entry_price": 0.42}],
+            capital={"initial_capital_eur": 5000.0, "allocated_capital_eur": 900.0},
+            config_values={},
+        )
+
+        assert advice["mode"] == "attack"
+        assert advice["metrics_snapshot"]["attack_score"] >= 0.68
+        assert any(rec["suggested_changes"].get("policy_mode") == "ATTACK" for rec in advice["recommendations"])
+
+    def test_attack_mode_maps_to_policy(self, tmp_path):
+        import json
+        from pathlib import Path
+
+        from agentic.policy import AgentPolicyEngine
+
+        base_dir = Path(tmp_path)
+        (base_dir / "output").mkdir(parents=True, exist_ok=True)
+        (base_dir / "data").mkdir(parents=True, exist_ok=True)
+        (base_dir / "data" / "agent_memory").mkdir(parents=True, exist_ok=True)
+
+        (base_dir / "output" / "strategy_advice.json").write_text(
+            json.dumps({"mode": "attack", "metrics_snapshot": {"attack_score": 0.84}}),
+            encoding="utf-8",
+        )
+        (base_dir / "output" / "segment_analysis.json").write_text("{}", encoding="utf-8")
+        (base_dir / "output" / "shadow_eligibility.json").write_text("{}", encoding="utf-8")
+        (base_dir / "data" / "capital_config.json").write_text(
+            json.dumps({"max_open_positions": 5}),
+            encoding="utf-8",
+        )
+
+        engine = AgentPolicyEngine(base_dir)
+        policy = engine.build_and_save({"bot_health_status": "OK", "drawdown_pct": 0.0})
+
+        assert policy["mode"] == "ATTACK"
+        assert policy["max_open_positions"] == 7
+        assert "LOW" in policy["allowed_confidence"]
+        assert policy["max_entry_price"] >= 0.88

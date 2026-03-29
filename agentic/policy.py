@@ -3,7 +3,6 @@ from __future__ import annotations
 import json
 import logging
 from datetime import datetime
-from enum import IntEnum
 from pathlib import Path
 from typing import Any, Dict, List
 
@@ -37,8 +36,11 @@ class AgentPolicyEngine:
         policy_mode = "NORMAL"
         if summary.get("drawdown_recovery_mode") or summary.get("bot_health_guardrails_active"):
             policy_mode = "DEFENSIVE"
-        if str(strategy_advice.get("mode", "")).lower() == "protect":
+        advice_mode = str(strategy_advice.get("mode", "")).lower()
+        if advice_mode == "protect":
             policy_mode = "DEFENSIVE"
+        elif advice_mode == "attack" and policy_mode == "NORMAL":
+            policy_mode = "ATTACK"
 
         city_cooldowns: List[str] = []
         city_cooldowns.extend(
@@ -60,8 +62,12 @@ class AgentPolicyEngine:
         max_entry_price = _safe_float(risk_flags.get("suggested_max_entry_price"), 0.85)
         if policy_mode == "DEFENSIVE":
             max_entry_price = min(max_entry_price, 0.75)
+        elif policy_mode == "ATTACK":
+            max_entry_price = max(max_entry_price, 0.88)
 
         allowed_confidence = ["MEDIUM", "HIGH"]
+        if policy_mode == "ATTACK":
+            allowed_confidence = ["LOW", "MEDIUM", "HIGH"]
         market_type_confidence_overrides = {}
         if policy_mode == "DEFENSIVE":
             for market_type in watch_market_types:
@@ -71,9 +77,13 @@ class AgentPolicyEngine:
         base_max_open_positions = int(capital.get("max_open_positions", 5) or 5)
         if policy_mode == "DEFENSIVE":
             base_max_open_positions = min(base_max_open_positions, 3)
+        elif policy_mode == "ATTACK":
+            base_max_open_positions = min(base_max_open_positions + 2, 7)
 
         pilot_whitelist = self._build_pilot_whitelist(shadow_eligibility)
         pilot_extra_slots = 1 if pilot_whitelist and policy_mode == "DEFENSIVE" else 0
+        if pilot_whitelist and policy_mode == "ATTACK":
+            pilot_extra_slots = 2
 
         policy = {
             "generated_at": datetime.now().isoformat(),

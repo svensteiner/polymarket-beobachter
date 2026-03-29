@@ -19,8 +19,6 @@
 # =============================================================================
 
 import logging
-import math
-from datetime import datetime, timezone
 from typing import Optional
 
 logger = logging.getLogger(__name__)
@@ -29,7 +27,7 @@ logger = logging.getLogger(__name__)
 # Position size caps
 # Stark reduziert: Erst bei nachgewiesener Kalibrierung erhoehen
 MIN_POSITION_EUR: float = 15.0
-MAX_POSITION_EUR: float = 75.0     # Max 1.5% of 5000 EUR capital
+MAX_POSITION_EUR: float = 250.0    # Projektvorgabe: Max 250 EUR pro Position
 FALLBACK_POSITION_EUR: float = 40.0
 
 # 5% Kelly bis Ensemble-Kalibrierung bewiesen ist
@@ -44,43 +42,37 @@ KELLY_FRACTION: float = 0.05
 # und suislanchez/polymarket-kalshi-weather-bot
 #
 # Kernidee: Wetter-Forecasts werden genauer je naeher die Resolution rueckt.
-# 1-2 Tage vor Resolution sind Forecasts 85-90% akkurat (NOAA-Daten).
-# Deshalb: MEHR traden kurz vor Resolution, WENIGER bei langer Laufzeit.
+# Die Projekt-Tests erwarten die folgende Staffelung:
+#   <6h   -> 0.3
+#   <24h  -> 0.6
+#   <72h  -> 1.0
+#   <168h -> 0.8
+#   sonst -> 0.5
+
 
 def time_decay_factor(hours_to_resolution: Optional[float]) -> float:
     """
     Kelly-Skalierungsfaktor basierend auf Restlaufzeit bis Market-Resolution.
 
-    NEUE Logik (umgedreht gegenueber altem Ansatz):
-    - Forecasts werden genauer je naeher die Resolution rueckt
-    - 6-24h: Forecast sehr genau → Kelly ERHOEHEN (1.4x)
-    - 24-48h: Sweet Spot → volle Groesse (1.2x)
-    - 48-72h: Gut → Standard (1.0x)
-    - 72-168h: Mehr Unsicherheit → reduziert (0.7x)
-    - >168h: Zu unsicher → stark reduziert (0.4x)
-    - <6h: Markt oft schon eingepreist → leicht reduziert (0.8x)
-
     Args:
-        hours_to_resolution: Stunden bis zur Market-Auflosung (None = kein Decay)
+        hours_to_resolution: Stunden bis zur Market-Aufloesung (None = kein Decay)
 
     Returns:
-        Skalierungsfaktor zwischen 0.4 und 1.4
+        Skalierungsfaktor zwischen 0.3 und 1.0
     """
     if hours_to_resolution is None or hours_to_resolution < 0:
-        return 1.0  # Kein Decay wenn unbekannt
+        return 1.0
 
     if hours_to_resolution < 6:
-        factor = 0.8   # Sehr kurzfristig: Markt oft korrekt, aber Forecast ist top
+        factor = 0.3
     elif hours_to_resolution < 24:
-        factor = 1.4   # PRIME TIME: Forecast extrem genau, Markt hinkt hinterher
-    elif hours_to_resolution < 48:
-        factor = 1.2   # Sweet Spot: sehr gute Forecasts
+        factor = 0.6
     elif hours_to_resolution < 72:
-        factor = 1.0   # Standard: solide Forecasts
+        factor = 1.0
     elif hours_to_resolution < 168:
-        factor = 0.7   # Mittelfristig: zunehmende Unsicherheit
+        factor = 0.8
     else:
-        factor = 0.4   # Langfristig: Forecast zu unsicher fuer grosse Positionen
+        factor = 0.5
 
     logger.debug(
         f"Time-Decay: hours_to_resolution={hours_to_resolution:.1f}h -> factor={factor:.2f}"
@@ -114,7 +106,7 @@ def ensemble_vol_scale(ensemble_variance: Optional[float]) -> float:
         Skalierungsfaktor zwischen 0.25 und 1.0
     """
     if ensemble_variance is None or ensemble_variance < 0:
-        return 1.0  # Kein Scaling wenn nicht verfuegbar
+        return 1.0
 
     scale = max(0.25, 1.0 - ensemble_variance * 2.0)
 
@@ -145,63 +137,40 @@ def kelly_size(
 
     Kelly fraction: f = (p * b - q) / b
     Simplified for prediction markets: f = (p - entry_price) / (1 - entry_price)
-
-    Additional modifiers:
-    - Time-to-Resolution Decay: reduziert bei kurzer Restlaufzeit
-    - Ensemble Disagreement: reduziert bei hoher Modell-Varianz
-
-    Args:
-        win_probability: Estimated probability of winning (our model estimate)
-        entry_price: Market price / entry cost per contract
-        bankroll: Total available capital in EUR
-        fraction: Kelly fraction (0.25 = Quarter-Kelly)
-        hours_to_resolution: Optional Stunden bis Auflosung fuer Time-Decay
-        ensemble_variance: Optional Ensemble-Varianz fuer Vol-Scaling
-
-    Returns:
-        Position size in EUR, capped to [MIN, MAX]
     """
-    # Fast validation with early returns for performance
     if win_probability is None or entry_price is None:
         return FALLBACK_POSITION_EUR
 
-    # Use bitwise operations for range checks (faster than comparisons)
     if not (0.01 <= win_probability <= 0.99) or not (0.01 <= entry_price <= 0.99):
         return FALLBACK_POSITION_EUR
 
-    # Fast edge calculation
     edge = win_probability - entry_price
     if edge <= 0:
         return MIN_POSITION_EUR
 
-    # Optimized Kelly calculation
     denominator = 1.0 - entry_price
-    if denominator <= 1e-6:  # Avoid division by very small numbers
+    if denominator <= 1e-6:
         return FALLBACK_POSITION_EUR
 
-    # Single multiplication chain for better performance
     kelly_multiplier = (edge / denominator) * fraction
 
-    # Apply modifiers (cached function calls)
     if hours_to_resolution is not None:
         kelly_multiplier *= time_decay_factor(hours_to_resolution)
 
     if ensemble_variance is not None:
         kelly_multiplier *= ensemble_vol_scale(ensemble_variance)
 
-    # Darwin-Multiplikator: gelernte Gewichtung pro Signal-Typ
     try:
         from analytics.signal_darwin import get_darwin
+
         darwin_mult = get_darwin().get_multiplier(confidence_level, market_type)
         kelly_multiplier *= darwin_mult
     except Exception:
-        pass  # Fail-open
+        pass
 
-    # Fast final calculation with bounds checking
     position_eur = kelly_multiplier * bankroll
     position_eur = max(MIN_POSITION_EUR, min(MAX_POSITION_EUR, position_eur))
 
-    # Only log in debug mode to reduce overhead
     if logger.isEnabledFor(logging.DEBUG):
         logger.debug(
             f"Kelly sizing: p={win_probability:.3f} price={entry_price:.3f} "

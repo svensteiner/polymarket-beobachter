@@ -30,6 +30,8 @@ CONFIG_FILE = PROJECT_ROOT / "config" / "weather.yaml"
 ADVICE_JSON_FILE = PROJECT_ROOT / "output" / "strategy_advice.json"
 ADVICE_TEXT_FILE = PROJECT_ROOT / "output" / "strategy_advice.txt"
 SEGMENT_ANALYSIS_FILE = PROJECT_ROOT / "output" / "segment_analysis.json"
+ARBITRAGE_FILE = PROJECT_ROOT / "output" / "arbitrage_opportunities.json"
+SMART_MONEY_FILE = PROJECT_ROOT / "data" / "smart_money.json"
 
 CONFIG_KEYS = (
     "MIN_EDGE",
@@ -104,11 +106,42 @@ def _load_segment_analysis() -> dict[str, Any]:
     return _load_json(SEGMENT_ANALYSIS_FILE)
 
 
-def _extract_city(question: str) -> str:
-    match = re.search(r"temperature in ([A-Za-z\s]+?)\s+be", question or "", re.IGNORECASE)
-    if match:
-        return match.group(1).strip()
-    return "Unknown"
+def _load_arbitrage_opportunities() -> list[dict[str, Any]]:
+    data = _load_json(ARBITRAGE_FILE)
+    if not isinstance(data, dict):
+        return []
+    opportunities = data.get("opportunities", [])
+    return opportunities if isinstance(opportunities, list) else []
+
+
+def _load_smart_money_summary() -> dict[str, Any]:
+    db = _load_json(SMART_MONEY_FILE)
+    if not isinstance(db, dict):
+        return {}
+    wallets = db.get("wallets", {})
+    if not isinstance(wallets, dict):
+        wallets = {}
+    smart_wallets = {
+        addr: info for addr, info in wallets.items()
+        if isinstance(info, dict) and info.get("is_smart_money", False)
+    }
+    return {
+        "total_wallets_tracked": len(wallets),
+        "smart_money_wallets": len(smart_wallets),
+        "top_performers": sorted(
+            [
+                {
+                    "wallet": addr,
+                    "win_rate": info.get("win_rate", 0.0),
+                    "total_profit_usd": info.get("total_profit_usd", 0.0),
+                    "signal_score": info.get("signal_score", info.get("win_rate", 0.0)),
+                }
+                for addr, info in smart_wallets.items()
+            ],
+            key=lambda x: x.get("signal_score", 0.0),
+            reverse=True,
+        )[:5],
+    }
 
 
 def _safe_float(value: Any, default: float = 0.0) -> float:
@@ -123,6 +156,108 @@ def _round_up(value: float, step: float = 0.01, upper: float | None = None) -> f
     if upper is not None:
         rounded = min(upper, rounded)
     return round(rounded, 4)
+
+
+def _clamp_score(value: float) -> float:
+    return max(0.0, min(1.0, value))
+
+
+def _scale_score(value: float, lower: float, upper: float) -> float:
+    if upper <= lower:
+        return 0.0
+    return _clamp_score((value - lower) / (upper - lower))
+
+
+def _compute_attack_profile(
+    *,
+    total_trades: int,
+    win_rate: float,
+    total_pnl: float,
+    stop_loss_ratio: float,
+    calibration_interpretation: str,
+    strong_edge_buckets: list[dict[str, Any]],
+    arbitrage_opportunities: list[dict[str, Any]],
+    smart_money_summary: dict[str, Any],
+    rich_open_positions: list[dict[str, Any]],
+    weak_cities: list[dict[str, Any]],
+    risk_flags: dict[str, Any],
+) -> dict[str, Any]:
+    calibration_bonus_map = {
+        "EXCELLENT": 1.0,
+        "GOOD": 0.8,
+        "FAIR": 0.45,
+        "POOR": 0.15,
+    }
+
+    performance_score = (
+        0.55 * _scale_score(win_rate, 40.0, 62.0)
+        + 0.30 * _scale_score(total_pnl, 0.0, 1200.0)
+        + 0.15 * (1.0 - _scale_score(stop_loss_ratio, 0.15, 0.50))
+    )
+
+    edge_score = 0.0
+    if strong_edge_buckets:
+        bucket_weight = _scale_score(len(strong_edge_buckets), 1.0, 3.0)
+        profit_weight = _scale_score(
+            sum(max(0.0, _safe_float(item.get("avg_pnl_eur"))) for item in strong_edge_buckets[:3]),
+            0.0,
+            24.0,
+        )
+        edge_score = (0.6 * bucket_weight) + (0.4 * profit_weight)
+
+    arbitrage_score = 0.0
+    if arbitrage_opportunities:
+        best_opp = max(arbitrage_opportunities, key=lambda item: _safe_float(item.get("inconsistency_magnitude")))
+        arbitrage_score = (
+            0.55 * _scale_score(len(arbitrage_opportunities), 1.0, 4.0)
+            + 0.45 * _scale_score(_safe_float(best_opp.get("inconsistency_magnitude")), 0.02, 0.10)
+        )
+
+    smart_money_score = 0.0
+    smart_wallets = int(smart_money_summary.get("smart_money_wallets", 0) or 0)
+    top_performers = smart_money_summary.get("top_performers", [])
+    lead = top_performers[0] if isinstance(top_performers, list) and top_performers else {}
+    if smart_wallets > 0:
+        smart_money_score = 0.6 * _scale_score(smart_wallets, 1.0, 5.0)
+        smart_money_score += 0.4 * _scale_score(_safe_float(lead.get("signal_score")), 0.35, 0.9)
+
+    discipline_penalty = 0.0
+    discipline_penalty += 0.08 * len(weak_cities)
+    discipline_penalty += 0.06 * len(rich_open_positions)
+    discipline_penalty += 0.03 * len(risk_flags.get("risky_price_bands", []))
+    discipline_penalty += 0.03 * len(risk_flags.get("risky_market_types", []))
+
+    calibration_bonus = calibration_bonus_map.get(calibration_interpretation.upper(), 0.0)
+
+    raw_score = (
+        0.36 * performance_score
+        + 0.20 * calibration_bonus
+        + 0.16 * edge_score
+        + 0.16 * arbitrage_score
+        + 0.12 * smart_money_score
+    ) - discipline_penalty
+
+    if total_trades < 10:
+        raw_score *= 0.35
+
+    score = round(_clamp_score(raw_score), 3)
+    return {
+        "score": score,
+        "components": {
+            "performance": round(performance_score, 3),
+            "calibration": round(calibration_bonus, 3),
+            "edge": round(edge_score, 3),
+            "arbitrage": round(arbitrage_score, 3),
+            "smart_money": round(smart_money_score, 3),
+            "discipline_penalty": round(discipline_penalty, 3),
+        },
+        "signal_counts": {
+            "strong_edge_buckets": len(strong_edge_buckets),
+            "arbitrage_opportunities": len(arbitrage_opportunities),
+            "smart_money_wallets": smart_wallets,
+            "weak_cities": len(weak_cities),
+        },
+    }
 
 
 def derive_strategy_advice(
@@ -190,6 +325,33 @@ def derive_strategy_advice(
     min_time = config_values.get("MIN_TIME_TO_RESOLUTION_HOURS", 24.0)
     safety_buffer = config_values.get("SAFETY_BUFFER_HOURS", 24.0)
 
+    weak_edge_buckets = [item for item in edge_summary if _safe_float(item.get("avg_pnl_eur")) < 0]
+    strong_edge_buckets = [item for item in edge_summary if _safe_float(item.get("avg_pnl_eur")) > 0]
+    arbitrage_opportunities = _load_arbitrage_opportunities()
+    smart_money_summary = _load_smart_money_summary()
+    brier_interpretation = str(calibration.get("interpretation", "") or "").upper()
+    attack_profile = _compute_attack_profile(
+        total_trades=total_trades,
+        win_rate=win_rate,
+        total_pnl=total_pnl,
+        stop_loss_ratio=stop_loss_ratio,
+        calibration_interpretation=brier_interpretation,
+        strong_edge_buckets=strong_edge_buckets,
+        arbitrage_opportunities=arbitrage_opportunities,
+        smart_money_summary=smart_money_summary,
+        rich_open_positions=rich_open_positions,
+        weak_cities=weak_cities,
+        risk_flags=risk_flags,
+    )
+    attack_score = attack_profile["score"]
+    attack_ready = (
+        total_trades >= 20
+        and win_rate >= 50.0
+        and total_pnl >= 0.0
+        and stop_loss_ratio <= 0.30
+        and attack_score >= 0.68
+    )
+
     # Mode selection requires sufficient data.  With fewer than 10 trades the
     # win-rate and stop-loss-ratio metrics are statistically meaningless, so
     # we stay in "observe" to avoid a permanent PROTECT deadlock.
@@ -197,15 +359,15 @@ def derive_strategy_advice(
         mode = "observe"
     elif win_rate < 20.0 or total_pnl <= -1000.0 or stop_loss_ratio >= 0.50:
         mode = "protect"
+    elif attack_ready:
+        mode = "attack"
     elif win_rate < 45.0 or total_pnl < 0.0:
         mode = "balance"
     else:
-        mode = "attack"
+        mode = "attack" if attack_score >= 0.58 else "balance"
 
     issues: list[str] = []
     recommendations: list[dict[str, Any]] = []
-    weak_edge_buckets = [item for item in edge_summary if _safe_float(item.get("avg_pnl_eur")) < 0]
-    strong_edge_buckets = [item for item in edge_summary if _safe_float(item.get("avg_pnl_eur")) > 0]
 
     def add_recommendation(priority: str, area: str, action: str, reason: str, suggested_changes: dict[str, Any] | None = None) -> None:
         recommendations.append(
@@ -295,6 +457,50 @@ def derive_strategy_advice(
             },
         )
 
+    if total_trades >= 10 and arbitrage_opportunities:
+        issues.append("arbitrage_opportunity")
+        best_opp = max(
+            arbitrage_opportunities,
+            key=lambda item: _safe_float(item.get("inconsistency_magnitude")),
+        )
+        add_recommendation(
+            "HIGH",
+            "arbitrage",
+            "Logische Preisinkonsistenzen hedgen statt Richtung zu raten",
+            (
+                f"{len(arbitrage_opportunities)} Arbitrage-Kandidat(en) gefunden. "
+                "Diese Setups sind meist besser als reine Directional Bets."
+            ),
+            {
+                "focus_city": best_opp.get("city"),
+                "focus_direction": best_opp.get("direction"),
+                "focus_delta": best_opp.get("inconsistency_magnitude"),
+                "review_market_ids": [
+                    best_opp.get("market_id_lower"),
+                    best_opp.get("market_id_higher"),
+                ],
+            },
+        )
+
+    if total_trades >= 10 and smart_money_summary.get("smart_money_wallets", 0) > 0:
+        issues.append("smart_money_flow")
+        top_performers = smart_money_summary.get("top_performers", [])
+        lead = top_performers[0] if top_performers else {}
+        add_recommendation(
+            "MEDIUM",
+            "smart_money",
+            "Wallet-Cluster und grosse Positionen priorisieren",
+            (
+                f"{smart_money_summary.get('smart_money_wallets', 0)} Wallet(s) wurden als Smart Money markiert. "
+                "Diese Flows koennen als Bestätigung fuer Setup-Qualitaet dienen."
+            ),
+            {
+                "actionable_wallets": smart_money_summary.get("smart_money_wallets", 0),
+                "top_wallet": lead.get("wallet"),
+                "top_wallet_signal_score": lead.get("signal_score"),
+            },
+        )
+
     if strong_edge_buckets:
         add_recommendation(
             "MEDIUM",
@@ -306,6 +512,25 @@ def derive_strategy_advice(
             ),
             {
                 "preferred_edge_buckets": [item["bucket"] for item in strong_edge_buckets[:3]],
+            },
+        )
+
+    if mode == "attack":
+        issues.append("attack_mode_ready")
+        add_recommendation(
+            "HIGH",
+            "strategy",
+            "Attack-Mode auf Gewinner-Setups fokussieren",
+            (
+                f"Attack-Score {attack_score:.2f} zeigt eine guenstige Kombination aus Performance, "
+                "Kalibrierung und Marktstruktur. Jetzt selektiv mehr Risiko auf die besten Kanten legen."
+            ),
+            {
+                "attack_score": attack_score,
+                "policy_mode": "ATTACK",
+                "focus_edge_buckets": [item["bucket"] for item in strong_edge_buckets[:3]],
+                "focus_arbitrage_count": len(arbitrage_opportunities),
+                "focus_smart_money_wallets": smart_money_summary.get("smart_money_wallets", 0),
             },
         )
 
@@ -360,7 +585,6 @@ def derive_strategy_advice(
             },
         )
 
-    brier_interpretation = str(calibration.get("interpretation", "") or "").upper()
     if total_trades >= 10 and brier_interpretation in {"GOOD", "EXCELLENT"} and total_pnl < 0:
         issues.append("selection_execution_gap")
         add_recommendation(
@@ -383,6 +607,7 @@ def derive_strategy_advice(
 
     summary = (
         f"{mode.upper()}: Win-Rate {win_rate:.1f}% | P&L {total_pnl:+.2f} EUR | "
+        f"Attack {attack_score:.2f} | "
         f"{len(open_positions)} offene Positionen | {len(recommendations)} Empfehlung(en)"
     )
 
@@ -402,11 +627,16 @@ def derive_strategy_advice(
             "calibration_interpretation": brier_interpretation or "UNKNOWN",
             "top_edge_bucket": strong_edge_buckets[0]["bucket"] if strong_edge_buckets else None,
             "worst_edge_bucket": weak_edge_buckets[0]["bucket"] if weak_edge_buckets else None,
+            "attack_score": attack_score,
+            "attack_components": attack_profile["components"],
+            "attack_signals": attack_profile["signal_counts"],
         },
         "issues": issues,
         "weak_cities": weak_cities,
         "segment_risk_flags": risk_flags,
         "edge_summary": edge_summary,
+        "arbitrage_opportunities": arbitrage_opportunities,
+        "smart_money_summary": smart_money_summary,
         "recommendations": recommendations,
     }
 

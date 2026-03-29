@@ -74,9 +74,9 @@ class AgentLoop:
         advice_mode = str(context.strategy_advice.get("mode", "observe")).lower()
 
         capital_protection = "HIGH" if recovery or bot_health in {"DEGRADED", "CRITICAL"} else "MEDIUM"
-        trade_quality = "HIGH" if advice_mode in {"protect", "tighten"} else "MEDIUM"
+        trade_quality = "HIGH" if advice_mode in {"protect", "tighten", "attack"} else "MEDIUM"
         calibration = "MEDIUM"
-        activity_level = "LOW" if recovery or advice_mode == "protect" else "MEDIUM"
+        activity_level = "HIGH" if advice_mode == "attack" else ("LOW" if recovery or advice_mode == "protect" else "MEDIUM")
 
         return GoalState(
             capital_protection=capital_protection,
@@ -88,8 +88,11 @@ class AgentLoop:
     def _detect_mode(self, context: RunContext) -> str:
         if context.summary.get("drawdown_recovery_mode"):
             return "DEFENSIVE"
-        if str(context.strategy_advice.get("mode", "")).lower() == "protect":
+        advice_mode = str(context.strategy_advice.get("mode", "")).lower()
+        if advice_mode == "protect":
             return "DEFENSIVE"
+        if advice_mode == "attack":
+            return "ATTACK"
         if context.summary.get("bot_health_guardrails_active"):
             return "DEFENSIVE"
         if context.summary.get("edge_observations", 0) == 0 and len(context.open_positions) == 0:
@@ -100,6 +103,12 @@ class AgentLoop:
         issues = context.strategy_advice.get("issues", [])
         if mode == "DEFENSIVE" and issues:
             return f"Kapitalschutz priorisieren; Hauptproblem aktuell: {issues[0]}."
+        if mode == "ATTACK":
+            attack_score = float(context.strategy_advice.get("metrics_snapshot", {}).get("attack_score", 0.0) or 0.0)
+            return (
+                f"Attack-Mode ist vertretbar; Score {attack_score:.2f} spricht fuer selektiv groessere Bets "
+                "auf die besten Setups und Arbitrage-Fenster."
+            )
         if context.summary.get("high_price_open_positions", 0) > 0:
             return "Ein Teil der Underperformance koennte aus zu teuren Entries statt aus Forecast-Qualitaet kommen."
         if context.summary.get("edge_observations", 0) == 0:
@@ -110,6 +119,9 @@ class AgentLoop:
         proposals: List[ActionProposal] = []
         issues = context.strategy_advice.get("issues", [])
         weak_cities = context.strategy_advice.get("weak_cities", [])
+        attack_score = float(context.strategy_advice.get("metrics_snapshot", {}).get("attack_score", 0.0) or 0.0)
+        attack_components = context.strategy_advice.get("metrics_snapshot", {}).get("attack_components", {})
+        attack_buckets = context.strategy_advice.get("metrics_snapshot", {}).get("attack_signals", {})
 
         if mode == "DEFENSIVE":
             proposals.append(ActionProposal(
@@ -155,6 +167,25 @@ class AgentLoop:
                 evidence=issues[:2],
                 priority="MEDIUM",
                 params={"experiment": "stricter_entry_filters"},
+            ))
+
+        if mode == "ATTACK":
+            proposals.append(ActionProposal(
+                action_type="scale_attack",
+                title="Attack-Mode auf Top-Signale beschraenken",
+                rationale="Gute Scores rechtfertigen mehr Druck, aber nur auf die saubersten Kanten.",
+                evidence=[
+                    f"attack_score={attack_score:.2f}",
+                    f"performance={attack_components.get('performance', 0.0):.2f}",
+                    f"arbitrage={attack_components.get('arbitrage', 0.0):.2f}",
+                    f"smart_money={attack_components.get('smart_money', 0.0):.2f}",
+                    f"arbitrage_opportunities={attack_buckets.get('arbitrage_opportunities', 0)}",
+                ],
+                priority="HIGH",
+                params={
+                    "target": "attack_policy",
+                    "reason": "high_attack_score",
+                },
             ))
 
         recent_runs = context.short_term_memory.get("recent_runs", [])

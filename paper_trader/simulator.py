@@ -49,7 +49,7 @@ from paper_trader.capital_manager import (
     release_capital,
     has_sufficient_capital,
 )
-from paper_trader.kelly import kelly_size, FALLBACK_POSITION_EUR
+from paper_trader.kelly import kelly_size
 from paper_trader.drawdown_protector import check_can_open_position
 from paper_trader.bot_health_monitor import check_can_open_entry
 from paper_trader.high_conviction import evaluate_high_conviction_exception
@@ -314,12 +314,16 @@ class ExecutionSimulator:
         # LLM Trade Reasoning: GPT-5.4 mini Sanity-Check (non-blocking)
         try:
             from core.llm_trade_reasoning import evaluate_trade
+            try:
+                default_position_size = self._capital_manager.get_position_size()
+            except Exception:
+                default_position_size = 250.0
             llm_approved, llm_reason, llm_result = evaluate_trade(
                 market_question=proposal.market_question,
                 model_probability=proposal.model_probability,
                 market_price=proposal.implied_probability or 0.5,
                 side=proposal.side,
-                position_size_eur=getattr(proposal, "position_size_eur", 75),
+                position_size_eur=getattr(proposal, "position_size_eur", default_position_size),
                 edge=proposal.edge,
                 event_type=getattr(proposal, "event_type", ""),
                 city=getattr(proposal, "city", ""),

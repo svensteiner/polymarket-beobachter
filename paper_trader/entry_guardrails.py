@@ -26,7 +26,23 @@ AGENTIC_DIR = PROJECT_ROOT / "agentic"
 # Default limits
 DEFAULT_MAX_OPEN_POSITIONS = 10
 DEFAULT_MAX_POSITIONS_PER_CITY = 3
-DEFAULT_MAX_ENTRY_PRICE = 0.85
+DEFAULT_MAX_ENTRY_PRICE = 0.35
+DEFAULT_MIN_EDGE = 0.12
+DEFAULT_MIN_EDGE_ABSOLUTE = 0.05
+
+
+def describe_proposal(proposal) -> Dict[str, Any]:
+    """Extract metadata from a proposal for logging/auditing."""
+    return {
+        "market_id": getattr(proposal, "market_id", None),
+        "market_question": getattr(proposal, "market_question", "")[:100],
+        "edge": getattr(proposal, "edge", 0),
+        "implied_probability": getattr(proposal, "implied_probability", 0),
+        "model_probability": getattr(proposal, "model_probability", 0),
+        "confidence_level": getattr(proposal, "confidence_level", "UNKNOWN"),
+        "city": _extract_city(getattr(proposal, "market_question", "")),
+        "entry_price": getattr(proposal, "implied_probability", 0),
+    }
 
 
 def _load_capital_config() -> Dict[str, Any]:
@@ -35,6 +51,20 @@ def _load_capital_config() -> Dict[str, Any]:
     if config_file.exists():
         try:
             return json.loads(config_file.read_text(encoding="utf-8"))
+        except Exception:
+            pass
+    return {}
+
+
+def _load_weather_config() -> Dict[str, Any]:
+    """Load weather strategy configuration."""
+    config_file = PROJECT_ROOT / "config" / "weather.yaml"
+    if config_file.exists():
+        try:
+            import yaml
+            data = yaml.safe_load(config_file.read_text(encoding="utf-8"))
+            if isinstance(data, dict):
+                return data
         except Exception:
             pass
     return {}
@@ -49,28 +79,6 @@ def _load_agent_policy() -> Dict[str, Any]:
         except Exception:
             pass
     return {}
-
-
-def describe_proposal(proposal) -> Dict[str, Any]:
-    """
-    Extract metadata from a proposal for logging/auditing.
-
-    Args:
-        proposal: Proposal object
-
-    Returns:
-        Dict with proposal metadata
-    """
-    return {
-        "market_id": getattr(proposal, "market_id", None),
-        "market_question": getattr(proposal, "market_question", "")[:100],
-        "edge": getattr(proposal, "edge", 0),
-        "implied_probability": getattr(proposal, "implied_probability", 0),
-        "model_probability": getattr(proposal, "model_probability", 0),
-        "confidence_level": getattr(proposal, "confidence_level", "UNKNOWN"),
-        "city": _extract_city(getattr(proposal, "market_question", "")),
-        "entry_price": getattr(proposal, "implied_probability", 0),
-    }
 
 
 def _extract_city(question: str) -> Optional[str]:
@@ -114,10 +122,16 @@ def evaluate_entry_guardrails(
     """
     capital_config = _load_capital_config()
     agent_policy = _load_agent_policy()
+    weather_config = _load_weather_config()
 
     # Get limits
     max_positions = capital_config.get("max_open_positions", DEFAULT_MAX_OPEN_POSITIONS)
-    max_entry_price = agent_policy.get("max_entry_price", DEFAULT_MAX_ENTRY_PRICE)
+    max_entry_price = min(
+        float(weather_config.get("MAX_ODDS", DEFAULT_MAX_ENTRY_PRICE)),
+        float(agent_policy.get("max_entry_price", DEFAULT_MAX_ENTRY_PRICE)),
+    )
+    min_edge = float(weather_config.get("MIN_EDGE", DEFAULT_MIN_EDGE))
+    min_edge_absolute = float(weather_config.get("MIN_EDGE_ABSOLUTE", DEFAULT_MIN_EDGE_ABSOLUTE))
     cooldown_cities = agent_policy.get("cooldown_cities", [])
     policy_mode = agent_policy.get("mode", "NORMAL")
 
@@ -148,10 +162,22 @@ def evaluate_entry_guardrails(
         if confidence not in ("HIGH", "VERY_HIGH"):
             return (False, f"defensive_mode|Only HIGH confidence allowed in defensive mode (got {confidence})")
 
-    # Check 5: Minimum edge (safety check)
-    edge = abs(getattr(proposal, "edge", 0))
-    if edge < 0.05:
-        return (False, f"min_edge|Edge {edge:.2%} below minimum 5%")
+    # Check 5: Minimum edge (relative + absolute safety checks)
+    relative_edge = abs(getattr(proposal, "edge", 0) or 0)
+    market_probability = getattr(proposal, "implied_probability", None)
+    model_probability = getattr(proposal, "model_probability", None)
+    absolute_edge = abs((model_probability or 0) - (market_probability or 0)) if (
+        market_probability is not None and model_probability is not None
+    ) else relative_edge
+
+    if relative_edge < min_edge:
+        return (False, f"min_edge|Edge {relative_edge:.2%} below minimum {min_edge:.0%}")
+
+    if absolute_edge < min_edge_absolute:
+        return (
+            False,
+            f"absolute_edge|Absolute edge {absolute_edge:.2%} below minimum {min_edge_absolute:.0%}",
+        )
 
     return (True, "passed|All guardrails passed")
 
@@ -165,10 +191,16 @@ def get_guardrail_status() -> Dict[str, Any]:
     """
     capital_config = _load_capital_config()
     agent_policy = _load_agent_policy()
+    weather_config = _load_weather_config()
 
     return {
         "max_open_positions": capital_config.get("max_open_positions", DEFAULT_MAX_OPEN_POSITIONS),
-        "max_entry_price": agent_policy.get("max_entry_price", DEFAULT_MAX_ENTRY_PRICE),
+        "max_entry_price": min(
+            float(weather_config.get("MAX_ODDS", DEFAULT_MAX_ENTRY_PRICE)),
+            float(agent_policy.get("max_entry_price", DEFAULT_MAX_ENTRY_PRICE)),
+        ),
+        "min_edge": float(weather_config.get("MIN_EDGE", DEFAULT_MIN_EDGE)),
+        "min_edge_absolute": float(weather_config.get("MIN_EDGE_ABSOLUTE", DEFAULT_MIN_EDGE_ABSOLUTE)),
         "cooldown_cities": agent_policy.get("cooldown_cities", []),
         "policy_mode": agent_policy.get("mode", "NORMAL"),
         "timestamp": datetime.now().isoformat(),

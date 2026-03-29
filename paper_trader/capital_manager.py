@@ -86,10 +86,10 @@ class CapitalManager:
             available_capital_eur=data.get("available_capital_eur", 5000.0),
             allocated_capital_eur=data.get("allocated_capital_eur", 0.0),
             realized_pnl_eur=data.get("realized_pnl_eur", 0.0),
-            position_size_eur=data.get("position_size_eur", 100.0),
-            max_position_pct=data.get("max_position_pct", 2.0),
-            max_open_positions=data.get("max_open_positions", 50),
-            max_daily_trades=data.get("max_daily_trades", 10),
+            position_size_eur=data.get("position_size_eur", 250.0),
+            max_position_pct=data.get("max_position_pct", 5.0),
+            max_open_positions=data.get("max_open_positions", 10),
+            max_daily_trades=data.get("max_daily_trades", 5),
         )
 
         # Sanity-Check: Werte muessen zusammenpassen
@@ -121,10 +121,10 @@ class CapitalManager:
             "available_capital_eur": 5000.00,
             "allocated_capital_eur": 0.00,
             "realized_pnl_eur": 0.00,
-            "position_size_eur": 100.00,
-            "max_position_pct": 2.0,
-            "max_open_positions": 50,
-            "max_daily_trades": 10,
+            "position_size_eur": 250.00,
+            "max_position_pct": 5.0,
+            "max_open_positions": 10,
+            "max_daily_trades": 5,
             "created_at": datetime.now().isoformat(),
             "last_updated": datetime.now().isoformat(),
             "last_updated_reason": "Auto-created default config"
@@ -427,9 +427,9 @@ class CapitalManager:
                 available_capital_eur=initial_amount_eur,
                 allocated_capital_eur=0.0,
                 realized_pnl_eur=0.0,
-                position_size_eur=100.0,
-                max_position_pct=2.0,
-                max_open_positions=30,
+                position_size_eur=250.0,
+                max_position_pct=5.0,
+                max_open_positions=10,
                 max_daily_trades=5,
             )
             self._save_config(f"Capital reset to {initial_amount_eur:.2f} EUR")

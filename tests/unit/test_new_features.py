@@ -401,6 +401,18 @@ class TestArbitrageDetection:
         opportunities = detect_arbitrage(markets, min_inconsistency=0.01)
         assert len(opportunities) == 0
 
+    def test_below_arbitrage_detected(self):
+        from analytics.arbitrage_detector import detect_arbitrage, WeatherMarketInfo
+        markets = [
+            WeatherMarketInfo(market_id='mkt1', question='NYC below 95F', odds_yes=0.25,
+                city='New York', threshold_f=95.0, direction='below', resolution_date='August-1'),
+            WeatherMarketInfo(market_id='mkt2', question='NYC below 100F', odds_yes=0.15,
+                city='New York', threshold_f=100.0, direction='below', resolution_date='August-1'),
+        ]
+        opportunities = detect_arbitrage(markets, min_inconsistency=0.01)
+        assert len(opportunities) == 1
+        assert opportunities[0].direction == 'below'
+
     def test_arbitrage_only_same_city(self):
         from analytics.arbitrage_detector import detect_arbitrage, WeatherMarketInfo
         markets = [
@@ -444,6 +456,16 @@ class TestSmartMoneyTracking:
         trades = [{'won': True, 'pnl_usd': 10, 'size_usd': 100}] + [{'won': False, 'pnl_usd': -100, 'size_usd': 100}] * 5
         result = analyze_wallet_performance('0xbad', trades)
         assert result['is_smart_money'] is False
+
+    def test_rank_wallets_by_signal(self):
+        from analytics.smart_money import rank_wallets_by_signal
+        wallets = {
+            '0xgood': [{'won': True, 'pnl_usd': 120, 'size_usd': 600} for _ in range(8)],
+            '0xbad': [{'won': False, 'pnl_usd': -50, 'size_usd': 200} for _ in range(8)],
+        }
+        ranked = rank_wallets_by_signal(wallets)
+        assert len(ranked) == 2
+        assert ranked[0]['wallet'] == '0xgood'
 
 
 # ============================================================

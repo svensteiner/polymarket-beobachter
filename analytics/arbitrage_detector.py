@@ -68,7 +68,6 @@ class ArbitrageOpportunity:
         }
 
     def _describe(self) -> str:
-        direction_word = "ueber" if self.direction == "above" else "unter"
         return (
             f"Inkonsistenz: P(temp>{self.threshold_higher_f:.0f}F) = {self.odds_higher:.1%} "
             f"> P(temp>{self.threshold_lower_f:.0f}F) = {self.odds_lower:.1%} "
@@ -188,11 +187,11 @@ def detect_arbitrage(
     """
     Erkennt Arbitrage-Moeglichkeiten in einer Liste von Wetter-Maerkten.
 
-    Logische Constraint fuer "above" Maerkte:
-    P(temp > high_threshold) <= P(temp > low_threshold)
-    da der hoehere Schwellenwert schwieriger zu erreichen ist.
+    Logische Constraints:
+    - "above":  P(temp > high_threshold) <= P(temp > low_threshold)
+    - "below":  P(temp < high_threshold) >= P(temp < low_threshold)
 
-    Verletzung: P(temp > high_threshold) > P(temp > low_threshold) = Arbitrage
+    Verletzungen dieser Monotonie sind Arbitrage-Kandidaten.
 
     Args:
         markets: Liste von WeatherMarketInfo Objekten
@@ -243,12 +242,38 @@ def detect_arbitrage(
                             inconsistency_magnitude=inconsistency,
                             direction=lower.direction,
                             detected_at=now,
-                        )
+                            )
                         opportunities.append(opp)
                         logger.info(
                             f"ARBITRAGE: {lower.city} | "
                             f"P(>{higher.threshold_f:.0f}F)={higher.odds_yes:.1%} > "
                             f"P(>{lower.threshold_f:.0f}F)={lower.odds_yes:.1%} | "
+                            f"delta={inconsistency:.2%}"
+                        )
+                elif lower.direction == "below":
+                    # Bei "below" steigt die Wahrscheinlichkeit mit hoeherem Threshold.
+                    # Verletzung: P(<high) < P(<low)
+                    if higher.odds_yes + min_inconsistency < lower.odds_yes:
+                        inconsistency = lower.odds_yes - higher.odds_yes
+                        opp = ArbitrageOpportunity(
+                            market_id_lower=lower.market_id,
+                            market_id_higher=higher.market_id,
+                            question_lower=lower.question,
+                            question_higher=higher.question,
+                            threshold_lower_f=lower.threshold_f,
+                            threshold_higher_f=higher.threshold_f,
+                            odds_lower=lower.odds_yes,
+                            odds_higher=higher.odds_yes,
+                            city=lower.city,
+                            inconsistency_magnitude=inconsistency,
+                            direction=lower.direction,
+                            detected_at=now,
+                        )
+                        opportunities.append(opp)
+                        logger.info(
+                            f"ARBITRAGE: {lower.city} | "
+                            f"P(<{higher.threshold_f:.0f}F)={higher.odds_yes:.1%} < "
+                            f"P(<{lower.threshold_f:.0f}F)={lower.odds_yes:.1%} | "
                             f"delta={inconsistency:.2%}"
                         )
     return opportunities

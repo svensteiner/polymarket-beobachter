@@ -36,6 +36,20 @@ MIN_WIN_RATE: float = 0.60
 MIN_TRADES_FOR_RANKING: int = 5
 
 
+def _wallet_signal_score(win_rate: float, total_profit_usd: float, total_volume_usd: float, trades: int) -> float:
+    """
+    Score fuer die Priorisierung von Wallets.
+
+    Hohe Win-Rate, positives PnL und ausreichend Volumen werden bevorzugt.
+    """
+    if trades <= 0:
+        return 0.0
+    win_component = max(0.0, min(1.0, win_rate))
+    profit_component = max(-1.0, min(1.0, total_profit_usd / max(total_volume_usd, 1.0)))
+    activity_component = min(1.0, trades / max(MIN_TRADES_FOR_RANKING * 4, 1))
+    return round((win_component * 0.55) + (profit_component * 0.30) + (activity_component * 0.15), 4)
+
+
 def _load_smart_money_db() -> Dict[str, Any]:
     """Lade persistierte Smart Money Datenbank."""
     if not SMART_MONEY_FILE.exists():
@@ -190,6 +204,7 @@ def analyze_wallet_performance(
         total >= MIN_TRADES_FOR_RANKING
         and win_rate >= MIN_WIN_RATE
     )
+    signal_score = _wallet_signal_score(win_rate, float(total_profit), float(total_volume), total)
 
     return {
         "wallet": wallet_address,
@@ -199,8 +214,37 @@ def analyze_wallet_performance(
         "total_profit_usd": round(total_profit, 2),
         "total_volume_usd": round(total_volume, 2),
         "is_smart_money": is_smart,
+        "signal_score": signal_score,
         "last_seen": datetime.now(timezone.utc).isoformat(),
     }
+
+
+def rank_wallets_by_signal(wallets: Dict[str, List[Dict[str, Any]]]) -> List[Dict[str, Any]]:
+    """
+    Ranke Wallets nach Smart-Money-Signal.
+
+    Args:
+        wallets: Mapping wallet_address -> trades
+
+    Returns:
+        Absteigend nach Signal-Score sortierte Wallet-Summaries.
+    """
+    ranked = []
+    for wallet_address, trades in wallets.items():
+        summary = analyze_wallet_performance(wallet_address, trades)
+        if summary.get("trades", 0) < MIN_TRADES_FOR_RANKING:
+            continue
+        ranked.append(summary)
+
+    ranked.sort(
+        key=lambda item: (
+            item.get("signal_score", 0.0),
+            item.get("total_profit_usd", 0.0),
+            item.get("win_rate", 0.0),
+        ),
+        reverse=True,
+    )
+    return ranked
 
 
 def scan_market_for_smart_money(
@@ -289,13 +333,30 @@ def get_smart_money_summary() -> Dict[str, Any]:
         if info.get("is_smart_money", False)
     }
 
+    ranked_wallets = sorted(
+        (
+            {
+                "wallet": addr,
+                "win_rate": info.get("win_rate", 0.0),
+                "total_profit_usd": info.get("total_profit_usd", 0.0),
+                "total_volume_usd": info.get("total_volume_usd", 0.0),
+                "signal_score": _wallet_signal_score(
+                    float(info.get("win_rate", 0.0)),
+                    float(info.get("total_profit_usd", 0.0)),
+                    float(info.get("total_volume_usd", 0.0)),
+                    int(info.get("trades", 0) or 0),
+                ),
+            }
+            for addr, info in smart_wallets.items()
+        ),
+        key=lambda item: item.get("signal_score", 0.0),
+        reverse=True,
+    )
+
     return {
         "total_wallets_tracked": len(wallets),
         "smart_money_wallets": len(smart_wallets),
         "updated_at": db.get("updated_at"),
-        "top_performers": sorted(
-            smart_wallets.values(),
-            key=lambda x: x.get("win_rate", 0),
-            reverse=True,
-        )[:5],
+        "top_performers": ranked_wallets[:5],
+        "actionable_wallets": len(ranked_wallets),
     }
