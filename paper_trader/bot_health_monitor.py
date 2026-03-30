@@ -315,7 +315,7 @@ def derive_bot_health(
         or consecutive_zero_edge_runs >= 4
         or (stop_loss_ratio >= 0.60 and not _insufficient_data)
         or (advisor_mode == "PROTECT" and not _insufficient_data)
-        or high_price_open_positions >= 2
+        or high_price_open_positions >= 8
     ):
         status = RISK_ELEVATED
         ttl_hours = 4
@@ -326,7 +326,7 @@ def derive_bot_health(
             "blocked_cities": suggested_city_cooldowns[:2],
             "blocked_market_types": suggested_market_type_cooldowns[:2],
             "blocked_price_bands": suggested_price_band_blocks[:2],
-            "allowed_trades_per_cycle": 2,  # Allow some trades even in ELEVATED
+            "allowed_trades_per_cycle": 5,  # Paper mode: allow more trades per cycle
         }
         if drawdown_pct >= 10.0:
             triggers.append(f"drawdown_{drawdown_pct:.1f}pct")
@@ -338,7 +338,7 @@ def derive_bot_health(
             triggers.append(f"stop_loss_ratio_{stop_loss_ratio:.0%}")
         if advisor_mode == "PROTECT" and not _insufficient_data:
             triggers.append("advisor_protect")
-        if high_price_open_positions >= 2:
+        if high_price_open_positions >= 8:
             triggers.append(f"high_price_opens_{high_price_open_positions}")
     if _insufficient_data and status != RISK_HEALTHY:
         triggers.append(f"note:insufficient_data({total_trades}_trades)")
