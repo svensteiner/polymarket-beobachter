@@ -150,13 +150,13 @@ class PositionManager:
 
             if snapshot is None:
                 # Zombie check: daily temp markets resolve within 1-2 days.
-                # If entry_time is > 5 days ago and no snapshot available → expired.
+                # If entry_time is > 2 days ago and no snapshot available → expired.
                 try:
                     entry_dt = datetime.fromisoformat(position.entry_time)
                     if entry_dt.tzinfo is None:
                         entry_dt = entry_dt.replace(tzinfo=timezone.utc)
                     age_days = (datetime.now(timezone.utc) - entry_dt).days
-                    if age_days >= 5:
+                    if age_days >= 2:
                         logger.info(
                             f"Zombie expiry: {position.market_id} | age={age_days}d | "
                             f"no snapshot available"
@@ -203,13 +203,14 @@ class PositionManager:
     # TP1: +15% -> 50% der Position verkaufen
     # TP2: +20% -> weitere 35% verkaufen (kumuliert: 85%)
     # TP3: +25% -> Restliche 15% schliessen
-    # Stop-Loss: -25% (Projektvorgabe)
+    # Stop-Loss: -70% — Prediction markets resolve binary (0 or 1).
+    # Resolution WR=89% when held; a tight -25% SL was exiting winners early.
     TP1_PCT = 0.15
     TP1_FRACTION = 0.50   # 50% bei TP1 verkaufen
     TP2_PCT = 0.20
     TP2_FRACTION = 0.35   # 35% bei TP2 verkaufen (kumuliert: 85%)
     TP3_PCT = 0.25        # Restliche 15% bei TP3 schliessen
-    STOP_LOSS_PCT = -0.25
+    STOP_LOSS_PCT = -0.70
 
     def _calc_unrealized_pct(self, position: PaperPosition, current_price: float) -> float:
         """Berechne unrealisierten P&L in Prozent (relativ zu Entry).
