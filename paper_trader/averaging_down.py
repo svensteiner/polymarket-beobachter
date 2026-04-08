@@ -24,7 +24,7 @@ import sys
 import logging
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import List, Dict, Any, Optional, Tuple
+from typing import Dict, Any, Optional
 
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent))

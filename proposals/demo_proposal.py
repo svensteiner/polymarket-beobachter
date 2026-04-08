@@ -27,7 +27,6 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import json
-from datetime import datetime
 
 from proposals.generator import ProposalGenerator
 from proposals.review_gate import ReviewGate
@@ -129,14 +128,14 @@ def run_demo():
     review_saved = storage.save_review(proposal, review)
 
     if proposal_saved:
-        print(f"      [OK] Proposal saved to proposals_log.json")
+        print("      [OK] Proposal saved to proposals_log.json")
     else:
-        print(f"      [X] Failed to save proposal")
+        print("      [X] Failed to save proposal")
 
     if review_saved:
-        print(f"      [OK] Review saved to proposals_reviewed.md")
+        print("      [OK] Review saved to proposals_reviewed.md")
     else:
-        print(f"      [X] Failed to save review")
+        print("      [X] Failed to save review")
 
     print()
     print("=" * 60)

@@ -14,7 +14,7 @@ import logging
 import time
 from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor, as_completed
 from dataclasses import dataclass
-from typing import List, Optional, Callable, Any, Tuple
+from typing import List, Optional, Callable, Any
 from threading import Lock
 
 logger = logging.getLogger(__name__)

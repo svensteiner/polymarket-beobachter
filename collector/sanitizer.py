@@ -21,7 +21,6 @@
 import logging
 import re
 from typing import Dict, Any, List, Set, Tuple
-from copy import deepcopy
 
 logger = logging.getLogger(__name__)
 

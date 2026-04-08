@@ -14,12 +14,10 @@ import asyncio
 import concurrent.futures
 import logging
 import multiprocessing
-import threading
 import time
 from datetime import datetime, timedelta
-from functools import wraps, partial
-from pathlib import Path
-from typing import Dict, List, Optional, Any, Callable, Coroutine, Union
+from functools import wraps
+from typing import Dict, List, Optional, Any, Callable, Coroutine
 import psutil
 
 logger = logging.getLogger(__name__)
@@ -178,7 +176,7 @@ class AdaptiveThreadPool:
                 result = fn(*args, **kwargs)
                 self._completed_tasks += 1
                 return result
-            except Exception as e:
+            except Exception:
                 self._failed_tasks += 1
                 raise
             finally:

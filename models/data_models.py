@@ -17,7 +17,7 @@
 #
 # =============================================================================
 
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, asdict
 from datetime import date
 from enum import Enum
 from typing import Optional, List, Dict, Any

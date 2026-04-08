@@ -7,8 +7,6 @@ Erstellt PNG-Charts im Verzeichnis analytics/charts/.
 
 import json
 import re
-import os
-import sys
 from pathlib import Path
 from datetime import datetime
 from collections import Counter, defaultdict
@@ -32,7 +30,6 @@ CHARTS_DIR.mkdir(parents=True, exist_ok=True)
 import matplotlib
 matplotlib.use("Agg")  # nicht-interaktives Backend
 import matplotlib.pyplot as plt
-import matplotlib.ticker as ticker
 import seaborn as sns
 
 plt.style.use("dark_background")
@@ -205,7 +202,7 @@ def chart_edge_by_city(observations: list[dict]):
     data = [item[1] for item in sorted_items]
 
     fig, ax = plt.subplots(figsize=(14, 8))
-    bp = ax.boxplot(data, vert=False, patch_artist=True, tick_labels=cities,
+    ax.boxplot(data, vert=False, patch_artist=True, tick_labels=cities,
                     boxprops=dict(facecolor="#00d2ff", alpha=0.6),
                     medianprops=dict(color="#ff6b6b", linewidth=2),
                     whiskerprops=dict(color="#cccccc"),

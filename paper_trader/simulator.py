@@ -47,7 +47,6 @@ from paper_trader.capital_manager import (
     get_capital_manager,
     allocate_capital,
     release_capital,
-    has_sufficient_capital,
 )
 from paper_trader.kelly import kelly_size
 from paper_trader.drawdown_protector import check_can_open_position

@@ -366,8 +366,6 @@ def _compute_brier_score(positions: list[dict]) -> dict[str, Any]:
     Returns:
         Dict mit Brier Score, Kalibrierungsbins, Sharpness-Metriken
     """
-    import math
-
     if not positions:
         return {
             "brier_score": None,
@@ -388,9 +386,7 @@ def _compute_brier_score(positions: list[dict]) -> dict[str, Any]:
             continue
 
         # Outcome: WIN = 1, LOSE = 0
-        # Bestimme anhand von P&L und entry_price
-        pnl = pos.get("realized_pnl_eur", 0)
-        cost = pos.get("cost_basis_eur", 1)
+        # Bestimme anhand von exit_price
         exit_price = pos.get("exit_price")
 
         if exit_price is None:
@@ -628,13 +624,13 @@ def print_report(report: dict[str, Any] | None = None) -> None:
         interp = brier.get("interpretation", "?")
         bss = brier.get("brier_skill_score")
         n = brier.get("sample_size", 0)
-        print(f"  KALIBRIERUNG (Brier Score):")
+        print("  KALIBRIERUNG (Brier Score):")
         print(f"    Brier Score: {bs:.4f}  [{interp}]  (n={n})")
         if bss is not None:
             print(f"    Brier Skill: {bss:+.4f}  (0=keine Verbesserung, 1=perfekt)")
         bins = brier.get("calibration_bins", [])
         if bins:
-            print(f"    Reliability Bins:")
+            print("    Reliability Bins:")
             for b in bins:
                 err = b["calibration_error"]
                 bar = "#" * int(err * 20)

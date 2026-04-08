@@ -31,7 +31,7 @@ import logging
 import math
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import Optional, Dict, Any, Tuple
+from typing import Optional, Dict, Any
 
 from .weather_signal import WeatherConfidence
 

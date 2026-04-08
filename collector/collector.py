@@ -16,7 +16,7 @@
 
 import logging
 from datetime import datetime, date, timezone
-from typing import Dict, Any, List, Optional
+from typing import Dict, List
 from dataclasses import dataclass
 
 from .client import PolymarketClient

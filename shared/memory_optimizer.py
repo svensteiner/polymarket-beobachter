@@ -16,12 +16,9 @@ import psutil
 import threading
 import time
 import weakref
-import sys
-from datetime import datetime, timedelta
-from pathlib import Path
-from typing import Dict, List, Optional, Any, Set
+from datetime import datetime
+from typing import Dict, List, Any, Set
 from collections import defaultdict, deque
-import traceback
 
 logger = logging.getLogger(__name__)
 

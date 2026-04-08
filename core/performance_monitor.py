@@ -324,7 +324,7 @@ def log_performance_summary():
     summary = monitor.get_performance_summary()
     system_resources = get_system_resources()
 
-    logger.info(f"Performance Summary:")
+    logger.info("Performance Summary:")
     logger.info(f"  Functions monitored: {summary['total_functions_monitored']}")
     logger.info(f"  Average memory: {summary['average_memory_mb']:.2f} MB")
     logger.info(f"  System CPU: {system_resources['cpu_percent']:.1f}%")

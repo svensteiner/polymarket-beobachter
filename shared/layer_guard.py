@@ -28,7 +28,7 @@ import sys
 import os
 import importlib.abc
 import importlib.machinery
-from typing import Set, Optional, Sequence, Union
+from typing import Set, Optional, Sequence
 from .enums import Layer
 
 

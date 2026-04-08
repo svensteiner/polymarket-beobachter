@@ -42,8 +42,7 @@ except ImportError:
 # Initialize optimized logging and memory management
 try:
     from shared.memory_optimizer import start_memory_monitoring, stop_memory_monitoring
-    from shared.log_manager import get_log_manager, shutdown_log_manager
-    import atexit
+    from shared.log_manager import shutdown_log_manager
 
     # Auto-cleanup on exit
     atexit.register(stop_memory_monitoring)

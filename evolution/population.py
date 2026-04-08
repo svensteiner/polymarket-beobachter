@@ -8,7 +8,7 @@ import random
 from datetime import datetime
 from pathlib import Path
 from typing import List, Optional, Dict, Any
-from evolution.agent import Agent, AGENTS_DIR
+from evolution.agent import Agent
 from evolution.fitness import compute_fitness
 from evolution.mutation import mutate, crossover, elite_mutate
 

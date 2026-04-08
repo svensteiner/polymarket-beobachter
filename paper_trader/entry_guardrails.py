@@ -154,7 +154,7 @@ def evaluate_entry_guardrails(
 
     # Check 4: Policy mode restrictions
     if policy_mode == "HALT":
-        return (False, f"policy_halt|Trading halted by agent policy")
+        return (False, "policy_halt|Trading halted by agent policy")
 
     if policy_mode == "DEFENSIVE":
         # In defensive mode, only allow high-confidence trades

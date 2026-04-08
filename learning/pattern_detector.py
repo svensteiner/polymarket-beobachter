@@ -2,8 +2,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from math import sqrt
-from typing import Optional
-
 from .learning_database import LearningDatabase
 from .outcome_tracker import TradeContext
 

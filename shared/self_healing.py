@@ -25,7 +25,6 @@ import os
 import re
 import shutil
 import subprocess
-import time
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum
@@ -530,7 +529,7 @@ class AutoCodeImprover:
             if current and current < self.PARAMETERS["TAKE_PROFIT_PCT"]["max"]:
                 step = self.PARAMETERS["TAKE_PROFIT_PCT"]["step"]
                 new_val = round(min(current + step, self.PARAMETERS["TAKE_PROFIT_PCT"]["max"]), 2)
-                return ("TAKE_PROFIT_PCT", new_val, f"Hohe Win-Rate aber niedriger PF, Take-Profit erhöhen")
+                return ("TAKE_PROFIT_PCT", new_val, "Hohe Win-Rate aber niedriger PF, Take-Profit erhöhen")
 
         # 4. Good win rate + good profit factor -> can be more aggressive
         if metrics.win_rate > 0.55 and metrics.profit_factor > 1.8 and metrics.drawdown_pct < 10:

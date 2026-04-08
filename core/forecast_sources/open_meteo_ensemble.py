@@ -17,7 +17,7 @@
 
 import logging
 from datetime import datetime, timezone
-from typing import Optional, List, Tuple, Dict
+from typing import Optional, List, Tuple
 
 from . import (
     ForecastSourceBase,
@@ -247,7 +247,6 @@ def compute_ensemble_probability(
     # Check which temperature set to use
     # For daily high/low markets, use the daily aggregated temps
     daily_highs = getattr(forecast, "member_daily_highs", None)
-    daily_lows = getattr(forecast, "member_daily_lows", None)
     point_temps = getattr(forecast, "ensemble_member_temps", None)
 
     if point_temps is None or len(point_temps) < 5:

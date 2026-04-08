@@ -18,7 +18,6 @@ import time
 import logging
 import requests
 from typing import Dict, Any, Optional, Tuple
-from datetime import datetime, timezone
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
@@ -97,7 +96,6 @@ class TelegramApproval:
         forecast_summary = proposal.get("forecast_summary", "")
         confidence = proposal.get("confidence", "MEDIUM")
         city = proposal.get("city", "")
-        threshold = proposal.get("threshold", "")
 
         # Build reason text
         reason_text = ""
@@ -108,9 +106,9 @@ class TelegramApproval:
         if not reason_text:
             # Generate automatic reason
             if model_prob > market_prob:
-                reason_text = f"\n💡 *Grund:* Wetter-Modell erwartet hoehere Wahrscheinlichkeit als Markt"
+                reason_text = "\n💡 *Grund:* Wetter-Modell erwartet hoehere Wahrscheinlichkeit als Markt"
             else:
-                reason_text = f"\n💡 *Grund:* Wetter-Modell erwartet niedrigere Wahrscheinlichkeit als Markt"
+                reason_text = "\n💡 *Grund:* Wetter-Modell erwartet niedrigere Wahrscheinlichkeit als Markt"
 
         message = f"""🔔 TRADE-ANFRAGE
 
@@ -154,9 +152,6 @@ Klicke APPROVE oder REJECT unten!"""
             if not resp.ok:
                 logger.error(f"Telegram send failed: {resp.text}")
                 return False, "Telegram Fehler"
-
-            msg_data = resp.json()
-            message_id = msg_data.get("result", {}).get("message_id")
 
             logger.info(f"Trade-Anfrage gesendet: {trade_id[:8]}")
 

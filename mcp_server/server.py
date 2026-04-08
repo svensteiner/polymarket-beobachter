@@ -19,7 +19,6 @@
 
 import json
 import logging
-import os
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -1181,7 +1180,7 @@ def apply_experiment_result(experiment_id: str, reason: str) -> Dict[str, Any]:
 
 def run_server():
     """Start the MCP server."""
-    logger.info(f"Starting Polymarket MCP Server")
+    logger.info("Starting Polymarket MCP Server")
     logger.info(f"Project root: {PROJECT_ROOT}")
     mcp.run()
 

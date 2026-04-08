@@ -449,7 +449,7 @@ def fetch_all_forecasts(city: str, target_time: datetime):
     Returns:
         List[SourceForecast] from the forecast_sources package
     """
-    from .forecast_sources import SourceForecast, get_coords
+    from .forecast_sources import SourceForecast
     from .forecast_sources.open_meteo_client import OpenMeteoSource
     from .forecast_sources.met_norway_client import MetNorwaySource
     from .forecast_sources.openweather_client import OpenWeatherSource
@@ -495,7 +495,6 @@ def fetch_all_forecasts(city: str, target_time: datetime):
                 noaa_result = fetch_forecast_for_city(city, target_time)
                 if noaa_result is not None:
                     # Wrap NOAA ForecastData as SourceForecast
-                    from datetime import timezone as _tz
                     results.append(SourceForecast(
                         city=city,
                         target_time=target_time,

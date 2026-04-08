@@ -18,7 +18,7 @@ import time
 import threading
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Dict, List, Optional, Iterator, Any
+from typing import Dict, Optional, Iterator, Any
 from collections import deque
 import weakref
 

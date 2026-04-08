@@ -1291,10 +1291,8 @@ def _run_rule_based_checks() -> list[str]:
     metrics = perf.get("metrics", {})
     win_rate = float(metrics.get("win_rate_pct", 0) or 0)
     total_trades = int(metrics.get("total_trades", 0) or 0)
-    total_pnl = float(metrics.get("total_pnl_eur", 0) or 0)
 
     entry_dist = pos_data.get("entry_price_distribution", {})
-    longshot_warning = pos_data.get("longshot_warning", False)
     under_5pct = entry_dist.get("under_5pct", 0)
     total_entries = sum(entry_dist.values()) if entry_dist else 0
 

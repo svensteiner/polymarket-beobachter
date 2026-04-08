@@ -18,7 +18,6 @@ import logging
 from typing import Dict, Any, List, Tuple
 from dataclasses import dataclass
 from enum import Enum
-from datetime import datetime
 
 # Import the classifier
 from core.weather_market_classifier import (

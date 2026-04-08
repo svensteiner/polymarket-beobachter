@@ -31,10 +31,9 @@ from enum import Enum
 
 # Import performance optimizers
 try:
-    from shared.memory_optimizer import get_memory_monitor, get_memory_report
-    from shared.cpu_optimizer import get_thread_pool, get_async_manager, get_performance_report
+    from shared.memory_optimizer import get_memory_monitor
+    from shared.cpu_optimizer import get_performance_report
     from shared.control_events import append_control_event
-    from shared.log_manager import get_log_manager
     HAS_OPTIMIZERS = True
 except ImportError:
     HAS_OPTIMIZERS = False
@@ -121,7 +120,6 @@ class Orchestrator:
         # Initialize performance monitoring for this run
         if HAS_OPTIMIZERS:
             memory_monitor = get_memory_monitor()
-            thread_pool = get_thread_pool()
             memory_before = memory_monitor.get_memory_stats()
 
         result = PipelineResult(
@@ -166,7 +164,7 @@ class Orchestrator:
 
         # Step 2b: Market Condition Assessment (READ-ONLY)
         edge_obs_count = weather_result.data.get("edge_observations", 0)
-        market_condition = self._assess_market_condition(edge_obs_count)
+        self._assess_market_condition(edge_obs_count)
 
         # Step 3: Proposal Generator
         print("[3/6] Proposals: Edge -> Signale ...", end="", flush=True)
@@ -365,7 +363,6 @@ class Orchestrator:
             from analytics.arbitrage_detector import run_arbitrage_scan
             import json
             from datetime import date
-            from pathlib import Path
 
             # Lade aktuelle Kandidaten - Gamma bevorzugen (enthaelt outcomePrices)
             today = date.today().isoformat()
@@ -438,8 +435,6 @@ class Orchestrator:
         """Suche neue Wetter-Maerkte via Gamma API (non-blocking, max 1x pro Stunde)."""
         try:
             import time
-            from pathlib import Path
-            from datetime import date
 
             # Rate-Limit: max 1x pro Stunde
             marker_file = self.data_dir / ".gamma_last_run"

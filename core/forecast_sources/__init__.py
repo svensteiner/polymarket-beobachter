@@ -13,11 +13,10 @@
 
 import json
 import logging
-import os
 import ssl
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Optional, Dict, List, Tuple
 from urllib.request import urlopen, Request
 from urllib.error import URLError, HTTPError

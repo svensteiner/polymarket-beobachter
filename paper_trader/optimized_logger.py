@@ -14,8 +14,7 @@ import json
 import logging
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional, Any, Iterator
-from dataclasses import asdict
+from typing import Dict, List, Optional, Any
 
 # Import optimized log manager
 try:

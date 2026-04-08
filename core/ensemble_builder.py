@@ -14,11 +14,10 @@
 # =============================================================================
 
 import logging
-import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime
-from typing import Optional, Dict, List, Any, Tuple
+from typing import Optional, Dict, List, Any
 
 from .forecast_sources import SourceForecast, ForecastSourceBase
 from .forecast_sources.open_meteo_client import OpenMeteoSource

@@ -30,7 +30,7 @@
 # =============================================================================
 
 from datetime import datetime
-from typing import Dict, List, Tuple
+from typing import Dict, List
 
 from proposals.models import (
     Proposal,

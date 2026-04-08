@@ -14,7 +14,7 @@ from __future__ import annotations
 import functools
 import logging
 import time
-from typing import Any, Callable, Optional, Tuple, Type
+from typing import Any, Callable, Tuple, Type
 
 # Eigener Logger ohne Import aus aktienbot – verwendet nur stdlib logging
 logger = logging.getLogger("polymarket.retry")

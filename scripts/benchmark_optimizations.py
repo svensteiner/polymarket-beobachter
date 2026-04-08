@@ -11,7 +11,6 @@ Testet die Geschwindigkeitsverbesserungen durch:
 
 import sys
 import time
-import statistics
 from pathlib import Path
 
 # Add project root to path

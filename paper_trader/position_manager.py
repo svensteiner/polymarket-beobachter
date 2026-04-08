@@ -19,9 +19,8 @@ import json
 import sys
 import logging
 import os
-import shutil
 import tempfile
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import List, Dict, Optional, Any
 
@@ -210,7 +209,7 @@ class PositionManager:
     TP2_PCT = 0.20
     TP2_FRACTION = 0.35   # 35% bei TP2 verkaufen (kumuliert: 85%)
     TP3_PCT = 0.25        # Restliche 15% bei TP3 schliessen
-    STOP_LOSS_PCT = -0.70
+    STOP_LOSS_PCT = -0.25
 
     def _calc_unrealized_pct(self, position: PaperPosition, current_price: float) -> float:
         """Berechne unrealisierten P&L in Prozent (relativ zu Entry).
@@ -472,9 +471,7 @@ class PositionManager:
             unrealized_pct = self._calc_unrealized_pct(position, current_price)
             pos_id = position.position_id
             tp_entry = tp_state.get(pos_id, _default_tp_entry())
-
             exited_fraction = tp_entry.get("exited_fraction", 0.0)
-            remaining_fraction = 1.0 - exited_fraction
 
             # ---------------------------------------------------------------
             # STOP-LOSS: Immer zuerst pruefen (Prioritaet: Verlust begrenzen)

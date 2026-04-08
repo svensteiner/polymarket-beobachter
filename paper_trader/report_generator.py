@@ -137,7 +137,7 @@ class TradeReportGenerator:
         lines = []
 
         # Header
-        lines.append(f"=== TRADE REPORT ===")
+        lines.append("=== TRADE REPORT ===")
         lines.append(f"Position ID: {position.position_id}")
         lines.append(f"Market: {position.market_question[:80]}...")
         lines.append("")
@@ -166,11 +166,11 @@ class TradeReportGenerator:
             lines.append("TIMING:")
             lines.append(f"  Days until resolution: {days_until}")
             if days_until <= 7:
-                lines.append(f"  Status: SHORT-TERM (high attention)")
+                lines.append("  Status: SHORT-TERM (high attention)")
             elif days_until <= 30:
-                lines.append(f"  Status: MEDIUM-TERM")
+                lines.append("  Status: MEDIUM-TERM")
             else:
-                lines.append(f"  Status: LONG-TERM")
+                lines.append("  Status: LONG-TERM")
             lines.append("")
 
         # Decision

@@ -23,7 +23,6 @@
 import argparse
 import sys
 import logging
-from datetime import datetime
 from pathlib import Path
 
 # Add project root to path
@@ -34,7 +33,6 @@ from paper_trader.intake import get_eligible_proposals
 from paper_trader.simulator import simulate_entry
 from paper_trader.position_manager import check_and_close_resolved, get_position_summary
 from paper_trader.reporter import generate_daily_report, print_summary
-from paper_trader.logger import get_paper_logger
 
 
 # Configure logging
@@ -148,7 +146,7 @@ def cmd_status() -> int:
 
     # Show position details
     summary = get_position_summary()
-    print(f"Position Summary:")
+    print("Position Summary:")
     print(f"  Total:    {summary['total_positions']}")
     print(f"  Open:     {summary['open']}")
     print(f"  Closed:   {summary['closed']}")

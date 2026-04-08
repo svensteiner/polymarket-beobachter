@@ -14,9 +14,8 @@
 # Das LLM antwortet mit Approve/Reject + Begruendung.
 # =============================================================================
 
-import json
 import logging
-from typing import Optional, Dict, Any, Tuple
+from typing import Optional, Dict, Tuple
 
 logger = logging.getLogger(__name__)
 

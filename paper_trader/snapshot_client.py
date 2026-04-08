@@ -25,8 +25,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional, Dict, Any, List
 from urllib.request import urlopen, Request
-from urllib.error import URLError, HTTPError
-from urllib.parse import urlencode, quote
+from urllib.parse import quote
 
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent))

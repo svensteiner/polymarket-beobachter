@@ -51,20 +51,18 @@ from .weather_signal import (
 from .weather_market_filter import (
     WeatherMarket,
     WeatherMarketFilter,
-    FilterResult,
 )
 from .weather_probability_model import (
     WeatherProbabilityModel,
     ForecastData,
-    ProbabilityResult,
     compute_edge,
     meets_edge_threshold,
 )
-from .ensemble_builder import EnsembleBuilder, EnsembleForecast, degrade_confidence
+from .ensemble_builder import EnsembleBuilder, degrade_confidence
 
 # Performance monitoring
 try:
-    from .performance_monitor import performance_monitor, performance_context, monitor
+    from .performance_monitor import performance_monitor, performance_context
     PERFORMANCE_MONITORING_AVAILABLE = True
 except ImportError:
     PERFORMANCE_MONITORING_AVAILABLE = False

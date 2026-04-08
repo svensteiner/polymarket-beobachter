@@ -19,7 +19,7 @@ import logging
 import uuid
 from datetime import datetime
 from pathlib import Path
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any
 
 logger = logging.getLogger(__name__)
 
@@ -179,7 +179,6 @@ def _simulate_agent_entry(agent: Any, proposals: List[Any]) -> int:
     min_edge_abs = float(params.get("min_edge_absolute", 0.05))
     max_odds = float(params.get("max_odds", 0.35))
     kelly = float(params.get("kelly_fraction", 0.25))
-    min_liquidity = float(params.get("min_liquidity", 50.0))
     confidence_mult = float(params.get("medium_confidence_multiplier", 1.25))
 
     cap = _load_agent_capital(agent.agent_id)

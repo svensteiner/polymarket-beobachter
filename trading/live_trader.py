@@ -23,8 +23,6 @@ import json
 from trading.polymarket_client import (
     PolymarketTradingClient,
     OrderSide,
-    OrderResult,
-    OrderStatus,
 )
 from trading.telegram_approval import request_trade_approval
 
@@ -99,7 +97,6 @@ class LiveTrader:
         market_id = proposal.get("market_id", "")
         direction = proposal.get("direction", "BUY_YES")
         edge = proposal.get("edge", 0)
-        model_prob = proposal.get("model_probability", 0)
         market_prob = proposal.get("market_probability", 0)
 
         # Validate edge threshold
