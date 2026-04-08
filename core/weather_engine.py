@@ -654,7 +654,26 @@ class WeatherEngine:
             observation: Observation to log
         """
         try:
-            log_path = Path(self.observation_log_path)
+            log_path = Path(self.observation_log_path).resolve()
+
+            # Hard guard against test pollution: under pytest, refuse to write
+            # to the production observations file (any file inside the
+            # repository's logs/ directory). Tests that intentionally exercise
+            # logging must point OBSERVATION_LOG_PATH at a tempfile, in which
+            # case we still allow the write.
+            # This blocks the m1/m2/m3 synthetic markets with forecast_source=
+            # test_source from leaking into production weather_observations.jsonl
+            # via the has_edge bypass at lines 287/343.
+            import os
+            if os.environ.get("PYTEST_CURRENT_TEST"):
+                project_logs = (Path(__file__).parent.parent / "logs").resolve()
+                try:
+                    log_path.relative_to(project_logs)
+                    # Inside the production logs dir during a pytest run -> refuse
+                    return
+                except ValueError:
+                    pass  # Path is outside production logs (tmpfile) -> allow
+
             log_path.parent.mkdir(parents=True, exist_ok=True)
 
             # Rotate if file exceeds 10 MB

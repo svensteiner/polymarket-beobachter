@@ -82,8 +82,8 @@ PROVIDERS = [
 CONFIG_PARAMS: dict[str, dict] = {
     "MIN_EDGE":                       {"min": 0.06,  "max": 0.30,  "desc": "Relativer Edge-Floor"},
     "MIN_EDGE_ABSOLUTE":              {"min": 0.02,  "max": 0.12,  "desc": "Absoluter Edge-Floor"},
-    "MIN_ODDS":                       {"min": 0.05,  "max": 0.40,  "desc": "Minimale Market-Odds (Longshot-Schutz)"},
-    "MAX_ODDS":                       {"min": 0.15,  "max": 0.50,  "desc": "Maximale Market-Odds"},
+    "MIN_ODDS":                       {"min": 0.02,  "max": 0.10,  "desc": "Minimale Market-Odds (Longshot-Schutz)"},
+    "MAX_ODDS":                       {"min": 0.30,  "max": 0.50,  "desc": "Maximale Market-Odds"},
     "MIN_LIQUIDITY":                  {"min": 10.0,  "max": 500.0, "desc": "Mindest-Liquiditaet USD"},
     "MEDIUM_CONFIDENCE_EDGE_MULTIPLIER": {"min": 1.0, "max": 2.5,  "desc": "Edge-Multiplikator MEDIUM"},
     "SAFETY_BUFFER_HOURS":            {"min": 6.0,   "max": 48.0,  "desc": "Safety-Buffer vor Resolution"},
@@ -91,6 +91,12 @@ CONFIG_PARAMS: dict[str, dict] = {
 
 # Max Aenderung pro Call: 25% des aktuellen Wertes
 MAX_CHANGE_PCT = 0.25
+
+# Cross-parameter invariant: the (MIN_ODDS, MAX_ODDS) eligibility window
+# must always be at least this wide. Without this constraint the agent has
+# previously collapsed the window to <5 cents, causing an edge drought
+# that took manual intervention to recover from.
+MIN_ELIGIBILITY_WINDOW = 0.15
 
 # =============================================================================
 # CODE-PATCH WHITELIST
@@ -818,6 +824,26 @@ def _execute_tool(name: str, inputs: dict) -> Any:
                              f"Max erlaubt: [{allowed_min}, {allowed_max}]",
                     "current_value": current,
                 }
+
+        # Cross-parameter invariant: enforce minimum eligibility window
+        # between MIN_ODDS and MAX_ODDS so the filter cannot collapse to nothing.
+        if param in ("MIN_ODDS", "MAX_ODDS"):
+            projected_min = value if param == "MIN_ODDS" else current_vals.get("MIN_ODDS")
+            projected_max = value if param == "MAX_ODDS" else current_vals.get("MAX_ODDS")
+            if projected_min is not None and projected_max is not None:
+                window = projected_max - projected_min
+                if window < MIN_ELIGIBILITY_WINDOW:
+                    return {
+                        "error": (
+                            f"Eligibility window too narrow: "
+                            f"MAX_ODDS({projected_max}) - MIN_ODDS({projected_min}) "
+                            f"= {window:.3f} < {MIN_ELIGIBILITY_WINDOW} required. "
+                            f"Refusing change to prevent edge drought."
+                        ),
+                        "param": param,
+                        "projected_window": round(window, 4),
+                        "min_required": MIN_ELIGIBILITY_WINDOW,
+                    }
 
         # Backup + Schreiben
         backup_path = _backup_config()
