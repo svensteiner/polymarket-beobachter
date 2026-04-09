@@ -180,19 +180,38 @@ def _compute_drawdown_from_trades(positions: list[dict]) -> dict[str, Any]:
     if not positions:
         return {"max_drawdown_eur": 0.0, "max_drawdown_pct": 0.0, "peak_equity_eur": 0.0}
 
-    # Sortiere nach exit_time
+    # Sortiere nach exit_time. Normalize all datetimes to UTC-naive to avoid
+    # mixing offset-aware and offset-naive values across the position log
+    # (different code paths historically wrote both formats).
     def _parse_time(p: dict) -> datetime:
         t = p.get("exit_time") or p.get("entry_time") or ""
         try:
-            return datetime.fromisoformat(t)
+            dt = datetime.fromisoformat(str(t).replace("Z", "+00:00"))
+            if dt.tzinfo is not None:
+                # Strip tz info — we only care about ordering, not absolute time
+                dt = dt.replace(tzinfo=None)
+            return dt
         except (ValueError, TypeError):
             return datetime.min
 
     sorted_pos = sorted(positions, key=_parse_time)
 
-    # Rekonstruiere Equity-Kurve (nur realisierte P&L, Start=0)
-    equity = 0.0
-    peak = 0.0
+    # Rekonstruiere Equity-Kurve seeded mit initial_capital. Without this seed
+    # the equity curve starts at 0; an early small win produces a tiny peak,
+    # and a subsequent loss divides by that tiny peak, generating bogus
+    # drawdown percentages like 1151% that bear no relation to reality.
+    initial_capital = 5000.0  # default; overridden below from capital_config.json
+    try:
+        cap_path = Path(__file__).parent.parent / "data" / "capital_config.json"
+        if cap_path.exists():
+            with open(cap_path, "r", encoding="utf-8") as cf:
+                cap = json.load(cf)
+                initial_capital = float(cap.get("initial_capital_eur", initial_capital))
+    except Exception as exc:
+        logger.debug(f"Capital config not loaded for drawdown calc: {exc}")
+
+    equity = initial_capital
+    peak = initial_capital
     max_dd_eur = 0.0
     max_dd_pct = 0.0
 
@@ -211,6 +230,7 @@ def _compute_drawdown_from_trades(positions: list[dict]) -> dict[str, Any]:
         "max_drawdown_pct": round(max_dd_pct, 2),
         "peak_equity_eur": round(peak, 2),
         "final_equity_eur": round(equity, 2),
+        "initial_capital_eur": round(initial_capital, 2),
     }
 
 
@@ -310,7 +330,7 @@ def _compute_monthly_performance(positions: list[dict]) -> dict[str, Any]:
         exit_time = pos.get("exit_time") or pos.get("entry_time") or ""
         pnl = pos["realized_pnl_eur"]
         try:
-            month = datetime.fromisoformat(exit_time).strftime("%Y-%m")
+            month = datetime.fromisoformat(str(exit_time).replace("Z", "+00:00")).strftime("%Y-%m")
         except (ValueError, TypeError):
             month = "Unknown"
         monthly[month].append(pnl)
