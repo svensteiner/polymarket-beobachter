@@ -14,6 +14,7 @@ import sys
 from collections import defaultdict
 from pathlib import Path
 from datetime import datetime
+from datetime import timezone, timedelta
 
 # ── Paths ──────────────────────────────────────────────────────────────────
 BASE_DIR = Path(__file__).parents[1]
@@ -28,6 +29,26 @@ OUTPUT_FILE = OUTPUT_DIR / "backtest_results.json"
 # in local time. Times with +00:00 suffix are handled by stripping the suffix
 # and adding 1 hour.
 BUG_FIX_TIMESTAMP = "2026-03-28T21:52:40"
+
+
+def _parse_ts(value: str | None) -> datetime | None:
+    if not value:
+        return None
+    try:
+        dt = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return dt.astimezone(timezone.utc)
+    except Exception:
+        return None
+
+
+def _position_is_recent(position: dict, cutoff: datetime) -> bool:
+    """True when the trade touched the requested time window."""
+    entry_dt = _parse_ts(str(position.get("entry_time", "")))
+    exit_dt = _parse_ts(str(position.get("exit_time", "")))
+    ts = max([dt for dt in (entry_dt, exit_dt) if dt is not None], default=None)
+    return ts is not None and ts >= cutoff
 
 
 def parse_city_date_threshold(question: str) -> dict:
@@ -123,10 +144,11 @@ def is_affected_by_tp_sl_bug(position: dict) -> bool:
     return False
 
 
-def load_positions() -> list[dict]:
+def load_positions(days: int = 30) -> list[dict]:
     """Load all positions from JSONL, deduplicate keeping latest entry per position_id."""
     positions_by_id = {}
     line_numbers_by_id = {}
+    cutoff = datetime.now(timezone.utc) - timedelta(days=days)
 
     with open(POSITIONS_FILE, "r", encoding="utf-8") as f:
         for line_num, line in enumerate(f, 1):
@@ -142,19 +164,26 @@ def load_positions() -> list[dict]:
             pid = pos.get("position_id")
             if pid:
                 # Later entries overwrite earlier ones (latest state wins)
-                positions_by_id[pid] = pos
-                line_numbers_by_id[pid] = line_num
+                if _position_is_recent(pos, cutoff):
+                    positions_by_id[pid] = pos
+                    line_numbers_by_id[pid] = line_num
 
     return list(positions_by_id.values())
 
 
 def main():
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Analyze Polymarket paper trading backtest results")
+    parser.add_argument("--days", type=int, default=30, help="Time window in days to include (default: 30)")
+    args = parser.parse_args()
+
     print("=" * 70)
     print("BACKTEST ANALYSIS - Paper Trading Positions")
     print("=" * 70)
 
     # Load and deduplicate
-    all_positions = load_positions()
+    all_positions = load_positions(days=args.days)
     print(f"\nUnique positions (latest state): {len(all_positions)}")
 
     # Filter to closed/resolved only
@@ -273,6 +302,7 @@ def main():
     # ── Build output ───────────────────────────────────────────────────────
     output = {
         "generated_at": datetime.now(tz=__import__('datetime').timezone.utc).isoformat(),
+        "days": args.days,
         "data_source": str(POSITIONS_FILE),
         "bug_fix_commit": "5156edc (2026-03-28T21:52:40+01:00)",
         "bug_description": (

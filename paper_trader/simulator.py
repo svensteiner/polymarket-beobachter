@@ -72,6 +72,53 @@ SIMULATED_SPREAD_PCT: Final[float] = 4.0
 MAX_POSITIONS_PER_CITY_DATE: Final[int] = 1  # Exclusive markets: only 1 per city+date
 MAX_POSITIONS_PER_CITY: Final[int] = 3        # Max positions per city overall
 
+# Entry hardening
+MIN_ENTRY_EDGE_ABSOLUTE: Final[float] = 0.08
+MIN_ENTRY_EDGE_UNKNOWN_MARKET: Final[float] = 0.12
+MIN_ENTRY_CONFIDENCE_RANK: Final[int] = 1  # MEDIUM or higher
+
+
+def _confidence_rank(level: Optional[str]) -> int:
+    ranks = {
+        "LOW": 0,
+        "MEDIUM": 1,
+        "HIGH": 2,
+    }
+    return ranks.get(str(level or "").upper(), -1)
+
+
+def _entry_quality_gate(proposal: Proposal, market_type: str) -> Tuple[bool, str]:
+    """
+    Conservative pre-entry filter.
+
+    The simulator should prefer missing marginal trades over taking weak,
+    noisy, or structurally low-quality signals.
+    """
+    decision = str(getattr(proposal, "decision", "TRADE") or "TRADE").upper()
+    if decision != "TRADE":
+        return False, f"Proposal decision is {decision} - entry skipped"
+
+    core_criteria = getattr(proposal, "core_criteria", None)
+    if core_criteria is not None and not core_criteria.all_passed():
+        failed = ", ".join(core_criteria.failed_criteria()) or "unknown"
+        return False, f"Core criteria failed: {failed}"
+
+    confidence_level = getattr(proposal, "confidence_level", None)
+    if _confidence_rank(confidence_level) < MIN_ENTRY_CONFIDENCE_RANK:
+        return False, f"Confidence {confidence_level} below minimum MEDIUM"
+
+    edge = abs(float(getattr(proposal, "edge", 0.0) or 0.0))
+    if market_type == "unknown":
+        if edge < MIN_ENTRY_EDGE_UNKNOWN_MARKET:
+            return False, (
+                f"Unknown market type requires >= {MIN_ENTRY_EDGE_UNKNOWN_MARKET:.0%} "
+                f"absolute edge (got {edge:.1%})"
+            )
+    elif edge < MIN_ENTRY_EDGE_ABSOLUTE:
+        return False, f"Absolute edge {edge:.1%} below minimum {MIN_ENTRY_EDGE_ABSOLUTE:.0%}"
+
+    return True, "OK"
+
 
 def _detect_market_type(market_question: str) -> str:
     """
@@ -453,6 +500,26 @@ class ExecutionSimulator:
             )
             log_trade(record)
             logger.warning("SKIP (EdgeMemory): %s for %s", edge_verdict["reason"], proposal.market_id)
+            return (None, record)
+
+        quality_ok, quality_reason = _entry_quality_gate(proposal, market_type)
+        if not quality_ok:
+            record = PaperTradeRecord(
+                record_id=generate_record_id(),
+                timestamp=now,
+                proposal_id=proposal.proposal_id,
+                market_id=proposal.market_id,
+                action=TradeAction.SKIP.value,
+                reason=quality_reason,
+                position_id=None,
+                snapshot_time=snapshot.snapshot_time,
+                entry_price=None,
+                exit_price=None,
+                slippage_applied=None,
+                pnl_eur=None,
+            )
+            log_trade(record)
+            logger.warning(f"SKIP (EntryQuality): {quality_reason} for {proposal.market_id}")
             return (None, record)
 
         # Kelly position sizing: use model probability and market price

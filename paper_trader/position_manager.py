@@ -210,6 +210,9 @@ class PositionManager:
     TP2_FRACTION = 0.35   # 35% bei TP2 verkaufen (kumuliert: 85%)
     TP3_PCT = 0.25        # Restliche 15% bei TP3 schliessen
     STOP_LOSS_PCT = -0.25
+    MIN_EXIT_LIQUIDITY_BUCKETS = {"HIGH", "MEDIUM"}
+    INVALID_PRICE_LOW = 0.02
+    INVALID_PRICE_HIGH = 0.98
 
     def _calc_unrealized_pct(self, position: PaperPosition, current_price: float) -> float:
         """Berechne unrealisierten P&L in Prozent (relativ zu Entry).
@@ -451,6 +454,15 @@ class PositionManager:
             if snapshot.is_resolved:
                 continue  # wird von check_and_close_resolved behandelt
 
+            liquidity_bucket = str(getattr(snapshot, "liquidity_bucket", "UNKNOWN") or "UNKNOWN").upper()
+            if liquidity_bucket not in self.MIN_EXIT_LIQUIDITY_BUCKETS:
+                logger.warning(
+                    "Skipping SL/TP for %s: liquidity bucket %s too thin",
+                    position.market_id,
+                    liquidity_bucket,
+                )
+                continue
+
             current_price = snapshot.mid_price
             entry_price = position.entry_price
             if entry_price <= 0:
@@ -461,7 +473,7 @@ class PositionManager:
             # _calc_unrealized_pct clamps to [0,1], but clamping to 1.0 gives
             # current_no=0.0 → unrealized=-100% for NO positions, triggering
             # a spurious SL exit. Prices at exact boundaries are invalid data.
-            if current_price <= 0.01 or current_price >= 0.99:
+            if current_price <= self.INVALID_PRICE_LOW or current_price >= self.INVALID_PRICE_HIGH:
                 logger.warning(
                     "Skipping SL/TP for %s: mid_price %.4f is at boundary "
                     "(likely invalid API data)", position.market_id, current_price
