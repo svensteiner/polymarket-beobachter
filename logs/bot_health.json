@@ -1,22 +1,43 @@
 {
-  "generated_at": "2026-04-10T15:02:24.931216+00:00",
-  "status": "NORMAL",
-  "summary": "RESET 2026-04-10: Fresh start with OpenAI LLM + MIN_ENTRY_PRICE=0.40 guard",
+  "generated_at": "2026-04-10T15:08:33.632554+00:00",
+  "status": "CRITICAL",
+  "summary": "CRITICAL: DD 0.0% | WR 0.0% | Loss-Streak 8 | Guardrails block_new_entries, block_averaging_down, max_entry_price, blocked_cities, blocked_market_types, blocked_price_bands, allowed_trades_per_cycle, max_entry_price<=0.75, cities=2, market_types=2, price_bands=2",
+  "active_until": "2026-04-10T21:08:33.632554+00:00",
   "guardrails": {
-    "block_new_entries": false,
+    "block_new_entries": true,
     "block_averaging_down": true,
     "max_entry_price": 0.75,
-    "blocked_cities": [],
-    "blocked_market_types": [],
-    "blocked_price_bands": [],
-    "allowed_trades_per_cycle": 3
+    "blocked_cities": [
+      "Buenos Aires",
+      "Paris"
+    ],
+    "blocked_market_types": [
+      "exact",
+      "between"
+    ],
+    "blocked_price_bands": [
+      "0.10-0.20",
+      "0.50-0.70"
+    ],
+    "allowed_trades_per_cycle": 1
   },
-  "guardrails_active": false,
-  "triggers": [],
+  "guardrails_active": true,
+  "triggers": [
+    "loss_streak_8"
+  ],
   "metrics_snapshot": {
     "drawdown_pct": 0.0,
     "win_rate_pct": 37.11,
-    "recent_loss_streak": 0
+    "stop_loss_ratio": 0.447,
+    "recent_loss_streak": 8,
+    "consecutive_non_ok_runs": 0,
+    "consecutive_zero_edge_runs": 0,
+    "failure_runs_in_window": 0,
+    "high_price_open_positions": 5,
+    "advisor_mode": "BALANCE",
+    "blocked_cities_count": 2,
+    "blocked_market_types_count": 2,
+    "blocked_price_bands_count": 2
   },
-  "_trades_allowed_this_cycle": 3
+  "_trades_allowed_this_cycle": 0
 }
