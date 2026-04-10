@@ -51,25 +51,26 @@ CHANGE_BASELINE_FILE = PROJECT_ROOT / "data" / "evolution" / "change_baseline.js
 # PROVIDER CONFIGURATION
 # =============================================================================
 
-# 3-Tier: Tier2=Kimi Primary, Tier1=OpenAI Fallback, Tier3=OpenAI gpt-5.1
+# OpenAI GPT-5.4-mini Primary, Kimi Fallback
+# Kimi war rate-limited (429) — OpenAI first, Kimi nur als Backup.
 PROVIDERS = [
     {
-        "name": "Kimi",          # Tier 2: mittel (Analyse, Strategy)
+        "name": "OpenAI",        # Primary: GPT-5.4-mini (kein rate-limit)
+        "env_key": "OPENAI_API_KEY",
+        "base_url": None,
+        "model": "gpt-5.4-mini",
+    },
+    {
+        "name": "Kimi",          # Fallback bei OpenAI-Ausfall
         "env_key": "KIMI_API_KEY",
         "base_url": "https://api.moonshot.ai/v1",
         "model": "moonshot-v1-32k",
     },
     {
-        "name": "OpenAI",        # Tier 1 Fallback: leicht
+        "name": "OpenAI-Code",   # Tier 3: Code-Evolution
         "env_key": "OPENAI_API_KEY",
         "base_url": None,
-        "model": "gpt-4.1-mini",
-    },
-    {
-        "name": "OpenAI-Code",   # Tier 3: wichtig (Code-Evolution)
-        "env_key": "OPENAI_API_KEY",
-        "base_url": None,
-        "model": "gpt-5.1",
+        "model": "gpt-5.4-mini",
     },
 ]
 

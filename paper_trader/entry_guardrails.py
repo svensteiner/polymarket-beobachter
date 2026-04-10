@@ -26,7 +26,8 @@ AGENTIC_DIR = PROJECT_ROOT / "agentic"
 # Default limits
 DEFAULT_MAX_OPEN_POSITIONS = 10
 DEFAULT_MAX_POSITIONS_PER_CITY = 3
-DEFAULT_MAX_ENTRY_PRICE = 0.35
+DEFAULT_MAX_ENTRY_PRICE = 0.75   # Max entry price (raised: high-confidence markets are profitable)
+DEFAULT_MIN_ENTRY_PRICE = 0.40   # Min entry price (new: block low-prob traps <40%)
 DEFAULT_MIN_EDGE = 0.12
 DEFAULT_MIN_EDGE_ABSOLUTE = 0.05
 
@@ -130,6 +131,8 @@ def evaluate_entry_guardrails(
         float(weather_config.get("MAX_ODDS", DEFAULT_MAX_ENTRY_PRICE)),
         float(agent_policy.get("max_entry_price", DEFAULT_MAX_ENTRY_PRICE)),
     )
+    # Minimum entry price: block low-probability traps (entry < 40% = systematically losing)
+    min_entry_price = float(weather_config.get("MIN_ENTRY_PRICE", DEFAULT_MIN_ENTRY_PRICE))
     min_edge = float(weather_config.get("MIN_EDGE", DEFAULT_MIN_EDGE))
     min_edge_absolute = float(weather_config.get("MIN_EDGE_ABSOLUTE", DEFAULT_MIN_EDGE_ABSOLUTE))
     cooldown_cities = agent_policy.get("cooldown_cities", [])
@@ -144,9 +147,11 @@ def evaluate_entry_guardrails(
         if open_positions_count >= max_positions:
             return (False, f"inventory_limit|Max {max_positions} positions reached ({open_positions_count})")
 
-    # Check 2: Entry price limit
+    # Check 2: Entry price limits (max + min)
     if entry_price > max_entry_price:
         return (False, f"price_limit|Entry price {entry_price:.2f} > max {max_entry_price:.2f}")
+    if min_entry_price > 0 and entry_price < min_entry_price:
+        return (False, f"price_too_low|Entry price {entry_price:.2f} < min {min_entry_price:.2f} (low-prob trap)")
 
     # Check 3: City cooldown
     if city and city in cooldown_cities:

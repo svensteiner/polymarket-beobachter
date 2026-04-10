@@ -36,20 +36,20 @@ logger = logging.getLogger(__name__)
 PROJECT_ROOT = Path(__file__).parent.parent
 ADVERSARIAL_LOG = PROJECT_ROOT / "logs" / "adversarial_dialogs.jsonl"
 
-# Konfiguration der LLM-Provider (spiegelgleich zu strategy_agent.py)
-# 3-Tier: Kimi Primary (Debate/Dialog = Tier 2), OpenAI Fallback (Tier 1)
+# Provider-Reihenfolge: OpenAI GPT-5.4-mini Primary, Kimi Fallback
+# Spiegelt core/llm_client.py — Kimi war primary und wurde rate-limited (429).
 _PROVIDERS = [
     {
-        "name": "Kimi",          # Tier 2: mittel (Debate, adversarialer Dialog)
+        "name": "OpenAI",        # Primary: GPT-5.4-mini (schnell, kein rate-limit)
+        "env_key": "OPENAI_API_KEY",
+        "base_url": None,
+        "model": "gpt-5.4-mini",
+    },
+    {
+        "name": "Kimi",          # Fallback bei OpenAI-Ausfall
         "env_key": "KIMI_API_KEY",
         "base_url": "https://api.moonshot.ai/v1",
         "model": "moonshot-v1-32k",
-    },
-    {
-        "name": "OpenAI",        # Tier 1 Fallback
-        "env_key": "OPENAI_API_KEY",
-        "base_url": None,
-        "model": "gpt-4.1-mini",
     },
 ]
 
