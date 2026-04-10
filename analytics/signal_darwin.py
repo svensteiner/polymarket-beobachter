@@ -36,7 +36,7 @@ log = logging.getLogger("SIGNAL_DARWIN")
 # Konfiguration
 # ---------------------------------------------------------------------------
 
-STATE_FILE = Path(__file__).resolve().parent.parent / "data" / "signal_darwin.json"
+STATE_FILE = Path(__file__).parents[1] / "data" / "signal_darwin.json"
 
 CONFIDENCE_LEVELS = ["HIGH", "MEDIUM"]
 MARKET_TYPES = ["exact", "at_or_above", "at_or_below", "between", "unknown"]

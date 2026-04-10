@@ -14,7 +14,7 @@ from collections import Counter, defaultdict
 # ---------------------------------------------------------------------------
 # Pfade
 # ---------------------------------------------------------------------------
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
+PROJECT_ROOT = Path(__file__).parents[1]
 CHARTS_DIR = PROJECT_ROOT / "analytics" / "charts"
 OBSERVATIONS_FILE = PROJECT_ROOT / "logs" / "weather_observations.jsonl"
 POSITIONS_FILE = PROJECT_ROOT / "paper_trader" / "logs" / "paper_positions.jsonl"
@@ -27,21 +27,27 @@ CHARTS_DIR.mkdir(parents=True, exist_ok=True)
 # ---------------------------------------------------------------------------
 # Matplotlib / Seaborn Setup
 # ---------------------------------------------------------------------------
-import matplotlib
-matplotlib.use("Agg")  # nicht-interaktives Backend
-import matplotlib.pyplot as plt
-import seaborn as sns
+try:
+    import matplotlib
+    matplotlib.use("Agg")  # nicht-interaktives Backend
+    import matplotlib.pyplot as plt
+    import seaborn as sns
 
-plt.style.use("dark_background")
-sns.set_theme(style="darkgrid", rc={
-    "axes.facecolor": "#1a1a2e",
-    "figure.facecolor": "#0f0f23",
-    "grid.color": "#333355",
-    "text.color": "#e0e0e0",
-    "axes.labelcolor": "#e0e0e0",
-    "xtick.color": "#cccccc",
-    "ytick.color": "#cccccc",
-})
+    plt.style.use("dark_background")
+    sns.set_theme(style="darkgrid", rc={
+        "axes.facecolor": "#1a1a2e",
+        "figure.facecolor": "#0f0f23",
+        "grid.color": "#333355",
+        "text.color": "#e0e0e0",
+        "axes.labelcolor": "#e0e0e0",
+        "xtick.color": "#cccccc",
+        "ytick.color": "#cccccc",
+    })
+    _PLOTTING_AVAILABLE = True
+except ImportError:
+    plt = None
+    sns = None
+    _PLOTTING_AVAILABLE = False
 
 PALETTE = ["#00d2ff", "#ff6b6b", "#feca57", "#48dbfb", "#ff9ff3",
            "#54a0ff", "#5f27cd", "#01a3a4", "#f368e0", "#ff6348"]
@@ -99,6 +105,9 @@ def load_single_line_jsonl(filepath: Path) -> list[dict]:
 
 def save_chart(fig, name: str):
     """Speichert einen Chart als PNG."""
+    if not _PLOTTING_AVAILABLE:
+        print(f"  [SKIP] Plotting-Abhaengigkeiten fehlen: {name}")
+        return
     path = CHARTS_DIR / name
     fig.savefig(path, dpi=150, bbox_inches="tight", facecolor=fig.get_facecolor())
     plt.close(fig)
@@ -596,6 +605,10 @@ def main():
     print(f"Projekt-Root: {PROJECT_ROOT}")
     print(f"Charts-Verzeichnis: {CHARTS_DIR}")
     print()
+
+    if not _PLOTTING_AVAILABLE:
+        print("  [SKIP] matplotlib/seaborn sind nicht installiert - Chart-Generierung deaktiviert")
+        return
 
     # ----- Lade Daten -----
     print("[1/3] Lade Daten...")

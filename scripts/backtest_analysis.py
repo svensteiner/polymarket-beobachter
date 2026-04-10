@@ -16,7 +16,7 @@ from pathlib import Path
 from datetime import datetime
 
 # ── Paths ──────────────────────────────────────────────────────────────────
-BASE_DIR = Path(__file__).resolve().parent.parent
+BASE_DIR = Path(__file__).parents[1]
 POSITIONS_FILE = BASE_DIR / "paper_trader" / "logs" / "paper_positions.jsonl"
 OUTPUT_DIR = BASE_DIR / "output"
 OUTPUT_FILE = OUTPUT_DIR / "backtest_results.json"
