@@ -230,6 +230,9 @@ class Orchestrator:
         # Step 5g: Gamma Discovery (suche neue Maerkte, non-blocking)
         self._run_gamma_discovery()
 
+        # Step 5h: General Market Observer (non-weather edge scan, OBSERVE-ONLY)
+        self._run_general_market_observer(weather_result.data)
+
         # Build summary with pipeline duration
         duration_seconds = round(time.perf_counter() - pipeline_start, 2)
         result.summary = self._build_summary(result)
@@ -455,6 +458,34 @@ class Orchestrator:
 
         except Exception as e:
             logger.debug(f"Gamma Discovery fehlgeschlagen (unkritisch): {e}")
+
+    def _run_general_market_observer(self, weather_data: dict) -> None:
+        """Scan non-weather markets for LLM-computed edge. OBSERVE-ONLY, non-blocking."""
+        try:
+            # Rate-limit: max once per hour
+            import time
+            marker_file = self.data_dir / ".general_market_last_run"
+            if marker_file.exists() and time.time() - marker_file.stat().st_mtime < 3600:
+                return
+
+            # Pass markets collected this run if available
+            markets = weather_data.get("all_markets_raw") or []
+
+            from core.general_market_observer import run_general_market_observation
+            summary = run_general_market_observation(self.base_dir, markets or None)
+
+            high_edge = summary.get("high_edge_count", 0)
+            obs = summary.get("observations_with_edge", 0)
+            if obs > 0:
+                logger.info(
+                    "[GeneralMarket] %d observations, %d high-edge (>= 20%%)",
+                    obs, high_edge,
+                )
+
+            marker_file.touch()
+
+        except Exception as e:
+            logger.debug("General market observer failed (non-critical): %s", e)
 
     def _record_equity_snapshot(self, reason: str = "pipeline_run") -> None:
         """Speichere aktuellen Equity-Wert fuer DrawdownProtector."""
