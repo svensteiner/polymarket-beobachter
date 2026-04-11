@@ -549,6 +549,10 @@ class ExecutionSimulator:
             market_type=market_type,
         )
         position_eur *= float(edge_verdict.get("position_scale", 1.0) or 1.0)
+        # Hard cap: position_scale darf capital_config-Limit nicht überschreiten
+        from paper_trader.kelly import _get_caps as _kelly_get_caps
+        _kmin, _kmax, _ = _kelly_get_caps()
+        position_eur = max(_kmin, min(_kmax, position_eur))
 
         # Calculate entry price with slippage
         price_result = calculate_entry_price(snapshot, side)

@@ -11,7 +11,6 @@ by the _calc_unrealized_pct bug (comparing NO entry price with YES mid-price).
 import json
 import re
 import sys
-from collections import defaultdict
 from pathlib import Path
 from datetime import datetime
 from datetime import timezone, timedelta
@@ -117,7 +116,6 @@ def is_affected_by_tp_sl_bug(position: dict) -> bool:
 
     exit_reason = position.get("exit_reason", "")
     realized_pnl = position.get("realized_pnl_eur", 0.0)
-    pnl_pct = position.get("pnl_pct", 0.0)
 
     # Case 1: NO position exited via TP but has negative P&L
     if "TP" in exit_reason and (realized_pnl is not None and realized_pnl < 0):

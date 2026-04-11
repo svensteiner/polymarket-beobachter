@@ -27,6 +27,14 @@ set "RESTART_LOG=logs\restart.log"
 set "RESTART_COUNT=0"
 set "MAX_RESTARTS=50"
 
+:: Log-Rotation: dauerlauf_restart.log auf 2 MB begrenzen (verhindert GB-Wachstum)
+for %%F in ("%LOG_FILE%") do set "LOG_SIZE=%%~zF"
+if defined LOG_SIZE if !LOG_SIZE! GTR 2097152 (
+    del /q "%LOG_FILE%.old" 2>nul
+    ren "%LOG_FILE%" "dauerlauf_restart.log.old" 2>nul
+    echo [%DATE% %TIME%] Log rotiert (war !LOG_SIZE! Bytes) >> "%LOG_FILE%"
+)
+
 echo [%DATE% %TIME%] ===== DAUERLAUF gestartet ===== >> "%RESTART_LOG%"
 
 :loop

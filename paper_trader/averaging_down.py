@@ -241,7 +241,6 @@ def check_averaging_down() -> Dict[str, Any]:
             continue
 
         # Check 3: Capital available
-        state = capital_mgr.get_state()
         can_open, reason = capital_mgr.can_open_position(len(open_positions) + addon_count)
         if not can_open:
             logger.debug(f"Averaging down: {reason}")

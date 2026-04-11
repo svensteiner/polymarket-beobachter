@@ -202,14 +202,16 @@ class PositionManager:
     # TP1: +15% -> 50% der Position verkaufen
     # TP2: +20% -> weitere 35% verkaufen (kumuliert: 85%)
     # TP3: +25% -> Restliche 15% schliessen
-    # Stop-Loss: -70% — Prediction markets resolve binary (0 or 1).
+    # Stop-Loss: -0.70 (70%) — Prediction markets resolve binary (0 or 1).
     # Resolution WR=89% when held; a tight -25% SL was exiting winners early.
+    # Historisch: 120/237 Trades wurden bei -25% gestoppt → -2562 EUR Verlust.
+    # Mit -70% halten HIGH-confidence-Positionen bis zur Auflösung.
     TP1_PCT = 0.15
     TP1_FRACTION = 0.50   # 50% bei TP1 verkaufen
     TP2_PCT = 0.20
     TP2_FRACTION = 0.35   # 35% bei TP2 verkaufen (kumuliert: 85%)
     TP3_PCT = 0.25        # Restliche 15% bei TP3 schliessen
-    STOP_LOSS_PCT = -0.25
+    STOP_LOSS_PCT = -0.70
     MIN_EXIT_LIQUIDITY_BUCKETS = {"HIGH", "MEDIUM"}
     INVALID_PRICE_LOW = 0.02
     INVALID_PRICE_HIGH = 0.98

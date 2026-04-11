@@ -34,12 +34,12 @@ def _get_config() -> Dict[str, Any]:
         "primary_model": os.getenv("LLM_FAST_MODEL", "gpt-5.4-mini"),
         "primary_key": os.getenv("OPENAI_API_KEY", ""),
         "primary_base_url": "https://api.openai.com/v1",
-        "backup_model": os.getenv("LLM_BACKUP_MODEL", "moonshot-v1-32k"),
+        "backup_model": os.getenv("LLM_BACKUP_MODEL", "openai/gpt-4o-mini"),
         "backup_key": os.getenv(
-            os.getenv("LLM_BACKUP_API_KEY_ENV", "KIMI_API_KEY"), ""
+            os.getenv("LLM_BACKUP_API_KEY_ENV", "OPENROUTER_API_KEY"), ""
         ),
         "backup_base_url": os.getenv(
-            "LLM_BACKUP_BASE_URL", "https://api.moonshot.cn/v1"
+            "LLM_BACKUP_BASE_URL", "https://openrouter.ai/api/v1"
         ),
     }
 

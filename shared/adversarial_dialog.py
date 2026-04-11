@@ -121,15 +121,19 @@ def _call_llm(client: Any, model: str, system: str, user: str, max_tokens: int =
     Einzelner LLM-Call. Gibt Antwort-Text zurueck.
     Wirft Exception bei Fehler (wird vom Aufrufer abgefangen).
     """
+    # GPT-5.4+ / o1 / o3 nutzen max_completion_tokens statt max_tokens
+    tok_key = "max_completion_tokens" if any(
+        x in model for x in ("5.4", "5.1", "o1", "o3")
+    ) else "max_tokens"
     response = client.chat.completions.create(
         model=model,
         messages=[
             {"role": "system", "content": system},
             {"role": "user",   "content": user},
         ],
-        max_tokens=max_tokens,
+        **{tok_key: max_tokens},
         temperature=0.4,
-        timeout=20,  # 20s Timeout — verhindert unbegrenztes Haengen
+        timeout=20,
     )
     return (response.choices[0].message.content or "").strip()
 

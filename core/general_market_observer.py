@@ -14,7 +14,6 @@
 
 import json
 import logging
-from dataclasses import asdict
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, Any, List, Optional
@@ -78,7 +77,7 @@ def run_general_market_observation(
     Returns:
         Summary dict with counts and top observations.
     """
-    from .llm_general_evaluator import evaluate_market_batch, MIN_EDGE_TO_LOG
+    from .llm_general_evaluator import evaluate_market_batch
 
     # Load markets if not provided
     if markets is None:

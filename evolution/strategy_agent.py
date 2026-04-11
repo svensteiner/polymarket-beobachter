@@ -55,22 +55,16 @@ CHANGE_BASELINE_FILE = PROJECT_ROOT / "data" / "evolution" / "change_baseline.js
 # Kimi war rate-limited (429) — OpenAI first, Kimi nur als Backup.
 PROVIDERS = [
     {
-        "name": "OpenAI",        # Primary: GPT-5.4-mini (kein rate-limit)
+        "name": "OpenAI",        # Primary: GPT-5.4-mini
         "env_key": "OPENAI_API_KEY",
         "base_url": None,
         "model": "gpt-5.4-mini",
     },
     {
-        "name": "Kimi",          # Fallback bei OpenAI-Ausfall
-        "env_key": "KIMI_API_KEY",
-        "base_url": "https://api.moonshot.ai/v1",
-        "model": "moonshot-v1-32k",
-    },
-    {
-        "name": "OpenAI-Code",   # Tier 3: Code-Evolution
-        "env_key": "OPENAI_API_KEY",
-        "base_url": None,
-        "model": "gpt-5.4-mini",
+        "name": "OpenRouter",    # Fallback: OpenRouter (hat Guthaben, OpenAI-kompatibel)
+        "env_key": "OPENROUTER_API_KEY",
+        "base_url": "https://openrouter.ai/api/v1",
+        "model": "openai/gpt-4o-mini",
     },
 ]
 
@@ -612,10 +606,18 @@ def _write_config_value(param: str, new_value: float) -> bool:
 
 
 def _backup_config() -> str:
-    """Erstelle Backup der weather.yaml. Gibt Backup-Pfad zurueck."""
+    """Erstelle Backup der weather.yaml. Gibt Backup-Pfad zurueck.
+    Hält automatisch nur die 5 neuesten Backups (verhindert Anhäufung)."""
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
     backup = CONFIG_FILE.parent / f"weather_backup_{ts}.yaml"
     shutil.copy2(CONFIG_FILE, backup)
+    # Cleanup: nur 5 neueste Backups behalten
+    existing = sorted(CONFIG_FILE.parent.glob("weather_backup_*.yaml"))
+    for old in existing[:-5]:
+        try:
+            old.unlink()
+        except OSError:
+            pass
     return str(backup)
 
 
@@ -1520,12 +1522,15 @@ def run_strategy_agent(max_iterations: int = 15) -> dict:
 
     for i in range(max_iterations):
         try:
+            _tok_key = "max_completion_tokens" if any(
+                x in active_provider["model"] for x in ("5.4", "5.1", "o1", "o3")
+            ) else "max_tokens"
             response = client.chat.completions.create(
                 model=active_provider["model"],
                 messages=messages,
                 tools=TOOLS,
                 tool_choice="auto",
-                max_tokens=2048,
+                **{_tok_key: 2048},
                 temperature=0.2,
             )
         except Exception as e:
@@ -1541,12 +1546,15 @@ def run_strategy_agent(max_iterations: int = 15) -> dict:
                     client = c
                     active_provider = fallback
                     logger.info(f"Fallback auf {fallback['name']}")
+                    _tok_key_fb = "max_completion_tokens" if any(
+                        x in active_provider["model"] for x in ("5.4", "5.1", "o1", "o3")
+                    ) else "max_tokens"
                     response = client.chat.completions.create(
                         model=active_provider["model"],
                         messages=messages,
                         tools=TOOLS,
                         tool_choice="auto",
-                        max_tokens=2048,
+                        **{_tok_key_fb: 2048},
                         temperature=0.2,
                     )
                     succeeded = True

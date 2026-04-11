@@ -50,7 +50,6 @@ _LAST_ANALYSIS_RUN = 0
 
 def should_run_analysis(run_count: int) -> bool:
     """Pruefe ob Analyse faellig ist."""
-    global _LAST_ANALYSIS_RUN
     if run_count - _LAST_ANALYSIS_RUN >= _ANALYSIS_INTERVAL_RUNS:
         return True
     return False

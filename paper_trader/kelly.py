@@ -24,15 +24,30 @@ from typing import Optional
 logger = logging.getLogger(__name__)
 
 
-# Position size caps
-# Stark reduziert: Erst bei nachgewiesener Kalibrierung erhoehen
-MIN_POSITION_EUR: float = 15.0
-MAX_POSITION_EUR: float = 250.0    # Projektvorgabe: Max 250 EUR pro Position
-FALLBACK_POSITION_EUR: float = 40.0
+# Position size caps — lesen aus capital_config.json (Laufzeit-Override möglich)
+# Strategie-Reset 2026-04-11: HIGH-only, 5 EUR/Trade bis WR >60% über 50 Trades bewiesen
+def _load_caps() -> tuple[float, float, float]:
+    """Lade Position-Caps aus capital_config.json, Fallback auf Defaults."""
+    try:
+        import json
+        from pathlib import Path
+        cfg_path = Path(__file__).parent.parent / "data" / "capital_config.json"
+        cfg = json.loads(cfg_path.read_text(encoding="utf-8"))
+        size = float(cfg.get("position_size_eur", 5.0))
+        return size, size, size   # min = max = fallback = configured size
+    except Exception:
+        return 5.0, 5.0, 5.0
 
-# 5% Kelly bis Ensemble-Kalibrierung bewiesen ist
-# (Profitable Bots nutzen 15% Kelly ABER mit besser kalibriertem Modell)
+# Module-level caps (loaded at import time for tests/introspection)
+MIN_POSITION_EUR, MAX_POSITION_EUR, FALLBACK_POSITION_EUR = _load_caps()
+
+# Kelly-Fraction wird durch die festen Caps dominiert solange position_size_eur klein ist
 KELLY_FRACTION: float = 0.05
+
+
+def _get_caps() -> tuple[float, float, float]:
+    """Caps werden bei jedem Aufruf live gelesen — damit Restarts nicht nötig sind."""
+    return _load_caps()
 
 
 # =============================================================================
@@ -138,19 +153,22 @@ def kelly_size(
     Kelly fraction: f = (p * b - q) / b
     Simplified for prediction markets: f = (p - entry_price) / (1 - entry_price)
     """
+    # Caps live laden (kein Bot-Restart nötig nach capital_config.json Änderung)
+    _min_eur, _max_eur, _fallback_eur = _get_caps()
+
     if win_probability is None or entry_price is None:
-        return FALLBACK_POSITION_EUR
+        return _fallback_eur
 
     if not (0.01 <= win_probability <= 0.99) or not (0.01 <= entry_price <= 0.99):
-        return FALLBACK_POSITION_EUR
+        return _fallback_eur
 
     edge = win_probability - entry_price
     if edge <= 0:
-        return MIN_POSITION_EUR
+        return _min_eur
 
     denominator = 1.0 - entry_price
     if denominator <= 1e-6:
-        return FALLBACK_POSITION_EUR
+        return _fallback_eur
 
     kelly_multiplier = (edge / denominator) * fraction
 
@@ -169,7 +187,7 @@ def kelly_size(
         pass
 
     position_eur = kelly_multiplier * bankroll
-    position_eur = max(MIN_POSITION_EUR, min(MAX_POSITION_EUR, position_eur))
+    position_eur = max(_min_eur, min(_max_eur, position_eur))
 
     if logger.isEnabledFor(logging.DEBUG):
         logger.debug(

@@ -13,7 +13,7 @@ Validates:
 import json
 import sys
 from pathlib import Path
-from collections import Counter, defaultdict
+from collections import defaultdict
 
 # Add project root
 sys.path.insert(0, str(Path(__file__).parent.parent))

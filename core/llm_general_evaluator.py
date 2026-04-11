@@ -12,9 +12,8 @@
 #   result = evaluate_market(market_dict)
 # =============================================================================
 
-import json
 import logging
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Optional, Dict, Any
 
 logger = logging.getLogger(__name__)
