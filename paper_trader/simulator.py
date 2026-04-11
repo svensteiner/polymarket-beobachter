@@ -363,7 +363,7 @@ class ExecutionSimulator:
             try:
                 default_position_size = self._capital_manager.get_position_size()
             except Exception:
-                default_position_size = 250.0
+                default_position_size = 5.0
             llm_approved, llm_reason, llm_result = evaluate_trade(
                 market_question=proposal.market_question,
                 model_probability=proposal.model_probability,
