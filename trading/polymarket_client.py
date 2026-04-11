@@ -58,6 +58,16 @@ class PolymarketTradingClient:
     PAPER TRADING vs LIVE:
     - paper_mode=True: Simulates orders without execution
     - paper_mode=False: Places real orders (requires credentials)
+
+    AUTH MODES:
+    - L2 (preferred): POLYMARKET_API_KEY + POLYMARKET_API_SECRET + POLYMARKET_PASSPHRASE
+      Pre-existing API creds from browser localStorage — no derive step needed.
+    - L1 (fallback): POLYMARKET_PRIVATE_KEY → derives API creds automatically.
+
+    SAFETY GATE:
+    - LIVE_TRADING_ENABLED env var must be "true" for live orders.
+      Default is "false". Only set to "true" after WR >60% over 50+ paper trades,
+      AND explicit Telegram approval per trade (telegram_approval.py).
     """
 
     CLOB_HOST = "https://clob.polymarket.com"
@@ -74,26 +84,46 @@ class PolymarketTradingClient:
 
         Args:
             private_key: Wallet private key (or from env POLYMARKET_PRIVATE_KEY)
-            wallet_address: Wallet address (or from env POLYMARKET_WALLET_ADDRESS)
+            wallet_address: Proxy wallet address (or from env POLYMARKET_WALLET_ADDRESS)
             paper_mode: If True, simulate orders without execution
         """
         self.paper_mode = paper_mode
         self.private_key = private_key or os.getenv("POLYMARKET_PRIVATE_KEY")
         self.wallet_address = wallet_address or os.getenv("POLYMARKET_WALLET_ADDRESS")
+        self.main_wallet = os.getenv("POLYMARKET_MAIN_WALLET", self.wallet_address)
+
+        # Pre-existing API creds (L2 auth — no private key needed for init)
+        self._preset_api_key = os.getenv("POLYMARKET_API_KEY")
+        self._preset_api_secret = os.getenv("POLYMARKET_API_SECRET")
+        self._preset_passphrase = os.getenv("POLYMARKET_PASSPHRASE")
+
+        # Safety gate: must be "true" string in env to allow live orders
+        live_enabled = os.getenv("LIVE_TRADING_ENABLED", "false").lower()
+        if not self.paper_mode and live_enabled != "true":
+            logger.warning(
+                "LIVE_TRADING_ENABLED is not 'true' — forcing paper mode. "
+                "Set LIVE_TRADING_ENABLED=true and provide Telegram approval to go live."
+            )
+            self.paper_mode = True
 
         self._client = None
         self._api_creds = None
         self._initialized = False
 
         if not self.paper_mode:
-            if not self.private_key:
-                raise ValueError("POLYMARKET_PRIVATE_KEY required for live trading")
             if not self.wallet_address:
                 raise ValueError("POLYMARKET_WALLET_ADDRESS required for live trading")
 
     def initialize(self) -> bool:
         """
-        Initialize the CLOB client and derive API credentials.
+        Initialize the CLOB client.
+
+        Auth priority:
+        1. L2: pre-existing API creds from env (POLYMARKET_API_KEY/SECRET/PASSPHRASE)
+           → faster, no derive step, no private key needed for init.
+        2. L1: derive API creds from POLYMARKET_PRIVATE_KEY (fallback).
+
+        Note: Order signing always requires POLYMARKET_PRIVATE_KEY regardless of auth mode.
 
         Returns:
             True if initialization successful, False otherwise.
@@ -105,30 +135,58 @@ class PolymarketTradingClient:
 
         try:
             from py_clob_client.client import ClobClient
+            from py_clob_client.clob_types import ApiCreds
 
-            # Step 1: Create client with private key
-            self._client = ClobClient(
-                self.CLOB_HOST,
-                key=self.private_key,
-                chain_id=self.CHAIN_ID,
-            )
+            has_preset_creds = all([
+                self._preset_api_key,
+                self._preset_api_secret,
+                self._preset_passphrase,
+            ])
 
-            # Step 2: Derive API credentials
-            self._api_creds = self._client.create_or_derive_api_creds()
-            logger.info("API credentials derived successfully")
+            if has_preset_creds:
+                # L2 auth: use pre-existing API credentials (no derive step)
+                self._api_creds = ApiCreds(
+                    api_key=self._preset_api_key,
+                    api_secret=self._preset_api_secret,
+                    api_passphrase=self._preset_passphrase,
+                )
+                logger.info("Using pre-existing CLOB API credentials (L2 auth)")
 
-            # Step 3: Reinitialize with full auth
-            self._client = ClobClient(
-                self.CLOB_HOST,
-                key=self.private_key,
-                chain_id=self.CHAIN_ID,
-                creds=self._api_creds,
-                signature_type=0,  # EOA wallet
-                funder=self.wallet_address,
-            )
+                self._client = ClobClient(
+                    self.CLOB_HOST,
+                    key=self.private_key,  # Proxy wallet private key
+                    chain_id=self.CHAIN_ID,
+                    creds=self._api_creds,
+                    funder=self.wallet_address,  # Proxy wallet holds the funds
+                )
+            else:
+                # L1 auth fallback: derive creds from private key
+                if not self.private_key:
+                    logger.error(
+                        "No API credentials and no POLYMARKET_PRIVATE_KEY — cannot initialize. "
+                        "Set POLYMARKET_API_KEY/SECRET/PASSPHRASE or POLYMARKET_PRIVATE_KEY."
+                    )
+                    return False
+
+                self._client = ClobClient(
+                    self.CLOB_HOST,
+                    key=self.private_key,
+                    chain_id=self.CHAIN_ID,
+                )
+                self._api_creds = self._client.create_or_derive_api_creds()
+                logger.info("API credentials derived from private key (L1 auth)")
+
+                self._client = ClobClient(
+                    self.CLOB_HOST,
+                    key=self.private_key,
+                    chain_id=self.CHAIN_ID,
+                    creds=self._api_creds,
+                    signature_type=0,  # EOA wallet
+                    funder=self.wallet_address,
+                )
 
             self._initialized = True
-            logger.info("Polymarket trading client initialized")
+            logger.info("Polymarket trading client initialized (wallet: %s)", self.wallet_address)
             return True
 
         except ImportError:
@@ -302,7 +360,7 @@ class PolymarketTradingClient:
             return []
 
         try:
-            return self._client.get_open_orders()
+            return self._client.get_orders()
         except Exception as e:
             logger.error(f"Failed to get open orders: {e}")
             return []
@@ -323,19 +381,55 @@ class PolymarketTradingClient:
             return []
 
     def get_balance(self) -> Optional[float]:
-        """Get USDCe balance."""
+        """Get USDC balance via Polymarket CLOB API."""
         if self.paper_mode:
             return 1000.0  # Simulated balance
 
         if not self._initialized:
-            return None
+            if not self.initialize():
+                return None
 
         try:
-            # Note: Balance checking may require separate call
-            return None  # TODO: Implement balance check
+            from py_clob_client.clob_types import BalanceAllowanceParams, AssetType
+            balance_info = self._client.get_balance_allowance(
+                BalanceAllowanceParams(asset_type=AssetType.COLLATERAL)
+            )
+            if isinstance(balance_info, dict):
+                raw = balance_info.get("balance", "0")
+                val = float(raw)
+                # USDC has 6 decimals; values > 10_000 are in micro-USDC
+                return val / 1_000_000 if val > 10_000 else val
+            return None
         except Exception as e:
             logger.error(f"Failed to get balance: {e}")
             return None
+
+    def test_connectivity(self) -> dict:
+        """
+        Test API connectivity without placing orders.
+        Works with L2 auth (API key/secret/passphrase) — no private key needed.
+
+        Returns:
+            dict with 'ok', 'balance', 'open_orders', 'error' keys.
+        """
+        if self.paper_mode:
+            return {"ok": True, "mode": "paper", "balance": 1000.0, "open_orders": 0}
+
+        if not self._initialized:
+            if not self.initialize():
+                return {"ok": False, "error": "Failed to initialize client"}
+
+        result: dict = {"ok": False, "mode": "live"}
+        try:
+            balance = self.get_balance()
+            result["balance"] = balance
+            open_orders = self.get_open_orders()
+            result["open_orders"] = len(open_orders)
+            result["ok"] = True
+        except Exception as e:
+            result["error"] = str(e)
+
+        return result
 
 
 # =============================================================================
