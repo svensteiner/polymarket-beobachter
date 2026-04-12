@@ -7,8 +7,8 @@
 # All capital tracking is simulated - no real funds are managed.
 #
 # CAPITAL RULES:
-# - Initial capital: 5000 EUR (configurable)
-# - Position size: 100 EUR per trade (configurable)
+# - Initial capital: 271 EUR (hardcoded — not reset by self-heal)
+# - Position size: 5 EUR per trade (configurable)
 # - Cannot enter new positions if insufficient capital
 # - Capital is updated on entry and exit
 #
@@ -82,14 +82,14 @@ class CapitalManager:
             data = json.load(f)
 
         self._state = CapitalState(
-            initial_capital_eur=data.get("initial_capital_eur", 5000.0),
-            available_capital_eur=data.get("available_capital_eur", 5000.0),
+            initial_capital_eur=data.get("initial_capital_eur", 271.0),
+            available_capital_eur=data.get("available_capital_eur", 271.0),
             allocated_capital_eur=data.get("allocated_capital_eur", 0.0),
             realized_pnl_eur=data.get("realized_pnl_eur", 0.0),
-            position_size_eur=data.get("position_size_eur", 250.0),
-            max_position_pct=data.get("max_position_pct", 5.0),
-            max_open_positions=data.get("max_open_positions", 10),
-            max_daily_trades=data.get("max_daily_trades", 5),
+            position_size_eur=data.get("position_size_eur", 5.0),
+            max_position_pct=data.get("max_position_pct", 0.2),
+            max_open_positions=data.get("max_open_positions", 20),
+            max_daily_trades=data.get("max_daily_trades", 10),
         )
 
         # Sanity-Check: Werte muessen zusammenpassen
@@ -117,14 +117,14 @@ class CapitalManager:
         """Create default capital configuration."""
         default_config = {
             "governance_notice": "PAPER TRADING CAPITAL - No real funds are allocated",
-            "initial_capital_eur": 5000.00,
-            "available_capital_eur": 5000.00,
+            "initial_capital_eur": 271.00,
+            "available_capital_eur": 271.00,
             "allocated_capital_eur": 0.00,
             "realized_pnl_eur": 0.00,
-            "position_size_eur": 250.00,
-            "max_position_pct": 5.0,
-            "max_open_positions": 10,
-            "max_daily_trades": 5,
+            "position_size_eur": 5.00,
+            "max_position_pct": 0.2,
+            "max_open_positions": 20,
+            "max_daily_trades": 10,
             "created_at": datetime.now().isoformat(),
             "last_updated": datetime.now().isoformat(),
             "last_updated_reason": "Auto-created default config"
@@ -411,7 +411,7 @@ class CapitalManager:
             "governance_notice": "PAPER TRADING - No real funds"
         }
 
-    def reset_capital(self, initial_amount_eur: float = 5000.0) -> None:
+    def reset_capital(self, initial_amount_eur: float = 271.0) -> None:
         """
         Reset capital to initial state.
 
@@ -427,10 +427,10 @@ class CapitalManager:
                 available_capital_eur=initial_amount_eur,
                 allocated_capital_eur=0.0,
                 realized_pnl_eur=0.0,
-                position_size_eur=250.0,
-                max_position_pct=5.0,
-                max_open_positions=10,
-                max_daily_trades=5,
+                position_size_eur=5.0,
+                max_position_pct=0.2,
+                max_open_positions=20,
+                max_daily_trades=10,
             )
             self._save_config(f"Capital reset to {initial_amount_eur:.2f} EUR")
             logger.warning(f"Capital RESET to {initial_amount_eur:.2f} EUR")

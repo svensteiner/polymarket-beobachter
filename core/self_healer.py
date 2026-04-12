@@ -165,7 +165,7 @@ def reconcile_capital(base_dir: Path) -> Dict[str, Any]:
         stored_allocated = config.get("allocated_capital_eur", 0.0)
         stored_available = config.get("available_capital_eur", 0.0)
         stored_pnl = config.get("realized_pnl_eur", 0.0)
-        initial = config.get("initial_capital_eur", 5000.0)
+        initial = config.get("initial_capital_eur", 271.0)
 
         # Check allocated
         alloc_diff = abs(actual_allocated - stored_allocated)
