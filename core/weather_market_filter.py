@@ -199,6 +199,8 @@ class WeatherMarketFilter:
         self.min_odds = float(config.get("MIN_ODDS", 0.01))
         self.max_odds = float(config.get("MAX_ODDS", 0.10))
         self.min_time_to_resolution_hours = float(config.get("MIN_TIME_TO_RESOLUTION_HOURS", 48))
+        # No hard max — agent decides via LATE_STAGE_EDGE_BONUS
+        self.max_time_to_resolution_hours = None
         self.allowed_cities = set(config.get("ALLOWED_CITIES", []))
 
         logger.info(
@@ -276,6 +278,8 @@ class WeatherMarketFilter:
                 f"TIME: {hours_to_resolution:.1f}h to resolution < "
                 f"{self.min_time_to_resolution_hours}h minimum"
             )
+
+        # No hard max filter — LATE_STAGE_EDGE_BONUS steers agent toward <48h organically
 
         # =====================================================================
         # CHECK 5: Odds in valid range
