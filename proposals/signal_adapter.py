@@ -85,6 +85,21 @@ def weather_observation_to_proposal(observation) -> Optional["Proposal"]:
     if forecast_f and threshold_f:
         justification += f": Forecast {forecast_f}°F vs threshold {threshold_f}°F"
 
+    # Collect ensemble quality warnings for downstream filtering
+    warnings_list = []
+    ensemble_variance = getattr(observation, "ensemble_variance", None)
+    if ensemble_variance is not None:
+        justification += f" | variance={ensemble_variance:.4f}"
+        if ensemble_variance > 0.08:
+            warnings_list.append(
+                f"HIGH_VARIANCE:{ensemble_variance:.4f} (threshold 0.08)"
+            )
+    ensemble_source_count = getattr(observation, "ensemble_source_count", None)
+    if ensemble_source_count is not None and ensemble_source_count < 2:
+        warnings_list.append(
+            f"LOW_SOURCE_COUNT:{ensemble_source_count} (min 2 required)"
+        )
+
     # Create proposal
     proposal = Proposal(
         proposal_id=generate_proposal_id(),
@@ -96,7 +111,7 @@ def weather_observation_to_proposal(observation) -> Optional["Proposal"]:
         model_probability=model_prob,
         edge=edge,
         core_criteria=core_criteria,
-        warnings=tuple(),
+        warnings=tuple(warnings_list),
         confidence_level=confidence,
         justification_summary=justification,
     )

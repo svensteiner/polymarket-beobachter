@@ -832,25 +832,29 @@ class TestPositionManagement:
         return position, cap_mgr, paper_log
 
     def test_take_profit_bei_kursgewinn(self, tmp_project_dir):
-        """Take-Profit wird ausgeloest wenn Kurs um 15%+ steigt."""
+        """Take-Profit wird ausgeloest wenn Kurs um 15%+ steigt (TP1_PCT=0.15)."""
         from paper_trader.models import MarketSnapshot
 
         position, cap_mgr, paper_log = self._setup_open_position(tmp_project_dir, entry_price=0.10)
 
-        # Snapshot mit Kurs der 20% ueber Entry liegt (Take-Profit bei 15%)
+        # Snapshot mit Kurs der klar ueber TP1-Schwelle (15%) liegt.
+        # mid_price=0.12 = +20% -> sicherer Abstand zu 15%.
+        # Wichtig: TP-State wird auf leer gepatcht damit kein Carry-over aus
+        # vorherigen Laeufen die Bedingung (not tp1_hit) falsch macht.
         tp_snapshot = MarketSnapshot(
             market_id="test-market-tp",
             snapshot_time=datetime.now().isoformat(),
             best_bid=0.119,
             best_ask=0.121,
-            mid_price=0.12,  # 20% ueber 0.10 Entry
+            mid_price=0.12,  # +20% ueber 0.10 Entry → loest TP1 (+15%) aus
             spread_pct=1.5,
             liquidity_bucket="MEDIUM",
             is_resolved=False,
             resolved_outcome=None,
         )
 
-        with patch("paper_trader.position_manager.get_market_snapshots", return_value={"test-market-tp": tp_snapshot}):
+        with patch("paper_trader.position_manager.get_market_snapshots", return_value={"test-market-tp": tp_snapshot}), \
+             patch("paper_trader.position_manager._load_tp_state", return_value={}):
             from paper_trader.position_manager import PositionManager
             pm = PositionManager()
             result = pm.check_mid_trade_exits()
@@ -859,25 +863,28 @@ class TestPositionManagement:
         assert result["pnl_eur"] > 0, "P&L sollte positiv sein bei Take-Profit"
 
     def test_stop_loss_bei_kursverlust(self, tmp_project_dir):
-        """Stop-Loss wird ausgeloest wenn Kurs um 25%+ faellt."""
+        """Stop-Loss wird ausgeloest wenn Kurs um 70%+ faellt (STOP_LOSS_PCT=-0.70)."""
         from paper_trader.models import MarketSnapshot
 
         position, cap_mgr, paper_log = self._setup_open_position(tmp_project_dir, entry_price=0.20)
 
-        # Snapshot mit Kurs der 30% unter Entry liegt (Stop-Loss bei -25%)
+        # Snapshot mit Kurs der 75% unter Entry liegt — Stop-Loss liegt bei -70%.
+        # Bei entry=0.20 und mid=0.05: unrealized = (0.05-0.20)/0.20 = -0.75 <= -0.70 → SL.
+        # Preis > 0.02 (INVALID_PRICE_LOW) und < 0.98 (INVALID_PRICE_HIGH) damit kein Guard greift.
         sl_snapshot = MarketSnapshot(
             market_id="test-market-tp",
             snapshot_time=datetime.now().isoformat(),
-            best_bid=0.139,
-            best_ask=0.141,
-            mid_price=0.14,  # 30% unter 0.20 Entry
-            spread_pct=1.5,
+            best_bid=0.048,
+            best_ask=0.052,
+            mid_price=0.05,  # 75% unter 0.20 Entry → loest -70% SL aus
+            spread_pct=4.0,
             liquidity_bucket="MEDIUM",
             is_resolved=False,
             resolved_outcome=None,
         )
 
-        with patch("paper_trader.position_manager.get_market_snapshots", return_value={"test-market-tp": sl_snapshot}):
+        with patch("paper_trader.position_manager.get_market_snapshots", return_value={"test-market-tp": sl_snapshot}), \
+             patch("paper_trader.position_manager._load_tp_state", return_value={}):
             from paper_trader.position_manager import PositionManager
             pm = PositionManager()
             result = pm.check_mid_trade_exits()

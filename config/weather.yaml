@@ -81,9 +81,11 @@ ENSEMBLE:
     - openweather_gfs
     - noaa_gfs
   ENABLED: true
-  MIN_INDEPENDENT_SOURCES: 1
+  MIN_INDEPENDENT_SOURCES: 2
   SOURCE_TIMEOUT_SECONDS: 12
-  VARIANCE_THRESHOLD: 0.15
+  # Stricter variance gate: reject signals where models disagree too much.
+  # Was 0.15 — at 0.08 we only trade when all sources are tightly aligned.
+  VARIANCE_THRESHOLD: 0.08
 FORECAST_SOURCES:
 - api_key_env: TOMORROW_IO_API_KEY
   base_url: https://api.tomorrow.io/v4
@@ -108,7 +110,12 @@ MIN_EDGE: 0.3
 MIN_EDGE_ABSOLUTE: 0.03
 MIN_ENTRY_PRICE: 0.35
 MIN_LIQUIDITY: 10
-MIN_ODDS: 0.024
+# Minimum YES price. Raised from 0.024 to 0.15:
+# Markets where YES trades below 15% are near-impossible events — our model
+# has high uncertainty on these and we were systematically losing (0% WR on
+# stop-loss exits). Requiring YES >= 15% keeps us in the "uncertain" zone
+# where our edge calculation is meaningful.
+MIN_ODDS: 0.15
 # Timing: Agent entscheidet dynamisch, kein harter Max-Filter
 # LATE_STAGE_EDGE_BONUS gibt <48h Maerkten Vorzug (+0.10 Edge-Bonus)
 # -> Agent bevorzugt <48h organisch ohne Hard-Block

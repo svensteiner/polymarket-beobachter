@@ -77,6 +77,13 @@ MIN_ENTRY_EDGE_ABSOLUTE: Final[float] = 0.08
 MIN_ENTRY_EDGE_UNKNOWN_MARKET: Final[float] = 0.12
 MIN_ENTRY_CONFIDENCE_RANK: Final[int] = 1  # MEDIUM or higher
 
+# Low-probability NO bet protection:
+# When the YES price is very low (< 15%), we're betting on a near-certain NO.
+# These markets have the worst track record (all stop-loss exits were here).
+# Require a higher absolute edge to compensate for higher model uncertainty.
+MIN_ENTRY_EDGE_LOW_PROB_NO: Final[float] = 0.20   # 20% required when YES < 15%
+LOW_PROB_YES_THRESHOLD: Final[float] = 0.15        # "low probability" cutoff
+
 
 def _confidence_rank(level: Optional[str]) -> int:
     ranks = {
@@ -116,6 +123,29 @@ def _entry_quality_gate(proposal: Proposal, market_type: str) -> Tuple[bool, str
             )
     elif edge < MIN_ENTRY_EDGE_ABSOLUTE:
         return False, f"Absolute edge {edge:.1%} below minimum {MIN_ENTRY_EDGE_ABSOLUTE:.0%}"
+
+    # Ensemble quality gate: reject HIGH_VARIANCE and LOW_SOURCE_COUNT signals
+    warnings = getattr(proposal, "warnings", ()) or ()
+    for w in warnings:
+        w_str = str(w)
+        if w_str.startswith("HIGH_VARIANCE:"):
+            return False, f"Signal rejected: {w_str}"
+        if w_str.startswith("LOW_SOURCE_COUNT:"):
+            return False, f"Signal rejected: {w_str}"
+
+    # Low-probability NO bet protection:
+    # When betting NO on a near-impossible event (YES price < 15%), our model
+    # uncertainty is highest and all historical stop-loss exits came from this zone.
+    # Require significantly higher edge to compensate.
+    implied_prob = float(getattr(proposal, "implied_probability", 0.5) or 0.5)
+    raw_edge = float(getattr(proposal, "edge", 0.0) or 0.0)
+    is_no_bet = raw_edge < 0
+    if is_no_bet and implied_prob < LOW_PROB_YES_THRESHOLD:
+        if edge < MIN_ENTRY_EDGE_LOW_PROB_NO:
+            return False, (
+                f"Low-prob NO bet (YES={implied_prob:.1%}) requires "
+                f">= {MIN_ENTRY_EDGE_LOW_PROB_NO:.0%} edge (got {edge:.1%})"
+            )
 
     return True, "OK"
 

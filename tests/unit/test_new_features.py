@@ -158,9 +158,11 @@ class TestKellyIntegration:
         assert yes_kelly == MIN_POSITION_EUR  # YES-side hat negative Edge
 
         # NO Kelly nutzt (1-0.10=0.90, 1-0.35=0.65) → positiver Edge
+        # Edge ist klar positiv → Kelly >=  MIN_POSITION_EUR und >= yes_kelly.
+        # Striktes > ist nicht garantiert wenn min==max==position_size_eur (Micro-Sizing-Regime).
         no_kelly = kelly_size(win_probability=0.90, entry_price=0.65, bankroll=5000)
-        assert no_kelly > MIN_POSITION_EUR  # NO-side soll sinnvoll groß sein
-        assert no_kelly >= MIN_POSITION_EUR
+        assert no_kelly >= MIN_POSITION_EUR  # NO-side soll mindestens MIN haben
+        assert no_kelly >= yes_kelly          # NO-Edge groesser → mindestens gleiche Groesse
 
 
 # ============================================================

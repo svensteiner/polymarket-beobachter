@@ -406,8 +406,21 @@ class WeatherEngine:
         if ensemble is None:
             return None
 
-        # Use ensemble probability
-        fair_prob = ensemble.ensemble_mean_probability
+        # Use ensemble probability — apply calibration shrinkage.
+        # Brier skill score has been negative, indicating the model is
+        # overconfident on extreme probabilities. We pull p toward the
+        # market price by 15% when the raw probability is very extreme
+        # (< 0.08 or > 0.92). This prevents generating huge edge signals
+        # from near-zero probability events where uncertainty is highest.
+        raw_prob = ensemble.ensemble_mean_probability
+        if raw_prob < 0.08 or raw_prob > 0.92:
+            fair_prob = raw_prob * 0.85 + market.odds_yes * 0.15
+            logger.debug(
+                f"Calibration shrinkage: raw={raw_prob:.4f} "
+                f"market={market.odds_yes:.4f} shrunk={fair_prob:.4f}"
+            )
+        else:
+            fair_prob = raw_prob
 
         # Get horizon-based confidence from the probability model
         from datetime import timezone as _tz
