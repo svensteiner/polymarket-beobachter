@@ -16,7 +16,7 @@
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 import uuid
 
 
@@ -123,6 +123,10 @@ class Proposal:
     confidence_level: str  # "LOW", "MEDIUM", "HIGH"
     justification_summary: str
 
+    # Optional enrichment fields (populated by signal_adapter, None for legacy proposals)
+    hours_to_resolution: Optional[float] = None   # Hours until market resolves
+    ensemble_variance: Optional[float] = None      # Ensemble model variance (0 = perfect agreement)
+
     # HARDCODED governance notice - cannot be modified
     governance_notice: str = field(
         default="This proposal is informational only and does not execute trades.",
@@ -166,6 +170,8 @@ class Proposal:
             "warnings": list(self.warnings),
             "confidence_level": self.confidence_level,
             "justification_summary": self.justification_summary,
+            "hours_to_resolution": self.hours_to_resolution,
+            "ensemble_variance": self.ensemble_variance,
             "governance_notice": self.governance_notice
         }
 
@@ -197,7 +203,9 @@ class Proposal:
             core_criteria=core_criteria,
             warnings=tuple(data.get("warnings", [])),
             confidence_level=data["confidence_level"],
-            justification_summary=data["justification_summary"]
+            justification_summary=data["justification_summary"],
+            hours_to_resolution=data.get("hours_to_resolution"),
+            ensemble_variance=data.get("ensemble_variance"),
         )
 
 

@@ -100,6 +100,10 @@ def weather_observation_to_proposal(observation) -> Optional["Proposal"]:
             f"LOW_SOURCE_COUNT:{ensemble_source_count} (min 2 required)"
         )
 
+    # Pull optional enrichment fields from observation
+    hours_to_res = getattr(observation, "hours_to_resolution", None)
+    ens_variance = getattr(observation, "ensemble_variance", None)
+
     # Create proposal
     proposal = Proposal(
         proposal_id=generate_proposal_id(),
@@ -114,6 +118,8 @@ def weather_observation_to_proposal(observation) -> Optional["Proposal"]:
         warnings=tuple(warnings_list),
         confidence_level=confidence,
         justification_summary=justification,
+        hours_to_resolution=hours_to_res,
+        ensemble_variance=ens_variance,
     )
 
     return proposal

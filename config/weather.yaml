@@ -121,8 +121,11 @@ MIN_EDGE: 0.40
 # Raised from 0.03 to 0.10: absolute edge floor prevents false positives at extreme odds.
 # A 10% absolute gap (e.g. model=65% vs market=55%) is meaningful calibration signal.
 MIN_EDGE_ABSOLUTE: 0.10
-# Raised from 0.35 to 0.40: avoid borderline markets where resolution variance is highest.
-MIN_ENTRY_PRICE: 0.40
+# Lowered 0.40 → 0.30 (2026-04-17): spring weather YES bets naturally price at 15-40%
+# ("at_or_above 77°F on April 17" in Paris = ~20% YES).  The 40% floor blocked all
+# current YES opportunities.  The SQS ep_score and entry_quality_gate MIN_YES_ENTRY_PRICE
+# (5%) handle the near-zero lottery-ticket protection; 30% is sufficient here.
+MIN_ENTRY_PRICE: 0.30
 # Raised from 50 to 500 USD (round 3, 2026-04-16):
 # Thin markets (<$500 liquidity) show larger price swings, easier stop-loss hits.
 # $500 is a reasonable floor for meaningful market participation.
