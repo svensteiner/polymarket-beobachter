@@ -501,11 +501,46 @@ def run_once() -> int:
         return 1
 
 
+def _snapshot_code_mtimes() -> dict:
+    """Record modification times for key strategy modules."""
+    watched = [
+        "paper_trader/simulator.py",
+        "paper_trader/position_manager.py",
+        "paper_trader/entry_guardrails.py",
+        "paper_trader/capital_manager.py",
+        "app/orchestrator.py",
+    ]
+    mtimes = {}
+    for rel in watched:
+        p = BASE_DIR / rel
+        try:
+            mtimes[rel] = p.stat().st_mtime
+        except OSError:
+            pass
+    return mtimes
+
+
+def _code_changed(baseline: dict) -> str:
+    """Return path of first changed file, or '' if nothing changed."""
+    for rel, old_mtime in baseline.items():
+        try:
+            new_mtime = (BASE_DIR / rel).stat().st_mtime
+            if new_mtime != old_mtime:
+                return rel
+        except OSError:
+            pass
+    return ""
+
+
 def run_scheduler(interval_seconds: int = 900, enable_self_improve: bool = False) -> int:
     """Run pipeline on a schedule with crash resilience and resource optimization."""
     run_count = 0
     consecutive_errors = 0
     start_time = datetime.now()
+    # Track file mtimes at startup to detect code changes.
+    # Python caches imports — if strategy files change, exit cleanly so the
+    # process can be restarted fresh and pick up the new code.
+    code_baseline = _snapshot_code_mtimes()
 
     print_header()
     print(f"{C.BOLD}Scheduler Mode{C.RESET}")
@@ -528,6 +563,21 @@ def run_scheduler(interval_seconds: int = 900, enable_self_improve: bool = False
             print(f"\n{C.BOLD}{C.CYAN}{'='*50}{C.RESET}")
             print(f"{C.BOLD}Run #{run_count}{C.RESET} - {run_start.strftime('%Y-%m-%d %H:%M:%S')}")
             print(f"{C.BOLD}{C.CYAN}{'='*50}{C.RESET}\n")
+
+            # Code-change detector: exit cleanly so the process restarts with
+            # fresh imports. Python caches modules in sys.modules; new strategy
+            # logic (guardrails, filters) won't take effect until the process
+            # restarts. Exit code 3 signals "restart requested".
+            changed = _code_changed(code_baseline)
+            if changed:
+                print(f"\n{C.YELLOW}Code change detected: {changed} — exiting for restart{C.RESET}")
+                logger.info("Code change detected in %s — exiting scheduler for restart (code 3)", changed)
+                _write_heartbeat_json(
+                    status="restart",
+                    detail=f"Code change in {changed} — restart required",
+                    extra={"run_count": run_count, "changed_file": changed},
+                )
+                return 3
 
             # Check if bot is paused via MCP
             is_paused, pause_reason = check_bot_paused()

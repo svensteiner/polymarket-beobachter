@@ -249,7 +249,19 @@ def derive_bot_health(
         if str(summary.get("state", "OK")).upper() != "OK"
     )
 
-    recent_pnls = [float(pos.get("realized_pnl_eur", 0.0) or 0.0) for pos in recent_closed_positions]
+    # Exclude guardrail-forced exits and zombie/expired closes from streak/rate
+    # calculations: these are proactive administrative closes, not organic trading
+    # outcomes. Counting them inflates loss streaks and triggers false CRITICAL states.
+    def _is_organic_trade(pos: dict) -> bool:
+        reason = str(pos.get("exit_reason", "") or "")
+        if reason.startswith("Guardrail-Exit"):
+            return False
+        if reason == "zombie_expired" or reason.startswith("zombie"):
+            return False
+        return True
+
+    organic_positions = [p for p in recent_closed_positions if _is_organic_trade(p)]
+    recent_pnls = [float(pos.get("realized_pnl_eur", 0.0) or 0.0) for pos in organic_positions]
     recent_loss_streak = _count_consecutive([pnl <= 0.0 for pnl in recent_pnls])
     high_price_open_positions = int(current_summary.get("high_price_open_positions", 0) or 0)
 

@@ -168,6 +168,7 @@ class CapitalManager:
             return
 
         # Re-read config params from disk so manual edits survive SELF-HEAL cycles.
+        # Also update in-memory state to pick up live config changes without restart.
         position_size = self._state.position_size_eur
         max_daily_trades = self._state.max_daily_trades
         max_open_positions = self._state.max_open_positions
@@ -179,6 +180,18 @@ class CapitalManager:
                 max_daily_trades = on_disk.get("max_daily_trades", max_daily_trades)
                 max_open_positions = on_disk.get("max_open_positions", max_open_positions)
                 max_position_pct = on_disk.get("max_position_pct", max_position_pct)
+                # Keep in-memory state in sync so subsequent calls use the updated value
+                # (prevents long-running daemons from re-writing stale config params)
+                self._state = CapitalState(
+                    initial_capital_eur=self._state.initial_capital_eur,
+                    available_capital_eur=self._state.available_capital_eur,
+                    allocated_capital_eur=self._state.allocated_capital_eur,
+                    realized_pnl_eur=self._state.realized_pnl_eur,
+                    position_size_eur=position_size,
+                    max_position_pct=max_position_pct,
+                    max_open_positions=max_open_positions,
+                    max_daily_trades=max_daily_trades,
+                )
         except Exception:
             pass  # fall back to in-memory values
 
