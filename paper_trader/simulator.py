@@ -20,12 +20,15 @@
 #
 # =============================================================================
 
+import json
+import os
 import re
 import sys
 import logging
-from datetime import datetime
+import tempfile
+from datetime import datetime, timezone
 from pathlib import Path
-from typing import Optional, Tuple, Final
+from typing import Optional, Tuple, Final, Dict
 
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -106,6 +109,71 @@ LOW_PROB_YES_THRESHOLD: Final[float] = 0.25        # "low probability" cutoff (w
 # All NO bets must clear a higher absolute edge bar until NO-bet WR > 40%.
 MIN_ENTRY_EDGE_NO_BET: Final[float] = 0.50         # 50% required for any NO bet
 
+# Minimum YES entry price: block lottery-ticket bets where the market
+# is priced near-zero (e.g. 2%). These bets show extreme model-vs-market
+# divergence — the model is almost certainly wrong when YES < 5%.
+# Evidence: Paris 18°C @ 2.06% with model_prob=52.5% on same day Paris 19°C
+# was at 92% — mutual exclusivity means the model was miscalibrated.
+MIN_YES_ENTRY_PRICE: Final[float] = 0.05
+
+# SL cooling-off: after a stop-loss on a specific market, block re-entry
+# for this many hours. Prevents the double-SL pattern (same market exits at
+# -80% twice in one day because a fresh proposal re-enters immediately).
+SL_COOLOFF_HOURS: Final[float] = 6.0
+SL_COOLOFF_PATH: Final[str] = "data/sl_cooloff.json"
+
+
+def _load_sl_cooloff() -> Dict[str, str]:
+    """Load stop-loss cooling-off registry {market_id: iso_timestamp}."""
+    path = Path(SL_COOLOFF_PATH)
+    if not path.exists():
+        return {}
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except (json.JSONDecodeError, OSError):
+        return {}
+
+
+def _save_sl_cooloff(registry: Dict[str, str]) -> None:
+    """Persist SL cooling-off registry atomically."""
+    path = Path(SL_COOLOFF_PATH)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fd, tmp = tempfile.mkstemp(dir=str(path.parent), suffix=".tmp")
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            json.dump(registry, f, indent=2)
+        os.replace(tmp, str(path))
+    except Exception:
+        try:
+            os.unlink(tmp)
+        except OSError:
+            pass
+        raise
+
+
+def record_sl_cooloff(market_id: str) -> None:
+    """Register a stop-loss exit so re-entry is blocked for SL_COOLOFF_HOURS."""
+    registry = _load_sl_cooloff()
+    registry[market_id] = datetime.now(timezone.utc).isoformat()
+    _save_sl_cooloff(registry)
+
+
+def _is_in_sl_cooloff(market_id: str) -> bool:
+    """Return True if the market is within the SL cooling-off window."""
+    registry = _load_sl_cooloff()
+    ts_str = registry.get(market_id)
+    if ts_str is None:
+        return False
+    try:
+        sl_time = datetime.fromisoformat(ts_str)
+        if sl_time.tzinfo is None:
+            sl_time = sl_time.replace(tzinfo=timezone.utc)
+        elapsed_hours = (datetime.now(timezone.utc) - sl_time).total_seconds() / 3600.0
+        return elapsed_hours < SL_COOLOFF_HOURS
+    except Exception:
+        return False
+
 
 def _confidence_rank(level: Optional[str]) -> int:
     ranks = {
@@ -179,6 +247,32 @@ def _entry_quality_gate(proposal: Proposal, market_type: str) -> Tuple[bool, str
                 f"Low-prob NO bet (YES={implied_prob:.1%}) requires "
                 f">= {MIN_ENTRY_EDGE_LOW_PROB_NO:.0%} edge (got {edge:.1%})"
             )
+
+    # Minimum YES entry price: block near-zero YES bets.
+    # When YES < 5%, the market has near-consensus that the event won't happen.
+    # If our model disagrees strongly (e.g. 52% vs 2%), the model is almost
+    # certainly wrong — these exact-temp markets are mutually exclusive and
+    # a companion market at 92% has already established the consensus temperature.
+    # Evidence: Paris 18°C YES @ 2.06% (model_prob=52.5%) on same day Paris 19°C
+    # traded at 92% YES — both can't resolve YES, but model didn't enforce this.
+    if not is_no_bet and implied_prob < MIN_YES_ENTRY_PRICE:
+        return False, (
+            f"YES bet at {implied_prob:.1%} below minimum {MIN_YES_ENTRY_PRICE:.0%}: "
+            "extreme model-vs-market divergence likely means model is miscalibrated "
+            f"(model={edge + implied_prob:.1%} vs market={implied_prob:.1%})"
+        )
+
+    # SL cooling-off: block re-entry on a market that recently hit stop-loss.
+    # Pattern: NYC between NO hit SL twice in one day → -8.4 EUR double-loss.
+    # After SL, the same proposal re-enters at the new (lower) market price because
+    # the model still shows positive edge. We block this for SL_COOLOFF_HOURS.
+    market_id = str(getattr(proposal, "market_id", "") or "")
+    if market_id and _is_in_sl_cooloff(market_id):
+        return False, (
+            f"SL cooling-off active for market {market_id}: "
+            f"re-entry blocked for {SL_COOLOFF_HOURS:.0f}h after stop-loss exit "
+            "(prevents double-SL pattern on same market)"
+        )
 
     # NO bet protection for narrow-band markets ("between" / "exact"):
     # Data analysis of 13 paper trades showed 0% win rate for NO bets on these types:

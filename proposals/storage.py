@@ -131,8 +131,8 @@ class ProposalStorage:
             # Append new proposal
             data["proposals"].append(proposal.to_dict())
 
-            # Auto-trim: keep only the most recent 500 proposals
-            max_proposals = 500
+            # Auto-trim: keep only the most recent 2000 proposals
+            max_proposals = 2000
             if len(data["proposals"]) > max_proposals:
                 data["proposals"] = data["proposals"][-max_proposals:]
 

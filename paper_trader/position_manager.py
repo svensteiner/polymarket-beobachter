@@ -33,7 +33,7 @@ from paper_trader.models import (
 )
 from paper_trader.logger import get_paper_logger, log_trade
 from paper_trader.snapshot_client import get_market_snapshots
-from paper_trader.simulator import simulate_exit_resolution, simulate_exit_market
+from paper_trader.simulator import simulate_exit_resolution, simulate_exit_market, record_sl_cooloff
 from paper_trader.capital_manager import release_capital
 from paper_trader.slippage import calculate_exit_price
 
@@ -231,7 +231,10 @@ class PositionManager:
     # für YES-Positionen auf at_or_above/at_or_below deaktivieren.
     # (Nur für diese Typen: 100% historische WR in Paper-Daten.)
     RESOLUTION_HOLD_HOURS: float = 24.0       # Stunden vor Auflösung -> SL deaktivieren
-    RESOLUTION_HOLD_MARKET_TYPES = frozenset({"at_or_above", "at_or_below"})
+    # YES-Positionen auf allen binären Wetter-Typen haben 100% WR wenn zur Auflösung gehalten.
+    # Resolution-Day Intraday-Spikes triggern sonst -70% SL auf korrekten Positionen.
+    # Erweitert von {at_or_above, at_or_below} um "exact" — gleicher Mechanismus.
+    RESOLUTION_HOLD_MARKET_TYPES = frozenset({"at_or_above", "at_or_below", "exact"})
 
     @staticmethod
     def _estimate_hours_to_resolution(position: "PaperPosition") -> Optional[float]:
@@ -577,6 +580,11 @@ class PositionManager:
                 # TP-State loeschen (Position geschlossen)
                 tp_state.pop(pos_id, None)
                 state_changed = True
+                # Register cooling-off so re-entry on this market is blocked
+                try:
+                    record_sl_cooloff(position.market_id)
+                except Exception as _sl_err:
+                    logger.debug("SL cooloff register failed: %s", _sl_err)
                 logger.info(f"SL: {position.market_id} | {unrealized_pct:+.1%} | P&L: {pnl:+.2f} EUR")
                 continue
 
@@ -733,6 +741,130 @@ class PositionManager:
         except Exception as e:
             logger.debug(f"TP-State cleanup: {e}")
 
+    # Guardrail constants (mirrors simulator.py)
+    _BLOCKED_MARKET_TYPES_NO = frozenset({"between", "exact"})
+    _MIN_YES_ENTRY_PRICE = 0.05
+    _WEAK_PERFORMANCE_CITIES = frozenset({
+        "london", "los angeles", "new york", "new york city", "seattle", "san francisco",
+    })
+
+    @staticmethod
+    def _extract_city(market_question: str) -> Optional[str]:
+        """Extract city name from market question (lower-cased)."""
+        import re
+        m = re.search(r"temperature in ([A-Za-z\s]+?)\s+(?:be|exceed|reach)", market_question, re.IGNORECASE)
+        return m.group(1).strip().lower() if m else None
+
+    @staticmethod
+    def _violates_guardrail(position: "PaperPosition") -> Optional[str]:
+        """
+        Return a reason string if the position violates any current entry guardrail,
+        or None if the position is compliant.
+
+        Guardrails checked (mirror simulator._entry_quality_gate):
+        1. NO bets on "between" / "exact" market types (0% historical WR)
+        2. YES bets entered at near-zero price (<5%) — model miscalibration signal
+        3. Positions in weak-performance cities (≤33% historical WR)
+        """
+        import re as _re
+        market_type = str(getattr(position, "market_type", "") or "").lower()
+        is_no_bet = position.side == "NO"
+        entry_price = float(getattr(position, "entry_price", 0.5) or 0.5)
+
+        # Rule 1: NO bet on narrow-band market
+        if is_no_bet and market_type in PositionManager._BLOCKED_MARKET_TYPES_NO:
+            return (
+                f"NO-{market_type} position: 0% historical WR on narrow-band NO bets "
+                "(resolution-day price spikes trigger -70% SL even on correct forecasts)"
+            )
+
+        # Rule 2: YES bet at near-zero entry price (model miscalibration)
+        if not is_no_bet and entry_price < PositionManager._MIN_YES_ENTRY_PRICE:
+            return (
+                f"YES position at {entry_price:.1%} entry price — below {PositionManager._MIN_YES_ENTRY_PRICE:.0%} minimum: "
+                "extreme model-vs-market divergence (lottery-ticket bet)"
+            )
+
+        # Rule 3: Blocked city
+        city = PositionManager._extract_city(getattr(position, "market_question", "") or "")
+        if city and city in PositionManager._WEAK_PERFORMANCE_CITIES:
+            return (
+                f"City '{city}' is on the blocked list (≤33% historical WR). "
+                "Re-evaluate after ≥10 trades show ≥50% WR."
+            )
+
+        return None
+
+    def check_guardrail_violations(self) -> Dict[str, Any]:
+        """
+        Force-close open positions that would now be blocked by the entry guardrail.
+
+        Catches legacy positions entered before a guardrail rule was active.
+        Closes:
+          - NO bets on "between" / "exact" markets (0% historical WR)
+          - YES bets entered at near-zero price (<5%) — model miscalibration
+          - Positions in weak-performance cities (London, NYC, LA, SF, Seattle)
+
+        Returns:
+            Summary with count of positions force-closed and P&L.
+        """
+        open_positions = self.get_open_positions()
+        if not open_positions:
+            return {"checked": 0, "force_closed": 0, "pnl_eur": 0.0}
+
+        market_ids = [p.market_id for p in open_positions]
+        snapshots = get_market_snapshots(market_ids)
+
+        tp_state = _load_tp_state()
+        force_closed = 0
+        total_pnl = 0.0
+        state_changed = False
+
+        for position in open_positions:
+            violation_reason = self._violates_guardrail(position)
+            if violation_reason is None:
+                continue  # Position is fine under current rules
+
+            snapshot = snapshots.get(position.market_id)
+            pos_id = position.position_id
+            tp_entry = tp_state.get(pos_id, _default_tp_entry())
+
+            snapshot = snapshots.get(position.market_id)
+            pos_id = position.position_id
+            tp_entry = tp_state.get(pos_id, _default_tp_entry())
+
+            close_reason = f"Guardrail-Exit: {violation_reason}"
+            if snapshot is not None and snapshot.mid_price is not None and not snapshot.is_resolved:
+                pnl = self._full_exit_remaining(position, snapshot, tp_entry, close_reason)
+            else:
+                # No snapshot: expire the position to clear it from the book
+                logger.info(
+                    "Guardrail-Exit (no snapshot): expiring position %s — %s",
+                    pos_id, violation_reason,
+                )
+                self._paper_logger.expire_position(position)
+                pnl = 0.0
+
+            total_pnl += pnl
+            force_closed += 1
+            tp_state.pop(pos_id, None)
+            state_changed = True
+            logger.info(
+                "GUARDRAIL-EXIT: %s | %s | P&L: %+.2f EUR | %s",
+                position.market_id, position.side, pnl, violation_reason,
+            )
+
+        if state_changed:
+            _save_tp_state(tp_state)
+
+        if force_closed:
+            logger.info(
+                "Guardrail violations: %d positions force-closed, P&L: %+.2f EUR",
+                force_closed, total_pnl,
+            )
+
+        return {"checked": len(open_positions), "force_closed": force_closed, "pnl_eur": total_pnl}
+
     def get_position_summary(self) -> Dict[str, Any]:
         """
         Get summary of all positions.
@@ -810,3 +942,8 @@ def check_mid_trade_exits() -> Dict[str, Any]:
 def get_position_summary() -> Dict[str, Any]:
     """Convenience function to get position summary."""
     return get_position_manager().get_position_summary()
+
+
+def check_guardrail_violations() -> Dict[str, Any]:
+    """Convenience function to force-close guardrail-violating positions."""
+    return get_position_manager().check_guardrail_violations()
