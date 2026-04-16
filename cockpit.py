@@ -434,9 +434,30 @@ def run_pipeline_with_progress():
     return result
 
 
+def _check_live_trading_readiness() -> None:
+    """Warn if LIVE_TRADING_ENABLED=true but credentials are missing."""
+    import os
+    if os.getenv("LIVE_TRADING_ENABLED", "false").lower() != "true":
+        return
+    try:
+        from trading.polymarket_client import validate_live_trading_env
+        ok, missing = validate_live_trading_env()
+        if not ok:
+            print("\n*** LIVE TRADING WARNING ***")
+            print("LIVE_TRADING_ENABLED=true but missing environment variables:")
+            for var in missing:
+                print(f"  - {var}")
+            print("Live trades will NOT execute until these are configured.\n")
+        else:
+            print("\n[LIVE TRADING ACTIVE] All credentials verified.\n")
+    except Exception:
+        pass
+
+
 def run_once() -> int:
     """Run pipeline once and return exit code."""
     print_header()
+    _check_live_trading_readiness()
     start_time = datetime.now()
     _write_heartbeat_txt()
 

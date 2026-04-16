@@ -2,49 +2,109 @@
 # LIVE TRADING KONFIGURATION
 # =============================================================================
 #
-# WICHTIG: Start mit kleinen Betraegen!
-# Ziel: Jeden Tag ein bisschen verdienen, Risiko minimieren
+# AKTIVIERUNG: Beide Bedingungen muessen erfuellt sein:
+#   1. enabled: true  (diese Datei)
+#   2. LIVE_TRADING_ENABLED=true  (.env)
+#
+# STRATEGIE-ERKENNTNISSE (Stand 2026-04-16):
+#   - YES-Bets auf at_or_above/at_or_below: 5/5 gewonnen (100% WR)
+#   - NO-Bets: 0/10 gewonnen — effektiv blockiert (brauchen 50% absoluten Edge)
+#   - Beste Staedte: Tokyo, Paris, Toronto
+#   - Gesperrte Staedte: London, LA, NYC, Seattle, SF (0-33% WR)
+#   - Optimales Fenster: 24-72h vor Aufloesung (NWP sweet spot)
+#
+# FAHRPLAN ZUM LIVE-TRADING:
+#   Phase 1 (JETZT): Paper Trading mit verschaerften Filtern
+#     - Ziel: 30 YES-Bets auf at_or_above/at_or_below mit >= 70% WR
+#     - Erwartete Dauer bei 3-4 Signalen/Tag: ~10-12 Tage
+#   Phase 2 (BEREIT): Live Trading mit minimalem Kapital
+#     - Start: 100 EUR, max 20 EUR/Trade
+#     - Eskalation auf 500 EUR wenn Live-WR >= 65% ueber 20+ Trades
+#
+# CHECKLIST vor Live-Start:
+#   [ ] 30+ Paper-YES-Trades mit WR >= 70%
+#   [ ] POLYMARKET_API_KEY in .env gesetzt
+#   [ ] POLYMARKET_API_SECRET in .env gesetzt
+#   [ ] POLYMARKET_PASSPHRASE in .env gesetzt
+#   [ ] POLYMARKET_WALLET_ADDRESS in .env gesetzt
+#   [ ] POLYMARKET_PRIVATE_KEY in .env gesetzt (fuer Order-Signing)
+#   [ ] TELEGRAM_BOT_TOKEN + TELEGRAM_CHAT_ID in .env gesetzt
+#   [ ] USDC.e auf Polygon-Wallet (mind. 150 USD, empfohlen 500 USD)
+#   [ ] py-clob-client installiert: pip install py-clob-client
 #
 # =============================================================================
 
-# Aktivierung (beide muessen true sein fuer echten Live-Handel)
-enabled: false  # Auf true setzen wenn bereit
-require_telegram_approval: true  # IMMER true lassen!
+# Aktivierung (BEIDE muessen true sein fuer echten Live-Handel)
+enabled: false             # Auf true setzen wenn bereit
+require_telegram_approval: true   # IMMER true lassen!
 
 # Kapital und Position Sizing
+# Phase 1: Konservativ starten, beweisen dass Strategie live funktioniert
 capital:
-  initial_eur: 1000  # 1000 EUR Kapital
-  max_position_eur: 50  # Max 50 EUR pro Trade (5%)
-  max_open_positions: 5  # Max 5 offene Positionen
-  max_daily_trades: 5  # Max 5 Trades pro Tag
-  max_daily_loss_eur: 100  # Stop wenn -100 EUR am Tag (10%)
+  initial_eur: 100         # 100 EUR Startkapital (konservativ — 5 Positionen)
+  max_position_eur: 20     # Max 20 EUR pro Trade (identisch mit Paper)
+  max_open_positions: 5    # Max 5 offene Live-Positionen gleichzeitig
+  max_daily_trades: 3      # Max 3 Live-Trades pro Tag (konservativ)
+  max_daily_loss_eur: 40   # Stop bei -40 EUR am Tag (40% des Kapitals)
+  # Eskalationsstufe nach 20 Live-Trades mit >= 65% WR:
+  # initial_eur: 500, max_position_eur: 50, max_open_positions: 10
 
-# Entry-Kriterien (mehr Trades, kleinere Gewinne)
+# Entry-Kriterien (STRENGER als Paper — Live-Geld ist echt!)
 entry:
-  min_edge: 0.08  # 8% minimum Edge (mehr Trades)
-  min_edge_absolute: 0.05  # 5% absoluter Edge
-  max_odds: 0.45  # Odds bis 45% erlaubt
-  min_confidence: "LOW"  # Auch LOW Konfidenz ok
-  min_time_to_resolution_hours: 4  # Min 4h bis Aufloesung
+  min_edge: 0.45               # 45% relativer Edge (5% strenger als Paper)
+  min_edge_absolute: 0.12      # 12% absoluter Edge
+  max_odds: 0.80               # Odds bis 80% erlaubt
+  min_confidence: "HIGH"       # Nur HIGH/VERY_HIGH Konfidenz
+  min_time_to_resolution_hours: 24    # Min 24h bis Aufloesung
+  max_time_to_resolution_hours: 72    # Max 72h (engeres Fenster als Paper)
+  block_no_bets_on_narrow_markets: true   # NO-Bets auf between/exact geblockt
+  yes_bets_only: true          # NUR YES-Bets bis NO-WR > 40% ueber 20+ Trades
+  allowed_market_types:        # Nur die profitabelsten Markttypen
+    - at_or_above
+    - at_or_below
+  min_signal_quality_score: 0.75   # Strenger als Paper (0.72)
 
 # Exit-Kriterien
 exit:
-  take_profit_pct: 0.15  # +15% Take Profit
-  stop_loss_pct: -0.20  # -20% Stop Loss (enger als Paper)
-  edge_reversal: true  # Exit wenn Edge verschwindet
+  # Resolution-Hold aktiviert: kein SL in den letzten 24h vor Aufloesung
+  # (verhindert FALSE SL-Exits durch Aufloesung-Tag-Volatilitaet)
+  resolution_hold_hours: 24
+  take_profit_pct: 0.15    # +15% Take Profit (erste Stufe)
+  stop_loss_pct: -0.70     # -70% Stop Loss (gleich wie Paper)
+  edge_reversal: true      # Exit wenn Edge verschwindet
 
 # Risiko-Management
 risk:
-  kelly_fraction: 0.2  # Nur 20% Kelly (sehr konservativ)
-  max_correlation: 2  # Max 2 Positionen gleiche Stadt
+  kelly_fraction: 0.20     # 20% Kelly (sehr konservativ)
+  max_correlation: 2       # Max 2 Positionen gleiche Stadt
   time_decay_factor: true  # Reduziere Kelly bei kurzer Zeit
+  blocked_cities:          # Staedte mit <40% historischer WR
+    - London
+    - Los Angeles
+    - New York
+    - Seattle
+    - San Francisco
 
-# Polymarket Wallet (wird aus .env gelesen)
-# POLYMARKET_PRIVATE_KEY=xxx
-# POLYMARKET_WALLET_ADDRESS=xxx
+# Polymarket Credentials (aus .env)
+# POLYMARKET_API_KEY=xxx        (L2-Auth: aus Polymarket Browser-LocalStorage)
+# POLYMARKET_API_SECRET=xxx
+# POLYMARKET_PASSPHRASE=xxx
+# POLYMARKET_WALLET_ADDRESS=xxx (Proxy-Wallet-Adresse)
+# POLYMARKET_PRIVATE_KEY=xxx    (Proxy-Wallet-PrivKey fuer Order-Signing)
 
 # Telegram Approval
 telegram:
-  approval_timeout_seconds: 300  # 5 Minuten
-  notify_on_skip: true  # Benachrichtigung wenn Trade uebersprungen
-  daily_summary_hour: 8  # Taegliche Summary um 8 Uhr
+  approval_timeout_seconds: 300   # 5 Minuten
+  notify_on_skip: true            # Benachrichtigung wenn Trade uebersprungen
+  daily_summary_hour: 8           # Taegliche Summary um 8 Uhr
+
+# Live-Trading Readiness Score
+# Der LLM Strategy Analyst berechnet diesen Score automatisch.
+# Aktuelle Schwelle: 30 YES-Trades mit >= 70% WR (Phase 1).
+# Begruendung: 5/5 YES-Bets (100% WR) zeigen starkes Signal.
+# Mit Resolution-Hold-Logik und YES-Premium-Filter erwarten wir
+# auch weiterhin > 70% WR auf Premium-YES-Signalen.
+readiness_threshold:
+  min_yes_trades: 30            # Mindest-YES-Trades (war: 50 gesamt)
+  min_yes_win_rate: 0.70        # Mindest-WR auf YES-Trades
+  min_paper_days: 10            # Mindestens 10 Tage Paper Trading

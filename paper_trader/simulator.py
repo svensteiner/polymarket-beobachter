@@ -94,11 +94,17 @@ WEAK_PERFORMANCE_CITIES: Final[frozenset] = frozenset({
 })
 
 # Low-probability NO bet protection:
-# When the YES price is very low (< 15%), we're betting on a near-certain NO.
-# These markets have the worst track record (all stop-loss exits were here).
-# Require a higher absolute edge to compensate for higher model uncertainty.
-MIN_ENTRY_EDGE_LOW_PROB_NO: Final[float] = 0.20   # 20% required when YES < 15%
-LOW_PROB_YES_THRESHOLD: Final[float] = 0.15        # "low probability" cutoff
+# When the YES price is very low (< 25%), betting NO means YES must stay near 0.
+# These markets have 0% historical WR in paper trading (all stop-loss exits).
+# Require substantially higher absolute edge to compensate for model uncertainty.
+# Raised: LOW_PROB_YES_THRESHOLD 0.15→0.25, MIN_ENTRY_EDGE_LOW_PROB_NO 0.20→0.35
+MIN_ENTRY_EDGE_LOW_PROB_NO: Final[float] = 0.35   # 35% required when YES < 25%
+LOW_PROB_YES_THRESHOLD: Final[float] = 0.25        # "low probability" cutoff (was 0.15)
+
+# NO-bet premium edge requirement (all NO bets, not just low-prob ones):
+# Paper data shows 0/10 NO bets won (0% WR) vs 5/5 YES bets (100% WR).
+# All NO bets must clear a higher absolute edge bar until NO-bet WR > 40%.
+MIN_ENTRY_EDGE_NO_BET: Final[float] = 0.50         # 50% required for any NO bet
 
 
 def _confidence_rank(level: Optional[str]) -> int:
@@ -149,13 +155,24 @@ def _entry_quality_gate(proposal: Proposal, market_type: str) -> Tuple[bool, str
         if w_str.startswith("LOW_SOURCE_COUNT:"):
             return False, f"Signal rejected: {w_str}"
 
-    # Low-probability NO bet protection:
-    # When betting NO on a near-impossible event (YES price < 15%), our model
-    # uncertainty is highest and all historical stop-loss exits came from this zone.
-    # Require significantly higher edge to compensate.
     implied_prob = float(getattr(proposal, "implied_probability", 0.5) or 0.5)
     raw_edge = float(getattr(proposal, "edge", 0.0) or 0.0)
     is_no_bet = raw_edge < 0
+
+    # NO-bet premium: all NO bets require 50% absolute edge.
+    # Paper data: 0/10 NO bets won (0% WR). Until WR exceeds 40% over 20+
+    # NO-bet trades, we require an extremely strong signal to enter NO side.
+    if is_no_bet and edge < MIN_ENTRY_EDGE_NO_BET:
+        return False, (
+            f"NO bet requires >= {MIN_ENTRY_EDGE_NO_BET:.0%} absolute edge "
+            f"(got {edge:.1%}). Paper WR on NO bets: 0/10. "
+            "Re-evaluate threshold when NO WR > 40% over 20+ trades."
+        )
+
+    # Low-probability NO bet protection:
+    # When betting NO on a near-impossible event (YES price < 25%), our model
+    # uncertainty is highest and all historical stop-loss exits came from this zone.
+    # Require significantly higher edge to compensate.
     if is_no_bet and implied_prob < LOW_PROB_YES_THRESHOLD:
         if edge < MIN_ENTRY_EDGE_LOW_PROB_NO:
             return False, (

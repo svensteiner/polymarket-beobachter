@@ -198,6 +198,22 @@ class Orchestrator:
         result.add_step(paper_result)
         print(f" {'OK' if paper_result.success else 'FAIL'} ({paper_result.message})")
 
+        # Step 4b: Live Trader (nur wenn LIVE_TRADING_ENABLED=true)
+        live_enabled = os.getenv("LIVE_TRADING_ENABLED", "false").lower() == "true"
+        if live_enabled:
+            print("[4b] Live Trader: Echte Orders ...", end="", flush=True)
+            try:
+                live_result = self._run_live_trader(paper_result.data)
+            except Exception as e:
+                logger.error("CRITICAL: Live Trader crashed: %s", e)
+                live_result = StepResult(
+                    name="live_trader", success=False,
+                    message=f"Crash: {str(e)[:100]}", error=str(e),
+                    data={"live_entries": 0, "live_skipped": 0},
+                )
+            result.add_step(live_result)
+            print(f" {'OK' if live_result.success else 'FAIL'} ({live_result.message})")
+
         # Step 5: Outcome Tracker
         print("[5/6] Outcome Tracker: Kalibrierung ...", end="", flush=True)
         outcome_result = self._run_outcome_tracker(weather_result.data)
@@ -846,11 +862,13 @@ class Orchestrator:
             # Simulate entries
             entered = 0
             skipped = 0
+            accepted_proposals = []
 
             for proposal in eligible:
                 position, record = simulate_entry(proposal)
                 if position is not None:
                     entered += 1
+                    accepted_proposals.append(proposal)
                     logger.info(f"Paper ENTRY: {proposal.market_id[:30]}... | {position.side} @ {position.entry_price:.4f}")
                 else:
                     skipped += 1
@@ -877,6 +895,7 @@ class Orchestrator:
                     "shadow_eligible_ratio_without_inventory": guardrail_summary.get("shadow_allowed_ratio_without_inventory", 0.0),
                     "positions_entered": entered,
                     "positions_skipped": skipped,
+                    "accepted_proposals": accepted_proposals,
                     "addon_entries": avg_down["addons"],
                     "addon_cost_eur": avg_down["cost_eur"],
                     "mid_trade_tp": mid_trade["take_profit"],
@@ -899,6 +918,84 @@ class Orchestrator:
                 success=False,
                 message="Paper trader failed",
                 error=str(e)
+            )
+
+    def _run_live_trader(self, paper_data: Dict[str, Any]) -> StepResult:
+        """
+        Execute live trades for proposals that passed paper trading guardrails.
+
+        SAFETY:
+        - Only executes if LIVE_TRADING_ENABLED=true in environment
+        - Every trade requires Telegram approval (require_telegram_approval=true)
+        - Uses strategy parameters from config/live_trading.yaml
+        """
+        accepted = paper_data.get("accepted_proposals", [])
+        if not accepted:
+            return StepResult(
+                name="live_trader",
+                success=True,
+                message="No paper entries — nothing to execute live",
+                data={"live_entries": 0, "live_skipped": 0},
+            )
+
+        live_enabled = os.getenv("LIVE_TRADING_ENABLED", "false").lower() == "true"
+        if not live_enabled:
+            return StepResult(
+                name="live_trader",
+                success=True,
+                message=f"Live trading disabled — {len(accepted)} proposal(s) skipped",
+                data={"live_entries": 0, "live_skipped": len(accepted)},
+            )
+
+        try:
+            from trading.live_trader import LiveTrader
+            trader = LiveTrader()
+
+            live_entries = 0
+            live_skipped = 0
+            live_errors = 0
+
+            for proposal in accepted:
+                try:
+                    trade = trader.execute_proposal(proposal)
+                    if trade:
+                        live_entries += 1
+                        logger.info(
+                            "LIVE ENTRY: %s | %s @ %.4f | Trade ID: %s",
+                            getattr(proposal, "market_id", "?")[:30],
+                            trade.side,
+                            trade.price,
+                            trade.trade_id[:12],
+                        )
+                    else:
+                        live_skipped += 1
+                except Exception as e:
+                    live_errors += 1
+                    logger.error("Live trade failed for %s: %s", getattr(proposal, "market_id", "?"), e)
+
+            return StepResult(
+                name="live_trader",
+                success=True,
+                message=(
+                    f"Live entries: {live_entries} | "
+                    f"Skipped: {live_skipped} | "
+                    f"Errors: {live_errors}"
+                ),
+                data={
+                    "live_entries": live_entries,
+                    "live_skipped": live_skipped,
+                    "live_errors": live_errors,
+                },
+            )
+
+        except Exception as e:
+            logger.error("Live trader crashed: %s", e)
+            return StepResult(
+                name="live_trader",
+                success=False,
+                message=f"Live trader error: {str(e)[:100]}",
+                error=str(e),
+                data={"live_entries": 0, "live_skipped": len(accepted)},
             )
 
     def _run_outcome_tracker(self, weather_data: Dict[str, Any]) -> StepResult:

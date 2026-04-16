@@ -216,6 +216,69 @@ class PositionManager:
     INVALID_PRICE_LOW = 0.02
     INVALID_PRICE_HIGH = 0.98
 
+    # ==========================================================================
+    # RESOLUTION-HOLD STRATEGIE
+    # ==========================================================================
+    # YES-Positionen auf at_or_above/at_or_below Märkten dürfen bei Annäherung
+    # an die Auflösung NICHT durch Stop-Loss oder Trailing-Stop geschlossen werden.
+    #
+    # Begründung: Wettermärkte auf Temperaturschwellen haben auf Auflösungstag
+    # extreme Preisausschläge (z.B. -70% intraday), weil Market-Maker ihre
+    # Positionen vor Auflösung hedgen. Diese Ausschläge treffen den Stop-Loss,
+    # obwohl die Vorhersage KORREKT ist (und YES zu 1.0 aufgelöst wird).
+    #
+    # Lösung: 24h vor geschätzter Auflösung -> alle SL/Trailing-Stop-Checks
+    # für YES-Positionen auf at_or_above/at_or_below deaktivieren.
+    # (Nur für diese Typen: 100% historische WR in Paper-Daten.)
+    RESOLUTION_HOLD_HOURS: float = 24.0       # Stunden vor Auflösung -> SL deaktivieren
+    RESOLUTION_HOLD_MARKET_TYPES = frozenset({"at_or_above", "at_or_below"})
+
+    @staticmethod
+    def _estimate_hours_to_resolution(position: "PaperPosition") -> Optional[float]:
+        """
+        Schätze verbleibende Stunden bis zur Auflösung.
+
+        Berechnung: hours_to_resolution (bei Entry) - vergangene Zeit seit Entry.
+
+        Returns:
+            Geschätzte Stunden bis Auflösung, oder None wenn nicht berechenbar.
+        """
+        hours_at_entry = getattr(position, "hours_to_resolution", None)
+        if hours_at_entry is None:
+            return None
+        entry_time_str = getattr(position, "entry_time", None)
+        if not entry_time_str:
+            return None
+        try:
+            entry_dt = datetime.fromisoformat(str(entry_time_str))
+            if entry_dt.tzinfo is None:
+                entry_dt = entry_dt.replace(tzinfo=timezone.utc)
+            now = datetime.now(timezone.utc)
+            hours_elapsed = (now - entry_dt).total_seconds() / 3600.0
+            return float(hours_at_entry) - hours_elapsed
+        except Exception:
+            return None
+
+    def _is_in_resolution_hold(self, position: "PaperPosition") -> bool:
+        """
+        Prüfe ob eine Position im Resolution-Hold-Fenster ist.
+
+        Gilt NUR für YES-Positionen auf at_or_above/at_or_below Märkten,
+        wenn die geschätzte Restzeit bis Auflösung < RESOLUTION_HOLD_HOURS.
+
+        Returns:
+            True wenn Stop-Loss/Trailing-Stop deaktiviert werden sollen.
+        """
+        if position.side != "YES":
+            return False
+        market_type = str(getattr(position, "market_type", "") or "").lower()
+        if market_type not in self.RESOLUTION_HOLD_MARKET_TYPES:
+            return False
+        hours_remaining = self._estimate_hours_to_resolution(position)
+        if hours_remaining is None:
+            return False
+        return hours_remaining <= self.RESOLUTION_HOLD_HOURS
+
     def _calc_unrealized_pct(self, position: PaperPosition, current_price: float) -> float:
         """Berechne unrealisierten P&L in Prozent (relativ zu Entry).
 
@@ -488,9 +551,26 @@ class PositionManager:
             exited_fraction = tp_entry.get("exited_fraction", 0.0)
 
             # ---------------------------------------------------------------
-            # STOP-LOSS: Immer zuerst pruefen (Prioritaet: Verlust begrenzen)
+            # RESOLUTION-HOLD: SL/Trailing für YES-Positionen nahe Auflösung
+            # deaktivieren. Wettermärkte zeigen auf Auflösungstag extreme
+            # Intraday-Ausschläge die SL triggern, obwohl die Vorhersage stimmt.
             # ---------------------------------------------------------------
-            if unrealized_pct <= self.STOP_LOSS_PCT:
+            in_resolution_hold = self._is_in_resolution_hold(position)
+            hours_remaining = self._estimate_hours_to_resolution(position)
+            if in_resolution_hold:
+                logger.info(
+                    "RESOLUTION-HOLD aktiv für %s | %.1fh bis Auflösung | "
+                    "SL/Trailing deaktiviert (YES %s Markt)",
+                    position.market_id[:40],
+                    hours_remaining or 0,
+                    getattr(position, "market_type", "?"),
+                )
+
+            # ---------------------------------------------------------------
+            # STOP-LOSS: Immer zuerst pruefen (Prioritaet: Verlust begrenzen)
+            # Im Resolution-Hold-Fenster übersprungen (halten bis Auflösung).
+            # ---------------------------------------------------------------
+            if not in_resolution_hold and unrealized_pct <= self.STOP_LOSS_PCT:
                 pnl = self._full_exit_remaining(position, snapshot, tp_entry, f"Stop-Loss ({unrealized_pct:+.1%})")
                 total_pnl += pnl
                 sl_count += 1
@@ -502,9 +582,10 @@ class PositionManager:
 
             # ---------------------------------------------------------------
             # TRAILING STOP: Wenn aktiv und Preis unterschritten
+            # Im Resolution-Hold-Fenster übersprungen.
             # ---------------------------------------------------------------
             trailing_stop = tp_entry.get("trailing_stop_price")
-            if trailing_stop is not None:
+            if not in_resolution_hold and trailing_stop is not None:
                 # Bei YES: stop wenn aktueller YES-Preis < trailing_stop
                 # Bei NO: stop wenn aktueller YES-Preis > trailing_stop
                 stop_triggered = False

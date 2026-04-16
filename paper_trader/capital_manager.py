@@ -86,10 +86,10 @@ class CapitalManager:
             available_capital_eur=data.get("available_capital_eur", 271.0),
             allocated_capital_eur=data.get("allocated_capital_eur", 0.0),
             realized_pnl_eur=data.get("realized_pnl_eur", 0.0),
-            position_size_eur=data.get("position_size_eur", 5.0),
+            position_size_eur=data.get("position_size_eur", 20.0),
             max_position_pct=data.get("max_position_pct", 0.2),
             max_open_positions=data.get("max_open_positions", 20),
-            max_daily_trades=data.get("max_daily_trades", 10),
+            max_daily_trades=data.get("max_daily_trades", 15),
         )
 
         # Sanity-Check: Werte muessen zusammenpassen
@@ -158,9 +158,29 @@ class CapitalManager:
             raise
 
     def _save_config(self, reason: str) -> None:
-        """Save current state to config file (atomic write)."""
+        """Save current state to config file (atomic write).
+
+        Financial state (available/allocated capital, P&L) comes from in-memory state.
+        Config parameters (position_size, limits) are re-read from the file so that
+        manual edits to the file are never overwritten by a stale in-memory value.
+        """
         if self._state is None:
             return
+
+        # Re-read config params from disk so manual edits survive SELF-HEAL cycles.
+        position_size = self._state.position_size_eur
+        max_daily_trades = self._state.max_daily_trades
+        max_open_positions = self._state.max_open_positions
+        max_position_pct = self._state.max_position_pct
+        try:
+            if self._config_path.exists():
+                on_disk = json.loads(self._config_path.read_text(encoding="utf-8"))
+                position_size = on_disk.get("position_size_eur", position_size)
+                max_daily_trades = on_disk.get("max_daily_trades", max_daily_trades)
+                max_open_positions = on_disk.get("max_open_positions", max_open_positions)
+                max_position_pct = on_disk.get("max_position_pct", max_position_pct)
+        except Exception:
+            pass  # fall back to in-memory values
 
         data = {
             "governance_notice": "PAPER TRADING CAPITAL - No real funds are allocated",
@@ -168,10 +188,10 @@ class CapitalManager:
             "available_capital_eur": self._state.available_capital_eur,
             "allocated_capital_eur": self._state.allocated_capital_eur,
             "realized_pnl_eur": self._state.realized_pnl_eur,
-            "position_size_eur": self._state.position_size_eur,
-            "max_position_pct": self._state.max_position_pct,
-            "max_open_positions": self._state.max_open_positions,
-            "max_daily_trades": self._state.max_daily_trades,
+            "position_size_eur": position_size,
+            "max_position_pct": max_position_pct,
+            "max_open_positions": max_open_positions,
+            "max_daily_trades": max_daily_trades,
             "created_at": datetime.now().isoformat(),
             "last_updated": datetime.now().isoformat(),
             "last_updated_reason": reason
@@ -427,10 +447,10 @@ class CapitalManager:
                 available_capital_eur=initial_amount_eur,
                 allocated_capital_eur=0.0,
                 realized_pnl_eur=0.0,
-                position_size_eur=5.0,
+                position_size_eur=20.0,
                 max_position_pct=0.2,
                 max_open_positions=20,
-                max_daily_trades=10,
+                max_daily_trades=15,
             )
             self._save_config(f"Capital reset to {initial_amount_eur:.2f} EUR")
             logger.warning(f"Capital RESET to {initial_amount_eur:.2f} EUR")

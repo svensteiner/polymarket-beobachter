@@ -29,6 +29,19 @@ from trading.telegram_approval import request_trade_approval
 logger = logging.getLogger(__name__)
 
 BASE_DIR = Path(__file__).parent.parent
+_LIVE_CONFIG_PATH = BASE_DIR / "config" / "live_trading.yaml"
+
+
+def _load_live_config() -> Dict[str, Any]:
+    """Load live trading configuration from YAML."""
+    try:
+        import yaml
+        if _LIVE_CONFIG_PATH.exists():
+            data = yaml.safe_load(_LIVE_CONFIG_PATH.read_text(encoding="utf-8"))
+            return data if isinstance(data, dict) else {}
+    except Exception as e:
+        logger.warning("Could not load live_trading.yaml: %s", e)
+    return {}
 
 
 @dataclass
@@ -57,15 +70,27 @@ class LiveTrader:
 
     def __init__(
         self,
-        max_position_size_eur: float = 100.0,
-        max_open_positions: int = 10,
-        min_edge_threshold: float = 0.15,
-        require_telegram_approval: bool = True,
+        max_position_size_eur: Optional[float] = None,
+        max_open_positions: Optional[int] = None,
+        min_edge_threshold: Optional[float] = None,
+        require_telegram_approval: Optional[bool] = None,
     ):
-        self.max_position_size_eur = max_position_size_eur
-        self.max_open_positions = max_open_positions
-        self.min_edge_threshold = min_edge_threshold
-        self.require_telegram_approval = require_telegram_approval
+        cfg = _load_live_config()
+        capital_cfg = cfg.get("capital", {})
+        entry_cfg = cfg.get("entry", {})
+        tg_cfg = cfg.get("telegram", {})
+
+        self.max_position_size_eur = max_position_size_eur or float(capital_cfg.get("max_position_eur", 20.0))
+        self.max_open_positions = max_open_positions or int(capital_cfg.get("max_open_positions", 5))
+        self.min_edge_threshold = min_edge_threshold or float(entry_cfg.get("min_edge", 0.40))
+        self.min_confidence = entry_cfg.get("min_confidence", "HIGH")
+        self.min_time_to_resolution_hours = float(entry_cfg.get("min_time_to_resolution_hours", 24.0))
+        self.block_no_bets_narrow = bool(entry_cfg.get("block_no_bets_on_narrow_markets", True))
+        self.max_daily_loss_eur = float(capital_cfg.get("max_daily_loss_eur", 50.0))
+        self.require_telegram_approval = (
+            require_telegram_approval if require_telegram_approval is not None
+            else bool(tg_cfg.get("approval_timeout_seconds", True) and cfg.get("require_telegram_approval", True))
+        )
 
         # Safety check
         self.live_enabled = os.getenv("LIVE_TRADING_ENABLED", "false").lower() == "true"
@@ -84,24 +109,53 @@ class LiveTrader:
         """Check if live trading is enabled."""
         return self.live_enabled
 
-    def execute_proposal(self, proposal: Dict[str, Any]) -> Optional[TradeRecord]:
+    @staticmethod
+    def proposal_to_dict(proposal: Any) -> Dict[str, Any]:
+        """Convert a Proposal dataclass to a dict for execute_proposal."""
+        edge_val = float(getattr(proposal, "edge", 0) or 0)
+        direction = "BUY_NO" if edge_val < 0 else "BUY_YES"
+        return {
+            "market_id": getattr(proposal, "market_id", ""),
+            "market_question": getattr(proposal, "market_question", ""),
+            "direction": direction,
+            "edge": abs(edge_val),
+            "market_probability": getattr(proposal, "implied_probability", 0),
+            "model_probability": getattr(proposal, "model_probability", 0),
+            "confidence": getattr(proposal, "confidence_level", "UNKNOWN"),
+            "proposal_id": getattr(proposal, "proposal_id", ""),
+            "justification_summary": getattr(proposal, "justification_summary", ""),
+            "position_size_eur": 0,  # overridden by LiveTrader
+        }
+
+    def execute_proposal(self, proposal: Any) -> Optional[TradeRecord]:
         """
         Execute a trading proposal.
 
         Args:
-            proposal: Proposal dict with market_id, direction, edge, etc.
+            proposal: Proposal dataclass or dict with market_id, direction, edge, etc.
 
         Returns:
             TradeRecord if executed, None if skipped
         """
+        if not isinstance(proposal, dict):
+            proposal = self.proposal_to_dict(proposal)
+
         market_id = proposal.get("market_id", "")
         direction = proposal.get("direction", "BUY_YES")
         edge = proposal.get("edge", 0)
         market_prob = proposal.get("market_probability", 0)
+        confidence = proposal.get("confidence", "UNKNOWN")
 
         # Validate edge threshold
         if edge < self.min_edge_threshold:
             logger.info(f"Skipping {market_id}: Edge {edge:.1%} < threshold {self.min_edge_threshold:.1%}")
+            return None
+
+        # Validate confidence
+        confidence_rank = {"LOW": 0, "MEDIUM": 1, "HIGH": 2, "VERY_HIGH": 3}
+        min_rank = confidence_rank.get(self.min_confidence, 2)
+        if confidence_rank.get(confidence, 0) < min_rank:
+            logger.info(f"Skipping {market_id}: Confidence {confidence} < {self.min_confidence}")
             return None
 
         # LIVE TRADING: Require Telegram approval

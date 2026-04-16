@@ -439,6 +439,29 @@ class PolymarketTradingClient:
 _trading_client: Optional[PolymarketTradingClient] = None
 
 
+def validate_live_trading_env() -> tuple[bool, list[str]]:
+    """
+    Validate that all required environment variables for live trading are set.
+
+    Returns:
+        (all_ok, list_of_missing_vars)
+    """
+    required = [
+        "POLYMARKET_WALLET_ADDRESS",
+        "TELEGRAM_BOT_TOKEN",
+        "TELEGRAM_CHAT_ID",
+    ]
+    # Need either L2 creds or private key
+    has_l2 = all(os.getenv(k) for k in ["POLYMARKET_API_KEY", "POLYMARKET_API_SECRET", "POLYMARKET_PASSPHRASE"])
+    has_l1 = bool(os.getenv("POLYMARKET_PRIVATE_KEY"))
+
+    missing = [v for v in required if not os.getenv(v)]
+    if not has_l2 and not has_l1:
+        missing.append("POLYMARKET_API_KEY + POLYMARKET_API_SECRET + POLYMARKET_PASSPHRASE (or POLYMARKET_PRIVATE_KEY)")
+
+    return len(missing) == 0, missing
+
+
 def get_trading_client(paper_mode: bool = True) -> PolymarketTradingClient:
     """Get the global trading client instance."""
     global _trading_client
