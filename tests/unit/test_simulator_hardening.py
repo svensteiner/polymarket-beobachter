@@ -13,7 +13,7 @@ def _make_proposal(
     edge: float = 0.10,
     confidence_level: str = "MEDIUM",
     core_ok: bool = True,
-    market_question: str = "Will the highest temperature in Seattle be 70F or above on March 20?",
+    market_question: str = "Will the highest temperature in Tokyo be 70F or above on March 20?",
 ) -> Proposal:
     core_criteria = ProposalCoreCriteria(
         liquidity_ok=core_ok,

@@ -23,13 +23,13 @@ PROJECT_ROOT = Path(__file__).parent.parent
 DATA_DIR = PROJECT_ROOT / "data"
 AGENTIC_DIR = PROJECT_ROOT / "agentic"
 
-# Default limits
+# Default limits — tightened to match new intelligent strategy
 DEFAULT_MAX_OPEN_POSITIONS = 10
-DEFAULT_MAX_POSITIONS_PER_CITY = 3
-DEFAULT_MAX_ENTRY_PRICE = 0.75   # Max entry price (raised: high-confidence markets are profitable)
-DEFAULT_MIN_ENTRY_PRICE = 0.40   # Min entry price (new: block low-prob traps <40%)
-DEFAULT_MIN_EDGE = 0.12
-DEFAULT_MIN_EDGE_ABSOLUTE = 0.05
+DEFAULT_MAX_POSITIONS_PER_CITY = 2   # Reduced from 3: concentrate capital on best signals
+DEFAULT_MAX_ENTRY_PRICE = 0.80       # Matches weather.yaml MAX_ODDS
+DEFAULT_MIN_ENTRY_PRICE = 0.40       # Block low-probability traps
+DEFAULT_MIN_EDGE = 0.40              # Raised from 0.12: only enter high-confidence divergences
+DEFAULT_MIN_EDGE_ABSOLUTE = 0.10     # Raised from 0.05: meaningful absolute gap required
 
 
 def describe_proposal(proposal) -> Dict[str, Any]:
@@ -148,10 +148,25 @@ def evaluate_entry_guardrails(
             return (False, f"inventory_limit|Max {max_positions} positions reached ({open_positions_count})")
 
     # Check 2: Entry price limits (max + min)
-    if entry_price > max_entry_price:
-        return (False, f"price_limit|Entry price {entry_price:.2f} > max {max_entry_price:.2f}")
-    if min_entry_price > 0 and entry_price < min_entry_price:
-        return (False, f"price_too_low|Entry price {entry_price:.2f} < min {min_entry_price:.2f} (low-prob trap)")
+    # For YES bets: implied_probability is the contract cost. Block if too low (long-shot trap).
+    # For NO bets: the NO contract cost = 1 - implied_probability. Block if NO price < min
+    #   (high YES market price → tiny NO payout → bad risk/reward).
+    #   Example: YES=92% → NO contract costs 8 cents → max profit only 8.7%, loss -100%.
+    edge_val = getattr(proposal, "edge", 0) or 0
+    is_no_bet = float(edge_val) < 0
+    if is_no_bet:
+        no_contract_price = 1.0 - entry_price
+        if no_contract_price < min_entry_price:
+            return (
+                False,
+                f"no_price_too_low|NO contract price {no_contract_price:.2f} < min "
+                f"{min_entry_price:.2f} (YES={entry_price:.2f} too high — bad R:R for NO bet)",
+            )
+    else:
+        if entry_price > max_entry_price:
+            return (False, f"price_limit|Entry price {entry_price:.2f} > max {max_entry_price:.2f}")
+        if min_entry_price > 0 and entry_price < min_entry_price:
+            return (False, f"price_too_low|Entry price {entry_price:.2f} < min {min_entry_price:.2f} (low-prob trap)")
 
     # Check 3: City cooldown
     if city and city in cooldown_cities:

@@ -656,16 +656,16 @@ class TestPaperTrading:
         import paper_trader.simulator as sim_mod
         sim_mod._simulator = None  # Reset
 
-        # Mock-Proposal erstellen
+        # Mock-Proposal erstellen (Miami: not in weak-performance list, YES price 40%)
         proposal = Proposal(
             proposal_id="PROP-TEST-001",
             timestamp=datetime.now().isoformat(),
-            market_id="test-market-ny-90f",
-            market_question="Will the high temperature in New York be above 90°F on February 15?",
+            market_id="test-market-miami-85f",
+            market_question="Will the high temperature in Miami be above 85°F on February 15?",
             decision="TRADE",
-            implied_probability=0.10,
-            model_probability=0.40,
-            edge=3.0,
+            implied_probability=0.40,
+            model_probability=0.70,
+            edge=0.75,
             core_criteria=ProposalCoreCriteria(
                 liquidity_ok=True,
                 volume_ok=True,
@@ -674,24 +674,24 @@ class TestPaperTrading:
             ),
             warnings=tuple(),
             confidence_level="HIGH",
-            justification_summary="Test: Forecast 95F vs threshold 90F",
+            justification_summary="Test: Forecast 91F vs threshold 85F",
         )
 
         # Mock-Snapshot fuer den Market
         mock_snapshot = MarketSnapshot(
-            market_id="test-market-ny-90f",
+            market_id="test-market-miami-85f",
             snapshot_time=datetime.now().isoformat(),
-            best_bid=0.09,
-            best_ask=0.11,
-            mid_price=0.10,
+            best_bid=0.39,
+            best_ask=0.41,
+            mid_price=0.40,
             spread_pct=2.0,
-            liquidity_bucket="MEDIUM",
+            liquidity_bucket="HIGH",
             is_resolved=False,
             resolved_outcome=None,
         )
 
-        # Snapshot-Client mocken
-        with patch("paper_trader.snapshot_client.get_market_snapshot", return_value=mock_snapshot):
+        # Snapshot-Client mocken (patch simulator's local reference)
+        with patch("paper_trader.simulator.get_market_snapshot", return_value=mock_snapshot):
             from paper_trader.simulator import simulate_entry
             position, record = simulate_entry(proposal)
 

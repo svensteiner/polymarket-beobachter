@@ -53,6 +53,7 @@ from paper_trader.drawdown_protector import check_can_open_position
 from paper_trader.bot_health_monitor import check_can_open_entry
 from paper_trader.high_conviction import evaluate_high_conviction_exception
 from analytics.edge_memory import assess_proposal_edge, classify_bucket
+from analytics.signal_quality_scorer import assess_signal_from_proposal
 
 
 logger = logging.getLogger(__name__)
@@ -72,10 +73,25 @@ SIMULATED_SPREAD_PCT: Final[float] = 4.0
 MAX_POSITIONS_PER_CITY_DATE: Final[int] = 1  # Exclusive markets: only 1 per city+date
 MAX_POSITIONS_PER_CITY: Final[int] = 3        # Max positions per city overall
 
-# Entry hardening
-MIN_ENTRY_EDGE_ABSOLUTE: Final[float] = 0.08
-MIN_ENTRY_EDGE_UNKNOWN_MARKET: Final[float] = 0.12
-MIN_ENTRY_CONFIDENCE_RANK: Final[int] = 1  # MEDIUM or higher
+# Entry hardening — tightened after 8/13 paper trades hit stop-loss (BSS=-0.31)
+MIN_ENTRY_EDGE_ABSOLUTE: Final[float] = 0.12   # raised from 0.08
+MIN_ENTRY_EDGE_UNKNOWN_MARKET: Final[float] = 0.18  # raised from 0.12
+MIN_ENTRY_CONFIDENCE_RANK: Final[int] = 2  # HIGH or better (raised from MEDIUM=1)
+
+# Resolution window: 24-96h is the NWP sweet spot.
+# <24h: same-day noise; >96h: 4-day+ forecasts are unreliable.
+MAX_ENTRY_HOURS_TO_RESOLUTION: Final[float] = 96.0
+
+# Cities blocked due to consistently poor paper trading results (0-33% WR).
+# Re-evaluate after >=10 live trades show >=50% WR per city.
+WEAK_PERFORMANCE_CITIES: Final[frozenset] = frozenset({
+    "london",
+    "los angeles",
+    "new york",
+    "new york city",
+    "seattle",
+    "san francisco",
+})
 
 # Low-probability NO bet protection:
 # When the YES price is very low (< 15%), we're betting on a near-certain NO.
@@ -146,6 +162,31 @@ def _entry_quality_gate(proposal: Proposal, market_type: str) -> Tuple[bool, str
                 f"Low-prob NO bet (YES={implied_prob:.1%}) requires "
                 f">= {MIN_ENTRY_EDGE_LOW_PROB_NO:.0%} edge (got {edge:.1%})"
             )
+
+    # NO bet protection for narrow-band markets ("between" / "exact"):
+    # Data analysis of 13 paper trades showed 0% win rate for NO bets on these types:
+    #   - "between" (e.g., "will temp be 84-85°F?"): 1°F wide band → wild resolution-day price spikes
+    #   - "exact"   (e.g., "will temp be exactly 72°F?"): same issue, even narrower
+    # All 5 NO-between and 3 NO-exact trades hit stop-loss (-70 to -93%), while
+    # YES bets on "at_or_above"/"at_or_below"/"exact" won 5/5 when held to resolution.
+    # Root cause: on resolution day, YES prices spike toward 0 or 100%, easily
+    # triggering a -70% drawdown on high-priced NO contracts even when the position
+    # is ultimately correct (the event does NOT happen).
+    if is_no_bet and market_type in ("between", "exact"):
+        return False, (
+            f"NO bet blocked on {market_type} market: "
+            "narrow-band resolution-day price spikes cause systematic stop-loss exits "
+            "(0% historical win rate on NO-between and NO-exact)"
+        )
+
+    # Resolution window gate: 24-96h is the NWP sweet spot.
+    # Forecasts beyond 4 days carry too much uncertainty for edge to be reliable.
+    hours_to_res = getattr(proposal, "hours_to_resolution", None)
+    if hours_to_res is not None and hours_to_res > MAX_ENTRY_HOURS_TO_RESOLUTION:
+        return False, (
+            f"Resolution too far: {hours_to_res:.0f}h > max {MAX_ENTRY_HOURS_TO_RESOLUTION:.0f}h "
+            "(NWP accuracy degrades beyond 4 days — edge signals unreliable)"
+        )
 
     return True, "OK"
 
@@ -532,6 +573,29 @@ class ExecutionSimulator:
             logger.warning("SKIP (EdgeMemory): %s for %s", edge_verdict["reason"], proposal.market_id)
             return (None, record)
 
+        # City performance block: reject markets in cities with proven low WR
+        if new_city and new_city.lower() in WEAK_PERFORMANCE_CITIES:
+            record = PaperTradeRecord(
+                record_id=generate_record_id(),
+                timestamp=now,
+                proposal_id=proposal.proposal_id,
+                market_id=proposal.market_id,
+                action=TradeAction.SKIP.value,
+                reason=(
+                    f"City block: {new_city} is on weak-performance list "
+                    f"(0-33% historical WR — re-evaluate after 10+ live trades)"
+                ),
+                position_id=None,
+                snapshot_time=snapshot.snapshot_time,
+                entry_price=None,
+                exit_price=None,
+                slippage_applied=None,
+                pnl_eur=None,
+            )
+            log_trade(record)
+            logger.info(f"SKIP (CityBlock): {new_city} for {proposal.market_id}")
+            return (None, record)
+
         quality_ok, quality_reason = _entry_quality_gate(proposal, market_type)
         if not quality_ok:
             record = PaperTradeRecord(
@@ -551,6 +615,30 @@ class ExecutionSimulator:
             log_trade(record)
             logger.warning(f"SKIP (EntryQuality): {quality_reason} for {proposal.market_id}")
             return (None, record)
+
+        # Signal Quality Score: composite gate combining edge, ensemble, horizon, market type
+        try:
+            sqs_result = assess_signal_from_proposal(proposal, market_type=market_type)
+            if not sqs_result.allowed and not exception_allowed:
+                record = PaperTradeRecord(
+                    record_id=generate_record_id(),
+                    timestamp=now,
+                    proposal_id=proposal.proposal_id,
+                    market_id=proposal.market_id,
+                    action=TradeAction.SKIP.value,
+                    reason=f"SQS rejected: {sqs_result.reason}",
+                    position_id=None,
+                    snapshot_time=snapshot.snapshot_time,
+                    entry_price=None,
+                    exit_price=None,
+                    slippage_applied=None,
+                    pnl_eur=None,
+                )
+                log_trade(record)
+                logger.info(f"SKIP (SignalQuality): score={sqs_result.score:.3f} for {proposal.market_id}")
+                return (None, record)
+        except Exception as _sqs_err:
+            logger.debug("SignalQualityScorer skipped: %s", _sqs_err)
 
         # Kelly position sizing: use model probability and market price
         # For NO bets, use complementary probabilities (1-p, 1-price)

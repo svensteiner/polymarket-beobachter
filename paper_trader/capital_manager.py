@@ -121,10 +121,10 @@ class CapitalManager:
             "available_capital_eur": 271.00,
             "allocated_capital_eur": 0.00,
             "realized_pnl_eur": 0.00,
-            "position_size_eur": 5.00,
+            "position_size_eur": 20.00,
             "max_position_pct": 0.2,
             "max_open_positions": 20,
-            "max_daily_trades": 10,
+            "max_daily_trades": 15,
             "created_at": datetime.now().isoformat(),
             "last_updated": datetime.now().isoformat(),
             "last_updated_reason": "Auto-created default config"

@@ -575,12 +575,12 @@ class PositionManager:
                 total_pnl += pnl
                 tp_count += 1
 
-                # Trailing Stop = +3% above entry (lock-in minimum profit).
-                # Break-even (0.0) caused net losses: TP1 gain was eaten by the
-                # remaining half closing slightly below entry after a reversal.
-                # Locking in 3% ensures the net outcome is positive even if the
-                # trailing stop fires immediately after TP1.
-                trailing_stop_price = self._calc_trailing_stop_price(position, 0.03)
+                # Trailing Stop = +5% above entry after TP1 (lock in meaningful profit).
+                # Raised from +3%: at 5% floor, even if the trailing fires right after
+                # TP1, the blended exit on the remaining 50% gives net +10% on the trade.
+                # With the new stricter entry filters, every trade that gets in is higher
+                # quality — we should protect the gains more aggressively.
+                trailing_stop_price = self._calc_trailing_stop_price(position, 0.05)
                 tp_state[pos_id] = {
                     **_default_tp_entry(),
                     "tp1_hit": True,

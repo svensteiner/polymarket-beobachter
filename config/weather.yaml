@@ -22,6 +22,14 @@ ALLOWED_CITIES:
 - Philadelphia
 - Buenos Aires
 - Ankara
+# Cities on probationary hold: 0-33% WR in paper trading.
+# Re-evaluate after 10+ live trades show >= 50% WR.
+BLOCKED_CITIES_WEAK_PERFORMANCE:
+- London
+- Los Angeles
+- New York
+- Seattle
+- San Francisco
 BLOCKED_EDGE_BUCKETS: []
 CITY_CONFIG:
   Berlin:
@@ -83,9 +91,10 @@ ENSEMBLE:
   ENABLED: true
   MIN_INDEPENDENT_SOURCES: 2
   SOURCE_TIMEOUT_SECONDS: 12
-  # Stricter variance gate: reject signals where models disagree too much.
-  # Was 0.15 — at 0.08 we only trade when all sources are tightly aligned.
-  VARIANCE_THRESHOLD: 0.08
+  # Ultra-strict variance gate: BSS=-0.31 proves we were trading noisy signals.
+  # At 0.06 we require near-perfect ensemble agreement before entering.
+  # Was 0.08; tightened after 8/13 trades hit stop-loss from overconfident signals.
+  VARIANCE_THRESHOLD: 0.06
 FORECAST_SOURCES:
 - api_key_env: TOMORROW_IO_API_KEY
   base_url: https://api.tomorrow.io/v4
@@ -102,28 +111,33 @@ FORECAST_SOURCES:
 HEALTH_MONITOR_ENABLED: false
 LOG_ALL_OBSERVATIONS: true
 MAX_FORECAST_HORIZON_DAYS: 10
-MAX_ODDS: 0.85
-# MEDIUM trades haben historisch 11% Win-Rate -> geblockt durch hohen Multiplikator
-MEDIUM_CONFIDENCE_EDGE_MULTIPLIER: 2.5
+MAX_ODDS: 0.80
+# MEDIUM trades haben historisch 11% Win-Rate -> effectively blocked (need 3.25x edge)
+MEDIUM_CONFIDENCE_EDGE_MULTIPLIER: 3.25
 MIN_CONFIDENCE: HIGH
-MIN_EDGE: 0.3
-MIN_EDGE_ABSOLUTE: 0.03
-MIN_ENTRY_PRICE: 0.35
-MIN_LIQUIDITY: 10
-# Minimum YES price. Raised from 0.024 to 0.15:
-# Markets where YES trades below 15% are near-impossible events — our model
-# has high uncertainty on these and we were systematically losing (0% WR on
-# stop-loss exits). Requiring YES >= 15% keeps us in the "uncertain" zone
-# where our edge calculation is meaningful.
+# Raised from 0.30 to 0.40: tighter filter after 8/13 trades failed.
+# Only enter when model probability is strongly diverged from market price.
+MIN_EDGE: 0.40
+# Raised from 0.03 to 0.10: absolute edge floor prevents false positives at extreme odds.
+# A 10% absolute gap (e.g. model=65% vs market=55%) is meaningful calibration signal.
+MIN_EDGE_ABSOLUTE: 0.10
+# Raised from 0.35 to 0.40: avoid borderline markets where resolution variance is highest.
+MIN_ENTRY_PRICE: 0.40
+MIN_LIQUIDITY: 50
+# Minimum YES price — unchanged at 0.15: near-zero probabilities are trap markets.
 MIN_ODDS: 0.15
-# Timing: Agent entscheidet dynamisch, kein harter Max-Filter
-# LATE_STAGE_EDGE_BONUS gibt <48h Maerkten Vorzug (+0.10 Edge-Bonus)
-# -> Agent bevorzugt <48h organisch ohne Hard-Block
-MIN_TIME_TO_RESOLUTION_HOURS: 4
+# Timing: focus on the 24-96h sweet spot.
+# <24h: same-day noise dominates; ensemble models are still updating.
+# 24-96h: best forecast accuracy window for NWP models (GFS, ECMWF).
+# >96h: 4+ day forecasts are too uncertain; edge signals are unreliable noise.
+MIN_TIME_TO_RESOLUTION_HOURS: 24
+MAX_TIME_TO_RESOLUTION_HOURS: 96
 LATE_STAGE_MAX_HOURS: 48
 LATE_STAGE_EDGE_BONUS: 0.10
 OBSERVATION_LOG_PATH: logs/weather_observations.jsonl
-SIGMA_F: 3.5
+# Raised from 4.5 to 5.5°F: BSS=-0.31 proves systematic overconfidence.
+# Wider sigma reduces false-precision signals and forces larger true edge gaps.
+SIGMA_F: 5.5
 SIGMA_HORIZON_ADJUSTMENTS:
   1: 0.8
   2: 0.9
