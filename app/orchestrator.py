@@ -807,12 +807,22 @@ class Orchestrator:
         try:
             from paper_trader.intake import get_eligible_proposals
             from paper_trader.simulator import simulate_entry
-            from paper_trader.position_manager import check_and_close_resolved, check_mid_trade_exits
+            from paper_trader.position_manager import check_and_close_resolved, check_mid_trade_exits, check_guardrail_violations
             from paper_trader.averaging_down import check_averaging_down
             from paper_trader.edge_reversal import check_edge_reversal_exits
             from paper_trader.drawdown_protector import get_drawdown_status
             from paper_trader.guardrail_audit import build_guardrail_summary
             from paper_trader.logger import get_paper_logger
+
+            # Step 0: Force-close any positions that violate the current entry
+            # guardrail (e.g. legacy NO-between/exact positions entered before the
+            # guardrail rule was added). Run before SL/TP so we don't pay a -70% SL.
+            gv = check_guardrail_violations()
+            if gv["force_closed"]:
+                logger.info(
+                    f"Guardrail violations: {gv['force_closed']} positions force-closed, "
+                    f"P&L: {gv['pnl_eur']:+.2f} EUR"
+                )
 
             # Step 1: Check mid-trade exits FIRST (take-profit / stop-loss)
             mid_trade = check_mid_trade_exits()
