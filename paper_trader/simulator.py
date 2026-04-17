@@ -88,12 +88,14 @@ MAX_ENTRY_HOURS_TO_RESOLUTION: Final[float] = 96.0
 # Cities blocked due to consistently poor paper trading results (0-33% WR).
 # Re-evaluate after >=10 live trades show >=50% WR per city.
 WEAK_PERFORMANCE_CITIES: Final[frozenset] = frozenset({
+    # Cities with ≤33% WR on ALLOWED market types (at_or_above / at_or_below YES).
+    # San Francisco removed 2026-04-17: its 2 losses were NO-between stop-losses
+    # (now blocked by quality gate); clean trades show 2/2 wins (+1.59 EUR).
     "london",
     "los angeles",
     "new york",
     "new york city",
     "seattle",
-    "san francisco",
 })
 
 # Low-probability NO bet protection:

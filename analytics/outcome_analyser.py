@@ -254,10 +254,16 @@ def _compute_strategy_attribution(positions: list[dict]) -> dict[str, Any]:
     buckets: dict[str, list[float]] = defaultdict(list)
 
     for pos in positions:
-        reason = (pos.get("exit_reason") or "").lower()
+        raw_reason = (pos.get("exit_reason") or "")
+        reason = raw_reason.lower()
         pnl = pos["realized_pnl_eur"]
 
-        if "take-profit" in reason or "take_profit" in reason:
+        # Check guardrail exits FIRST — their messages often contain keywords
+        # like "resolution" or "stop" that would mis-classify them otherwise.
+        if raw_reason.startswith("Guardrail-Exit"):
+            buckets["guardrail_exit"].append(pnl)
+        elif reason.startswith("tp") or "take-profit" in reason or "take_profit" in reason or "trailing-stop" in reason:
+            # Covers "TP3 (+42%)", "take-profit", "take_profit", "Trailing-Stop"
             buckets["take_profit"].append(pnl)
         elif "stop-loss" in reason or "stop_loss" in reason:
             buckets["stop_loss"].append(pnl)
