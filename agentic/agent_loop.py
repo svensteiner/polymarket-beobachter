@@ -234,7 +234,12 @@ class AgentLoop:
         if not path.exists():
             return []
 
-        items: List[Dict[str, Any]] = []
+        # Deduplicate by position_id: keep the latest record per position.
+        # The JSONL is append-only: OPEN first, then CLOSED/EXPIRED on resolution.
+        # Without dedup, status="OPEN" returns all historical OPEN entries,
+        # making the agent think all past positions are still open.
+        latest_by_id: Dict[str, Any] = {}
+        orphans: List[Dict[str, Any]] = []  # records without a position_id
         for raw_line in path.read_text(encoding="utf-8").splitlines():
             line = raw_line.strip()
             if not line:
@@ -245,7 +250,17 @@ class AgentLoop:
                 continue
             if payload.get("_type") == "LOG_HEADER":
                 continue
+            pid = payload.get("position_id")
+            if pid:
+                latest_by_id[pid] = payload  # last write wins
+            else:
+                orphans.append(payload)
 
+        all_latest = list(latest_by_id.values()) + orphans
+
+        # Filter by requested status(es)
+        items: List[Dict[str, Any]] = []
+        for payload in all_latest:
             item_status = str(payload.get("status", "")).upper()
             if status and item_status != status.upper():
                 continue
