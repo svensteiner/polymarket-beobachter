@@ -51,14 +51,14 @@ CHANGE_BASELINE_FILE = PROJECT_ROOT / "data" / "evolution" / "change_baseline.js
 # PROVIDER CONFIGURATION
 # =============================================================================
 
-# OpenAI GPT-5.4-mini Primary, Kimi Fallback
-# Kimi war rate-limited (429) — OpenAI first, Kimi nur als Backup.
+# OpenAI GPT-4o-mini Primary, OpenRouter Fallback
+# Kimi war rate-limited (429) — OpenAI first, OpenRouter nur als Backup.
 PROVIDERS = [
     {
-        "name": "OpenAI",        # Primary: GPT-5.4-mini
+        "name": "OpenAI",        # Primary: GPT-4o-mini
         "env_key": "OPENAI_API_KEY",
         "base_url": None,
-        "model": "gpt-5.4-mini",
+        "model": "gpt-4o-mini",
     },
     {
         "name": "OpenRouter",    # Fallback: OpenRouter (hat Guthaben, OpenAI-kompatibel)
@@ -1523,7 +1523,7 @@ def run_strategy_agent(max_iterations: int = 15) -> dict:
     for i in range(max_iterations):
         try:
             _tok_key = "max_completion_tokens" if any(
-                x in active_provider["model"] for x in ("5.4", "5.1", "o1", "o3")
+                x in active_provider["model"] for x in ("o1", "o3")
             ) else "max_tokens"
             response = client.chat.completions.create(
                 model=active_provider["model"],
@@ -1532,6 +1532,7 @@ def run_strategy_agent(max_iterations: int = 15) -> dict:
                 tool_choice="auto",
                 **{_tok_key: 2048},
                 temperature=0.2,
+                timeout=90,
             )
         except Exception as e:
             logger.warning(f"{active_provider['name']} fehlgeschlagen: {e}")
@@ -1547,7 +1548,7 @@ def run_strategy_agent(max_iterations: int = 15) -> dict:
                     active_provider = fallback
                     logger.info(f"Fallback auf {fallback['name']}")
                     _tok_key_fb = "max_completion_tokens" if any(
-                        x in active_provider["model"] for x in ("5.4", "5.1", "o1", "o3")
+                        x in active_provider["model"] for x in ("o1", "o3")
                     ) else "max_tokens"
                     response = client.chat.completions.create(
                         model=active_provider["model"],
@@ -1556,6 +1557,7 @@ def run_strategy_agent(max_iterations: int = 15) -> dict:
                         tool_choice="auto",
                         **{_tok_key_fb: 2048},
                         temperature=0.2,
+                        timeout=90,
                     )
                     succeeded = True
                     break

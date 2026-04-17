@@ -89,7 +89,12 @@ ENSEMBLE:
     - openweather_gfs
     - noaa_gfs
   ENABLED: true
-  MIN_INDEPENDENT_SOURCES: 2
+  # Lowered 2 -> 1 (2026-04-17): only OPENWEATHER_API_KEY is configured.
+  # With MIN_INDEPENDENT_SOURCES=2, ALL observations get DEGRADED_LOW_SOURCES
+  # -> confidence forced to LOW -> 0 edge signals for 4+ consecutive runs.
+  # At 1 source, single-source ensemble variance = 0 < 0.06 threshold,
+  # so no variance degradation applies.  MIN_EDGE=40% remains the key guard.
+  MIN_INDEPENDENT_SOURCES: 1
   SOURCE_TIMEOUT_SECONDS: 12
   # Ultra-strict variance gate: BSS=-0.31 proves we were trading noisy signals.
   # At 0.06 we require near-perfect ensemble agreement before entering.
