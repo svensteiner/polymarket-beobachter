@@ -455,19 +455,18 @@ def _check_live_trading_readiness() -> None:
 
 
 def run_once() -> int:
-    """Run pipeline once and return exit code."""
+    """Run pipeline once and return exit code.
+
+    NOTE: --run-once intentionally does NOT check the pause flag.
+    The pause flag is designed to stop long-running daemon processes
+    (--scheduler) that may be running stale code. Each --run-once
+    invocation loads fresh code from disk, so the stale-code concern
+    does not apply. Pausing the bot stops the daemon, not one-shot runs.
+    """
     print_header()
     _check_live_trading_readiness()
     start_time = datetime.now()
     _write_heartbeat_txt()
-
-    # Check if bot is paused via MCP
-    is_paused, pause_reason = check_bot_paused()
-    if is_paused:
-        print(f"{C.YELLOW}Bot is PAUSED - cannot run{C.RESET}")
-        print(f"  {C.DIM}{pause_reason}{C.RESET}")
-        print(f"\n{C.DIM}Use MCP server to resume the bot{C.RESET}")
-        return 3  # Special exit code for paused state
 
     try:
         result = run_pipeline_with_progress()
