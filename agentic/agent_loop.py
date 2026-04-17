@@ -208,8 +208,10 @@ class AgentLoop:
         mode: str,
         approved_actions: List[ActionProposal],
     ) -> str:
+        read_only_count = sum(1 for a in approved_actions if a.status == "APPROVED_READ_ONLY")
+        active_count = len(approved_actions) - read_only_count
         return (
-            f"{mode}: {len(approved_actions)} read-only action(s) | "
+            f"{mode}: {active_count} active action(s) | {read_only_count} read-only | "
             f"Open={len(context.open_positions)} | "
             f"DD={context.summary.get('drawdown_pct', 0.0):.1f}% | "
             f"BotHealth={context.summary.get('bot_health_status', 'UNKNOWN')}"

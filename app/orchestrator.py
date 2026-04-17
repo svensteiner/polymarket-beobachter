@@ -172,11 +172,20 @@ class Orchestrator:
         result.add_step(proposal_result)
         print(f" {'OK' if proposal_result.success else 'FAIL'} ({proposal_result.message})")
 
+        # Pre-fetch eligible proposals ONCE here so the adversarial check runs only
+        # once per pipeline run (not once more inside simulate_agents_entry below).
+        _eligible_proposals = None
+        try:
+            from paper_trader.intake import get_eligible_proposals as _get_proposals
+            _eligible_proposals = _get_proposals(run_id=run_id)
+        except Exception as _e:
+            logger.debug(f"Pre-fetch eligible proposals fehlgeschlagen (unkritisch): {_e}")
+
         # Step 3b: Evolution Agent Simulator - Entries (non-blocking)
         # Jeder Agent bewertet Proposals nach seinen eigenen Parametern
         try:
             from evolution.agent_simulator import simulate_agents_entry
-            agent_entries = simulate_agents_entry()
+            agent_entries = simulate_agents_entry(proposals=_eligible_proposals or [])
             total_agent_entries = sum(agent_entries.values())
             if total_agent_entries > 0:
                 logger.info(f"[EVOLUTION] Agent-Entries: {agent_entries}")
@@ -187,7 +196,7 @@ class Orchestrator:
         print("[4/6] Paper Trader: Trades simulieren ...", end="", flush=True)
         try:
             self._record_equity_snapshot("pre_paper_trader")
-            paper_result = self._run_paper_trader(run_id=run_id)
+            paper_result = self._run_paper_trader(run_id=run_id, eligible=_eligible_proposals)
         except Exception as e:
             logger.error(f"CRITICAL: Paper Trader crashed: {e}")
             paper_result = StepResult(
@@ -826,13 +835,17 @@ class Orchestrator:
                 error=str(e)
             )
 
-    def _run_paper_trader(self, run_id: str | None = None) -> StepResult:
+    def _run_paper_trader(self, run_id: str | None = None, eligible=None) -> StepResult:
         """
         Run paper trading cycle.
 
         PAPER TRADING ONLY:
         - NO real orders are placed
         - NO real money is at risk
+
+        Args:
+            eligible: Optional pre-fetched list of eligible proposals. If None,
+                      they are fetched from intake (triggers adversarial check).
         """
         try:
             from paper_trader.intake import get_eligible_proposals
@@ -895,7 +908,9 @@ class Orchestrator:
                 logger.debug(f"Pre-trade policy refresh fehlgeschlagen (unkritisch): {e}")
 
             # Step 4: Get eligible proposals for new entries
-            eligible = get_eligible_proposals(run_id=run_id)
+            # Use pre-fetched proposals if available (avoids duplicate adversarial check)
+            if eligible is None:
+                eligible = get_eligible_proposals(run_id=run_id)
             guardrail_summary = build_guardrail_summary(run_id=run_id)
             logger.info(f"Found {len(eligible)} eligible proposals for paper trading")
 
@@ -1255,12 +1270,35 @@ class Orchestrator:
         }
 
     def _run_agent_loop(self, summary: Dict[str, Any]) -> Dict[str, Any]:
-        """Execute the read-only agent loop for diagnostics and memory."""
+        """Execute agent loop: diagnostics, memory, and approved action effects."""
         try:
             from agentic.agent_loop import AgentLoop
+            from agentic.action_executor import execute_approved_actions
+            from agentic.state import ActionProposal
 
             agent = AgentLoop(self.base_dir)
             result = agent.run(summary)
+
+            # Execute non-read-only approved actions (pause_city, tighten_risk)
+            approved_raw = result.get("proposed_actions", [])
+            approved_proposals = []
+            for raw in approved_raw:
+                if isinstance(raw, dict) and raw.get("status") not in ("APPROVED_READ_ONLY",):
+                    approved_proposals.append(ActionProposal(
+                        action_type=raw.get("action_type", ""),
+                        title=raw.get("title", ""),
+                        rationale=raw.get("rationale", ""),
+                        evidence=raw.get("evidence", []),
+                        priority=raw.get("priority", "MEDIUM"),
+                        params=raw.get("params", {}),
+                        status=raw.get("status", "APPROVED"),
+                    ))
+            if approved_proposals:
+                exec_result = execute_approved_actions(approved_proposals, self.base_dir)
+                if exec_result["executed"]:
+                    logger.info("[AGENT-EXEC] ausgefuehrt: %s", exec_result["executed"])
+                result["executed_actions"] = exec_result["executed"]
+
             logger.info(
                 "[AGENT] %s | %s",
                 result.get("mode", "UNKNOWN"),

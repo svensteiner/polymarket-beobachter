@@ -127,11 +127,14 @@ def _is_duplicate(agent_id: str, market_id: str) -> bool:
 # ENTRY SIMULATION
 # =============================================================================
 
-def simulate_agents_entry() -> Dict[str, int]:
+def simulate_agents_entry(proposals=None) -> Dict[str, int]:
     """
     Simuliert Eintraege fuer alle aktiven Agenten.
-    Liest aktuelle Proposals direkt aus dem Intake-System
-    (identisch zu dem was der globale Paper Trader sieht).
+
+    Args:
+        proposals: Optional pre-fetched list of eligible proposals. If None,
+                   proposals are fetched from the intake system (triggers
+                   adversarial check — avoid double-fetching per pipeline run).
 
     Returns:
         Dict agent_id -> Anzahl eingegangener Positionen
@@ -148,12 +151,14 @@ def simulate_agents_entry() -> Dict[str, int]:
         return {}
 
     # Proposals aus dem Intake laden (gleiche Quelle wie globaler Paper Trader)
-    try:
-        from paper_trader.intake import get_eligible_proposals
-        proposals = get_eligible_proposals()
-    except Exception as e:
-        logger.debug(f"[AGENT-SIM] Proposals nicht ladbar: {e}")
-        return {}
+    # Wenn proposals als Argument uebergeben, Intake-Aufruf (inkl. Adversarial-Check) vermeiden
+    if proposals is None:
+        try:
+            from paper_trader.intake import get_eligible_proposals
+            proposals = get_eligible_proposals()
+        except Exception as e:
+            logger.debug(f"[AGENT-SIM] Proposals nicht ladbar: {e}")
+            return {}
 
     # Nur TRADE-Proposals mit positiver Edge
     tradeable = [p for p in proposals if getattr(p, "decision", "") == "TRADE" and getattr(p, "edge", 0) > 0]

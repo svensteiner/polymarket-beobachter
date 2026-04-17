@@ -7,7 +7,13 @@ from .state import ActionProposal, RunContext
 
 
 class AgentGovernor:
-    """Read-only governor for Sprint 1."""
+    """
+    Governor for agentic actions.
+
+    Read-only actions are always approved.
+    Non-read-only actions (pause_city, tighten_risk) are approved and executed
+    by ActionExecutor — effects are written to JSON files, never to live config.
+    """
 
     def validate(self, proposals: Iterable[ActionProposal], context: RunContext) -> Dict[str, List[Any]]:
         approved: List[ActionProposal] = []
@@ -21,14 +27,8 @@ class AgentGovernor:
                     "reason": "action_not_registered",
                 })
                 continue
-            if not spec.read_only:
-                blocked.append({
-                    "action_type": proposal.action_type,
-                    "reason": "non_read_only_action_blocked_in_sprint_1",
-                })
-                continue
 
-            proposal.status = "APPROVED_READ_ONLY"
+            proposal.status = "APPROVED_READ_ONLY" if spec.read_only else "APPROVED"
             approved.append(proposal)
 
         return {

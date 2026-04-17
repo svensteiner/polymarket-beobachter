@@ -686,8 +686,11 @@ class ExecutionSimulator:
             logger.warning("SKIP (EdgeMemory): %s for %s", edge_verdict["reason"], proposal.market_id)
             return (None, record)
 
-        # City performance block: reject markets in cities with proven low WR
-        if new_city and new_city.lower() in WEAK_PERFORMANCE_CITIES:
+        # City performance block: reject markets in cities with proven low WR.
+        # Checks both hardcoded WEAK_PERFORMANCE_CITIES and dynamic agent cooldowns.
+        from agentic.action_executor import get_agent_cooldown_cities
+        _all_blocked_cities = WEAK_PERFORMANCE_CITIES | get_agent_cooldown_cities()
+        if new_city and new_city.lower() in _all_blocked_cities:
             record = PaperTradeRecord(
                 record_id=generate_record_id(),
                 timestamp=now,

@@ -17,16 +17,16 @@ ACTION_REGISTRY: Dict[str, ActionSpec] = {
     "tighten_risk": ActionSpec(
         key="tighten_risk",
         title="Risk enger ziehen",
-        read_only=True,
+        read_only=False,
         cooldown_runs=2,
-        description="Empfiehlt strengere Entry- oder Sizing-Regeln im naechsten Sprint.",
+        description="Schreibt konkreten Parameter-Vorschlag nach output/agent_proposals.json.",
     ),
     "pause_city": ActionSpec(
         key="pause_city",
         title="Stadt-Cooldown",
-        read_only=True,
+        read_only=False,
         cooldown_runs=4,
-        description="Empfiehlt einen temporaeren Cooldown fuer schwaechelnde Staedte.",
+        description="Traegt schwache Staedte in data/agent_city_cooldowns.json ein; Simulator prueft die Datei.",
     ),
     "audit_entry_guardrails": ActionSpec(
         key="audit_entry_guardrails",
