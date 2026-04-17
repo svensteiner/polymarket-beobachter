@@ -1,10 +1,10 @@
 # =============================================================================
-# LLM CLIENT - Zentraler ChatGPT 5.4 mini Client mit Kimi-Backup
+# LLM CLIENT - Zentraler GPT-4o-mini Client mit OpenRouter-Backup
 # =============================================================================
 #
 # Einheitlicher LLM-Zugriff fuer den gesamten Bot:
-# - Primary: OpenAI GPT-5.4 mini (schnell, guenstig)
-# - Backup:  Kimi/Moonshot (bei OpenAI-Ausfall)
+# - Primary: OpenAI GPT-4o-mini (schnell, guenstig)
+# - Backup:  OpenRouter (bei OpenAI-Ausfall)
 #
 # Nutzung:
 #   from core.llm_client import llm_call, llm_json_call
@@ -31,7 +31,7 @@ except ImportError:
 def _get_config() -> Dict[str, Any]:
     """Lade LLM-Konfiguration aus Umgebungsvariablen."""
     return {
-        "primary_model": os.getenv("LLM_FAST_MODEL", "gpt-5.4-mini"),
+        "primary_model": os.getenv("LLM_FAST_MODEL", "gpt-4o-mini"),
         "primary_key": os.getenv("OPENAI_API_KEY", ""),
         "primary_base_url": "https://api.openai.com/v1",
         "backup_model": os.getenv("LLM_BACKUP_MODEL", "openai/gpt-4o-mini"),
@@ -73,11 +73,11 @@ def llm_call(
     config = _get_config()
     model = model_override or config["primary_model"]
 
-    # Versuch 1: Primary (OpenAI GPT-5.4 mini)
+    # Versuch 1: Primary (OpenAI GPT-4o-mini)
     if config["primary_key"]:
         try:
             client = _create_client(config["primary_key"], config["primary_base_url"])
-            # GPT-5.4+ nutzt max_completion_tokens statt max_tokens
+            # o1/o3 models use max_completion_tokens; all others use max_tokens
             create_kwargs = dict(
                 model=model,
                 messages=[
@@ -86,7 +86,7 @@ def llm_call(
                 ],
                 temperature=temperature,
             )
-            if "5.4" in model or "5.1" in model:
+            if any(x in model for x in ("o1", "o3")):
                 create_kwargs["max_completion_tokens"] = max_tokens
             else:
                 create_kwargs["max_tokens"] = max_tokens

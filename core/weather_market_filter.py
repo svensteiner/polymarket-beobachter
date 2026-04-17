@@ -309,36 +309,21 @@ class WeatherMarketFilter:
                 rejection_reasons.append(
                     f"CITY: '{detected_city}' not in allowed cities"
                 )
-
-            # Also check for explicit temperature threshold
-            resolution_check = self._check_resolution_explicit(market)
-            filter_details["resolution_check"] = resolution_check
-            if not resolution_check["is_explicit"]:
-                rejection_reasons.append(
-                    f"RESOLUTION: {resolution_check['reason']}"
-                )
-
-        elif market_type == "GLOBAL_RANKING":
-            # Global ranking markets don't need city, but need ranking criteria
-            ranking_check = self._check_ranking_explicit(market)
-            filter_details["ranking_check"] = ranking_check
-            if not ranking_check["is_explicit"]:
-                rejection_reasons.append(
-                    f"RANKING: {ranking_check['reason']}"
-                )
-
-        elif market_type == "CLIMATE_METRIC":
-            # Climate metric markets need explicit measurement criteria
-            metric_check = self._check_metric_explicit(market)
-            filter_details["metric_check"] = metric_check
-            if not metric_check["is_explicit"]:
-                rejection_reasons.append(
-                    f"METRIC: {metric_check['reason']}"
-                )
+            else:
+                # Only check threshold when city is valid (avoids LLM calls for non-city markets)
+                resolution_check = self._check_resolution_explicit(market)
+                filter_details["resolution_check"] = resolution_check
+                if not resolution_check["is_explicit"]:
+                    rejection_reasons.append(
+                        f"RESOLUTION: {resolution_check['reason']}"
+                    )
 
         else:
-            # Unknown type - require manual review
-            rejection_reasons.append(f"TYPE: Unknown market type '{market_type}'")
+            # GLOBAL_RANKING, CLIMATE_METRIC, UNKNOWN — WeatherEngine only prices
+            # city temperature thresholds; reject all other market types.
+            rejection_reasons.append(
+                f"TYPE: Only CITY_TEMPERATURE markets are supported (got '{market_type}')"
+            )
 
         # =====================================================================
         # FINAL RESULT

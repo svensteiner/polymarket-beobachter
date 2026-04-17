@@ -617,6 +617,36 @@ class Orchestrator:
                             except Exception as e:
                                 logger.debug(f"Skipping invalid candidate: {e}")
 
+            # Step 1b: Merge gamma-discovered candidates (dedup by market_id)
+            # Gamma API finds daily city temperature markets not always present in CLOB events.
+            gamma_root = self.data_dir / "collector" / "gamma"
+            gamma_candidate_file = None
+            if gamma_root.exists():
+                for day_dir in sorted(gamma_root.iterdir(), reverse=True):
+                    gf = day_dir / "gamma_candidates.jsonl"
+                    if gf.exists() and gf.stat().st_size > 0:
+                        gamma_candidate_file = gf
+                        break
+            if gamma_candidate_file:
+                existing_ids = {c.get("market_id") for c in raw_candidates}
+                gamma_added = 0
+                with open(gamma_candidate_file, 'r', encoding='utf-8') as f:
+                    for line in f:
+                        line = line.strip()
+                        if not line:
+                            continue
+                        try:
+                            gdata = json.loads(line)
+                            mid = gdata.get("market_id")
+                            if mid and mid not in existing_ids:
+                                raw_candidates.append(gdata)
+                                existing_ids.add(mid)
+                                gamma_added += 1
+                        except Exception as e:
+                            logger.debug(f"Skipping invalid gamma candidate: {e}")
+                if gamma_added:
+                    logger.info(f"Merged {gamma_added} gamma candidates into observation pipeline")
+
             # Pre-filter: only fetch prices for markets with future resolution (saves API calls)
             from datetime import timezone as _tz
             _now_utc = datetime.now(_tz.utc)
