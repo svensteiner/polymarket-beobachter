@@ -227,14 +227,13 @@ class PositionManager:
     # Positionen vor Auflösung hedgen. Diese Ausschläge treffen den Stop-Loss,
     # obwohl die Vorhersage KORREKT ist (und YES zu 1.0 aufgelöst wird).
     #
-    # Lösung: 24h vor geschätzter Auflösung -> alle SL/Trailing-Stop-Checks
-    # für YES-Positionen auf at_or_above/at_or_below deaktivieren.
-    # (Nur für diese Typen: 100% historische WR in Paper-Daten.)
-    RESOLUTION_HOLD_HOURS: float = 24.0       # Stunden vor Auflösung -> SL deaktivieren
+    # Lösung: 48h vor geschätzter Auflösung -> alle SL/Trailing-Stop-Checks
+    # für YES-Positionen deaktivieren. Erweitert von 24h auf 48h:
+    # Evidenz: Atlanta YES at_or_above (45h entry) wäre mit 24h-Fenster in TP-Gefahr.
+    # YES hat 100% WR (4/4) → lohnt sich, volle binäre Auflösung abzuwarten.
+    RESOLUTION_HOLD_HOURS: float = 48.0       # Stunden vor Auflösung -> SL deaktivieren (erhöht von 24h)
     # YES-Positionen auf allen binären Wetter-Typen haben 100% WR wenn zur Auflösung gehalten.
     # Resolution-Day Intraday-Spikes triggern sonst -40% SL auf korrekten Positionen.
-    # Erweitert von {at_or_above, at_or_below, exact} um "between" — gleicher Mechanismus.
-    # Evidenz: YES-between 1/1 gewonnen (TP3). Resolution spikes treffen auch between-Märkte.
     RESOLUTION_HOLD_MARKET_TYPES = frozenset({"at_or_above", "at_or_below", "exact", "between"})
 
     @staticmethod
@@ -267,8 +266,8 @@ class PositionManager:
         """
         Prüfe ob eine Position im Resolution-Hold-Fenster ist.
 
-        Gilt NUR für YES-Positionen auf at_or_above/at_or_below Märkten,
-        wenn die geschätzte Restzeit bis Auflösung < RESOLUTION_HOLD_HOURS.
+        Gilt für alle YES-Positionen (alle Markttypen),
+        wenn die geschätzte Restzeit bis Auflösung < RESOLUTION_HOLD_HOURS (48h).
 
         Returns:
             True wenn Stop-Loss/Trailing-Stop deaktiviert werden sollen.
@@ -644,6 +643,17 @@ class PositionManager:
                     hours_remaining or 0,
                     unrealized_pct * 100,
                 )
+                continue
+
+            # ---------------------------------------------------------------
+            # YES-TP-SKIP: Keine TP-Exits fuer YES-Positionen ausserhalb
+            # des Resolution-Hold-Fensters. YES hat 100% WR (4/4) und
+            # binaere Aufloesung zahlt 100-200%+ vs. 15-25% TP.
+            # Evidenz: TP-Exits brachten avg +1.68 EUR; Resolution wuerde
+            # avg +4-10 EUR bringen (Entry ~0.40 → Resolution 1.0).
+            # SL (-40%) bleibt aktiv als Downside-Protection.
+            # ---------------------------------------------------------------
+            if position.side == "YES":
                 continue
 
             # ---------------------------------------------------------------
