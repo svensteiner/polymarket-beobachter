@@ -13,6 +13,7 @@
 
 import json
 import logging
+import re
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, Optional, Tuple
@@ -173,6 +174,14 @@ def evaluate_entry_guardrails(
         # Evidence: at_or_above YES=0.366 won +42%; today Dallas at_or_below
         # YES=0.23 with P_ensemble=0.46 had 96.71% edge but was blocked.
         market_type_str = str(getattr(proposal, "market_type", "") or "").lower()
+        if not market_type_str:
+            # Fallback: detect from question text (proposal.market_type is often None
+            # because the pipeline doesn't populate it — but the question always reveals type)
+            _q = (getattr(proposal, "market_question", "") or "").lower()
+            if re.search(r"or\s+below|or\s+less|or\s+under|or\s+lower|\bbelow\b", _q):
+                market_type_str = "at_or_below"
+            elif re.search(r"above|or\s+above|exceed|or\s+higher|or\s+more|or\s+over", _q):
+                market_type_str = "at_or_above"
         is_boundary_market = market_type_str in ("at_or_above", "at_or_below")
         effective_min_entry = 0.15 if is_boundary_market else min_entry_price
         if effective_min_entry > 0 and entry_price < effective_min_entry:
