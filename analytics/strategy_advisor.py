@@ -144,6 +144,36 @@ def _load_smart_money_summary() -> dict[str, Any]:
     }
 
 
+def _compute_yes_city_stats(positions: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
+    """
+    Berechnet pro-Stadt Performance ausschliesslich fuer YES-Bets.
+
+    Wird genutzt um weak_cities-Empfehlungen zu verfeinern: Eine Stadt gilt
+    nur als schwach wenn auch ihre YES-spezifische Performance negativ ist.
+    Verluste ausschliesslich durch NO-Bets (die jetzt global geblockt sind)
+    sollen keine City-Pause ausloesen.
+    """
+    city_yes: dict[str, dict[str, Any]] = {}
+    for pos in positions:
+        if str(pos.get("side", "")).upper() != "YES":
+            continue
+        if str(pos.get("status", "")).upper() not in {"CLOSED", "RESOLVED"}:
+            continue
+        city = str(pos.get("city", "")).strip()
+        if not city:
+            continue
+        pnl = float(pos.get("realized_pnl_eur") or 0.0)
+        if city not in city_yes:
+            city_yes[city] = {"trades": 0, "wins": 0, "total_pnl_eur": 0.0}
+        city_yes[city]["trades"] += 1
+        city_yes[city]["wins"] += 1 if pnl > 0 else 0
+        city_yes[city]["total_pnl_eur"] += pnl
+    for stats in city_yes.values():
+        t = stats["trades"]
+        stats["win_rate_pct"] = round(100.0 * stats["wins"] / t, 1) if t > 0 else 0.0
+    return city_yes
+
+
 def _safe_float(value: Any, default: float = 0.0) -> float:
     try:
         return float(value)
@@ -300,6 +330,9 @@ def derive_strategy_advice(
         if _safe_float(p.get("entry_price")) >= 0.85
     ]
 
+    # YES-spezifische City-Stats: nur Verluste aus YES-Bets rechtfertigen einen City-Cooldown.
+    # Historische Verluste aus NO-Bets (jetzt global geblockt) sollen keine City-Pause ausloesen.
+    yes_city_stats = _compute_yes_city_stats(positions)
     weak_cities = sorted(
         [
             {
@@ -312,6 +345,8 @@ def derive_strategy_advice(
             if isinstance(stats, dict)
             and int(stats.get("trades", 0) or 0) >= 3
             and _safe_float(stats.get("total_pnl_eur")) < 0
+            # Nur als schwach markieren wenn YES-spezifische Performance ebenfalls negativ
+            and _safe_float(yes_city_stats.get(city, {}).get("total_pnl_eur", 0.0)) < 0
         ],
         key=lambda item: (item["total_pnl_eur"], item["win_rate_pct"]),
     )[:3]

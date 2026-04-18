@@ -141,14 +141,23 @@ class AgentLoop:
             ))
 
         if weak_cities:
-            proposals.append(ActionProposal(
-                action_type="pause_city",
-                title="Schwache Staedte auf Cooldown pruefen",
-                rationale="Wiederholt schwache Staedte sollten zuerst im Agent-Layer markiert werden.",
-                evidence=[city.get("city", "") for city in weak_cities[:3] if city.get("city")],
-                priority="HIGH" if mode == "DEFENSIVE" else "MEDIUM",
-                params={"cities": [city.get("city") for city in weak_cities[:3] if city.get("city")]},
-            ))
+            # Nur Städte vorschlagen, die NOCH NICHT im Cooldown sind.
+            # Verhindert den Zyklus: Cooldown löschen → nächster Run fügt dieselben Städte wieder ein.
+            from agentic.action_executor import get_agent_cooldown_cities
+            existing_cooldowns = get_agent_cooldown_cities(self.base_dir)
+            new_weak_cities = [
+                c for c in weak_cities
+                if c.get("city", "").lower() not in existing_cooldowns
+            ]
+            if new_weak_cities:
+                proposals.append(ActionProposal(
+                    action_type="pause_city",
+                    title="Schwache Staedte auf Cooldown pruefen",
+                    rationale="Wiederholt schwache Staedte sollten zuerst im Agent-Layer markiert werden.",
+                    evidence=[c.get("city", "") for c in new_weak_cities[:3] if c.get("city")],
+                    priority="HIGH" if mode == "DEFENSIVE" else "MEDIUM",
+                    params={"cities": [c.get("city") for c in new_weak_cities[:3] if c.get("city")]},
+                ))
 
         if context.summary.get("high_price_open_positions", 0) > 0:
             proposals.append(ActionProposal(
