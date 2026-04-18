@@ -140,10 +140,18 @@ class ProposalIntake:
                 }
             )
             if not allowed:
+                _side = getattr(proposal, "token", None) or getattr(proposal, "side", "?")
+                _ep = getattr(proposal, "implied_probability", None)
+                _edge = getattr(proposal, "edge", None)
+                _is_yes = _edge is not None and float(_edge or 0) > 0
                 logger.info(
-                    "Proposal %s blocked by entry guardrail: %s",
+                    "Proposal %s blocked by entry guardrail: %s [side=%s ep=%.3f edge=%+.3f %s]",
                     proposal.proposal_id,
                     reason_detail,
+                    _side,
+                    float(_ep or 0),
+                    float(_edge or 0),
+                    "YES-opportunity-missed?" if _is_yes else "NO-bet-correct-block",
                 )
                 continue
 

@@ -284,15 +284,30 @@ class WeatherMarketFilter:
         # =====================================================================
         # CHECK 5: Odds in valid range
         # =====================================================================
+        # Boundary markets (at_or_above / at_or_below) naturally trade at high
+        # YES prices when temperature clearly exceeds / falls below the threshold.
+        # Allow these directional markets up to 0.90 YES to unlock YES-edge
+        # observations that the standard 0.80 cap would filter.
+        # Evidence: at_or_above WR=100%, at_or_below WR=50% — best market types.
+        # The MIN_ENTRY_EDGE guard (12%) in the paper trader remains as safety net.
+        _question_lower = (market.market_question or "").lower()
+        _is_boundary_market = any(
+            kw in _question_lower
+            for kw in ("or higher", "or above", "or below", "or lower")
+        )
+        _effective_max_odds = 0.90 if _is_boundary_market else self.max_odds
+
         filter_details["odds_yes"] = market.odds_yes
-        filter_details["odds_range"] = [self.min_odds, self.max_odds]
+        filter_details["odds_range"] = [self.min_odds, _effective_max_odds]
+        filter_details["is_boundary_market"] = _is_boundary_market
         if market.odds_yes < self.min_odds:
             rejection_reasons.append(
                 f"ODDS: {market.odds_yes:.4f} below minimum {self.min_odds}"
             )
-        elif market.odds_yes > self.max_odds:
+        elif market.odds_yes > _effective_max_odds:
             rejection_reasons.append(
-                f"ODDS: {market.odds_yes:.4f} above maximum {self.max_odds}"
+                f"ODDS: {market.odds_yes:.4f} above maximum {_effective_max_odds}"
+                + (" (boundary market 0.90 cap)" if _is_boundary_market else "")
             )
 
         # =====================================================================
