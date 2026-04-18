@@ -760,7 +760,7 @@ class Orchestrator:
                             _skip_filter[key] = _skip_filter.get(key, 0) + 1
                         logger.debug(f"Market {market.market_id} filtered out: {filter_result.rejection_reasons}")
                 except Exception as e:
-                    logger.debug(f"Skipping invalid candidate: {e}")
+                    logger.warning(f"Skipping candidate due to exception: {type(e).__name__}: {e}")
 
             logger.info(
                 f"Loaded {len(weather_markets)} weather candidates for observation "

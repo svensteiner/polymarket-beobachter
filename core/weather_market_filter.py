@@ -290,7 +290,7 @@ class WeatherMarketFilter:
         # observations that the standard 0.80 cap would filter.
         # Evidence: at_or_above WR=100%, at_or_below WR=50% — best market types.
         # The MIN_ENTRY_EDGE guard (12%) in the paper trader remains as safety net.
-        _question_lower = (market.market_question or "").lower()
+        _question_lower = (market.question or "").lower()
         _is_boundary_market = any(
             kw in _question_lower
             for kw in ("or higher", "or above", "or below", "or lower")
