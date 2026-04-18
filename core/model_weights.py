@@ -59,8 +59,10 @@ def load_weights() -> Dict[str, float]:
         Dict mapping model_name -> weight (1.0 = Normalgewicht)
     """
     if not WEIGHTS_FILE.exists():
-        logger.info("Keine gespeicherten Gewichte gefunden, nutze Gleichgewichte")
-        return _default_weights()
+        logger.info("Keine gespeicherten Gewichte gefunden, initialisiere Gleichgewichte")
+        defaults = _default_weights()
+        save_weights(defaults, metadata={"init": "equal_weights", "reason": "first_run"})
+        return defaults
 
     try:
         with open(WEIGHTS_FILE, "r", encoding="utf-8") as f:

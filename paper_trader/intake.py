@@ -38,7 +38,7 @@ from analytics.edge_memory import assess_proposal_edge, detect_market_type
 
 logger = logging.getLogger(__name__)
 
-MAX_PROPOSAL_AGE_HOURS = 6
+MAX_PROPOSAL_AGE_HOURS = 12  # Extended from 6h: YES proposals generated at midnight UTC stay valid through noon UTC dead zone
 
 
 # =============================================================================
