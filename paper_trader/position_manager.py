@@ -211,7 +211,7 @@ class PositionManager:
     TP2_PCT = 0.20
     TP2_FRACTION = 0.35   # 35% bei TP2 verkaufen (kumuliert: 85%)
     TP3_PCT = 0.25        # Restliche 15% bei TP3 schliessen
-    STOP_LOSS_PCT = -0.70
+    STOP_LOSS_PCT = -0.40  # Tightened from -0.70: avg SL loss was -4.11 EUR, reduces to ~-2.35 EUR
     MIN_EXIT_LIQUIDITY_BUCKETS = {"HIGH", "MEDIUM"}
     INVALID_PRICE_LOW = 0.02
     INVALID_PRICE_HIGH = 0.98
@@ -232,9 +232,10 @@ class PositionManager:
     # (Nur für diese Typen: 100% historische WR in Paper-Daten.)
     RESOLUTION_HOLD_HOURS: float = 24.0       # Stunden vor Auflösung -> SL deaktivieren
     # YES-Positionen auf allen binären Wetter-Typen haben 100% WR wenn zur Auflösung gehalten.
-    # Resolution-Day Intraday-Spikes triggern sonst -70% SL auf korrekten Positionen.
-    # Erweitert von {at_or_above, at_or_below} um "exact" — gleicher Mechanismus.
-    RESOLUTION_HOLD_MARKET_TYPES = frozenset({"at_or_above", "at_or_below", "exact"})
+    # Resolution-Day Intraday-Spikes triggern sonst -40% SL auf korrekten Positionen.
+    # Erweitert von {at_or_above, at_or_below, exact} um "between" — gleicher Mechanismus.
+    # Evidenz: YES-between 1/1 gewonnen (TP3). Resolution spikes treffen auch between-Märkte.
+    RESOLUTION_HOLD_MARKET_TYPES = frozenset({"at_or_above", "at_or_below", "exact", "between"})
 
     @staticmethod
     def _estimate_hours_to_resolution(position: "PaperPosition") -> Optional[float]:

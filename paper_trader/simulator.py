@@ -106,10 +106,11 @@ WEAK_PERFORMANCE_CITIES: Final[frozenset] = frozenset({
 MIN_ENTRY_EDGE_LOW_PROB_NO: Final[float] = 0.35   # 35% required when YES < 25%
 LOW_PROB_YES_THRESHOLD: Final[float] = 0.25        # "low probability" cutoff (was 0.15)
 
-# NO-bet premium edge requirement (all NO bets, not just low-prob ones):
-# Paper data shows 0/10 NO bets won (0% WR) vs 5/5 YES bets (100% WR).
-# All NO bets must clear a higher absolute edge bar until NO-bet WR > 40%.
-MIN_ENTRY_EDGE_NO_BET: Final[float] = 0.50         # 50% required for any NO bet
+# NO-bet ban: Paper data shows 0% WR on NO bets (35 trades, -34.77 EUR).
+# YES bets: 57% WR (+5.58 EUR). Set to 0.99 (impossible to achieve) to
+# effectively ban all NO bets until WR > 40% over 20+ trades is proven.
+# Autopsy 2026-04-18: all 10 SL exits were NO bets (-70% to -93% losses).
+MIN_ENTRY_EDGE_NO_BET: Final[float] = 0.99         # Practical ban on NO bets
 
 # Minimum YES entry price: block lottery-ticket bets where the market
 # is priced near-zero (e.g. 2%). These bets show extreme model-vs-market
