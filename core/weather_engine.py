@@ -474,6 +474,15 @@ class WeatherEngine:
             medium_confidence_multiplier=self.medium_confidence_multiplier,
         )
         if not edge_ok:
+            # Log near-miss YES observations to track pipeline starvation patterns.
+            # A "near-miss" is when the model finds positive YES edge (model > market)
+            # but the edge is below the minimum threshold. Frequent near-misses with
+            # edge 10–35% indicate the threshold may need review for high-quality signals.
+            if net_edge > 0:
+                logger.info(
+                    f"NEAR-MISS YES | {city} | P_model={fair_prob:.4f} P_market={market.odds_yes:.4f} "
+                    f"edge={net_edge:.2%} (below min={self.min_edge:.0%}) | {event_type} | {market.question[:60]}"
+                )
             return create_no_signal(
                 market_id=market.market_id, city=city,
                 event_description=market.question,

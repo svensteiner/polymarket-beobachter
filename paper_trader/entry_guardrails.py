@@ -165,8 +165,19 @@ def evaluate_entry_guardrails(
     else:
         if entry_price > max_entry_price:
             return (False, f"price_limit|Entry price {entry_price:.2f} > max {max_entry_price:.2f}")
-        if min_entry_price > 0 and entry_price < min_entry_price:
-            return (False, f"price_too_low|Entry price {entry_price:.2f} < min {min_entry_price:.2f} (low-prob trap)")
+        # Boundary markets (at_or_above / at_or_below) allow lower entry prices:
+        # YES=0.15–0.29 with model≥0.40 is genuine edge on directional markets —
+        # ensemble member-counting is accurate for threshold events (count members
+        # above/below a single value). Contrast with exact/between narrow-band
+        # markets where model miscalibration inflates probabilities.
+        # Evidence: at_or_above YES=0.366 won +42%; today Dallas at_or_below
+        # YES=0.23 with P_ensemble=0.46 had 96.71% edge but was blocked.
+        market_type_str = str(getattr(proposal, "market_type", "") or "").lower()
+        is_boundary_market = market_type_str in ("at_or_above", "at_or_below")
+        effective_min_entry = 0.15 if is_boundary_market else min_entry_price
+        if effective_min_entry > 0 and entry_price < effective_min_entry:
+            boundary_note = " — boundary market relaxed to 0.15" if is_boundary_market else ""
+            return (False, f"price_too_low|Entry price {entry_price:.2f} < min {effective_min_entry:.2f} (low-prob trap{boundary_note})")
 
     # Check 3: City cooldown
     if city and city in cooldown_cities:
