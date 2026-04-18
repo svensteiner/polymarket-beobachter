@@ -88,14 +88,18 @@ MAX_ENTRY_HOURS_TO_RESOLUTION: Final[float] = 96.0
 # Cities blocked due to consistently poor paper trading results (0-33% WR).
 # Re-evaluate after >=10 live trades show >=50% WR per city.
 WEAK_PERFORMANCE_CITIES: Final[frozenset] = frozenset({
-    # Cities with ≤33% WR on ALLOWED market types (at_or_above / at_or_below YES).
-    # San Francisco removed 2026-04-17: its 2 losses were NO-between stop-losses
-    # (now blocked by quality gate); clean trades show 2/2 wins (+1.59 EUR).
-    "london",
-    "los angeles",
-    "new york",
-    "new york city",
-    "seattle",
+    # Cities with ≤33% WR on YES bets specifically (after NO-bet losses excluded).
+    #
+    # 2026-04-18 autopsy: ALL losses in formerly-blocked cities came from NO bets
+    # (now globally blocked by YES-only mode). YES-specific WR by city:
+    #   Los Angeles: 1/1 YES wins (+1.33 EUR) — unblocked
+    #   London:      0/0 YES trades (loss was NO-exact SL) — unblocked
+    #   New York City: 0/0 YES trades (all losses were NO bets) — unblocked
+    #   Seattle:     0/0 YES trades (loss was NO-between SL) — unblocked
+    #   San Francisco: 2/2 YES wins (+1.59 EUR) — removed 2026-04-17 (same logic)
+    #
+    # Empty: no city has demonstrated poor performance on YES bets.
+    # Re-block a city if its YES WR drops below 40% over 5+ YES trades.
 })
 
 # Low-probability NO bet protection:
