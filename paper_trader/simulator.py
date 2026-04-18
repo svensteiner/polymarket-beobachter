@@ -233,9 +233,25 @@ def _entry_quality_gate(proposal: Proposal, market_type: str) -> Tuple[bool, str
     raw_edge = float(getattr(proposal, "edge", 0.0) or 0.0)
     is_no_bet = raw_edge < 0
 
+    # YES-ONLY MODE — 2026-04-18 autopsy: YES=100% WR (4/4, +5.58 EUR),
+    # NO=23% WR (6/26, -34.77 EUR). ALL YES bets had positive edge (+0.38–+0.48);
+    # ALL NO bets had negative edge (-0.13–-0.67). Edge polarity is a reliable
+    # YES/NO predictor but the NO model is not calibrated for actual outcomes.
+    # Root cause: weather ensemble correctly identifies "temperature WILL be in band"
+    # (YES), but poorly models "temperature WON'T be in band" (NO) — narrow bands
+    # resolve with high intraday noise regardless of actual temperatures.
+    # Re-enable NO bets when: historical NO WR ≥ 40% over 10+ new NO trades.
+    if is_no_bet:
+        return False, (
+            "YES-only mode active: NO bets blocked "
+            "(YES=100% WR 4/4, NO=23% WR 6/26 — see output/trade_autopsy.json). "
+            "Re-enable after NO WR ≥ 40% over 10+ trades."
+        )
+
     # NO-bet edge floor: boundary markets (at_or_above / at_or_below) allowed with
     # strong signal (≥50% absolute edge). between/exact NO bets are separately banned
     # below regardless. If edge is below threshold, reject here.
+    # NOTE: This block is unreachable while YES-only mode is active (above).
     if is_no_bet and edge < MIN_ENTRY_EDGE_NO_BET:
         return False, (
             f"NO bet requires >= {MIN_ENTRY_EDGE_NO_BET:.0%} absolute edge "

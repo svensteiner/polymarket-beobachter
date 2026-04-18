@@ -702,6 +702,8 @@ class Orchestrator:
 
             # Step 3: Convert to WeatherMarket with real odds
             weather_markets = []
+            _skip_no_price = 0
+            _skip_filter: dict = {}  # reason -> count
             for data in pre_filtered:
                 try:
                     market_id = data.get("market_id", "")
@@ -731,6 +733,7 @@ class Orchestrator:
 
                     # Skip markets without live price - can't compute edge without it
                     if odds_yes is None:
+                        _skip_no_price += 1
                         logger.debug(f"Skipping {market_id}: no live price available")
                         continue
 
@@ -751,11 +754,19 @@ class Orchestrator:
                     if filter_result.passed and filter_result.market:
                         weather_markets.append(filter_result.market)
                     else:
+                        reasons = filter_result.rejection_reasons or ["unknown"]
+                        for r in (reasons if isinstance(reasons, list) else [str(reasons)]):
+                            key = str(r).split(":")[0][:40]
+                            _skip_filter[key] = _skip_filter.get(key, 0) + 1
                         logger.debug(f"Market {market.market_id} filtered out: {filter_result.rejection_reasons}")
                 except Exception as e:
                     logger.debug(f"Skipping invalid candidate: {e}")
 
-            logger.info(f"Loaded {len(weather_markets)} weather candidates for observation")
+            logger.info(
+                f"Loaded {len(weather_markets)} weather candidates for observation "
+                f"(skipped: {_skip_no_price} no-price, {sum(_skip_filter.values())} filter "
+                f"[{', '.join(f'{k}:{v}' for k,v in sorted(_skip_filter.items(), key=lambda x:-x[1])[:5])}])"
+            )
 
             # Create market fetcher from loaded candidates
             def market_fetcher():
