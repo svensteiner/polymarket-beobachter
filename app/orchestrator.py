@@ -1299,6 +1299,13 @@ class Orchestrator:
                     logger.info("[AGENT-EXEC] ausgefuehrt: %s", exec_result["executed"])
                 result["executed_actions"] = exec_result["executed"]
 
+            # Feedback-Loop: Städte mit guter Performance wieder freigeben
+            from agentic.action_executor import check_and_lift_cooldowns
+            lifted = check_and_lift_cooldowns(root=self.base_dir)
+            if lifted:
+                logger.info("[AGENT-COOLDOWN] Städte freigegeben: %s", lifted)
+            result["lifted_cooldowns"] = lifted
+
             logger.info(
                 "[AGENT] %s | %s",
                 result.get("mode", "UNKNOWN"),

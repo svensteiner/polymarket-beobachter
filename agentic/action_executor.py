@@ -168,6 +168,93 @@ def _execute_tighten_risk(proposal: ActionProposal, root: Path) -> None:
 
 
 # =============================================================================
+# COOLDOWN LIFT (Feedback-Loop)
+# =============================================================================
+
+_POSITIONS_FILE = _PROJECT_ROOT / "paper_trader" / "logs" / "paper_positions.jsonl"
+
+
+def check_and_lift_cooldowns(
+    root: Path | None = None,
+    min_trades: int = 10,
+    min_win_rate: float = 0.5,
+) -> List[str]:
+    """
+    Prüft ob paused Städte wieder freigegeben werden sollen.
+
+    Bedingung: >= min_trades System-Trades seit der Pause UND
+               Win-Rate dieser Trades >= min_win_rate.
+
+    Returns:
+        Liste der freigegebenen Städte (lowercase).
+    """
+    r = root or _PROJECT_ROOT
+    path = r / "data" / "agent_city_cooldowns.json"
+    data = _load_json(path, {"cooldowns": {}})
+    cooldowns = data.get("cooldowns", {})
+    if not cooldowns:
+        return []
+
+    closed = _load_closed_positions(r / "paper_trader" / "logs" / "paper_positions.jsonl")
+    lifted: List[str] = []
+    changed = False
+
+    for city_key, info in list(cooldowns.items()):
+        added_at = info.get("added_at", "")
+        trades_since = [p for p in closed if p.get("entry_time", "") >= added_at]
+        count = len(trades_since)
+
+        # Always update the counter
+        if info.get("trades_since") != count:
+            cooldowns[city_key]["trades_since"] = count
+            changed = True
+
+        if count < min_trades:
+            continue
+
+        wins = sum(1 for p in trades_since if (p.get("realized_pnl_eur") or 0) > 0)
+        wr = wins / count if count > 0 else 0.0
+
+        if wr >= min_win_rate:
+            del cooldowns[city_key]
+            logger.info(
+                "lift_city_cooldown: %s aufgehoben (trades=%d, WR=%.1f%%)",
+                city_key, count, wr * 100,
+            )
+            lifted.append(city_key)
+            changed = True
+
+    if changed:
+        path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+
+    return lifted
+
+
+def _load_closed_positions(positions_path: Path) -> List[dict]:
+    """Lädt alle geschlossenen Positionen aus der JSONL-Datei."""
+    if not positions_path.exists():
+        return []
+    positions = []
+    try:
+        with open(positions_path, encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    d = json.loads(line)
+                    if d.get("_type") == "LOG_HEADER":
+                        continue
+                    if d.get("status") in ("CLOSED", "RESOLVED") and d.get("realized_pnl_eur") is not None:
+                        positions.append(d)
+                except Exception:
+                    pass
+    except OSError:
+        pass
+    return positions
+
+
+# =============================================================================
 # HELPERS
 # =============================================================================
 
