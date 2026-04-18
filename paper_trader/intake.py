@@ -203,6 +203,8 @@ class ProposalIntake:
                         context={
                             "confidence": proposal.confidence_level,
                             "proposal_id": proposal.proposal_id,
+                            "market_type": detect_market_type(proposal.market_question),
+                            "side": "YES" if float(proposal.edge or 0) >= 0 else "NO",
                         },
                     )
                     try:

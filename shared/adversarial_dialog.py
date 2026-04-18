@@ -263,6 +263,8 @@ def run_adversarial_check(
         )
         judge_system = (
             "Du bist ein neutraler Richter. Bewerte ob der berechnete Edge zuverlaessig ist. "
+            "Hinweis: 'at_or_above'/'at_or_below' (Schwellenwert-Richtung) sind robuster als "
+            "'exact'/'between' (Schmalbandvorhersagen), da Ensemble-Zaehlung fuer Richtungen zuverlaessiger ist. "
             "Antworte NUR im Format: VERDICT: HIGH | GRUND: ... oder VERDICT: MEDIUM | GRUND: ... "
             "oder VERDICT: LOW | GRUND: ..."
         )
@@ -328,6 +330,7 @@ def _format_context(context: dict) -> str:
         relevant_keys = [
             "confidence", "forecast_temperature_f", "threshold_temperature_f",
             "city", "forecast_source", "sigma_f", "hours_to_resolution",
+            "market_type", "side",
         ]
         parts = []
         for k in relevant_keys:

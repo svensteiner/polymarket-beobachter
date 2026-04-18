@@ -73,7 +73,7 @@ FIXED_AMOUNT_EUR: Final[float] = 100.0
 SIMULATED_SPREAD_PCT: Final[float] = 4.0
 
 # Diversification limits
-MAX_POSITIONS_PER_CITY_DATE: Final[int] = 1  # Exclusive markets: only 1 per city+date
+MAX_POSITIONS_PER_CITY_DATE: Final[int] = 2  # YES bets on different temp bands for same city+date are partially anti-correlated
 MAX_POSITIONS_PER_CITY: Final[int] = 3        # Max positions per city overall
 
 # Entry hardening — tightened after 8/13 paper trades hit stop-loss (BSS=-0.31)
