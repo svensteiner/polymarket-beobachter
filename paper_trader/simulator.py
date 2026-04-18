@@ -106,11 +106,14 @@ WEAK_PERFORMANCE_CITIES: Final[frozenset] = frozenset({
 MIN_ENTRY_EDGE_LOW_PROB_NO: Final[float] = 0.35   # 35% required when YES < 25%
 LOW_PROB_YES_THRESHOLD: Final[float] = 0.25        # "low probability" cutoff (was 0.15)
 
-# NO-bet ban: Paper data shows 0% WR on NO bets (35 trades, -34.77 EUR).
-# YES bets: 57% WR (+5.58 EUR). Set to 0.99 (impossible to achieve) to
-# effectively ban all NO bets until WR > 40% over 20+ trades is proven.
-# Autopsy 2026-04-18: all 10 SL exits were NO bets (-70% to -93% losses).
-MIN_ENTRY_EDGE_NO_BET: Final[float] = 0.99         # Practical ban on NO bets
+# NO-bet guardrail: 2026-04-18 autopsy shows all 10 SL exits were NO bets on
+# "between" or "exact" markets (-70% to -93% losses each). Those market types
+# are now separately banned (see line ~289). NO bets on at_or_above / at_or_below
+# had 2/3 wins (67% WR, +1.02 EUR) — the boundary resolution mechanic avoids the
+# narrow-band spike problem. Allow these with ≥50% absolute edge requirement.
+# Re-evaluate: if NO at_or_above/at_or_below WR drops <40% over 10+ trades, raise
+# threshold back to 0.99.
+MIN_ENTRY_EDGE_NO_BET: Final[float] = 0.50         # Allow boundary-market NO bets with strong signal
 
 # Minimum YES entry price: block lottery-ticket bets where the market
 # is priced near-zero (e.g. 2%). These bets show extreme model-vs-market
@@ -230,14 +233,14 @@ def _entry_quality_gate(proposal: Proposal, market_type: str) -> Tuple[bool, str
     raw_edge = float(getattr(proposal, "edge", 0.0) or 0.0)
     is_no_bet = raw_edge < 0
 
-    # NO-bet premium: all NO bets require 50% absolute edge.
-    # Paper data: 0/10 NO bets won (0% WR). Until WR exceeds 40% over 20+
-    # NO-bet trades, we require an extremely strong signal to enter NO side.
+    # NO-bet edge floor: boundary markets (at_or_above / at_or_below) allowed with
+    # strong signal (≥50% absolute edge). between/exact NO bets are separately banned
+    # below regardless. If edge is below threshold, reject here.
     if is_no_bet and edge < MIN_ENTRY_EDGE_NO_BET:
         return False, (
             f"NO bet requires >= {MIN_ENTRY_EDGE_NO_BET:.0%} absolute edge "
-            f"(got {edge:.1%}). Paper WR on NO bets: 0/10. "
-            "Re-evaluate threshold when NO WR > 40% over 20+ trades."
+            f"(got {edge:.1%}). boundary-market NO bets (at_or_above/below) allowed "
+            "when edge >= 50%; between/exact NO bets always blocked."
         )
 
     # Low-probability NO bet protection:
