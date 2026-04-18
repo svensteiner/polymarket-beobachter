@@ -525,11 +525,21 @@ class PositionManager:
 
             liquidity_bucket = str(getattr(snapshot, "liquidity_bucket", "UNKNOWN") or "UNKNOWN").upper()
             if liquidity_bucket not in self.MIN_EXIT_LIQUIDITY_BUCKETS:
-                logger.warning(
-                    "Skipping SL/TP for %s: liquidity bucket %s too thin",
-                    position.market_id,
-                    liquidity_bucket,
-                )
+                hours_rem_liq = self._estimate_hours_to_resolution(position)
+                if hours_rem_liq is not None and hours_rem_liq < 24.0:
+                    logger.warning(
+                        "RISK: LOW liquidity position %s (%s) hat nur %.1fh bis Aufloesung "
+                        "— SL/TP nicht moeglich, Position koennte voll verlieren!",
+                        position.market_id,
+                        position.side,
+                        hours_rem_liq,
+                    )
+                else:
+                    logger.warning(
+                        "Skipping SL/TP for %s: liquidity bucket %s too thin",
+                        position.market_id,
+                        liquidity_bucket,
+                    )
                 continue
 
             current_price = snapshot.mid_price
@@ -617,6 +627,24 @@ class PositionManager:
                         f"{unrealized_pct:+.1%} | P&L: {pnl:+.2f} EUR"
                     )
                     continue
+
+            # ---------------------------------------------------------------
+            # RESOLUTION-HOLD: TP-Exits fuer YES-Positionen nahe Aufloesung
+            # deaktivieren. Binaere Maerkte zahlen 100-300% bei Resolution
+            # vs. 15-25% TP. YES hat 100% historische WR → halten lohnt sich.
+            # Evidenz: YES-TP-Exits brachten avg +1.68 EUR, Resolution wuerde
+            # avg +5-15 EUR bringen (Entry 0.30-0.45 → Resolution 1.0).
+            # ---------------------------------------------------------------
+            if in_resolution_hold and position.side == "YES":
+                logger.info(
+                    "RESOLUTION-HOLD: TP-Exit uebersprungen fuer YES %s | "
+                    "%.1fh bis Aufloesung | Unrealized: %+.1f%% | "
+                    "Halten bis binaere Aufloesung (100%% hist. WR)",
+                    position.market_id[:40],
+                    hours_remaining or 0,
+                    unrealized_pct * 100,
+                )
+                continue
 
             # ---------------------------------------------------------------
             # TP3: +25% -> restliche 20% schliessen
