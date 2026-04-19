@@ -561,6 +561,37 @@ class PositionManager:
                         )
                         continue
 
+                    # EMERGENCY-TP (Profit Lock-In): Force-close LOW-liq YES positions
+                    # near resolution when already in profit.
+                    # LOW-liq markets have unreliable resolution: spreads widen to 50%+
+                    # in the final hours, and intraday reversals can erase gains before
+                    # resolution settles.  At <12h AND +15%+ gain, locking in is better
+                    # than risking an illiquid adverse resolution.
+                    # Evidence: Atlanta 74°F (LOW-liq, 13.1h to res) — if YES price
+                    # reverses from +30% to 0% in the last hours, Emergency-SL only
+                    # triggers at -70% from entry, leaving all profit at risk.
+                    if (
+                        position.side == "YES"
+                        and hours_rem_liq is not None
+                        and hours_rem_liq < 12.0
+                        and _unrealized_emg >= 0.15
+                    ):
+                        _tp_entry_emg = tp_state.get(position.position_id, _default_tp_entry())
+                        pnl = self._full_exit_remaining(
+                            position, snapshot, _tp_entry_emg,
+                            f"Emergency-TP: LOW-liq profit lock-in ({_unrealized_emg:+.1%})",
+                        )
+                        total_pnl += pnl
+                        tp_count += 1
+                        tp_state.pop(position.position_id, None)
+                        state_changed = True
+                        logger.info(
+                            "EMERGENCY-TP: %s (%s) | %.1fh to resolution | %+.1f%% gain | "
+                            "Locking in profit on LOW-liquidity position",
+                            position.market_id, position.side, hours_rem_liq, _unrealized_emg * 100,
+                        )
+                        continue
+
                 if hours_rem_liq is not None and hours_rem_liq < 24.0:
                     logger.warning(
                         "RISK: LOW liquidity position %s (%s) hat nur %.1fh bis Aufloesung "

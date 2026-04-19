@@ -11,8 +11,8 @@
 # =============================================================================
 
 import logging
-from datetime import datetime, timezone
-from typing import List, Dict, Any, Optional
+from datetime import datetime, timedelta, timezone
+from typing import List, Dict, Any, Optional, Set
 
 import requests
 
@@ -46,6 +46,19 @@ WEATHER_KEYWORDS = [
     "below",       # z.B. "Will temperature be below 0C"
 ]
 
+# Supported cities — mirrors ALLOWED_CITIES in weather.yaml.
+# Used to score city-temperature near-expiry markets higher.
+SUPPORTED_CITIES = [
+    "London", "New York", "Los Angeles", "Chicago", "Miami", "Denver",
+    "Phoenix", "Seattle", "Boston", "Tokyo", "Paris", "Berlin", "Sydney",
+    "Toronto", "Houston", "Atlanta", "Dallas", "San Francisco", "Washington",
+    "Philadelphia", "Buenos Aires", "Ankara",
+]
+
+# City-temperature boundary keywords. Markets containing these are the YES-bet
+# opportunities we want to find (at_or_above / at_or_below).
+BOUNDARY_KEYWORDS = ["or above", "or below", "or higher", "or lower", "at least", "at most"]
+
 
 def discover_weather_markets(
     limit: int = 500,
@@ -56,6 +69,10 @@ def discover_weather_markets(
     """
     Entdecke Wetter-Maerkte via Gamma API.
 
+    Fuehrt zwei Suchlaeufe durch:
+    1. Top-N nach Volume (allgemeine Wetter-Maerkte)
+    2. Naechste-5-Tage nach end_date (city-temperature Maerkte im 24-96h Fenster)
+
     Args:
         limit: Max Anzahl Maerkte die geprueft werden
         active_only: Nur aktive (nicht abgeschlossene) Maerkte
@@ -63,17 +80,20 @@ def discover_weather_markets(
         timeout: HTTP Timeout in Sekunden
 
     Returns:
-        Liste von Wetter-Markt-Dicts (raw Gamma API Format)
+        Liste von Wetter-Markt-Dicts (raw Gamma API Format, dedupliziert)
     """
+    seen_ids: Set[str] = set()
+    all_weather: List[Dict[str, Any]] = []
+
+    # --- Pass 1: Top-N nach Volume (bisheriges Verhalten) ---
     try:
-        params = {
+        params: Dict[str, Any] = {
             "limit": min(limit, 500),
             "active": "true" if active_only else "false",
             "closed": "false",
             "order": "volume",
             "ascending": "false",
         }
-
         resp = requests.get(
             f"{GAMMA_API_BASE}/markets",
             params=params,
@@ -82,37 +102,117 @@ def discover_weather_markets(
         )
         resp.raise_for_status()
         markets = resp.json()
-
-        if not isinstance(markets, list):
-            logger.warning(f"Gamma API unexpected response format: {type(markets)}")
-            return []
-
-        logger.info(f"Gamma API: {len(markets)} Maerkte abgerufen")
-
-        # Filtere nach Wetter-Keywords
-        weather_markets = []
-        for market in markets:
-            if _is_weather_market(market):
-                # Liquiditaets-Filter
-                liq = _get_liquidity(market)
-                if liq >= min_liquidity:
-                    weather_markets.append(market)
-
-        logger.info(
-            f"Gamma API: {len(weather_markets)} Wetter-Maerkte gefunden "
-            f"(von {len(markets)} total, min_liq={min_liquidity})"
-        )
-        return weather_markets
-
-    except requests.exceptions.Timeout:
-        logger.warning("Gamma API: Timeout nach {}s".format(timeout))
-        return []
-    except requests.exceptions.RequestException as e:
-        logger.warning(f"Gamma API: Request fehlgeschlagen: {e}")
-        return []
+        if isinstance(markets, list):
+            logger.info(f"Gamma API Pass-1 (volume): {len(markets)} Maerkte abgerufen")
+            for m in markets:
+                mid = str(m.get("id") or m.get("conditionId") or "")
+                liq = _get_liquidity(m)
+                if mid and mid not in seen_ids and _is_weather_market(m) and liq >= min_liquidity:
+                    seen_ids.add(mid)
+                    all_weather.append(m)
     except Exception as e:
-        logger.warning(f"Gamma API: Unerwarteter Fehler: {e}")
-        return []
+        logger.warning(f"Gamma API Pass-1 fehlgeschlagen: {e}")
+
+    # --- Pass 2: Near-expiry by end_date (city temperature im 24-96h Fenster) ---
+    # Sortiert nach endDateIso aufsteigend => Maerkte die als naechstes ablaufen.
+    # Diese enthalten die taeglich ablaufenden Stadttemperatur-Maerkte die in
+    # Pass-1 (volume-sortiert) oft nicht unter den Top-300 auftauchen.
+    try:
+        near_expiry_params: Dict[str, Any] = {
+            "limit": 500,
+            "active": "true" if active_only else "false",
+            "closed": "false",
+            "order": "end_date_iso",
+            "ascending": "true",
+        }
+        resp2 = requests.get(
+            f"{GAMMA_API_BASE}/markets",
+            params=near_expiry_params,
+            timeout=timeout,
+            headers={"User-Agent": "PolymarketWeatherBot/1.0"},
+        )
+        resp2.raise_for_status()
+        markets2 = resp2.json()
+        if isinstance(markets2, list):
+            now = datetime.now(timezone.utc)
+            window_start = now + timedelta(hours=20)   # etwas < 24h fuer Puffer
+            window_end = now + timedelta(hours=120)    # etwas > 96h
+
+            near_city_temp = 0
+            for m in markets2:
+                mid = str(m.get("id") or m.get("conditionId") or "")
+                if not mid or mid in seen_ids:
+                    continue
+
+                # Pruefe ob Endzeit im Ziel-Fenster liegt
+                end_dt = _parse_end_date(m)
+                if end_dt is None:
+                    continue
+                if not (window_start <= end_dt <= window_end):
+                    continue
+
+                liq = _get_liquidity(m)
+                if liq < min_liquidity:
+                    continue
+
+                if not _is_weather_market(m):
+                    continue
+
+                seen_ids.add(mid)
+                all_weather.append(m)
+
+                # Zaehle city-temperature boundary Maerkte separat fuer Logging
+                q_lower = (m.get("question") or "").lower()
+                if _is_city_temperature_boundary(q_lower):
+                    near_city_temp += 1
+
+            logger.info(
+                "Gamma API Pass-2 (end_date): %d Maerkte geprueft, %d Wetter in Fenster "
+                "(%d city-temp boundary) | neu gesamt: %d",
+                len(markets2),
+                len(all_weather) - (len(seen_ids) - len(markets2)),  # approx
+                near_city_temp,
+                len(all_weather),
+            )
+        else:
+            logger.warning(f"Gamma API Pass-2 unexpected format: {type(markets2)}")
+    except requests.exceptions.Timeout:
+        logger.warning("Gamma API Pass-2: Timeout nach %ds (non-critical)", timeout)
+    except Exception as e:
+        logger.warning(f"Gamma API Pass-2 fehlgeschlagen (non-critical): {e}")
+
+    logger.info(
+        "Gamma API: %d Wetter-Maerkte gefunden (min_liq=%.0f)",
+        len(all_weather),
+        min_liquidity,
+    )
+    return all_weather
+
+
+def _parse_end_date(market: Dict[str, Any]) -> Optional[datetime]:
+    """Parse end date from market dict into timezone-aware datetime."""
+    for field in ("endDateIso", "endDate", "end_date"):
+        raw = market.get(field)
+        if not raw:
+            continue
+        try:
+            if isinstance(raw, (int, float)):
+                return datetime.fromtimestamp(raw, tz=timezone.utc)
+            dt = datetime.fromisoformat(str(raw).replace("Z", "+00:00"))
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+            return dt
+        except (ValueError, OSError):
+            continue
+    return None
+
+
+def _is_city_temperature_boundary(question_lower: str) -> bool:
+    """True wenn die Frage ein city-temperature at_or_above/at_or_below Markt ist."""
+    has_boundary = any(kw in question_lower for kw in BOUNDARY_KEYWORDS)
+    has_city = any(city.lower() in question_lower for city in SUPPORTED_CITIES)
+    has_temp = any(kw in question_lower for kw in ("temperature", "celsius", "fahrenheit", "°f", "°c"))
+    return has_boundary and has_city and has_temp
 
 
 def _is_weather_market(market: Dict[str, Any]) -> bool:
