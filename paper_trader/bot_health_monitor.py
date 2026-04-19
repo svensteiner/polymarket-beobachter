@@ -324,7 +324,10 @@ def derive_bot_health(
     elif (
         drawdown_pct >= 10.0
         or (recent_loss_streak >= 2 and not _insufficient_data)
-        or consecutive_zero_edge_runs >= 4
+        or consecutive_zero_edge_runs >= 8  # Raised 4→8: at 15-min intervals, 4 runs = 1h.
+        # Daily timing gaps (when near-horizon markets expire before far-horizon ones are
+        # indexed) routinely cause 1-2h of zero-edge runs. Threshold of 8 (≈2h) prevents
+        # false-positive ELEVATED status during these structural transitions.
         or (stop_loss_ratio >= 0.60 and not _insufficient_data)
         or (advisor_mode == "PROTECT" and not _insufficient_data)
         or high_price_open_positions >= 8
@@ -344,7 +347,7 @@ def derive_bot_health(
             triggers.append(f"drawdown_{drawdown_pct:.1f}pct")
         if recent_loss_streak >= 2 and not _insufficient_data:
             triggers.append(f"loss_streak_{recent_loss_streak}")
-        if consecutive_zero_edge_runs >= 4:
+        if consecutive_zero_edge_runs >= 8:
             triggers.append(f"edge_drought_{consecutive_zero_edge_runs}")
         if stop_loss_ratio >= 0.60 and not _insufficient_data:
             triggers.append(f"stop_loss_ratio_{stop_loss_ratio:.0%}")
