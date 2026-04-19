@@ -675,45 +675,35 @@ def analyze_city_performance(city: Optional[str] = None) -> Dict[str, Any]:
     Args:
         city: Optional - nur diese Stadt analysieren
     """
-    trades_file = PAPER_TRADER_DIR / "logs" / "paper_trades.jsonl"
+    # Read from pre-computed performance report (has correct city attribution)
+    report_file = PROJECT_ROOT / "analytics" / "performance_report.json"
 
-    if not trades_file.exists():
-        return {"error": "No trades found"}
+    if not report_file.exists():
+        return {"error": "Performance report not found — run pipeline first"}
 
-    trades = _load_jsonl_tail(trades_file, 500)
+    try:
+        with open(report_file, "r", encoding="utf-8") as f:
+            report = json.load(f)
+    except Exception as e:
+        return {"error": f"Could not read performance report: {e}"}
 
-    # Group by city
-    city_stats = {}
-    for trade in trades:
-        trade_city = trade.get("city", "Unknown")
+    city_performance = report.get("performance_by_city", {})
 
-        if city and trade_city != city:
-            continue
+    if city:
+        city_performance = {k: v for k, v in city_performance.items() if k == city}
+        if not city_performance:
+            return {"error": f"No data for city: {city}"}
 
-        if trade_city not in city_stats:
-            city_stats[trade_city] = {
-                "trades": 0,
-                "wins": 0,
-                "losses": 0,
-                "total_pnl": 0,
-            }
+    # Enrich with win_rate if missing
+    for stats in city_performance.values():
+        if "win_rate_pct" not in stats and stats.get("trades", 0) > 0:
+            stats["win_rate_pct"] = round(stats["wins"] / stats["trades"] * 100, 1)
 
-        city_stats[trade_city]["trades"] += 1
-        pnl = trade.get("pnl_eur", 0)
-        city_stats[trade_city]["total_pnl"] += pnl
-
-        if pnl > 0:
-            city_stats[trade_city]["wins"] += 1
-        elif pnl < 0:
-            city_stats[trade_city]["losses"] += 1
-
-    # Calculate win rates
-    for stats in city_stats.values():
-        if stats["trades"] > 0:
-            stats["win_rate"] = round(stats["wins"] / stats["trades"] * 100, 1)
-            stats["total_pnl"] = round(stats["total_pnl"], 2)
-
-    return {"city_performance": city_stats}
+    return {
+        "city_performance": city_performance,
+        "generated_at": report.get("generated_at"),
+        "total_trades": report.get("metrics", {}).get("total_trades", 0),
+    }
 
 
 # =============================================================================
