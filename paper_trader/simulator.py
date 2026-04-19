@@ -895,6 +895,27 @@ class ExecutionSimulator:
         _kmin, _kmax, _ = _kelly_get_caps()
         position_eur = max(_kmin, min(_kmax, position_eur))
 
+        # at_or_above YES position size cap (cold-bias risk mitigation):
+        # Historical data: YES at_or_above 2 trades, avg PnL=-8.69 EUR, WR=50%.
+        # The single large loss (Atlanta -18.46 EUR on 20 EUR stake, 2026-04-19)
+        # shows the model systematically overestimates HOT-day probability in the
+        # mid-probability range (0.30–0.65). When the market prices YES at 30–65%
+        # for a high-temperature threshold, model uncertainty is highest and a wrong
+        # prediction produces catastrophic loss proportional to stake size.
+        # Mitigation: cap at 5 EUR until YES at_or_above WR ≥ 60% over 5+ trades.
+        # Rollback: remove cap when YES at_or_above WR ≥ 60% over 5+ trades.
+        if side == "YES" and market_type == "at_or_above":
+            _mid_price = float(snapshot.mid_price or 0.5)
+            if 0.30 <= _mid_price <= 0.65:
+                _at_or_above_cap = 5.0
+                if position_eur > _at_or_above_cap:
+                    logger.info(
+                        "at_or_above YES size capped %.1f→%.1f EUR (mid=%.1f%%). "
+                        "Cold-bias guard: model overestimates HOT-day probability in mid-range.",
+                        position_eur, _at_or_above_cap, _mid_price * 100,
+                    )
+                    position_eur = _at_or_above_cap
+
         # Calculate entry price with slippage
         price_result = calculate_entry_price(snapshot, side)
 
