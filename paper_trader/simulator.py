@@ -81,8 +81,15 @@ MIN_ENTRY_EDGE_ABSOLUTE: Final[float] = 0.12   # raised from 0.08
 MIN_ENTRY_EDGE_UNKNOWN_MARKET: Final[float] = 0.18  # raised from 0.12
 MIN_ENTRY_CONFIDENCE_RANK: Final[int] = 2  # HIGH or better (raised from MEDIUM=1)
 
-# Resolution window: 24-96h is the NWP sweet spot.
-# <24h: same-day noise; >96h: 4-day+ forecasts are unreliable.
+# Resolution window: 60-96h is the NWP sweet spot.
+# <60h: positions enter RESOLUTION_HOLD zone too quickly → Emergency-SL fires before
+#        regular SL can protect (Atlanta -18.46 EUR at 45.95h, Ankara -7.07 EUR at 24.1h).
+#        Both losses happened because the filter in weather_market_filter uses market
+#        settlement END_DATE (often D+1 for verification) while the actual temperature
+#        event — and thus the price spike — happens D+0.  This constant acts as a
+#        second-line defence inside the simulator itself.
+# >96h: 4-day+ forecasts are unreliable.
+MIN_ENTRY_HOURS_TO_RESOLUTION: Final[float] = 60.0
 MAX_ENTRY_HOURS_TO_RESOLUTION: Final[float] = 96.0
 
 # Cities blocked due to consistently poor paper trading results (0-33% WR).
@@ -328,9 +335,17 @@ def _entry_quality_gate(proposal: Proposal, market_type: str) -> Tuple[bool, str
             "(0% historical win rate on NO-between and NO-exact)"
         )
 
-    # Resolution window gate: 24-96h is the NWP sweet spot.
-    # Forecasts beyond 4 days carry too much uncertainty for edge to be reliable.
+    # Resolution window gate: 60-96h is the NWP sweet spot.
+    # MIN guard is a second-line defence: the upstream weather_market_filter uses the
+    # market settlement END_DATE (often D+1) which gives a false ~24h buffer vs. the
+    # actual weather-event day.  Without this check, proposals with hours_to_resolution
+    # < 60h slip through (Atlanta 45.95h → -18.46 EUR; Ankara 24.1h → -7.07 EUR).
     hours_to_res = getattr(proposal, "hours_to_resolution", None)
+    if hours_to_res is not None and hours_to_res < MIN_ENTRY_HOURS_TO_RESOLUTION:
+        return False, (
+            f"Resolution too close: {hours_to_res:.1f}h < min {MIN_ENTRY_HOURS_TO_RESOLUTION:.0f}h "
+            "(near-resolution entries hit Emergency-SL before regular SL fires)"
+        )
     if hours_to_res is not None and hours_to_res > MAX_ENTRY_HOURS_TO_RESOLUTION:
         return False, (
             f"Resolution too far: {hours_to_res:.0f}h > max {MAX_ENTRY_HOURS_TO_RESOLUTION:.0f}h "
