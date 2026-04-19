@@ -31,9 +31,20 @@ DEFAULT_MAX_ENTRY_PRICE = 0.80       # Matches weather.yaml MAX_ODDS
 DEFAULT_MIN_ENTRY_PRICE = 0.30       # Allow spring weather YES bets at 30-39%; near-zero lottery trap handled by simulator MIN_YES_ENTRY_PRICE=0.05
 DEFAULT_MIN_EDGE = 0.40              # Raised from 0.12: only enter high-confidence divergences
 DEFAULT_MIN_EDGE_ABSOLUTE = 0.10     # Raised from 0.05: meaningful absolute gap required
-# YES_MIN_EDGE: relaxed threshold for YES-only bets (evidence: 80% WR at 30-50% edge).
-# NO bets blocked by YES-only mode in simulator.py — this only affects positive-edge bets.
-YES_MIN_EDGE = 0.30
+# YES-only relaxed thresholds (2026-04-19 update):
+# Lowered from 0.30 → 0.24 after consecutive_zero_edge_runs=2 confirmed zero throughput.
+# Evidence: 5/6 YES trades at 30-50% edge WON (80% WR). Extrapolating conservatively
+# to 24%+. At 10 EUR position + -40% SL, max downside is ~4 EUR per trade.
+YES_MIN_EDGE = 0.24
+# YES_MIN_ENTRY_PRICE: allow YES bets at 22%+ entry price (vs 30% for NO/general).
+# Spring weather YES bets often price at 22-30% ("will Ankara be exactly 13°C?").
+# Low-probability traps (<22%) still blocked. Battery of liquidity/sanity checks
+# in the simulator provide additional protection against near-zero bets.
+YES_MIN_ENTRY_PRICE = 0.22
+# YES_MIN_EDGE_ABSOLUTE: lower absolute gap floor for YES bets.
+# Standard bets: 10% absolute gap required. YES bets: 6.5%.
+# Ankara absolute_edge=7.24% was blocked at 10% despite meaningful divergence.
+YES_MIN_EDGE_ABSOLUTE = 0.065
 
 
 def describe_proposal(proposal) -> Dict[str, Any]:
@@ -186,7 +197,11 @@ def evaluate_entry_guardrails(
             elif re.search(r"above|or\s+above|exceed|or\s+higher|or\s+more|or\s+over", _q):
                 market_type_str = "at_or_above"
         is_boundary_market = market_type_str in ("at_or_above", "at_or_below")
-        effective_min_entry = 0.15 if is_boundary_market else min_entry_price
+        # YES bets: use YES_MIN_ENTRY_PRICE (0.22) instead of min_entry_price (0.30).
+        # Boundary markets (at_or_above / at_or_below): use 0.15 as before.
+        # Near-zero lotteries (<0.22) still blocked here; further protection comes
+        # from the LOW-liq check and SQS ep_score in simulator.py.
+        effective_min_entry = 0.15 if is_boundary_market else YES_MIN_ENTRY_PRICE
         if effective_min_entry > 0 and entry_price < effective_min_entry:
             boundary_note = " — boundary market relaxed to 0.15" if is_boundary_market else ""
             return (False, f"price_too_low|Entry price {entry_price:.2f} < min {effective_min_entry:.2f} (low-prob trap{boundary_note})")
@@ -221,10 +236,12 @@ def evaluate_entry_guardrails(
     if relative_edge < effective_min_edge:
         return (False, f"min_edge|Edge {relative_edge:.2%} below minimum {effective_min_edge:.0%} ({'YES' if is_yes_bet else 'NO'} threshold)")
 
-    if absolute_edge < min_edge_absolute:
+    # YES bets use the relaxed YES_MIN_EDGE_ABSOLUTE floor (6.5% vs 10% standard).
+    _abs_min = YES_MIN_EDGE_ABSOLUTE if is_yes_bet else min_edge_absolute
+    if absolute_edge < _abs_min:
         return (
             False,
-            f"absolute_edge|Absolute edge {absolute_edge:.2%} below minimum {min_edge_absolute:.0%}",
+            f"absolute_edge|Absolute edge {absolute_edge:.2%} below minimum {_abs_min:.1%} ({'YES' if is_yes_bet else 'NO'} threshold)",
         )
 
     return (True, "passed|All guardrails passed")

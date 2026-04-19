@@ -197,9 +197,17 @@ class WeatherEngine:
         self.min_edge_absolute = float(config.get("MIN_EDGE_ABSOLUTE", 0.05))
         # YES_MIN_EDGE: lower threshold for YES-only bets.
         # Evidence: 5/6 YES trades at 30-50% edge WON (80% WR, +8.82 EUR).
-        # The 40% MIN_EDGE creates zero throughput — Ankara 31% YES was blocked.
+        # 2026-04-19: Lowered 0.30→0.24 — at 30% threshold all spring markets are
+        # blocked (consecutive_zero_edge_runs=2). Ankara YES=28% / model=35.24% /
+        # edge=24.23% is the canonical blocked trade. At 10 EUR position + -40% SL,
+        # max loss per trade is ~4 EUR — low enough to tolerate 22-29% edge bets.
         # NO bets still blocked by YES-only mode in simulator.py.
-        self.yes_min_edge = float(config.get("YES_MIN_EDGE", 0.30))
+        self.yes_min_edge = float(config.get("YES_MIN_EDGE", 0.24))
+        # YES_MIN_EDGE_ABSOLUTE: lower absolute gap floor for YES near-miss bets.
+        # Standard bets require MIN_EDGE_ABSOLUTE=0.10 (10% absolute gap).
+        # YES near-miss bets use 0.065 (6.5%) — Ankara absolute_edge=7.24%
+        # was blocked at 10% despite a meaningful 2.5°F forecast divergence.
+        self.yes_min_edge_absolute = float(config.get("YES_MIN_EDGE_ABSOLUTE", 0.065))
         self.medium_confidence_multiplier = float(config.get(
             "MEDIUM_CONFIDENCE_EDGE_MULTIPLIER", 1.5
         ))
@@ -503,12 +511,20 @@ class WeatherEngine:
             )
 
         absolute_edge = abs(fair_prob - market.odds_yes)
-        if absolute_edge < self.min_edge_absolute:
+        # YES near-miss bets use the lower yes_min_edge_absolute floor (0.065)
+        # instead of the standard min_edge_absolute (0.10).
+        _abs_floor = self.yes_min_edge_absolute if is_yes_near_miss else self.min_edge_absolute
+        if absolute_edge < _abs_floor:
+            if is_yes_near_miss:
+                logger.info(
+                    f"NEAR-MISS-ABS BLOCKED | {city} | abs_edge={absolute_edge:.2%} "
+                    f"< yes_abs_floor={self.yes_min_edge_absolute:.2%} (ensemble)"
+                )
             return create_no_signal(
                 market_id=market.market_id, city=city,
                 event_description=market.question,
                 market_probability=market.odds_yes,
-                reason=f"Absolute edge too small: {absolute_edge:.2%} < {self.min_edge_absolute:.0%} (ensemble)",
+                reason=f"Absolute edge too small: {absolute_edge:.2%} < {_abs_floor:.2%} (ensemble)",
                 config_snapshot=self.config,
             )
 
@@ -655,12 +671,18 @@ class WeatherEngine:
             )
 
         absolute_edge = abs(prob_result.fair_probability - market.odds_yes)
-        if absolute_edge < self.min_edge_absolute:
+        _abs_floor = self.yes_min_edge_absolute if is_yes_near_miss else self.min_edge_absolute
+        if absolute_edge < _abs_floor:
+            if is_yes_near_miss:
+                logger.info(
+                    f"NEAR-MISS-ABS BLOCKED (single-src) | {city} | "
+                    f"abs_edge={absolute_edge:.2%} < {self.yes_min_edge_absolute:.2%}"
+                )
             return create_no_signal(
                 market_id=market.market_id, city=city,
                 event_description=market.question,
                 market_probability=market.odds_yes,
-                reason=f"Absolute edge too small: {absolute_edge:.2%} < {self.min_edge_absolute:.0%}",
+                reason=f"Absolute edge too small: {absolute_edge:.2%} < {_abs_floor:.2%}",
                 config_snapshot=self.config,
             )
 
