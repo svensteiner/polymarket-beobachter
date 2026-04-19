@@ -134,6 +134,16 @@ MIN_YES_ENTRY_PRICE: Final[float] = 0.05
 SL_COOLOFF_HOURS: Final[float] = 12.0
 SL_COOLOFF_PATH: Final[str] = "data/sl_cooloff.json"
 
+# Stale-proposal price-drift guard:
+# Proposals are generated when the weather engine last observed the market.
+# By execution time, the market price may have moved significantly. If the
+# absolute drift > YES_PRICE_DRIFT_MAX_ABS AND the realtime edge is below the
+# YES threshold, reject the entry (the original edge signal is no longer valid).
+# Evidence: Ankara YES 2003773 — proposal generated at YES=19.5% (edge=+87.8%),
+# but snapshot at execution was YES=49.7% → realtime edge=(36.6%-49.7%)/49.7%=-26%.
+YES_PRICE_DRIFT_MAX_ABS: Final[float] = 0.15   # 15 pp absolute tolerance
+YES_MIN_REALTIME_EDGE: Final[float] = 0.24     # mirrors entry_guardrails.YES_MIN_EDGE
+
 
 def _load_sl_cooloff() -> Dict[str, str]:
     """Load stop-loss cooling-off registry {market_id: iso_timestamp}."""
@@ -769,6 +779,45 @@ class ExecutionSimulator:
             log_trade(record)
             logger.info(f"SKIP (CityBlock): {new_city} for {proposal.market_id}")
             return (None, record)
+
+        # Stale-proposal price-drift check:
+        # Re-validate YES edge at current snapshot price; reject if market has moved.
+        if side == "YES" and snapshot.mid_price is not None:
+            _prop_price = float(getattr(proposal, "implied_probability", 0.0) or 0.0)
+            _snap_price = float(snapshot.mid_price)
+            _price_drift = abs(_snap_price - _prop_price)
+            if _price_drift > YES_PRICE_DRIFT_MAX_ABS:
+                _model_prob = float(getattr(proposal, "model_probability", 0.0) or 0.0)
+                _realtime_edge = (_model_prob - _snap_price) / _snap_price if _snap_price > 0 else -999.0
+                if _realtime_edge < YES_MIN_REALTIME_EDGE:
+                    _drift_skip_reason = (
+                        f"Stale proposal: price drifted {_price_drift:.0%} "
+                        f"(proposal={_prop_price:.1%} → snapshot={_snap_price:.1%}). "
+                        f"Realtime edge={_realtime_edge:.1%} < min {YES_MIN_REALTIME_EDGE:.0%}. "
+                        f"Original proposal_edge={proposal.edge:.1%} at stale price."
+                    )
+                    record = PaperTradeRecord(
+                        record_id=generate_record_id(),
+                        timestamp=now,
+                        proposal_id=proposal.proposal_id,
+                        market_id=proposal.market_id,
+                        action=TradeAction.SKIP.value,
+                        reason=_drift_skip_reason,
+                        position_id=None,
+                        snapshot_time=snapshot.snapshot_time,
+                        entry_price=None,
+                        exit_price=None,
+                        slippage_applied=None,
+                        pnl_eur=None,
+                    )
+                    log_trade(record)
+                    logger.warning(
+                        "SKIP (StalePriceDelivery): %s | drift=%.0f%% | "
+                        "realtime_edge=%.1f%% | proposal_edge=%.1f%%",
+                        proposal.market_id, _price_drift * 100,
+                        _realtime_edge * 100, proposal.edge * 100,
+                    )
+                    return (None, record)
 
         quality_ok, quality_reason = _entry_quality_gate(proposal, market_type)
         if not quality_ok:
