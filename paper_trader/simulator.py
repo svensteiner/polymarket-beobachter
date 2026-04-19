@@ -129,7 +129,9 @@ MIN_YES_ENTRY_PRICE: Final[float] = 0.05
 # SL cooling-off: after a stop-loss on a specific market, block re-entry
 # for this many hours. Prevents the double-SL pattern (same market exits at
 # -80% twice in one day because a fresh proposal re-enters immediately).
-SL_COOLOFF_HOURS: Final[float] = 6.0
+# Raised 6 → 12h (2026-04-19): market 2003743 confirmed double-SL within 6h window;
+# 12h covers a full active trading session and avoids re-entry on resolution-day spikes.
+SL_COOLOFF_HOURS: Final[float] = 12.0
 SL_COOLOFF_PATH: Final[str] = "data/sl_cooloff.json"
 
 
