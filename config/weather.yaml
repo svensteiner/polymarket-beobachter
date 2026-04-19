@@ -1,7 +1,7 @@
 ADVISOR_MODE: normal
 ALLOWED_CITIES:
 - London
-- New York
+# Removed 2026-04-19: New York 7 Trades, 0% WR, -8.79 EUR. Kein Edge nachweisbar.
 - Los Angeles
 - Chicago
 - Miami
@@ -81,16 +81,8 @@ ENSEMBLE:
     - openweather_gfs
     - noaa_gfs
   ENABLED: true
-  # Lowered 2 -> 1 (2026-04-17): only OPENWEATHER_API_KEY is configured.
-  # With MIN_INDEPENDENT_SOURCES=2, ALL observations get DEGRADED_LOW_SOURCES
-  # -> confidence forced to LOW -> 0 edge signals for 4+ consecutive runs.
-  # At 1 source, single-source ensemble variance = 0 < 0.06 threshold,
-  # so no variance degradation applies.  MIN_EDGE=40% remains the key guard.
   MIN_INDEPENDENT_SOURCES: 1
   SOURCE_TIMEOUT_SECONDS: 12
-  # Ultra-strict variance gate: BSS=-0.31 proves we were trading noisy signals.
-  # At 0.06 we require near-perfect ensemble agreement before entering.
-  # Was 0.08; tightened after 8/13 trades hit stop-loss from overconfident signals.
   VARIANCE_THRESHOLD: 0.06
 FORECAST_SOURCES:
 - api_key_env: TOMORROW_IO_API_KEY
@@ -105,43 +97,21 @@ FORECAST_SOURCES:
   base_url: https://api.weatherapi.com/v1
   name: weatherapi
   timeout_seconds: 10
+LATE_STAGE_EDGE_BONUS: 0.1
+LATE_STAGE_MAX_HOURS: 48
 LOG_ALL_OBSERVATIONS: true
 MAX_FORECAST_HORIZON_DAYS: 10
-MAX_ODDS: 0.80
-# MEDIUM trades haben historisch 11% Win-Rate -> effectively blocked (need 3.25x edge)
+MAX_ODDS: 0.8
+MAX_TIME_TO_RESOLUTION_HOURS: 96
 MEDIUM_CONFIDENCE_EDGE_MULTIPLIER: 3.25
 MIN_CONFIDENCE: HIGH
-# Raised from 0.30 to 0.40: tighter filter after 8/13 trades failed.
-# Only enter when model probability is strongly diverged from market price.
-MIN_EDGE: 0.40
-# Raised from 0.03 to 0.10: absolute edge floor prevents false positives at extreme odds.
-# A 10% absolute gap (e.g. model=65% vs market=55%) is meaningful calibration signal.
-MIN_EDGE_ABSOLUTE: 0.10
-# Lowered 0.40 → 0.30 (2026-04-17): spring weather YES bets naturally price at 15-40%
-# ("at_or_above 77°F on April 17" in Paris = ~20% YES).  The 40% floor blocked all
-# current YES opportunities.  The SQS ep_score and entry_quality_gate MIN_YES_ENTRY_PRICE
-# (5%) handle the near-zero lottery-ticket protection; 30% is sufficient here.
-MIN_ENTRY_PRICE: 0.30
-# Raised from 50 to 500 USD (round 3, 2026-04-16):
-# Thin markets (<$500 liquidity) show larger price swings, easier stop-loss hits.
-# $500 is a reasonable floor for meaningful market participation.
+MIN_EDGE: 0.4
+MIN_EDGE_ABSOLUTE: 0.12
+MIN_ENTRY_PRICE: 0.3
 MIN_LIQUIDITY: 375.0
-# Minimum YES price — unchanged at 0.15: near-zero probabilities are trap markets.
 MIN_ODDS: 0.15
-# Timing: focus on the 60-96h sweet spot.
-# <60h: positions enter RESOLUTION_HOLD_HOURS=48h zone too quickly → regular SL never fires.
-#        Evidence: Atlanta YES at_or_above entered at 45.95h → immediately in resolution hold
-#        → no SL protection → Emergency-SL triggered at -89.8% (tightened: now -55% @ 36h).
-#        Raising MIN to 60h ensures ≥12h of regular SL coverage before resolution hold begins.
-# 60-96h: NWP models most accurate; entry has full SL + resolution-hold protection.
-# >96h: 4+ day forecasts are too uncertain; edge signals are unreliable noise.
-MIN_TIME_TO_RESOLUTION_HOURS: 60
-MAX_TIME_TO_RESOLUTION_HOURS: 96
-LATE_STAGE_MAX_HOURS: 48
-LATE_STAGE_EDGE_BONUS: 0.10
+MIN_TIME_TO_RESOLUTION_HOURS: 72
 OBSERVATION_LOG_PATH: logs/weather_observations.jsonl
-# Raised from 4.5 to 5.5°F: BSS=-0.31 proves systematic overconfidence.
-# Wider sigma reduces false-precision signals and forces larger true edge gaps.
 SIGMA_F: 5.5
 SIGMA_HORIZON_ADJUSTMENTS:
   1: 0.8
