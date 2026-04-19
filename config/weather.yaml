@@ -128,11 +128,14 @@ MIN_ENTRY_PRICE: 0.30
 MIN_LIQUIDITY: 375.0
 # Minimum YES price — unchanged at 0.15: near-zero probabilities are trap markets.
 MIN_ODDS: 0.15
-# Timing: focus on the 24-96h sweet spot.
-# <24h: same-day noise dominates; ensemble models are still updating.
-# 24-96h: best forecast accuracy window for NWP models (GFS, ECMWF).
+# Timing: focus on the 60-96h sweet spot.
+# <60h: positions enter RESOLUTION_HOLD_HOURS=48h zone too quickly → regular SL never fires.
+#        Evidence: Atlanta YES at_or_above entered at 45.95h → immediately in resolution hold
+#        → no SL protection → Emergency-SL triggered at -89.8% (tightened: now -55% @ 36h).
+#        Raising MIN to 60h ensures ≥12h of regular SL coverage before resolution hold begins.
+# 60-96h: NWP models most accurate; entry has full SL + resolution-hold protection.
 # >96h: 4+ day forecasts are too uncertain; edge signals are unreliable noise.
-MIN_TIME_TO_RESOLUTION_HOURS: 24
+MIN_TIME_TO_RESOLUTION_HOURS: 60
 MAX_TIME_TO_RESOLUTION_HOURS: 96
 LATE_STAGE_MAX_HOURS: 48
 LATE_STAGE_EDGE_BONUS: 0.10
