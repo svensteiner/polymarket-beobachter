@@ -237,18 +237,18 @@ def _entry_quality_gate(proposal: Proposal, market_type: str) -> Tuple[bool, str
     raw_edge = float(getattr(proposal, "edge", 0.0) or 0.0)
     is_no_bet = raw_edge < 0
 
-    # YES-ONLY MODE — 2026-04-18 autopsy: YES=100% WR (4/4, +5.58 EUR),
-    # NO=23% WR (6/26, -34.77 EUR). ALL YES bets had positive edge (+0.38–+0.48);
-    # ALL NO bets had negative edge (-0.13–-0.67). Edge polarity is a reliable
-    # YES/NO predictor but the NO model is not calibrated for actual outcomes.
-    # Root cause: weather ensemble correctly identifies "temperature WILL be in band"
-    # (YES), but poorly models "temperature WON'T be in band" (NO) — narrow bands
-    # resolve with high intraday noise regardless of actual temperatures.
+    # YES-ONLY MODE — 2026-04-19 autopsy: YES=40% WR (4/10, -12.88 EUR),
+    # NO=13% WR (6/45, -34.77 EUR). YES is still far better than NO.
+    # YES losses are primarily: 1 emergency SL on LOW-liq (now blocked at entry),
+    # and zombies (expired with no outcome capture). Both root causes addressed.
+    # Root cause for NO losses: narrow-band markets resolve with intraday noise
+    # regardless of temperature outcome — resolution-day price spikes trigger SL
+    # even on correct NO forecasts.
     # Re-enable NO bets when: historical NO WR ≥ 40% over 10+ new NO trades.
     if is_no_bet:
         return False, (
             "YES-only mode active: NO bets blocked "
-            "(YES=100% WR 4/4, NO=23% WR 6/26 — see output/trade_autopsy.json). "
+            "(YES=40% WR 4/10, NO=13% WR 6/45 — see output/trade_autopsy.json). "
             "Re-enable after NO WR ≥ 40% over 10+ trades."
         )
 
@@ -683,6 +683,38 @@ class ExecutionSimulator:
             )
             log_trade(record)
             logger.warning(f"SKIP: Market {proposal.market_id} already resolved")
+            return (None, record)
+
+        # LOW-liquidity entry block:
+        # LOW-liq markets cannot be protected by normal SL/TP (position_manager skips
+        # them). They only exit via emergency SL at -70%+ loss or zombie expiry.
+        # Evidence: Atlanta 2003743 (YES, LOW-liq) → emergency SL at -89.8% = -18.46 EUR.
+        # All historical LOW-liq entries resulted in emergency exits or zombies (0% WR).
+        # Better to miss the trade entirely than enter a position we cannot manage.
+        liq_bucket = str(getattr(snapshot, "liquidity_bucket", "") or "").upper()
+        if liq_bucket == "LOW":
+            skip_reason = (
+                f"LOW-liquidity market blocked at entry: SL/TP cannot be enforced "
+                f"(position_manager skips LOW-liq checks → emergency SL at -70%+ or zombie). "
+                f"Evidence: Atlanta -18.46 EUR (0% WR on all LOW-liq entries). "
+                f"Re-evaluate if market liquidity improves."
+            )
+            record = PaperTradeRecord(
+                record_id=generate_record_id(),
+                timestamp=now,
+                proposal_id=proposal.proposal_id,
+                market_id=proposal.market_id,
+                action=TradeAction.SKIP.value,
+                reason=skip_reason,
+                position_id=None,
+                snapshot_time=snapshot.snapshot_time,
+                entry_price=None,
+                exit_price=None,
+                slippage_applied=None,
+                pnl_eur=None,
+            )
+            log_trade(record)
+            logger.warning(f"SKIP (LOW-liq): {proposal.market_id} — entry blocked to prevent unmanageable position")
             return (None, record)
 
         # Determine side based on edge direction
