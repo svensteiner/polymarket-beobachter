@@ -31,6 +31,9 @@ DEFAULT_MAX_ENTRY_PRICE = 0.80       # Matches weather.yaml MAX_ODDS
 DEFAULT_MIN_ENTRY_PRICE = 0.30       # Allow spring weather YES bets at 30-39%; near-zero lottery trap handled by simulator MIN_YES_ENTRY_PRICE=0.05
 DEFAULT_MIN_EDGE = 0.40              # Raised from 0.12: only enter high-confidence divergences
 DEFAULT_MIN_EDGE_ABSOLUTE = 0.10     # Raised from 0.05: meaningful absolute gap required
+# YES_MIN_EDGE: relaxed threshold for YES-only bets (evidence: 80% WR at 30-50% edge).
+# NO bets blocked by YES-only mode in simulator.py — this only affects positive-edge bets.
+YES_MIN_EDGE = 0.30
 
 
 def describe_proposal(proposal) -> Dict[str, Any]:
@@ -210,8 +213,13 @@ def evaluate_entry_guardrails(
         market_probability is not None and model_probability is not None
     ) else relative_edge
 
-    if relative_edge < min_edge:
-        return (False, f"min_edge|Edge {relative_edge:.2%} below minimum {min_edge:.0%}")
+    # YES bets use relaxed edge threshold (YES_MIN_EDGE=0.30 vs general min_edge=0.40).
+    # Evidence: 80% WR on YES trades at 30-50% edge (5/6 wins, +8.82 EUR). The only
+    # YES loss was in a LOW-liq market that is now blocked at entry.
+    is_yes_bet = not is_no_bet  # is_no_bet defined above from edge sign
+    effective_min_edge = YES_MIN_EDGE if is_yes_bet else min_edge
+    if relative_edge < effective_min_edge:
+        return (False, f"min_edge|Edge {relative_edge:.2%} below minimum {effective_min_edge:.0%} ({'YES' if is_yes_bet else 'NO'} threshold)")
 
     if absolute_edge < min_edge_absolute:
         return (

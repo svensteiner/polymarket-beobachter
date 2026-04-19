@@ -195,6 +195,11 @@ class WeatherEngine:
         # Extract config parameters
         self.min_edge = float(config.get("MIN_EDGE", 0.12))
         self.min_edge_absolute = float(config.get("MIN_EDGE_ABSOLUTE", 0.05))
+        # YES_MIN_EDGE: lower threshold for YES-only bets.
+        # Evidence: 5/6 YES trades at 30-50% edge WON (80% WR, +8.82 EUR).
+        # The 40% MIN_EDGE creates zero throughput — Ankara 31% YES was blocked.
+        # NO bets still blocked by YES-only mode in simulator.py.
+        self.yes_min_edge = float(config.get("YES_MIN_EDGE", 0.30))
         self.medium_confidence_multiplier = float(config.get(
             "MEDIUM_CONFIDENCE_EDGE_MULTIPLIER", 1.5
         ))
@@ -473,11 +478,12 @@ class WeatherEngine:
             confidence=confidence,
             medium_confidence_multiplier=self.medium_confidence_multiplier,
         )
-        if not edge_ok:
+        # YES near-miss: allow YES bets at yes_min_edge (0.30) even if below min_edge (0.40).
+        # Evidence: 5/6 YES trades at 30-50% edge WON (80% WR). NO bets remain blocked by
+        # YES-only mode in simulator.py — this only affects YES proposals.
+        is_yes_near_miss = (not edge_ok) and net_edge >= self.yes_min_edge and net_edge > 0
+        if not edge_ok and not is_yes_near_miss:
             # Log near-miss YES observations to track pipeline starvation patterns.
-            # A "near-miss" is when the model finds positive YES edge (model > market)
-            # but the edge is below the minimum threshold. Frequent near-misses with
-            # edge 10–35% indicate the threshold may need review for high-quality signals.
             if net_edge > 0:
                 logger.info(
                     f"NEAR-MISS YES | {city} | P_model={fair_prob:.4f} P_market={market.odds_yes:.4f} "
@@ -489,6 +495,11 @@ class WeatherEngine:
                 market_probability=market.odds_yes,
                 reason=f"Insufficient edge: {edge:.2%} < required (ensemble, {ensemble.source_count} sources)",
                 config_snapshot=self.config,
+            )
+        if is_yes_near_miss:
+            logger.info(
+                f"YES-NEAR-MISS ADMITTED | {city} | P_model={fair_prob:.4f} P_market={market.odds_yes:.4f} "
+                f"edge={net_edge:.2%} (yes_min={self.yes_min_edge:.0%}) | {event_type} | {market.question[:60]}"
             )
 
         absolute_edge = abs(fair_prob - market.odds_yes)
@@ -627,13 +638,20 @@ class WeatherEngine:
             confidence=prob_result.confidence,
             medium_confidence_multiplier=self.medium_confidence_multiplier,
         )
-        if not edge_ok:
+        # YES near-miss: same relaxed threshold as ensemble path (yes_min_edge=0.30)
+        is_yes_near_miss = (not edge_ok) and net_edge >= self.yes_min_edge and net_edge > 0
+        if not edge_ok and not is_yes_near_miss:
             return create_no_signal(
                 market_id=market.market_id, city=city,
                 event_description=market.question,
                 market_probability=market.odds_yes,
                 reason=f"Insufficient edge: {edge:.2%} < required",
                 config_snapshot=self.config,
+            )
+        if is_yes_near_miss:
+            logger.info(
+                f"YES-NEAR-MISS ADMITTED (single-src) | {city} | edge={net_edge:.2%} "
+                f"(yes_min={self.yes_min_edge:.0%}) | {market.question[:60]}"
             )
 
         absolute_edge = abs(prob_result.fair_probability - market.odds_yes)
