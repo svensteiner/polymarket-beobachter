@@ -307,6 +307,22 @@ def _entry_quality_gate(proposal: Proposal, market_type: str) -> Tuple[bool, str
             f"(model={edge + implied_prob:.1%} vs market={implied_prob:.1%})"
         )
 
+    # YES/at_or_above block: data shows 2 trades, 50% WR but -17.38 EUR total
+    # (avg -8.69 EUR/trade). Despite an acceptable win rate, the losing side has
+    # outsized impact. Root cause: on resolution day, at_or_above YES prices spike
+    # sharply toward 0 as the temperature threshold is approached but not cleared —
+    # this triggers SL even when the position is fundamentally correct.
+    # Mechanism mirrors NO-between/exact: resolution-day intraday noise dominates.
+    # Evidence (segment_analysis.json): YES-at_or_above -17.38 EUR vs YES-between
+    # 100% WR (1 trade) and YES-at_or_below marginal +0.36 EUR.
+    # Re-enable when: ≥10 YES/at_or_above trades show ≥40% WR and positive total P&L.
+    if not is_no_bet and market_type == "at_or_above":
+        return False, (
+            "YES/at_or_above market blocked: 50% WR but -17.38 EUR total (2 trades, "
+            "avg -8.69 EUR/trade — resolution-day spike risk). "
+            "Re-enable after ≥10 YES/at_or_above trades show ≥40% WR and positive P&L."
+        )
+
     # SL cooling-off: block re-entry on a market that recently hit stop-loss.
     # Pattern: NYC between NO hit SL twice in one day → -8.4 EUR double-loss.
     # After SL, the same proposal re-enters at the new (lower) market price because
