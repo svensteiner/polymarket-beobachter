@@ -525,6 +525,42 @@ class PositionManager:
             liquidity_bucket = str(getattr(snapshot, "liquidity_bucket", "UNKNOWN") or "UNKNOWN").upper()
             if liquidity_bucket not in self.MIN_EXIT_LIQUIDITY_BUCKETS:
                 hours_rem_liq = self._estimate_hours_to_resolution(position)
+
+                # EMERGENCY-SL: Force exit even in LOW-liquidity markets when:
+                # loss is catastrophic (>70%) AND position is near resolution (<12h).
+                # Staying in guarantees near-total loss. Accepting an illiquid exit
+                # price at -70% is strictly better than holding to -90%+ at resolution.
+                # Evidence: all 10 historical SL exits lost -70% to -93% because
+                # the LOW-liq skip prevented any protective action.
+                _emg_price = snapshot.mid_price
+                if (
+                    _emg_price is not None
+                    and position.entry_price > 0
+                    and hours_rem_liq is not None
+                    and hours_rem_liq < 12.0
+                ):
+                    _unrealized_emg = self._calc_unrealized_pct(position, _emg_price)
+                    if _unrealized_emg <= -0.70:
+                        _tp_entry_emg = tp_state.get(position.position_id, _default_tp_entry())
+                        pnl = self._full_exit_remaining(
+                            position, snapshot, _tp_entry_emg,
+                            f"Emergency-SL: LOW-liq near-resolution ({_unrealized_emg:+.1%})",
+                        )
+                        total_pnl += pnl
+                        sl_count += 1
+                        tp_state.pop(position.position_id, None)
+                        state_changed = True
+                        try:
+                            record_sl_cooloff(position.market_id)
+                        except Exception as _emg_err:
+                            logger.debug("Emergency-SL cooloff failed: %s", _emg_err)
+                        logger.warning(
+                            "EMERGENCY-SL: %s (%s) | %.1fh to resolution | %+.1f%% loss | "
+                            "Force-closing LOW-liquidity position to prevent total loss",
+                            position.market_id, position.side, hours_rem_liq, _unrealized_emg * 100,
+                        )
+                        continue
+
                 if hours_rem_liq is not None and hours_rem_liq < 24.0:
                     logger.warning(
                         "RISK: LOW liquidity position %s (%s) hat nur %.1fh bis Aufloesung "
