@@ -518,6 +518,46 @@ def _interpret_brier_score(bs: float, bss: Optional[float] = None) -> str:
     else:
         return "UNINFORMATIVE"
 
+def _compute_side_type_crosstab(positions: list[dict]) -> dict[str, Any]:
+    """
+    Kreuztabelle: YES/NO x Marktyp (exact, between, at_or_above, at_or_below, unknown).
+
+    Macht sichtbar welche Kombination wirklich profitabel ist.
+    Jede Zelle enthält WR und PNL.
+    """
+    SIDES = ("YES", "NO")
+    TYPES = ("exact", "between", "at_or_above", "at_or_below", "unknown")
+
+    buckets: dict[tuple[str, str], list[float]] = defaultdict(list)
+
+    for pos in positions:
+        pnl = pos.get("realized_pnl_eur")
+        if pnl is None:
+            continue
+        side = str(pos.get("side") or "YES").upper()
+        mtype = str(pos.get("market_type") or "unknown").lower()
+        if side not in SIDES:
+            side = "YES"
+        if mtype not in TYPES:
+            mtype = "unknown"
+        buckets[(side, mtype)].append(float(pnl))
+
+    result: dict[str, Any] = {}
+    for side in SIDES:
+        result[side] = {}
+        for mtype in TYPES:
+            pnls = buckets.get((side, mtype), [])
+            wins = [x for x in pnls if x > 0]
+            result[side][mtype] = {
+                "count": len(pnls),
+                "win_rate_pct": round(len(wins) / len(pnls) * 100, 1) if pnls else None,
+                "total_pnl_eur": round(sum(pnls), 2),
+                "avg_pnl_eur": round(sum(pnls) / len(pnls), 2) if pnls else 0.0,
+            }
+
+    return result
+
+
 def run_analysis() -> dict[str, Any]:
     """
     Fuehre vollstaendige Outcome-Analyse durch und speichere Report.
@@ -537,6 +577,7 @@ def run_analysis() -> dict[str, Any]:
     brier = _compute_brier_score(positions)
     period_7d = _compute_period_performance(positions, days=7)
     period_30d = _compute_period_performance(positions, days=30)
+    side_type_crosstab = _compute_side_type_crosstab(positions)
 
     # Bewertung
     win_rate = base["win_rate_pct"]
@@ -566,6 +607,7 @@ def run_analysis() -> dict[str, Any]:
         "data_source": str(POSITIONS_FILE),
         "positions_analysed": len(positions),
         "calibration": brier,
+        "side_type_crosstab": side_type_crosstab,
     }
 
     # Report speichern

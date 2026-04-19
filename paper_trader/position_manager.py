@@ -442,6 +442,7 @@ class PositionManager:
             proposal_edge=getattr(position, "proposal_edge", None),
             hours_to_resolution=getattr(position, "hours_to_resolution", None),
             edge_bucket=getattr(position, "edge_bucket", None),
+            city=getattr(position, "city", None),
         )
 
         record = PaperTradeRecord(

@@ -967,6 +967,7 @@ class ExecutionSimulator:
                     hours_to_resolution=hours_to_res,
                 )
             ),
+            city=new_city,
         )
 
         # Create trade record
@@ -1074,6 +1075,7 @@ class ExecutionSimulator:
             proposal_edge=position.proposal_edge,
             hours_to_resolution=position.hours_to_resolution,
             edge_bucket=position.edge_bucket,
+            city=getattr(position, "city", None),
         )
 
         record = PaperTradeRecord(
@@ -1170,6 +1172,7 @@ class ExecutionSimulator:
             proposal_edge=position.proposal_edge,
             hours_to_resolution=position.hours_to_resolution,
             edge_bucket=position.edge_bucket,
+            city=getattr(position, "city", None),
         )
 
         # Create trade record

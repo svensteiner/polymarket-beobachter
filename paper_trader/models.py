@@ -150,6 +150,7 @@ class PaperPosition:
     proposal_edge: Optional[float] = None
     hours_to_resolution: Optional[float] = None
     edge_bucket: Optional[str] = None
+    city: Optional[str] = None               # City extracted from market_question (for city-guardrails)
 
     # Hardcoded governance notice
     governance_notice: str = field(
@@ -183,6 +184,7 @@ class PaperPosition:
             "proposal_edge": self.proposal_edge,
             "hours_to_resolution": self.hours_to_resolution,
             "edge_bucket": self.edge_bucket,
+            "city": self.city,
             "governance_notice": self.governance_notice,
         }
 
@@ -217,6 +219,7 @@ class PaperPosition:
             proposal_edge=data.get("proposal_edge"),
             hours_to_resolution=data.get("hours_to_resolution"),
             edge_bucket=data.get("edge_bucket"),
+            city=data.get("city"),
         )
 
 

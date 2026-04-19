@@ -21,6 +21,7 @@ import sys
 import json
 import logging
 import ssl
+import time
 from datetime import datetime
 from pathlib import Path
 from typing import Optional, Dict, Any, List
@@ -34,6 +35,18 @@ from collector.client import PolymarketClient
 from paper_trader.models import MarketSnapshot, LiquidityBucket
 
 logger = logging.getLogger(__name__)
+
+# Error log for persistent snapshot failures
+_SNAPSHOT_ERROR_LOG = Path(__file__).parent.parent / "logs" / "snapshot_errors.log"
+
+def _log_snapshot_error(market_id: str, error_text: str) -> None:
+    """Append snapshot failure to persistent error log."""
+    try:
+        _SNAPSHOT_ERROR_LOG.parent.mkdir(parents=True, exist_ok=True)
+        with open(_SNAPSHOT_ERROR_LOG, "a", encoding="utf-8") as f:
+            f.write(f"{datetime.now().isoformat()} | market_id={market_id} | {error_text}\n")
+    except Exception:
+        pass
 
 
 # =============================================================================
@@ -220,21 +233,35 @@ class MarketSnapshotClient:
             Dictionary mapping market_id to MarketSnapshot (or None)
         """
         results = {}
+        _RETRY_DELAY = 5  # seconds before one retry attempt
 
         for market_id in market_ids:
             try:
                 market_data = self._fetch_gamma_market(market_id)
+                if market_data is None:
+                    # Single retry after short delay (transient network/rate-limit)
+                    logger.debug(f"First attempt failed for {market_id}, retrying in {_RETRY_DELAY}s")
+                    time.sleep(_RETRY_DELAY)
+                    market_data = self._fetch_gamma_market(market_id)
+
                 if market_data:
                     results[market_id] = self._create_snapshot(market_data)
                 else:
                     results[market_id] = None
-                    logger.debug(f"Market not found: {market_id}")
+                    error_msg = "market not found in Gamma API after retry"
+                    logger.warning(f"Snapshot unavailable for {market_id}: {error_msg}")
+                    _log_snapshot_error(market_id, error_msg)
             except Exception as e:
-                logger.warning(f"Error fetching snapshot for {market_id}: {e}")
+                error_msg = f"{type(e).__name__}: {e}"
+                logger.warning(f"Error fetching snapshot for {market_id}: {error_msg}")
+                _log_snapshot_error(market_id, error_msg)
                 results[market_id] = None
 
         found = sum(1 for v in results.values() if v is not None)
         logger.info(f"Batch snapshots: {found}/{len(market_ids)} found")
+        if found < len(market_ids):
+            missing = [mid for mid, v in results.items() if v is None]
+            logger.warning(f"Missing snapshots for: {missing}")
 
         return results
 

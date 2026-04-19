@@ -418,6 +418,7 @@ def _execute_addon(
         exit_reason=None,
         realized_pnl_eur=None,
         pnl_pct=None,
+        city=getattr(base_position, "city", None),
     )
 
     record = PaperTradeRecord(

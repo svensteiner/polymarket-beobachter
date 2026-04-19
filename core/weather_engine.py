@@ -420,25 +420,39 @@ class WeatherEngine:
             return None
 
         # Use ensemble probability — apply calibration shrinkage.
-        # Brier skill score has been negative (BSS=-0.31), indicating the model is
+        # Brier skill score has been negative (BSS=-0.47), indicating the model is
         # overconfident. We shrink the raw probability toward the market price
-        # in tiers based on how extreme the raw estimate is:
-        #   Tier 1 (very extreme: < 0.05 or > 0.95): 30% shrinkage toward market
-        #   Tier 2 (moderate extreme: < 0.15 or > 0.85): 20% shrinkage toward market
-        #   Tier 3 (mid-range: all other probs): 8% shrinkage (light regularization)
-        # This prevents generating huge edge signals from near-zero probability events
-        # where uncertainty is highest, and reduces systematic overconfidence.
+        # using both probability tier AND market type:
+        #   Exact markets: 20% min (narrowest band = highest uncertainty, BSS worst here)
+        #   Between markets: 12% min (narrow band, second most uncertain)
+        #   Boundary (at_or_above/at_or_below): 8% base (wider resolution band)
+        #   Plus probability-based tiers applied on top:
+        #   Tier 1 (very extreme: < 0.05 or > 0.95): 30% shrinkage
+        #   Tier 2 (moderate extreme: < 0.15 or > 0.85): 20% shrinkage
+        #   Tier 3 (mid-range): market-type floor applies
+        # Target: BSS > 0 after 20 new resolved trades.
         raw_prob = ensemble.ensemble_mean_probability
-        if raw_prob < 0.05 or raw_prob > 0.95:
-            shrink = 0.30
-        elif raw_prob < 0.15 or raw_prob > 0.85:
-            shrink = 0.20
+
+        # Detect market type from question for type-aware floor
+        _q_lower = (market.question or "").lower()
+        import re as _re
+        if _re.search(r'\bbe\s+\d+|\bexactly\s+\d+', _q_lower):
+            _type_floor = 0.20   # exact: highest shrinkage
+        elif 'between' in _q_lower:
+            _type_floor = 0.12   # between: second highest
         else:
-            shrink = 0.08
+            _type_floor = 0.08   # boundary/unknown: base
+
+        if raw_prob < 0.05 or raw_prob > 0.95:
+            shrink = max(0.30, _type_floor)
+        elif raw_prob < 0.15 or raw_prob > 0.85:
+            shrink = max(0.20, _type_floor)
+        else:
+            shrink = _type_floor
         fair_prob = raw_prob * (1.0 - shrink) + market.odds_yes * shrink
         if shrink > 0.08:
             logger.debug(
-                f"Calibration shrinkage ({shrink:.0%}): raw={raw_prob:.4f} "
+                f"Calibration shrinkage ({shrink:.0%}, floor={_type_floor:.0%}): raw={raw_prob:.4f} "
                 f"market={market.odds_yes:.4f} shrunk={fair_prob:.4f}"
             )
 

@@ -88,6 +88,14 @@ def main():
     no_wr = no_wins_count / len(no_trades) * 100 if no_trades else 0.0
     total_wr = total_wins / len(real) * 100 if real else 0.0
 
+    # YES 15-22% entry price subgroup (YES_MIN_ENTRY_PRICE was lowered 0.22→0.15)
+    yes_15_22 = [p for p in yes_trades if 0.15 <= (p.get('entry_price') or 0) <= 0.22]
+    yes_15_22_wins = [p for p in yes_15_22 if (p.get('realized_pnl_eur') or 0) > 0]
+    yes_15_22_wr = len(yes_15_22_wins) / len(yes_15_22) * 100 if yes_15_22 else 0.0
+    yes_15_22_pnl = sum((p.get('realized_pnl_eur') or 0) for p in yes_15_22)
+    # Revert trigger: WR < 50% after >= 10 trades → flag for YES_MIN_ENTRY_PRICE revert
+    yes_15_22_revert_needed = len(yes_15_22) >= 10 and yes_15_22_wr < 50.0
+
     autopsy = {
         'generated_at': datetime.now(timezone.utc).isoformat(),
         'trades_analysed': len(real),
@@ -141,6 +149,20 @@ def main():
             're_enable_condition': (
                 'NO WR >= 40%% over 10+ new NO trades '
                 '(currently %.1f%%, %d historical trades)' % (no_wr, len(no_trades))
+            ),
+        },
+        'yes_low_entry_subgroup': {
+            'description': 'YES entries with entry_price 0.15-0.22 (after YES_MIN_ENTRY_PRICE lowered 0.22→0.15)',
+            'count': len(yes_15_22),
+            'win_count': len(yes_15_22_wins),
+            'win_rate_pct': round(yes_15_22_wr, 1),
+            'total_pnl_eur': round(yes_15_22_pnl, 2),
+            'revert_trigger': 'WR < 50% after >= 10 trades → set MIN_ODDS back to 0.22',
+            'revert_needed': yes_15_22_revert_needed,
+            'revert_status': (
+                'REVERT REQUIRED: WR=%.1f%% < 50%% after %d trades' % (yes_15_22_wr, len(yes_15_22))
+                if yes_15_22_revert_needed else
+                'OK: %d trades, %.1f%% WR (need >=10 trades to evaluate)' % (len(yes_15_22), yes_15_22_wr)
             ),
         },
         'top_improvement': (
