@@ -36,11 +36,15 @@ DEFAULT_MIN_EDGE_ABSOLUTE = 0.10     # Raised from 0.05: meaningful absolute gap
 # Evidence: 5/6 YES trades at 30-50% edge WON (80% WR). Extrapolating conservatively
 # to 24%+. At 10 EUR position + -40% SL, max downside is ~4 EUR per trade.
 YES_MIN_EDGE = 0.24
-# YES_MIN_ENTRY_PRICE: allow YES bets at 22%+ entry price (vs 30% for NO/general).
-# Spring weather YES bets often price at 22-30% ("will Ankara be exactly 13°C?").
-# Low-probability traps (<22%) still blocked. Battery of liquidity/sanity checks
-# in the simulator provide additional protection against near-zero bets.
-YES_MIN_ENTRY_PRICE = 0.22
+# YES_MIN_ENTRY_PRICE: allow YES bets at 15%+ entry price (vs 30% for NO/general).
+# 2026-04-19: Lowered from 0.22 → 0.15 after observing 2 YES bets/day being blocked
+# at ep=0.17/0.195 with massive relative edge (87-110%, absolute 17-19%).
+# Evidence: YES historical WR=80% (4/5 trades). Boundary markets already at 0.15
+# (inconsistency). LOW-liq check in simulator.py is the real second-layer protection:
+# if the market lacks liquidity, the simulator blocks entry regardless of price floor.
+# Near-zero lotteries (<15%) still blocked. At 10 EUR cap + -40% SL → max downside 4 EUR.
+# REVERT TRIGGER: if YES WR < 50% over 10 new trades at ep 0.15-0.22, revert to 0.22.
+YES_MIN_ENTRY_PRICE = 0.15
 # YES_MIN_EDGE_ABSOLUTE: lower absolute gap floor for YES bets.
 # Standard bets: 10% absolute gap required. YES bets: 6.5%.
 # Ankara absolute_edge=7.24% was blocked at 10% despite meaningful divergence.
