@@ -79,8 +79,12 @@ class ProposalIntake:
         all_proposals = self._storage.load_proposals()
         logger.info(f"Loaded {len(all_proposals)} total proposals")
         all_proposals = self._filter_recent_unique_proposals(all_proposals)
+        # Sort: positive-edge (YES) proposals first so they are evaluated before NO-bets
+        # fill up the position-count limit.  NO-bets consume eligible slots and then get
+        # rejected by the YES-only simulator check — blocking valid YES opportunities.
+        all_proposals.sort(key=lambda p: -(float(getattr(p, "edge", 0) or 0)))
         logger.info(
-            "Using %d recent unique proposals (<= %dh)",
+            "Using %d recent unique proposals (<= %dh, YES-first sort)",
             len(all_proposals),
             MAX_PROPOSAL_AGE_HOURS,
         )
