@@ -527,20 +527,22 @@ class PositionManager:
                 hours_rem_liq = self._estimate_hours_to_resolution(position)
 
                 # EMERGENCY-SL: Force exit even in LOW-liquidity markets when:
-                # loss is catastrophic (>70%) AND position is near resolution (<12h).
-                # Staying in guarantees near-total loss. Accepting an illiquid exit
-                # price at -70% is strictly better than holding to -90%+ at resolution.
+                # loss is severe (>55%) AND position is within 36h of resolution.
+                # Normal SL at -40% cannot execute in LOW-liq markets.
                 # Evidence: all 10 historical SL exits lost -70% to -93% because
-                # the LOW-liq skip prevented any protective action.
+                # the LOW-liq skip prevented any protective action (Emergency-SL
+                # only triggered at <=-70% AND <12h — too late).
+                # 2026-04-19: Threshold tightened -0.70→-0.55, window 12h→36h
+                # to catch positions earlier in their drawdown.
                 _emg_price = snapshot.mid_price
                 if (
                     _emg_price is not None
                     and position.entry_price > 0
                     and hours_rem_liq is not None
-                    and hours_rem_liq < 12.0
+                    and hours_rem_liq < 36.0
                 ):
                     _unrealized_emg = self._calc_unrealized_pct(position, _emg_price)
-                    if _unrealized_emg <= -0.70:
+                    if _unrealized_emg <= -0.55:
                         _tp_entry_emg = tp_state.get(position.position_id, _default_tp_entry())
                         pnl = self._full_exit_remaining(
                             position, snapshot, _tp_entry_emg,
@@ -556,7 +558,7 @@ class PositionManager:
                             logger.debug("Emergency-SL cooloff failed: %s", _emg_err)
                         logger.warning(
                             "EMERGENCY-SL: %s (%s) | %.1fh to resolution | %+.1f%% loss | "
-                            "Force-closing LOW-liquidity position to prevent total loss",
+                            "Force-closing LOW-liq position at -55%% threshold (36h window)",
                             position.market_id, position.side, hours_rem_liq, _unrealized_emg * 100,
                         )
                         continue
