@@ -731,6 +731,33 @@ class Orchestrator:
                             except Exception:
                                 pass
 
+                    # Fallback: use outcomePrices/liquidity stored in the candidate data itself
+                    # (Gamma-discovered markets carry these fields; CLOB API won't find them)
+                    if odds_yes is None or liquidity_usd == 100.0:
+                        stored_op = data.get("outcomePrices")
+                        if stored_op and odds_yes is None:
+                            try:
+                                if isinstance(stored_op, str):
+                                    _stored_list = json.loads(stored_op)
+                                else:
+                                    _stored_list = stored_op
+                                if _stored_list and len(_stored_list) >= 1:
+                                    _cand_price = float(_stored_list[0])
+                                    if 0.01 < _cand_price < 0.99:
+                                        odds_yes = _cand_price
+                                        logger.debug(
+                                            f"Using stored outcomePrices for {market_id}: "
+                                            f"yes={odds_yes:.3f}"
+                                        )
+                            except Exception:
+                                pass
+                        stored_liq = data.get("liquidity")
+                        if stored_liq is not None and liquidity_usd == 100.0:
+                            try:
+                                liquidity_usd = float(stored_liq)
+                            except Exception:
+                                pass
+
                     # Skip markets without live price - can't compute edge without it
                     if odds_yes is None:
                         _skip_no_price += 1
