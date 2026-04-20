@@ -1,0 +1,145 @@
+{
+  "generated_at": "2026-03-16T18:09:35.258421",
+  "governance_notice": "PAPER TRADING ANALYSIS - No real funds",
+  "total_closed": 51,
+  "by_market_type": {
+    "between": {
+      "trades": 25,
+      "wins": 1,
+      "win_rate_pct": 4.0,
+      "pnl_eur": -1622.63,
+      "longshots_below_028": 24,
+      "longshot_pct": 96.0,
+      "avg_entry_price": 0.1019
+    },
+    "at_or_below": {
+      "trades": 7,
+      "wins": 0,
+      "win_rate_pct": 0.0,
+      "pnl_eur": -796.94,
+      "longshots_below_028": 6,
+      "longshot_pct": 85.7,
+      "avg_entry_price": 0.0916
+    },
+    "exact": {
+      "trades": 18,
+      "wins": 1,
+      "win_rate_pct": 5.6,
+      "pnl_eur": -1480.11,
+      "longshots_below_028": 17,
+      "longshot_pct": 94.4,
+      "avg_entry_price": 0.0704
+    },
+    "at_or_above": {
+      "trades": 1,
+      "wins": 0,
+      "win_rate_pct": 0.0,
+      "pnl_eur": -3.39,
+      "longshots_below_028": 1,
+      "longshot_pct": 100.0,
+      "avg_entry_price": 0.2791
+    }
+  },
+  "by_city": {
+    "seattle": {
+      "trades": 9,
+      "wins": 0,
+      "win_rate_pct": 0.0,
+      "pnl_eur": -1127.44
+    },
+    "dallas": {
+      "trades": 7,
+      "wins": 0,
+      "win_rate_pct": 0.0,
+      "pnl_eur": -442.96
+    },
+    "atlanta": {
+      "trades": 6,
+      "wins": 1,
+      "win_rate_pct": 16.7,
+      "pnl_eur": -268.52
+    },
+    "chicago": {
+      "trades": 6,
+      "wins": 0,
+      "win_rate_pct": 0.0,
+      "pnl_eur": -380.9
+    },
+    "ankara": {
+      "trades": 4,
+      "wins": 0,
+      "win_rate_pct": 0.0,
+      "pnl_eur": -226.47
+    },
+    "london": {
+      "trades": 3,
+      "wins": 1,
+      "win_rate_pct": 33.3,
+      "pnl_eur": -143.22
+    },
+    "paris": {
+      "trades": 4,
+      "wins": 0,
+      "win_rate_pct": 0.0,
+      "pnl_eur": -611.65
+    },
+    "toronto": {
+      "trades": 5,
+      "wins": 0,
+      "win_rate_pct": 0.0,
+      "pnl_eur": -368.69
+    },
+    "miami": {
+      "trades": 2,
+      "wins": 0,
+      "win_rate_pct": 0.0,
+      "pnl_eur": -61.65
+    },
+    "new york": {
+      "trades": 2,
+      "wins": 0,
+      "win_rate_pct": 0.0,
+      "pnl_eur": -119.19
+    },
+    "buenos aires": {
+      "trades": 2,
+      "wins": 0,
+      "win_rate_pct": 0.0,
+      "pnl_eur": -90.41
+    },
+    "seoul": {
+      "trades": 1,
+      "wins": 0,
+      "win_rate_pct": 0.0,
+      "pnl_eur": -61.99
+    }
+  },
+  "diagnosis": {
+    "primary_issue": "Longshot trap: majority of historical trades below MIN_ODDS=0.28",
+    "zero_win_cities": [
+      "seattle",
+      "dallas",
+      "chicago",
+      "ankara",
+      "paris",
+      "toronto"
+    ],
+    "cities_with_wins": [
+      "atlanta",
+      "london"
+    ],
+    "market_types_ranked_by_winrate": [
+      "exact",
+      "between",
+      "at_or_below",
+      "at_or_above"
+    ],
+    "probability_model_concern": "our_estimate_yes near 0 for at_or_above markets that resolve YES - probability model likely inverted or broken for this type"
+  },
+  "recommendations": [
+    "BLACKLIST cities with 0%% WR and >=4 trades: seattle, dallas, chicago, ankara, paris, toronto",
+    "MIN_ODDS=0.28 is correct - keep as-is",
+    "Investigate at_or_above probability model: returns ~0%% for YES outcomes that resolved YES",
+    "Sample of 3 trades with current MIN_ODDS is too small to judge profitability"
+  ]
+}

@@ -1,0 +1,35 @@
+POLYMARKET STRATEGY ADVISOR
+========================================
+Generated: 2026-04-20T14:53:00.348332
+Mode:      BALANCE
+Summary:   BALANCE: Win-Rate 31.2% | P&L -54.72 EUR | Attack 0.16 | 1 offene Positionen | 4 Empfehlung(en)
+
+Metrics
+----------------------------------------
+Trades:               32
+Win-Rate:             31.25%
+Total P&L:            -54.72 EUR
+Stop-Loss Ratio:      31.2%
+Open Positions:       1
+High-Price Opens:     0
+Allocated Capital:    0.4%
+Calibration:          POOR
+
+Recommendations
+----------------------------------------
+1. [HIGH] Eintrittsfilter anziehen und nur groessere Fehlbewertungen handeln
+   Bereich: entries
+   Grund:   Win-Rate 31.2% bei Stop-Loss-Anteil 31%. Das spricht eher fuer schlechte Entry-Selektion als fuer zu spaete Exits.
+   Vorschlag: {"MIN_EDGE": 0.4, "MIN_EDGE_ABSOLUTE": 0.14}
+2. [HIGH] Restlaufzeit konservativer machen und Zombie-/Expiry-Risiko reduzieren
+   Bereich: timing
+   Grund:   2 Resolution-Losses und 25 Expiry-/Zombie-Exits. Märkte werden zu lange oder zu spaet gehalten.
+   Vorschlag: {"MIN_TIME_TO_RESOLUTION_HOURS": 84, "SAFETY_BUFFER_HOURS": 36}
+3. [HIGH] Wiederholt negative Setup-Buckets automatisch sperren
+   Bereich: edge_memory
+   Grund:   Mehrere wiederkehrende Kombinationen aus Confidence, Markt-Typ und Side zeigen negatives Edge und sollten im Intake geblockt bleiben.
+   Vorschlag: {"blocked_edge_buckets": ["high", "premium", "medium"]}
+4. [HIGH] Logische Preisinkonsistenzen hedgen statt Richtung zu raten
+   Bereich: arbitrage
+   Grund:   2 Arbitrage-Kandidat(en) gefunden. Diese Setups sind meist besser als reine Directional Bets.
+   Vorschlag: {"focus_city": "Denver", "focus_direction": "above", "focus_delta": 0.9945, "review_market_ids": ["2019455", "2019462"]}

@@ -1,0 +1,161 @@
+{
+  "generated_at": "2026-04-20T14:53:00.348332",
+  "mode": "balance",
+  "summary": "BALANCE: Win-Rate 31.2% | P&L -54.72 EUR | Attack 0.16 | 1 offene Positionen | 4 Empfehlung(en)",
+  "metrics_snapshot": {
+    "total_trades": 32,
+    "win_rate_pct": 31.25,
+    "total_pnl_eur": -54.72,
+    "stop_loss_ratio": 0.312,
+    "resolution_loss_count": 2,
+    "open_positions": 1,
+    "high_price_open_positions": 0,
+    "allocated_capital_pct": 0.4,
+    "calibration_interpretation": "POOR",
+    "top_edge_bucket": null,
+    "worst_edge_bucket": "high",
+    "attack_score": 0.16,
+    "attack_components": {
+      "performance": 0.08,
+      "calibration": 0.15,
+      "edge": 0.0,
+      "arbitrage": 0.633,
+      "smart_money": 0.0,
+      "discipline_penalty": 0.0
+    },
+    "attack_signals": {
+      "strong_edge_buckets": 0,
+      "arbitrage_opportunities": 2,
+      "smart_money_wallets": 0,
+      "weak_cities": 0
+    }
+  },
+  "issues": [
+    "entry_quality_too_weak",
+    "time_to_resolution_risk",
+    "negative_edge_buckets",
+    "arbitrage_opportunity"
+  ],
+  "weak_cities": [],
+  "segment_risk_flags": {
+    "risky_cities": [],
+    "risky_price_bands": [],
+    "risky_market_types": [],
+    "suggested_city_cooldowns": [],
+    "suggested_price_band_blocks": [],
+    "suggested_market_type_cooldowns": [],
+    "suggested_max_entry_price": 0.85
+  },
+  "edge_summary": [
+    {
+      "bucket": "high",
+      "trade_count": 7,
+      "win_count": 0,
+      "win_rate": 0.0,
+      "avg_pnl_eur": -0.530624274466639
+    },
+    {
+      "bucket": "premium",
+      "trade_count": 43,
+      "win_count": 9,
+      "win_rate": 0.20930232558139536,
+      "avg_pnl_eur": -0.9035136222178257
+    },
+    {
+      "bucket": "medium",
+      "trade_count": 11,
+      "win_count": 1,
+      "win_rate": 0.09090909090909091,
+      "avg_pnl_eur": -1.1050053919308376
+    }
+  ],
+  "arbitrage_opportunities": [
+    {
+      "type": "ARBITRAGE_OPPORTUNITY",
+      "city": "Guangzhou",
+      "direction": "above",
+      "threshold_lower_f": 82.4,
+      "threshold_higher_f": 91.4,
+      "odds_lower": 0.027,
+      "odds_higher": 0.0495,
+      "inconsistency_magnitude": 0.0225,
+      "market_id_lower": "2019651",
+      "market_id_higher": "2019656",
+      "question_lower": "Will the highest temperature in Guangzhou be 28°C on April 21?",
+      "question_higher": "Will the highest temperature in Guangzhou be 33°C on April 21?",
+      "detected_at": "2026-04-20T14:37:09.068812",
+      "description": "Inkonsistenz: P(temp>91F) = 5.0% > P(temp>82F) = 2.7% in Guangzhou"
+    },
+    {
+      "type": "ARBITRAGE_OPPORTUNITY",
+      "city": "Denver",
+      "direction": "above",
+      "threshold_lower_f": 43.0,
+      "threshold_higher_f": 56.0,
+      "odds_lower": 0.0005,
+      "odds_higher": 0.995,
+      "inconsistency_magnitude": 0.9945,
+      "market_id_lower": "2019455",
+      "market_id_higher": "2019462",
+      "question_lower": "Will the highest temperature in Denver be between 42-43°F on April 21?",
+      "question_higher": "Will the highest temperature in Denver be 56°F or higher on April 21?",
+      "detected_at": "2026-04-20T14:37:09.068812",
+      "description": "Inkonsistenz: P(temp>56F) = 99.5% > P(temp>43F) = 0.1% in Denver"
+    }
+  ],
+  "smart_money_summary": {
+    "total_wallets_tracked": 0,
+    "smart_money_wallets": 0,
+    "top_performers": []
+  },
+  "recommendations": [
+    {
+      "priority": "HIGH",
+      "area": "entries",
+      "action": "Eintrittsfilter anziehen und nur groessere Fehlbewertungen handeln",
+      "reason": "Win-Rate 31.2% bei Stop-Loss-Anteil 31%. Das spricht eher fuer schlechte Entry-Selektion als fuer zu spaete Exits.",
+      "suggested_changes": {
+        "MIN_EDGE": 0.4,
+        "MIN_EDGE_ABSOLUTE": 0.14
+      }
+    },
+    {
+      "priority": "HIGH",
+      "area": "timing",
+      "action": "Restlaufzeit konservativer machen und Zombie-/Expiry-Risiko reduzieren",
+      "reason": "2 Resolution-Losses und 25 Expiry-/Zombie-Exits. Märkte werden zu lange oder zu spaet gehalten.",
+      "suggested_changes": {
+        "MIN_TIME_TO_RESOLUTION_HOURS": 84,
+        "SAFETY_BUFFER_HOURS": 36
+      }
+    },
+    {
+      "priority": "HIGH",
+      "area": "edge_memory",
+      "action": "Wiederholt negative Setup-Buckets automatisch sperren",
+      "reason": "Mehrere wiederkehrende Kombinationen aus Confidence, Markt-Typ und Side zeigen negatives Edge und sollten im Intake geblockt bleiben.",
+      "suggested_changes": {
+        "blocked_edge_buckets": [
+          "high",
+          "premium",
+          "medium"
+        ]
+      }
+    },
+    {
+      "priority": "HIGH",
+      "area": "arbitrage",
+      "action": "Logische Preisinkonsistenzen hedgen statt Richtung zu raten",
+      "reason": "2 Arbitrage-Kandidat(en) gefunden. Diese Setups sind meist besser als reine Directional Bets.",
+      "suggested_changes": {
+        "focus_city": "Denver",
+        "focus_direction": "above",
+        "focus_delta": 0.9945,
+        "review_market_ids": [
+          "2019455",
+          "2019462"
+        ]
+      }
+    }
+  ]
+}

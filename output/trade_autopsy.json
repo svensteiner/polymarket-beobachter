@@ -1,0 +1,81 @@
+{
+  "generated_at": "2026-04-19T07:29:25.306776+00:00",
+  "trades_analysed": 26,
+  "open_positions": 2,
+  "total_pnl_eur": -47.65,
+  "win_rate_pct": 38.5,
+  "winner_patterns": [
+    "YES trades: 4/5 wins (80% WR), -12.88 EUR",
+    "YES entry prices: 0.37-0.60 (mid-range, avg 0.45)",
+    "YES proposal_edge: +0.36 to +0.84 (always positive)",
+    "All YES exits via TP3 (+27% to +117%) or Trailing-Stop",
+    "Best cities: Houston (+1.95 EUR), Tokyo (+1.08 EUR)"
+  ],
+  "loser_patterns": [
+    "NO trades: 6/21 wins (29% WR), -34.77 EUR",
+    "ALL 10 stop-loss exits were NO bets on between/exact markets",
+    "NO-exact: 0% WR (0/6)",
+    "NO-between: 5/13 wins",
+    "Worst cities: Atlanta (-16.88 EUR), New York City (-8.79 EUR)"
+  ],
+  "stop_loss_quality": "BAD",
+  "stop_loss_analysis": "10 stop-loss exits ALL on NO bets. Avg -4.11 EUR/SL. YES-only mode (active 2026-04-18) eliminates this risk class.",
+  "edge_calibration": "OVERCONFIDENT",
+  "calibration_detail": "YES-edge (positive) CALIBRATED: 4/4 wins, avg +1.39 EUR. NO-edge (negative) INVERSELY calibrated. Brier Skill Score=-0.28.",
+  "current_mode": "YES-ONLY active since 2026-04-18",
+  "yes_only_stats": {
+    "yes_wr_pct": 80.0,
+    "yes_trades": 5,
+    "yes_pnl_eur": -12.88,
+    "no_wr_pct": 28.6,
+    "no_trades": 21,
+    "no_pnl_eur": -34.77,
+    "re_enable_condition": "NO WR >= 40% over 10+ new NO trades (currently 28.6%, 21 historical trades)"
+  },
+  "yes_low_entry_subgroup": {
+    "description": "YES entries with entry_price 0.15-0.22 (after YES_MIN_ENTRY_PRICE lowered 0.22→0.15)",
+    "count": 0,
+    "win_count": 0,
+    "win_rate_pct": 0.0,
+    "total_pnl_eur": 0,
+    "revert_trigger": "WR < 50% after >= 10 trades → set MIN_ODDS back to 0.22",
+    "revert_needed": false,
+    "revert_status": "OK: 0 trades, 0.0% WR (need >=10 trades to evaluate)"
+  },
+  "top_improvement": "YES-only mode active and working (4/4=100%% WR, +5.57 EUR). Next bottleneck: opportunity frequency (edge_drought=5 runs). Timing gap 12:00-24:00 UTC resolves naturally at midnight when US markets open.",
+  "hypotheses": [
+    {
+      "priority": 1,
+      "title": "Lower edge floor for at_or_above/below: 10% -> 7%",
+      "what": "config/weather.yaml: MIN_EDGE_ABSOLUTE 0.10 -> 0.07 (user approval required)",
+      "why": "All 4 YES wins had edge +0.38-+0.48 but threshold is only 10%. May be filtering valid trades at 7-9% absolute edge.",
+      "expected_effect": "Potentially 2x more YES proposals/day during peak hours",
+      "risk": "Requires explicit user approval (weather.yaml READ-ONLY). Do not implement unilaterally.",
+      "test": "10 trades at 7-10% edge, check WR vs baseline"
+    },
+    {
+      "priority": 2,
+      "title": "Extend proposal intake window 6h -> 12h",
+      "what": "paper_trader/intake.py: recent_proposals_hours 6 -> 12",
+      "why": "During 12:00-24:00 UTC dead zone, YES proposals from midnight open expire. 12h window keeps them.",
+      "expected_effect": "More eligible YES proposals during midday dead zone",
+      "risk": "Low — intake re-checks current price vs guardrails for all proposals",
+      "test": "Count eligible proposals per run before/after"
+    },
+    {
+      "priority": 3,
+      "title": "Model weights persistence (FIXED this run)",
+      "what": "core/model_weights.py: load_weights() saves initial equal weights on first run",
+      "why": "data/model_weights.json missing — Bayesian learning never accumulated across runs",
+      "expected_effect": "No more warning. Once resolved tracking works, weights auto-update.",
+      "risk": "Zero — initial weights equal to prior behavior",
+      "test": "Verify data/model_weights.json exists, no warning in next run"
+    }
+  ],
+  "data_quality_notes": [
+    "city field None in JSONL — extracted from market_question for this report",
+    "hours_to_resolution=None for all closed positions — model weight updates blocked",
+    "Model weights file was missing — fixed this run",
+    "5 rogue/test-contamination positions excluded (0 PnL each)"
+  ]
+}
