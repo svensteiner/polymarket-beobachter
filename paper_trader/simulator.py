@@ -89,7 +89,7 @@ MIN_ENTRY_CONFIDENCE_RANK: Final[int] = 2  # HIGH or better (raised from MEDIUM=
 #        event — and thus the price spike — happens D+0.  This constant acts as a
 #        second-line defence inside the simulator itself.
 # >96h: 4-day+ forecasts are unreliable.
-MIN_ENTRY_HOURS_TO_RESOLUTION: Final[float] = 60.0
+MIN_ENTRY_HOURS_TO_RESOLUTION: Final[float] = 30.0
 MAX_ENTRY_HOURS_TO_RESOLUTION: Final[float] = 96.0
 
 # Cities blocked due to consistently poor paper trading results (0-33% WR).
@@ -256,20 +256,9 @@ def _entry_quality_gate(proposal: Proposal, market_type: str) -> Tuple[bool, str
     raw_edge = float(getattr(proposal, "edge", 0.0) or 0.0)
     is_no_bet = raw_edge < 0
 
-    # YES-ONLY MODE — 2026-04-19 autopsy: YES=40% WR (4/10, -12.88 EUR),
-    # NO=13% WR (6/45, -34.77 EUR). YES is still far better than NO.
-    # YES losses are primarily: 1 emergency SL on LOW-liq (now blocked at entry),
-    # and zombies (expired with no outcome capture). Both root causes addressed.
-    # Root cause for NO losses: narrow-band markets resolve with intraday noise
-    # regardless of temperature outcome — resolution-day price spikes trigger SL
-    # even on correct NO forecasts.
-    # Re-enable NO bets when: historical NO WR ≥ 40% over 10+ new NO trades.
-    if is_no_bet:
-        return False, (
-            "YES-only mode active: NO bets blocked "
-            "(YES=40% WR 4/10, NO=13% WR 6/45 — see output/trade_autopsy.json). "
-            "Re-enable after NO WR ≥ 40% over 10+ trades."
-        )
+    # NO bets re-enabled 2026-04-20 (user approval). Only boundary markets
+    # (at_or_above / at_or_below) with ≥50% edge are allowed — exact/between
+    # remain blocked below (resolution-day spike risk confirmed in autopsy).
 
     # NO-bet edge floor: boundary markets (at_or_above / at_or_below) allowed with
     # strong signal (≥50% absolute edge). between/exact NO bets are separately banned

@@ -1,14 +1,14 @@
 # Weather Observer Collector - Run Report
 
 **Run Date:** 2026-04-20
-**Run Time:** 2026-04-20T16:34:33.867791+00:00
-**Duration:** 20.3 seconds
+**Run Time:** 2026-04-20T17:23:14.437281+00:00
+**Duration:** 22.9 seconds
 
 ## Summary
 
 - **Total Fetched:** 500
 - **Total Sanitized:** 500
-- **Weather Candidates:** 370
+- **Weather Candidates:** 372
 
 ## Filter Results
 
@@ -16,8 +16,8 @@
 |--------|-------|
 | excluded_incomplete | 0 |
 | excluded_not_weather | 51 |
-| included_weather | 370 |
-| possible_weather | 79 |
+| included_weather | 372 |
+| possible_weather | 77 |
 | total | 500 |
 
 ## Forbidden Fields Removed
@@ -42,8 +42,8 @@
 | holdingRewardsEnabled | 500 |
 | feesEnabled | 500 |
 | feeType | 500 |
-| volume24hr | 457 |
-| volume1wk | 457 |
+| volume24hr | 462 |
+| volume1wk | 462 |
 
 ## Weather Candidates Found
 
@@ -171,7 +171,7 @@
 - **Category:** WEATHER_EVENT
 - **Tags:** N/A
 - **URL:** https://polymarket.com/event/will-a-hurricane-make-landfall-in-the-us-by-may-31
-- **Weather Keywords:** weather_confirmed, confidence=0.90, text:storm, text:hurricane, polymarket_tag:climate
+- **Weather Keywords:** weather_confirmed, confidence=0.90, text:hurricane, text:storm, polymarket_tag:climate
 
 ### 15. Will a hurricane form by May 31?...
 
@@ -180,7 +180,7 @@
 - **Category:** WEATHER_EVENT
 - **Tags:** N/A
 - **URL:** https://polymarket.com/event/will-a-hurricane-form-by-may-31
-- **Weather Keywords:** weather_confirmed, confidence=0.90, text:storm, text:hurricane, polymarket_tag:weather
+- **Weather Keywords:** weather_confirmed, confidence=0.90, text:hurricane, text:storm, polymarket_tag:weather
 
 ### 16. Named storm forms before hurricane season?...
 
@@ -189,7 +189,7 @@
 - **Category:** WEATHER_EVENT
 - **Tags:** N/A
 - **URL:** https://polymarket.com/event/named-storm-forms-before-hurricane-season-197
-- **Weather Keywords:** weather_confirmed, confidence=0.90, text:storm, text:hurricane, polymarket_tag:hurricane
+- **Weather Keywords:** weather_confirmed, confidence=0.90, text:hurricane, text:storm, polymarket_tag:hurricane
 
 ### 17. Will any Category 4 hurricane make landfall in the US in before 2027?...
 
@@ -198,7 +198,7 @@
 - **Category:** WEATHER_EVENT
 - **Tags:** N/A
 - **URL:** https://polymarket.com/event/will-any-category-4-hurricane-make-landfall-in-the-us-in-before-2027
-- **Weather Keywords:** weather_confirmed, confidence=0.90, text:storm, text:hurricane, polymarket_tag:climate
+- **Weather Keywords:** weather_confirmed, confidence=0.90, text:hurricane, text:storm, polymarket_tag:climate
 
 ### 18. Natural Disaster in 2026?...
 
@@ -216,7 +216,7 @@
 - **Category:** WEATHER_EVENT
 - **Tags:** N/A
 - **URL:** https://polymarket.com/event/will-any-category-5-hurricane-make-landfall-in-the-us-in-before-2027
-- **Weather Keywords:** weather_confirmed, confidence=0.90, text:storm, text:hurricane, polymarket_tag:climate & science
+- **Weather Keywords:** weather_confirmed, confidence=0.90, text:hurricane, text:storm, polymarket_tag:climate & science
 
 ### 20. Will any month of 2026 be the hottest on record?...
 
@@ -225,9 +225,9 @@
 - **Category:** WEATHER_EVENT
 - **Tags:** N/A
 - **URL:** https://polymarket.com/event/will-any-month-of-2026-be-the-hottest-on-record
-- **Weather Keywords:** weather_confirmed, confidence=1.00, text:celsius, text:degrees, text:hottest
+- **Weather Keywords:** weather_confirmed, confidence=1.00, text:celsius, text:hottest, text:degrees
 
-*... and 350 more candidates*
+*... and 352 more candidates*
 
 ## Exclusion Reasons
 
