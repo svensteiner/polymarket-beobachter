@@ -1,8 +1,8 @@
 # Weather Observer Collector - Run Report
 
 **Run Date:** 2026-04-20
-**Run Time:** 2026-04-20T18:28:50.312732+00:00
-**Duration:** 24.5 seconds
+**Run Time:** 2026-04-20T19:36:32.815450+00:00
+**Duration:** 21.8 seconds
 
 ## Summary
 
@@ -42,8 +42,8 @@
 | holdingRewardsEnabled | 500 |
 | feesEnabled | 500 |
 | feeType | 500 |
-| volume24hr | 465 |
-| volume1wk | 465 |
+| volume24hr | 467 |
+| volume1wk | 467 |
 
 ## Weather Candidates Found
 
