@@ -1,14 +1,14 @@
 # Weather Observer Collector - Run Report
 
 **Run Date:** 2026-04-20
-**Run Time:** 2026-04-20T17:23:14.437281+00:00
-**Duration:** 22.9 seconds
+**Run Time:** 2026-04-20T18:28:50.312732+00:00
+**Duration:** 24.5 seconds
 
 ## Summary
 
 - **Total Fetched:** 500
 - **Total Sanitized:** 500
-- **Weather Candidates:** 372
+- **Weather Candidates:** 377
 
 ## Filter Results
 
@@ -16,8 +16,8 @@
 |--------|-------|
 | excluded_incomplete | 0 |
 | excluded_not_weather | 51 |
-| included_weather | 372 |
-| possible_weather | 77 |
+| included_weather | 377 |
+| possible_weather | 72 |
 | total | 500 |
 
 ## Forbidden Fields Removed
@@ -42,8 +42,8 @@
 | holdingRewardsEnabled | 500 |
 | feesEnabled | 500 |
 | feeType | 500 |
-| volume24hr | 462 |
-| volume1wk | 462 |
+| volume24hr | 465 |
+| volume1wk | 465 |
 
 ## Weather Candidates Found
 
@@ -227,7 +227,7 @@
 - **URL:** https://polymarket.com/event/will-any-month-of-2026-be-the-hottest-on-record
 - **Weather Keywords:** weather_confirmed, confidence=1.00, text:celsius, text:hottest, text:degrees
 
-*... and 352 more candidates*
+*... and 357 more candidates*
 
 ## Exclusion Reasons
 
