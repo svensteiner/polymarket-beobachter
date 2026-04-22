@@ -1,7 +1,7 @@
 {
-  "generated_at": "2026-04-22T21:21:35.186233",
+  "generated_at": "2026-04-22T22:33:21.907968",
   "mode": "balance",
-  "summary": "BALANCE: Win-Rate 31.2% | P&L -54.72 EUR | Attack 0.06 | 0 offene Positionen | 4 Empfehlung(en)",
+  "summary": "BALANCE: Win-Rate 31.2% | P&L -54.72 EUR | Attack 0.22 | 0 offene Positionen | 4 Empfehlung(en)",
   "metrics_snapshot": {
     "total_trades": 32,
     "win_rate_pct": 31.25,
@@ -14,18 +14,18 @@
     "calibration_interpretation": "POOR",
     "top_edge_bucket": null,
     "worst_edge_bucket": "high",
-    "attack_score": 0.063,
+    "attack_score": 0.219,
     "attack_components": {
       "performance": 0.08,
       "calibration": 0.15,
       "edge": 0.0,
-      "arbitrage": 0.025,
+      "arbitrage": 1.0,
       "smart_money": 0.0,
       "discipline_penalty": 0.0
     },
     "attack_signals": {
       "strong_edge_buckets": 0,
-      "arbitrage_opportunities": 1,
+      "arbitrage_opportunities": 5,
       "smart_money_wallets": 0,
       "weak_cities": 0
     }
@@ -72,6 +72,54 @@
   "arbitrage_opportunities": [
     {
       "type": "ARBITRAGE_OPPORTUNITY",
+      "city": "Paris",
+      "direction": "above",
+      "threshold_lower_f": 60.8,
+      "threshold_higher_f": 66.2,
+      "odds_lower": 0.001,
+      "odds_higher": 0.024,
+      "inconsistency_magnitude": 0.023,
+      "market_id_lower": "2049378",
+      "market_id_higher": "2049381",
+      "question_lower": "Will the highest temperature in Paris be 16°C on April 24?",
+      "question_higher": "Will the highest temperature in Paris be 19°C on April 24?",
+      "detected_at": "2026-04-22T22:15:34.014396",
+      "description": "Inkonsistenz: P(temp>66F) = 2.4% > P(temp>61F) = 0.1% in Paris"
+    },
+    {
+      "type": "ARBITRAGE_OPPORTUNITY",
+      "city": "Paris",
+      "direction": "above",
+      "threshold_lower_f": 60.8,
+      "threshold_higher_f": 68.0,
+      "odds_lower": 0.001,
+      "odds_higher": 0.085,
+      "inconsistency_magnitude": 0.084,
+      "market_id_lower": "2049378",
+      "market_id_higher": "2049382",
+      "question_lower": "Will the highest temperature in Paris be 16°C on April 24?",
+      "question_higher": "Will the highest temperature in Paris be 20°C on April 24?",
+      "detected_at": "2026-04-22T22:15:34.014396",
+      "description": "Inkonsistenz: P(temp>68F) = 8.5% > P(temp>61F) = 0.1% in Paris"
+    },
+    {
+      "type": "ARBITRAGE_OPPORTUNITY",
+      "city": "Paris",
+      "direction": "above",
+      "threshold_lower_f": 66.2,
+      "threshold_higher_f": 68.0,
+      "odds_lower": 0.024,
+      "odds_higher": 0.085,
+      "inconsistency_magnitude": 0.061,
+      "market_id_lower": "2049381",
+      "market_id_higher": "2049382",
+      "question_lower": "Will the highest temperature in Paris be 19°C on April 24?",
+      "question_higher": "Will the highest temperature in Paris be 20°C on April 24?",
+      "detected_at": "2026-04-22T22:15:34.014396",
+      "description": "Inkonsistenz: P(temp>68F) = 8.5% > P(temp>66F) = 2.4% in Paris"
+    },
+    {
+      "type": "ARBITRAGE_OPPORTUNITY",
       "city": "Kuala Lumpur",
       "direction": "above",
       "threshold_lower_f": 86.0,
@@ -83,8 +131,24 @@
       "market_id_higher": "2040640",
       "question_lower": "Will the highest temperature in Kuala Lumpur be 30°C on April 23?",
       "question_higher": "Will the highest temperature in Kuala Lumpur be 31°C on April 23?",
-      "detected_at": "2026-04-22T21:03:58.656775",
+      "detected_at": "2026-04-22T22:15:34.014396",
       "description": "Inkonsistenz: P(temp>88F) = 4.0% > P(temp>86F) = 1.6% in Kuala Lumpur"
+    },
+    {
+      "type": "ARBITRAGE_OPPORTUNITY",
+      "city": "Jeddah",
+      "direction": "above",
+      "threshold_lower_f": 80.6,
+      "threshold_higher_f": 95.0,
+      "odds_lower": 0.0015,
+      "odds_higher": 0.18,
+      "inconsistency_magnitude": 0.1785,
+      "market_id_lower": "2040659",
+      "market_id_higher": "2040667",
+      "question_lower": "Will the highest temperature in Jeddah be 27°C on April 23?",
+      "question_higher": "Will the highest temperature in Jeddah be 35°C or higher on April 23?",
+      "detected_at": "2026-04-22T22:15:34.014396",
+      "description": "Inkonsistenz: P(temp>95F) = 18.0% > P(temp>81F) = 0.1% in Jeddah"
     }
   ],
   "smart_money_summary": {
@@ -130,14 +194,14 @@
       "priority": "HIGH",
       "area": "arbitrage",
       "action": "Logische Preisinkonsistenzen hedgen statt Richtung zu raten",
-      "reason": "1 Arbitrage-Kandidat(en) gefunden. Diese Setups sind meist besser als reine Directional Bets.",
+      "reason": "5 Arbitrage-Kandidat(en) gefunden. Diese Setups sind meist besser als reine Directional Bets.",
       "suggested_changes": {
-        "focus_city": "Kuala Lumpur",
+        "focus_city": "Jeddah",
         "focus_direction": "above",
-        "focus_delta": 0.0245,
+        "focus_delta": 0.1785,
         "review_market_ids": [
-          "2040639",
-          "2040640"
+          "2040659",
+          "2040667"
         ]
       }
     }
