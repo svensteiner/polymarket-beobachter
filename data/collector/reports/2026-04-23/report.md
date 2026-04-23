@@ -1,8 +1,8 @@
 # Weather Observer Collector - Run Report
 
 **Run Date:** 2026-04-23
-**Run Time:** 2026-04-23T13:27:46.718250+00:00
-**Duration:** 21.5 seconds
+**Run Time:** 2026-04-23T14:32:24.563919+00:00
+**Duration:** 18.0 seconds
 
 ## Summary
 

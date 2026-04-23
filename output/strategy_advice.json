@@ -1,7 +1,7 @@
 {
-  "generated_at": "2026-04-23T15:28:14.713420",
+  "generated_at": "2026-04-23T16:33:10.388171",
   "mode": "balance",
-  "summary": "BALANCE: Win-Rate 31.2% | P&L -54.72 EUR | Attack 0.13 | 0 offene Positionen | 4 Empfehlung(en)",
+  "summary": "BALANCE: Win-Rate 31.2% | P&L -54.72 EUR | Attack 0.16 | 0 offene Positionen | 4 Empfehlung(en)",
   "metrics_snapshot": {
     "total_trades": 32,
     "win_rate_pct": 31.25,
@@ -14,18 +14,18 @@
     "calibration_interpretation": "POOR",
     "top_edge_bucket": null,
     "worst_edge_bucket": "high",
-    "attack_score": 0.131,
+    "attack_score": 0.16,
     "attack_components": {
       "performance": 0.08,
       "calibration": 0.15,
       "edge": 0.0,
-      "arbitrage": 0.45,
+      "arbitrage": 0.633,
       "smart_money": 0.0,
       "discipline_penalty": 0.0
     },
     "attack_signals": {
       "strong_edge_buckets": 0,
-      "arbitrage_opportunities": 1,
+      "arbitrage_opportunities": 2,
       "smart_money_wallets": 0,
       "weak_cities": 0
     }
@@ -72,19 +72,35 @@
   "arbitrage_opportunities": [
     {
       "type": "ARBITRAGE_OPPORTUNITY",
-      "city": "Paris",
+      "city": "Amsterdam",
       "direction": "above",
-      "threshold_lower_f": 37.4,
-      "threshold_higher_f": 71.6,
-      "odds_lower": 0.001,
-      "odds_higher": 0.71,
-      "inconsistency_magnitude": 0.709,
-      "market_id_lower": "2047528",
-      "market_id_higher": "2040191",
-      "question_lower": "Will the lowest temperature in Paris be 3°C on April 23?",
-      "question_higher": "Will the highest temperature in Paris be 22°C on April 23?",
-      "detected_at": "2026-04-23T15:12:23.616913",
-      "description": "Inkonsistenz: P(temp>72F) = 71.0% > P(temp>37F) = 0.1% in Paris"
+      "threshold_lower_f": 57.2,
+      "threshold_higher_f": 59.0,
+      "odds_lower": 0.12,
+      "odds_higher": 0.44,
+      "inconsistency_magnitude": 0.32,
+      "market_id_lower": "2049799",
+      "market_id_higher": "2049800",
+      "question_lower": "Will the highest temperature in Amsterdam be 14°C on April 24?",
+      "question_higher": "Will the highest temperature in Amsterdam be 15°C on April 24?",
+      "detected_at": "2026-04-23T16:17:04.479696",
+      "description": "Inkonsistenz: P(temp>59F) = 44.0% > P(temp>57F) = 12.0% in Amsterdam"
+    },
+    {
+      "type": "ARBITRAGE_OPPORTUNITY",
+      "city": "Wuhan",
+      "direction": "above",
+      "threshold_lower_f": 75.2,
+      "threshold_higher_f": 77.0,
+      "odds_lower": 0.16,
+      "odds_higher": 0.27,
+      "inconsistency_magnitude": 0.11,
+      "market_id_lower": "2057161",
+      "market_id_higher": "2057162",
+      "question_lower": "Will the highest temperature in Wuhan be 24°C on April 25?",
+      "question_higher": "Will the highest temperature in Wuhan be 25°C on April 25?",
+      "detected_at": "2026-04-23T16:17:04.479696",
+      "description": "Inkonsistenz: P(temp>77F) = 27.0% > P(temp>75F) = 16.0% in Wuhan"
     }
   ],
   "smart_money_summary": {
@@ -99,7 +115,7 @@
       "action": "Eintrittsfilter anziehen und nur groessere Fehlbewertungen handeln",
       "reason": "Win-Rate 31.2% bei Stop-Loss-Anteil 31%. Das spricht eher fuer schlechte Entry-Selektion als fuer zu spaete Exits.",
       "suggested_changes": {
-        "MIN_EDGE": 0.35,
+        "MIN_EDGE": 0.3,
         "MIN_EDGE_ABSOLUTE": 0.12
       }
     },
@@ -130,14 +146,14 @@
       "priority": "HIGH",
       "area": "arbitrage",
       "action": "Logische Preisinkonsistenzen hedgen statt Richtung zu raten",
-      "reason": "1 Arbitrage-Kandidat(en) gefunden. Diese Setups sind meist besser als reine Directional Bets.",
+      "reason": "2 Arbitrage-Kandidat(en) gefunden. Diese Setups sind meist besser als reine Directional Bets.",
       "suggested_changes": {
-        "focus_city": "Paris",
+        "focus_city": "Amsterdam",
         "focus_direction": "above",
-        "focus_delta": 0.709,
+        "focus_delta": 0.32,
         "review_market_ids": [
-          "2047528",
-          "2040191"
+          "2049799",
+          "2049800"
         ]
       }
     }
