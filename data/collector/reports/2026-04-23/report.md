@@ -1,8 +1,8 @@
 # Weather Observer Collector - Run Report
 
 **Run Date:** 2026-04-23
-**Run Time:** 2026-04-23T18:34:10.300726+00:00
-**Duration:** 25.0 seconds
+**Run Time:** 2026-04-23T19:29:37.175837+00:00
+**Duration:** 22.6 seconds
 
 ## Summary
 
@@ -54,7 +54,7 @@
 - **Category:** WEATHER_EVENT
 - **Tags:** N/A
 - **URL:** https://polymarket.com/event/will-2026-be-the-hottest-year-on-record
-- **Weather Keywords:** weather_confirmed, confidence=0.90, text:hottest, text:temperature, polymarket_tag:weather
+- **Weather Keywords:** weather_confirmed, confidence=0.90, text:temperature, text:hottest, polymarket_tag:weather
 
 ### 2. Will 2026 be the third-hottest year on record?...
 
@@ -63,7 +63,7 @@
 - **Category:** WEATHER_EVENT
 - **Tags:** N/A
 - **URL:** https://polymarket.com/event/will-2026-be-the-third-hottest-year-on-record
-- **Weather Keywords:** weather_confirmed, confidence=0.90, text:hottest, text:temperature, polymarket_tag:weather
+- **Weather Keywords:** weather_confirmed, confidence=0.90, text:temperature, text:hottest, polymarket_tag:weather
 
 ### 3. Will 2026 be the fifth-hottest year on record?...
 
@@ -72,7 +72,7 @@
 - **Category:** WEATHER_EVENT
 - **Tags:** N/A
 - **URL:** https://polymarket.com/event/will-2026-be-the-fifth-hottest-year-on-record
-- **Weather Keywords:** weather_confirmed, confidence=0.90, text:hottest, text:temperature, polymarket_tag:weather
+- **Weather Keywords:** weather_confirmed, confidence=0.90, text:temperature, text:hottest, polymarket_tag:weather
 
 ### 4. Will 2026 be the second-hottest year on record?...
 
@@ -81,7 +81,7 @@
 - **Category:** WEATHER_EVENT
 - **Tags:** N/A
 - **URL:** https://polymarket.com/event/will-2026-be-the-second-hottest-year-on-record
-- **Weather Keywords:** weather_confirmed, confidence=0.90, text:hottest, text:temperature, polymarket_tag:weather
+- **Weather Keywords:** weather_confirmed, confidence=0.90, text:temperature, text:hottest, polymarket_tag:weather
 
 ### 5. Will 2026 be the fourth-hottest year on record?...
 
@@ -90,7 +90,7 @@
 - **Category:** WEATHER_EVENT
 - **Tags:** N/A
 - **URL:** https://polymarket.com/event/will-2026-be-the-fourth-hottest-year-on-record
-- **Weather Keywords:** weather_confirmed, confidence=0.90, text:hottest, text:temperature, polymarket_tag:weather
+- **Weather Keywords:** weather_confirmed, confidence=0.90, text:temperature, text:hottest, polymarket_tag:weather
 
 ### 6. Will 2026 rank as the sixth-hottest year on record or lower?...
 
@@ -99,7 +99,7 @@
 - **Category:** WEATHER_EVENT
 - **Tags:** N/A
 - **URL:** https://polymarket.com/event/will-2026-rank-as-the-sixth-hottest-year-on-record-or-lower
-- **Weather Keywords:** weather_confirmed, confidence=0.90, text:hottest, text:temperature, polymarket_tag:weather
+- **Weather Keywords:** weather_confirmed, confidence=0.90, text:temperature, text:hottest, polymarket_tag:weather
 
 ### 7. Will the minimum Arctic sea ice extent this summer be less than 4m square kilome...
 
@@ -225,7 +225,7 @@
 - **Category:** WEATHER_EVENT
 - **Tags:** N/A
 - **URL:** https://polymarket.com/event/will-any-month-of-2026-be-the-hottest-on-record
-- **Weather Keywords:** weather_confirmed, confidence=1.00, text:celsius, text:hottest, text:degrees
+- **Weather Keywords:** weather_confirmed, confidence=1.00, text:temperature, text:degrees, text:celsius
 
 *... and 362 more candidates*
 
