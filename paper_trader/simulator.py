@@ -810,6 +810,12 @@ class ExecutionSimulator:
                     "— MEDIUM-liq blocked near resolution",
                     proposal.market_id, liq_bucket, _htr_for_liq, NEAR_RES_LIQ_GUARD_HOURS,
                 )
+                if float(getattr(proposal, "edge", 0) or 0) > 0:
+                    try:
+                        from paper_trader.shadow_tracker import record_shadow_entry
+                        record_shadow_entry(proposal, "near_res_liq_guard", _nr_skip_reason[:200])
+                    except Exception:
+                        pass
                 return (None, record)
 
         # Determine side based on edge direction
