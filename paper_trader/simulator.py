@@ -151,6 +151,14 @@ SL_COOLOFF_PATH: Final[str] = "data/sl_cooloff.json"
 YES_PRICE_DRIFT_MAX_ABS: Final[float] = 0.15   # 15 pp absolute tolerance
 YES_MIN_REALTIME_EDGE: Final[float] = 0.24     # mirrors entry_guardrails.YES_MIN_EDGE
 
+# Near-resolution MEDIUM-liq guard (Feature Flag)
+# Root cause of Atlanta -18.46 EUR and Ankara -7.07 EUR: both were MEDIUM-liq (spread ~3%)
+# at entry but collapsed near resolution. The LOW-liq block (spread ≥ 5%) did not catch them.
+# This guard blocks MEDIUM+UNKNOWN liq markets when hours_to_resolution < 48h.
+# Activate: set NEAR_RES_LIQ_GUARD=1 in .env. Default OFF to allow gradual validation.
+_NEAR_RES_LIQ_GUARD_ENABLED: Final[bool] = os.environ.get("NEAR_RES_LIQ_GUARD", "0") == "1"
+NEAR_RES_LIQ_GUARD_HOURS: Final[float] = 48.0
+
 
 def _load_sl_cooloff() -> Dict[str, str]:
     """Load stop-loss cooling-off registry {market_id: iso_timestamp}."""
@@ -717,19 +725,33 @@ class ExecutionSimulator:
             logger.warning(f"SKIP: Market {proposal.market_id} already resolved")
             return (None, record)
 
-        # LOW-liquidity entry block:
-        # LOW-liq markets cannot be protected by normal SL/TP (position_manager skips
-        # them). They only exit via emergency SL at -70%+ loss or zombie expiry.
-        # Evidence: Atlanta 2003743 (YES, LOW-liq) → emergency SL at -89.8% = -18.46 EUR.
-        # All historical LOW-liq entries resulted in emergency exits or zombies (0% WR).
-        # Better to miss the trade entirely than enter a position we cannot manage.
+        # LOW-liquidity entry block (spread-based, classify_liquidity: spread >= 5% = LOW).
+        # Evidence (paper_positions.jsonl audit, 2026-04-27): 9 of 9 historical LOW-liq
+        # entries resolved with -67% to -93% loss. Total realised loss: -54.32 EUR — i.e.
+        # essentially the entire bot drawdown is attributable to LOW-liq trades.
+        #   7 × Stop-Loss exits, edge -0.13 to -0.55, all NO-side, -71% to -93%.
+        #   2 × Emergency-SL exits with PREMIUM YES edge (+0.84 Atlanta -89.8% / -18.46 EUR;
+        #       +0.88 Ankara -67.8% / -7.07 EUR). Even +84% modelled edge did not survive
+        #       LOW-liq slippage + adverse selection.
+        # Implication: the block is NOT overfit to a single Atlanta trade — it reflects a
+        # structural failure to monetise edge in wide-spread markets, regardless of side
+        # or edge magnitude. Lifting it without an upstream spread filter resumes the bleed.
+        # Upstream root cause: discovery + proposal generation use *volume*-based
+        # MIN_LIQUIDITY=375 USD, while this block uses *spread*-based bucketing (>5%).
+        # The two metrics are uncorrelated for current weather markets, so 100% of
+        # eligible proposals currently land here. Real fix lives in proposal generation.
+        # Rollback: revert this commit if the upstream spread pre-filter ships and proves
+        # safe.  Do NOT lift this block in isolation.
         liq_bucket = str(getattr(snapshot, "liquidity_bucket", "") or "").upper()
         if liq_bucket == "LOW":
+            spread_pct = getattr(snapshot, "spread_pct", None)
+            spread_str = f"{spread_pct:.2f}%" if isinstance(spread_pct, (int, float)) else "n/a"
             skip_reason = (
-                f"LOW-liquidity market blocked at entry: SL/TP cannot be enforced "
-                f"(position_manager skips LOW-liq checks → emergency SL at -70%+ or zombie). "
-                f"Evidence: Atlanta -18.46 EUR (0% WR on all LOW-liq entries). "
-                f"Re-evaluate if market liquidity improves."
+                f"LOW-liquidity market blocked at entry: spread {spread_str} >= 5% "
+                f"(SL/TP cannot be enforced; emergency SL only at -55%/<36h). "
+                f"Evidence (audit 2026-04-27): 9/9 historical LOW-liq entries lost -67% to -93%, "
+                f"total -54.32 EUR — including PREMIUM-edge YES trades. Edge does not survive "
+                f"LOW-liq slippage. Re-evaluate only after upstream spread pre-filter ships."
             )
             record = PaperTradeRecord(
                 record_id=generate_record_id(),
@@ -746,8 +768,49 @@ class ExecutionSimulator:
                 pnl_eur=None,
             )
             log_trade(record)
-            logger.warning(f"SKIP (LOW-liq): {proposal.market_id} — entry blocked to prevent unmanageable position")
+            logger.warning(
+                f"SKIP (LOW-liq): {proposal.market_id} spread={spread_str} edge={proposal.edge:+.3f} "
+                f"— entry blocked (audit-confirmed: 9/9 historical LOW-liq lost -67%+)"
+            )
             return (None, record)
+
+        # Near-resolution MEDIUM-liq guard (Feature Flag: NEAR_RES_LIQ_GUARD=1 in .env)
+        # MEDIUM-liq (spread 2-5%) markets collapse intraday near resolution even when the
+        # spread looks acceptable at entry. The LOW-liq block above catches spread ≥ 5% but
+        # misses the 2-5% zone. Evidence:
+        #   Atlanta 2003743: MEDIUM (3%), 45.95h → Emergency-SL -18.46 EUR (-92%)
+        #   Ankara  2003773: MEDIUM (3%), 24.1h  → Emergency-SL  -7.07 EUR (-71%)
+        # Both entered via HighConvictionException and cleared the LOW-liq block.
+        if _NEAR_RES_LIQ_GUARD_ENABLED:
+            _htr_for_liq = getattr(proposal, "hours_to_resolution", None)
+            if _htr_for_liq is not None and _htr_for_liq < NEAR_RES_LIQ_GUARD_HOURS and liq_bucket in ("MEDIUM", "UNKNOWN"):
+                _nr_skip_reason = (
+                    f"Near-resolution MEDIUM-liq guard: {_htr_for_liq:.1f}h < {NEAR_RES_LIQ_GUARD_HOURS:.0f}h "
+                    f"AND liquidity={liq_bucket} (requires HIGH within {NEAR_RES_LIQ_GUARD_HOURS:.0f}h window). "
+                    f"Evidence: Atlanta -18.46 EUR (MEDIUM 3%, 45.95h), Ankara -7.07 EUR (MEDIUM 3%, 24.1h). "
+                    f"Deactivate: unset NEAR_RES_LIQ_GUARD in .env."
+                )
+                record = PaperTradeRecord(
+                    record_id=generate_record_id(),
+                    timestamp=now,
+                    proposal_id=proposal.proposal_id,
+                    market_id=proposal.market_id,
+                    action=TradeAction.SKIP.value,
+                    reason=_nr_skip_reason,
+                    position_id=None,
+                    snapshot_time=snapshot.snapshot_time,
+                    entry_price=None,
+                    exit_price=None,
+                    slippage_applied=None,
+                    pnl_eur=None,
+                )
+                log_trade(record)
+                logger.warning(
+                    "SKIP (NearResLiqGuard): %s | liq=%s htr=%.1fh < %.0fh "
+                    "— MEDIUM-liq blocked near resolution",
+                    proposal.market_id, liq_bucket, _htr_for_liq, NEAR_RES_LIQ_GUARD_HOURS,
+                )
+                return (None, record)
 
         # Determine side based on edge direction
         # Positive edge (model > implied) = buy YES

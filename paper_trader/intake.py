@@ -93,6 +93,59 @@ class ProposalIntake:
         executed_ids = self._paper_logger.get_executed_proposal_ids()
         logger.info(f"Found {len(executed_ids)} already paper-executed proposals")
 
+        # ====================================================================
+        # SPREAD PRE-FILTER (intake-level LOW-liq drop, audit 2026-04-27)
+        # ====================================================================
+        # The simulator blocks LOW-liq (spread >= 5%) at entry because 9/9 historical
+        # LOW-liq trades lost -67% to -93% (-54.32 EUR total — essentially the entire
+        # bot drawdown). However, the upstream filters use *volume*-based thresholds
+        # (gamma min_liq=50 USD, MIN_LIQUIDITY=375 USD), which are uncorrelated with
+        # *spread* in current weather markets. Result: 100% of proposals pass volume
+        # gates but get blocked at simulator entry — wasted compute, 0 trades per cycle.
+        #
+        # This pre-filter fetches market snapshots ONCE per cycle (sequential per
+        # market_id but only for not-yet-executed TRADE proposals) and drops markets
+        # the simulator would block anyway. Fail-open on any error: if snapshot fetch
+        # fails or returns None, the proposal continues normally and the simulator
+        # block remains as defense-in-depth. No proposal is silently dropped.
+        #
+        # Rollback: delete this block (and the in-loop `if proposal.market_id in
+        # spread_blocked` check below). The simulator behaviour is unchanged.
+        # ====================================================================
+        spread_blocked: set = set()
+        spread_unknown: set = set()
+        try:
+            from paper_trader.snapshot_client import get_market_snapshots
+            candidate_market_ids = list({
+                p.market_id for p in all_proposals
+                if getattr(p, "decision", None) == "TRADE"
+                and p.proposal_id not in executed_ids
+            })
+            if candidate_market_ids:
+                snapshots = get_market_snapshots(candidate_market_ids)
+                for mid, snap in snapshots.items():
+                    if snap is None:
+                        spread_unknown.add(mid)
+                        continue
+                    liq = str(getattr(snap, "liquidity_bucket", "") or "").upper()
+                    if liq == "LOW":
+                        spread_blocked.add(mid)
+                logger.info(
+                    "[INTAKE-SPREAD] checked=%d low_liq_blocked=%d unknown=%d "
+                    "(of %d candidate markets) — saved adversarial-check time",
+                    len(snapshots),
+                    len(spread_blocked),
+                    len(spread_unknown),
+                    len(candidate_market_ids),
+                )
+            else:
+                logger.debug("[INTAKE-SPREAD] no candidate markets to pre-check")
+        except Exception as e:
+            # Fail-open: any error here MUST NOT block the pipeline. The simulator
+            # LOW-liq block remains as the authoritative gate.
+            logger.warning("[INTAKE-SPREAD] pre-filter failed (fail-open): %s", e)
+            spread_blocked = set()
+
         # Filter
         eligible = []
         open_positions = self._paper_logger.get_open_positions()
@@ -103,6 +156,33 @@ class ProposalIntake:
 
             # Check 2: Not already executed (idempotency)
             if proposal.proposal_id in executed_ids:
+                continue
+
+            # Check 2b: Spread pre-filter — drop markets the simulator would LOW-liq-block.
+            # See block comment above for evidence and rollback.
+            if proposal.market_id in spread_blocked:
+                logger.info(
+                    "[INTAKE-SPREAD] SKIP %s market=%s edge=%+.3f — LOW-liq pre-filter "
+                    "(simulator would block: 9/9 historical LOW-liq lost -67%%+)",
+                    proposal.proposal_id,
+                    proposal.market_id,
+                    float(getattr(proposal, "edge", 0) or 0),
+                )
+                try:
+                    record_guardrail_decision(
+                        {
+                            "run_id": run_id,
+                            "proposal_id": proposal.proposal_id,
+                            "market_id": proposal.market_id,
+                            "allowed": False,
+                            "reason_code": "intake_spread_filter",
+                            "reason_detail": "LOW-liq market dropped pre-adversarial",
+                            "shadow_allowed_without_inventory": False,
+                            **describe_proposal(proposal),
+                        }
+                    )
+                except Exception as _audit_err:
+                    logger.debug("[INTAKE-SPREAD] audit record failed: %s", _audit_err)
                 continue
 
             # Check 3: Passes review gate
@@ -157,6 +237,13 @@ class ProposalIntake:
                     float(_edge or 0),
                     "YES-opportunity-missed?" if _is_yes else "NO-bet-correct-block",
                 )
+                # Shadow-Tracking: geblockter YES-Edge als Schatten-Trade aufzeichnen
+                if _is_yes:
+                    try:
+                        from paper_trader.shadow_tracker import record_shadow_entry
+                        record_shadow_entry(proposal, reason_code, reason_detail)
+                    except Exception as _st_err:
+                        logger.debug("shadow_tracker record failed (non-blocking): %s", _st_err)
                 continue
 
             edge_memory = assess_proposal_edge(proposal, market_type=detect_market_type(proposal.market_question))

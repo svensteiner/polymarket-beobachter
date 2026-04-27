@@ -240,6 +240,15 @@ class Orchestrator:
         except Exception as e:
             logger.debug(f"Evolution Agent Close fehlgeschlagen (unkritisch): {e}")
 
+        # Step 5b2: Shadow Trade Tracker — offene Schatten-Trades aktualisieren
+        try:
+            from paper_trader.shadow_tracker import update_open_shadow_trades
+            _st_updated, _st_resolved = update_open_shadow_trades()
+            if _st_resolved > 0:
+                logger.info("ShadowTracker: %d updated, %d resolved", _st_updated, _st_resolved)
+        except Exception as _st_exc:
+            logger.debug("ShadowTracker update skipped: %s", _st_exc)
+
         # Step 5c: Outcome Analyser (nach jedem Run aktualisieren)
         self._run_outcome_analyser()
 
