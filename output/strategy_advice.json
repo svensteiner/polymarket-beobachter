@@ -1,7 +1,7 @@
 {
-  "generated_at": "2026-04-28T22:33:00.571668",
+  "generated_at": "2026-04-28T23:24:32.968956",
   "mode": "balance",
-  "summary": "BALANCE: Win-Rate 31.2% | P&L -54.72 EUR | Attack 0.13 | 0 offene Positionen | 4 Empfehlung(en)",
+  "summary": "BALANCE: Win-Rate 31.2% | P&L -54.72 EUR | Attack 0.00 | 0 offene Positionen | 5 Empfehlung(en)",
   "metrics_snapshot": {
     "total_trades": 32,
     "win_rate_pct": 31.25,
@@ -14,29 +14,49 @@
     "calibration_interpretation": "POOR",
     "top_edge_bucket": null,
     "worst_edge_bucket": "high",
-    "attack_score": 0.131,
+    "attack_score": 0.0,
     "attack_components": {
       "performance": 0.08,
       "calibration": 0.15,
       "edge": 0.0,
       "arbitrage": 0.45,
       "smart_money": 0.0,
-      "discipline_penalty": 0.0
+      "discipline_penalty": 0.24
     },
     "attack_signals": {
       "strong_edge_buckets": 0,
       "arbitrage_opportunities": 1,
       "smart_money_wallets": 0,
-      "weak_cities": 0
+      "weak_cities": 3
     }
   },
   "issues": [
     "entry_quality_too_weak",
     "time_to_resolution_risk",
+    "city_concentration_drag",
     "negative_edge_buckets",
     "arbitrage_opportunity"
   ],
-  "weak_cities": [],
+  "weak_cities": [
+    {
+      "city": "New York City",
+      "trades": 4,
+      "win_rate_pct": 0.0,
+      "total_pnl_eur": -8.79
+    },
+    {
+      "city": "San Francisco",
+      "trades": 4,
+      "win_rate_pct": 50.0,
+      "total_pnl_eur": -7.06
+    },
+    {
+      "city": "Toronto",
+      "trades": 4,
+      "win_rate_pct": 25.0,
+      "total_pnl_eur": -3.27
+    }
+  ],
   "segment_risk_flags": {
     "risky_cities": [],
     "risky_price_bands": [],
@@ -83,7 +103,7 @@
       "market_id_higher": "2091952",
       "question_lower": "Will the highest temperature in Kuala Lumpur be 32°C on April 29?",
       "question_higher": "Will the highest temperature in Kuala Lumpur be 35°C on April 29?",
-      "detected_at": "2026-04-28T22:16:07.118736",
+      "detected_at": "2026-04-28T22:33:00.678148",
       "description": "Inkonsistenz: P(temp>95F) = 20.0% > P(temp>90F) = 4.5% in Kuala Lumpur"
     }
   ],
@@ -111,6 +131,19 @@
       "suggested_changes": {
         "MIN_TIME_TO_RESOLUTION_HOURS": 36,
         "SAFETY_BUFFER_HOURS": 36
+      }
+    },
+    {
+      "priority": "MEDIUM",
+      "area": "universe",
+      "action": "Schwache Staedte temporaer auf Cooldown setzen",
+      "reason": "Mehrere Staedte liefern wiederholt negatives P&L. Erst nach neuer Datenlage wieder freigeben.",
+      "suggested_changes": {
+        "cooldown_cities": [
+          "New York City",
+          "San Francisco",
+          "Toronto"
+        ]
       }
     },
     {

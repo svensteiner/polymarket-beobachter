@@ -1,8 +1,8 @@
 POLYMARKET STRATEGY ADVISOR
 ========================================
-Generated: 2026-04-28T22:33:00.571668
+Generated: 2026-04-28T23:24:32.968956
 Mode:      BALANCE
-Summary:   BALANCE: Win-Rate 31.2% | P&L -54.72 EUR | Attack 0.13 | 0 offene Positionen | 4 Empfehlung(en)
+Summary:   BALANCE: Win-Rate 31.2% | P&L -54.72 EUR | Attack 0.00 | 0 offene Positionen | 5 Empfehlung(en)
 
 Metrics
 ----------------------------------------
@@ -25,11 +25,21 @@ Recommendations
    Bereich: timing
    Grund:   2 Resolution-Losses und 26 Expiry-/Zombie-Exits. Märkte werden zu lange oder zu spaet gehalten.
    Vorschlag: {"MIN_TIME_TO_RESOLUTION_HOURS": 36, "SAFETY_BUFFER_HOURS": 36}
-3. [HIGH] Wiederholt negative Setup-Buckets automatisch sperren
+3. [MEDIUM] Schwache Staedte temporaer auf Cooldown setzen
+   Bereich: universe
+   Grund:   Mehrere Staedte liefern wiederholt negatives P&L. Erst nach neuer Datenlage wieder freigeben.
+   Vorschlag: {"cooldown_cities": ["New York City", "San Francisco", "Toronto"]}
+4. [HIGH] Wiederholt negative Setup-Buckets automatisch sperren
    Bereich: edge_memory
    Grund:   Mehrere wiederkehrende Kombinationen aus Confidence, Markt-Typ und Side zeigen negatives Edge und sollten im Intake geblockt bleiben.
    Vorschlag: {"blocked_edge_buckets": ["high", "premium", "medium"]}
-4. [HIGH] Logische Preisinkonsistenzen hedgen statt Richtung zu raten
+5. [HIGH] Logische Preisinkonsistenzen hedgen statt Richtung zu raten
    Bereich: arbitrage
    Grund:   1 Arbitrage-Kandidat(en) gefunden. Diese Setups sind meist besser als reine Directional Bets.
    Vorschlag: {"focus_city": "Kuala Lumpur", "focus_direction": "above", "focus_delta": 0.155, "review_market_ids": ["2091949", "2091952"]}
+
+Weak Cities
+----------------------------------------
+- New York City: 4 Trades | 0.0% WR | -8.79 EUR
+- San Francisco: 4 Trades | 50.0% WR | -7.06 EUR
+- Toronto: 4 Trades | 25.0% WR | -3.27 EUR

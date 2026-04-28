@@ -720,17 +720,6 @@ class PositionManager:
                 continue
 
             # ---------------------------------------------------------------
-            # YES-TP-SKIP: Keine TP-Exits fuer YES-Positionen ausserhalb
-            # des Resolution-Hold-Fensters. YES hat 100% WR (4/4) und
-            # binaere Aufloesung zahlt 100-200%+ vs. 15-25% TP.
-            # Evidenz: TP-Exits brachten avg +1.68 EUR; Resolution wuerde
-            # avg +4-10 EUR bringen (Entry ~0.40 → Resolution 1.0).
-            # SL (-40%) bleibt aktiv als Downside-Protection.
-            # ---------------------------------------------------------------
-            if position.side == "YES":
-                continue
-
-            # ---------------------------------------------------------------
             # TP3: +25% -> restliche 20% schliessen
             # ---------------------------------------------------------------
             if tp_entry.get("tp2_hit") and not tp_entry.get("tp3_hit") and unrealized_pct >= self.TP3_PCT:

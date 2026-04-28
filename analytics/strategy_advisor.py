@@ -345,8 +345,10 @@ def derive_strategy_advice(
             if isinstance(stats, dict)
             and int(stats.get("trades", 0) or 0) >= 3
             and _safe_float(stats.get("total_pnl_eur")) < 0
-            # Nur als schwach markieren wenn YES-spezifische Performance ebenfalls negativ
-            and _safe_float(yes_city_stats.get(city, {}).get("total_pnl_eur", 0.0)) < 0
+            and (
+                city not in yes_city_stats
+                or _safe_float(yes_city_stats.get(city, {}).get("total_pnl_eur", 0.0)) < 0
+            )
         ],
         key=lambda item: (item["total_pnl_eur"], item["win_rate_pct"]),
     )[:3]

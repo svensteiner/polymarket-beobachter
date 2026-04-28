@@ -26,7 +26,6 @@ AGENTIC_DIR = PROJECT_ROOT / "agentic"
 
 # Default limits — tightened to match new intelligent strategy
 DEFAULT_MAX_OPEN_POSITIONS = 10
-DEFAULT_MAX_POSITIONS_PER_CITY = 2   # Reduced from 3: concentrate capital on best signals
 DEFAULT_MAX_ENTRY_PRICE = 0.80       # Matches weather.yaml MAX_ODDS
 DEFAULT_MIN_ENTRY_PRICE = 0.30       # Allow spring weather YES bets at 30-39%; near-zero lottery trap handled by simulator MIN_YES_ENTRY_PRICE=0.05
 DEFAULT_MIN_EDGE = 0.40              # Raised from 0.12: only enter high-confidence divergences

@@ -12,8 +12,6 @@ Schutzregeln wirken nur im Paper-Trader:
 - Maximale erlaubte Entry-Preise temporär deckeln
 """
 
-from __future__ import annotations
-
 import json
 import logging
 import re

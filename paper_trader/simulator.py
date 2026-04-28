@@ -304,22 +304,6 @@ def _entry_quality_gate(proposal: Proposal, market_type: str) -> Tuple[bool, str
             f"(model={edge + implied_prob:.1%} vs market={implied_prob:.1%})"
         )
 
-    # YES/at_or_above block: data shows 2 trades, 50% WR but -17.38 EUR total
-    # (avg -8.69 EUR/trade). Despite an acceptable win rate, the losing side has
-    # outsized impact. Root cause: on resolution day, at_or_above YES prices spike
-    # sharply toward 0 as the temperature threshold is approached but not cleared —
-    # this triggers SL even when the position is fundamentally correct.
-    # Mechanism mirrors NO-between/exact: resolution-day intraday noise dominates.
-    # Evidence (segment_analysis.json): YES-at_or_above -17.38 EUR vs YES-between
-    # 100% WR (1 trade) and YES-at_or_below marginal +0.36 EUR.
-    # Re-enable when: ≥10 YES/at_or_above trades show ≥40% WR and positive total P&L.
-    if not is_no_bet and market_type == "at_or_above":
-        return False, (
-            "YES/at_or_above market blocked: 50% WR but -17.38 EUR total (2 trades, "
-            "avg -8.69 EUR/trade — resolution-day spike risk). "
-            "Re-enable after ≥10 YES/at_or_above trades show ≥40% WR and positive P&L."
-        )
-
     # SL cooling-off: block re-entry on a market that recently hit stop-loss.
     # Pattern: NYC between NO hit SL twice in one day → -8.4 EUR double-loss.
     # After SL, the same proposal re-enters at the new (lower) market price because
@@ -989,27 +973,6 @@ class ExecutionSimulator:
         from paper_trader.kelly import _get_caps as _kelly_get_caps
         _kmin, _kmax, _ = _kelly_get_caps()
         position_eur = max(_kmin, min(_kmax, position_eur))
-
-        # at_or_above YES position size cap (cold-bias risk mitigation):
-        # Historical data: YES at_or_above 2 trades, avg PnL=-8.69 EUR, WR=50%.
-        # The single large loss (Atlanta -18.46 EUR on 20 EUR stake, 2026-04-19)
-        # shows the model systematically overestimates HOT-day probability in the
-        # mid-probability range (0.30–0.65). When the market prices YES at 30–65%
-        # for a high-temperature threshold, model uncertainty is highest and a wrong
-        # prediction produces catastrophic loss proportional to stake size.
-        # Mitigation: cap at 5 EUR until YES at_or_above WR ≥ 60% over 5+ trades.
-        # Rollback: remove cap when YES at_or_above WR ≥ 60% over 5+ trades.
-        if side == "YES" and market_type == "at_or_above":
-            _mid_price = float(snapshot.mid_price or 0.5)
-            if 0.30 <= _mid_price <= 0.65:
-                _at_or_above_cap = 5.0
-                if position_eur > _at_or_above_cap:
-                    logger.info(
-                        "at_or_above YES size capped %.1f→%.1f EUR (mid=%.1f%%). "
-                        "Cold-bias guard: model overestimates HOT-day probability in mid-range.",
-                        position_eur, _at_or_above_cap, _mid_price * 100,
-                    )
-                    position_eur = _at_or_above_cap
 
         # Calculate entry price with slippage
         price_result = calculate_entry_price(snapshot, side)
