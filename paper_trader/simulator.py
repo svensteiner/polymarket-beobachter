@@ -1129,6 +1129,7 @@ class ExecutionSimulator:
                 )
             ),
             city=new_city,
+            liquidity_bucket=liq_bucket or None,
         )
 
         # Create trade record
@@ -1237,6 +1238,7 @@ class ExecutionSimulator:
             hours_to_resolution=position.hours_to_resolution,
             edge_bucket=position.edge_bucket,
             city=getattr(position, "city", None),
+            liquidity_bucket=getattr(position, "liquidity_bucket", None),
         )
 
         record = PaperTradeRecord(
@@ -1334,6 +1336,7 @@ class ExecutionSimulator:
             hours_to_resolution=position.hours_to_resolution,
             edge_bucket=position.edge_bucket,
             city=getattr(position, "city", None),
+            liquidity_bucket=getattr(position, "liquidity_bucket", None),
         )
 
         # Create trade record

@@ -151,6 +151,7 @@ class PaperPosition:
     hours_to_resolution: Optional[float] = None
     edge_bucket: Optional[str] = None
     city: Optional[str] = None               # City extracted from market_question (for city-guardrails)
+    liquidity_bucket: Optional[str] = None   # HIGH/MEDIUM/LOW/UNKNOWN at entry time (for backtest analysis)
 
     # Hardcoded governance notice
     governance_notice: str = field(
@@ -185,6 +186,7 @@ class PaperPosition:
             "hours_to_resolution": self.hours_to_resolution,
             "edge_bucket": self.edge_bucket,
             "city": self.city,
+            "liquidity_bucket": self.liquidity_bucket,
             "governance_notice": self.governance_notice,
         }
 
@@ -220,6 +222,7 @@ class PaperPosition:
             hours_to_resolution=data.get("hours_to_resolution"),
             edge_bucket=data.get("edge_bucket"),
             city=data.get("city"),
+            liquidity_bucket=data.get("liquidity_bucket"),
         )
 
 

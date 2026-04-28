@@ -419,6 +419,7 @@ def _execute_addon(
         realized_pnl_eur=None,
         pnl_pct=None,
         city=getattr(base_position, "city", None),
+        liquidity_bucket=getattr(base_position, "liquidity_bucket", None),
     )
 
     record = PaperTradeRecord(
