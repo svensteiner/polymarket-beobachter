@@ -772,6 +772,12 @@ class ExecutionSimulator:
                 f"SKIP (LOW-liq): {proposal.market_id} spread={spread_str} edge={proposal.edge:+.3f} "
                 f"— entry blocked (audit-confirmed: 9/9 historical LOW-liq lost -67%+)"
             )
+            if float(getattr(proposal, "edge", 0) or 0) > 0:
+                try:
+                    from paper_trader.shadow_tracker import record_shadow_entry
+                    record_shadow_entry(proposal, "low_liq_block", skip_reason[:200])
+                except Exception:
+                    pass
             return (None, record)
 
         # Near-resolution MEDIUM-liq guard (Feature Flag: NEAR_RES_LIQ_GUARD=1 in .env)
