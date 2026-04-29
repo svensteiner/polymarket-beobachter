@@ -125,4 +125,59 @@ def weather_observation_to_proposal(observation) -> Optional["Proposal"]:
     return proposal
 
 
+# =============================================================================
+# GENERAL MARKET SIGNAL ADAPTER
+# =============================================================================
 
+
+def general_eval_to_proposal(result) -> Optional["Proposal"]:
+    """
+    Convert a GeneralEvalResult to a Proposal for paper trading.
+
+    Only converts high-confidence results with abs_edge >= 0.20.
+    """
+    from proposals.models import Proposal, ProposalCoreCriteria, generate_proposal_id
+    from datetime import datetime, timezone
+
+    if not result or result.abs_edge < 0.20:
+        return None
+
+    if result.confidence not in ("high",):
+        return None
+
+    market_id = result.market_id
+    if not market_id:
+        return None
+
+    edge = result.edge
+    if abs(edge) <= 0 or abs(edge) > 0.95:
+        return None
+
+    core_criteria = ProposalCoreCriteria(
+        liquidity_ok=True,
+        volume_ok=True,
+        time_to_resolution_ok=True,
+        data_quality_ok=True,
+    )
+
+    implied_side = "YES" if edge > 0 else "NO"
+    justification = (
+        f"[GeneralMarket/{result.category}] {implied_side}: "
+        f"LLM={result.llm_yes_probability:.2f} vs Market={result.market_yes_price:.2f} "
+        f"| {result.reasoning[:120]}"
+    )
+
+    return Proposal(
+        proposal_id=generate_proposal_id(),
+        timestamp=datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S") + "Z",
+        market_id=market_id,
+        market_question=result.question[:200],
+        decision="TRADE",
+        implied_probability=result.market_yes_price,
+        model_probability=result.llm_yes_probability,
+        edge=round(edge, 4),
+        core_criteria=core_criteria,
+        warnings=(),
+        confidence_level="HIGH",
+        justification_summary=justification,
+    )

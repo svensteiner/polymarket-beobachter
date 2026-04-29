@@ -3,13 +3,10 @@
 # =============================================================================
 #
 # Scans all non-weather Polymarket markets for LLM-computed edge.
-# OBSERVE-ONLY: logs observations, does not paper trade.
+# Paper trading enabled when config/modules.yaml → general_market_observer.settings.paper_trade=true
 #
 # Logs to: output/general_market_observations.jsonl
 # Summary: output/general_market_summary.json
-#
-# Next step once edge is proven: enable paper trading via
-# setting GENERAL_MARKET_PAPER_TRADE=true in config/modules.yaml
 # =============================================================================
 
 import json
@@ -27,6 +24,22 @@ SUMMARY_FILE = "output/general_market_summary.json"
 MIN_EDGE_THRESHOLD = 0.12
 # High-confidence threshold (flag for future paper trading)
 HIGH_EDGE_THRESHOLD = 0.20
+
+
+def _is_paper_trade_enabled() -> bool:
+    """Read paper_trade flag from config/modules.yaml."""
+    try:
+        import yaml
+        modules_path = Path(__file__).parents[1] / "config" / "modules.yaml"
+        data = yaml.safe_load(modules_path.read_text(encoding="utf-8"))
+        return bool(
+            (data or {})
+            .get("general_market_observer", {})
+            .get("settings", {})
+            .get("paper_trade", False)
+        )
+    except Exception:
+        return False
 
 
 def _load_collected_markets(base_dir: Path) -> List[Dict[str, Any]]:
@@ -125,14 +138,35 @@ def run_general_market_observation(
             f.write(json.dumps(entry) + "\n")
         written += 1
 
-    # Build summary
+    # Paper trading: convert high-edge HIGH-confidence results to proposals
     high_edge = [r for r in results if r.abs_edge >= HIGH_EDGE_THRESHOLD]
+    paper_trade_enabled = _is_paper_trade_enabled()
+    proposals_written = 0
+    if paper_trade_enabled and high_edge:
+        try:
+            from proposals.signal_adapter import general_eval_to_proposal
+            from proposals.storage import get_storage
+            storage = get_storage()
+            for r in high_edge:
+                proposal = general_eval_to_proposal(r)
+                if proposal is not None:
+                    storage.save_proposal(proposal)
+                    proposals_written += 1
+                    logger.info(
+                        "[GeneralMarket] Paper proposal: %s (%s edge=%.2f)",
+                        r.question[:60], r.side, r.abs_edge,
+                    )
+        except Exception as e:
+            logger.warning("[GeneralMarket] Paper trade write failed: %s", e)
+
     summary = {
         "generated_at": ts,
         "total_markets_seen": len(markets),
         "non_weather_evaluated": len(non_weather),
         "observations_with_edge": written,
         "high_edge_count": len(high_edge),
+        "paper_proposals_written": proposals_written,
+        "mode": "PAPER_TRADE" if paper_trade_enabled else "OBSERVE_ONLY",
         "top_opportunities": [
             {
                 "market_id": r.market_id,
@@ -146,8 +180,6 @@ def run_general_market_observation(
             }
             for r in results[:5]
         ],
-        "mode": "OBSERVE_ONLY",
-        "note": "Paper trading disabled. Enable GENERAL_MARKET_PAPER_TRADE in modules.yaml once edge is proven.",
     }
 
     summary_path = base_dir / SUMMARY_FILE
