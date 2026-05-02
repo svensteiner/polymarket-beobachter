@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-02T11:26:00.384484",
+  "generated_at": "2026-05-02T12:24:41.544607",
   "mode": "balance",
   "summary": "BALANCE: Win-Rate 31.2% | P&L -54.72 EUR | Attack 0.00 | 0 offene Positionen | 5 Empfehlung(en)",
   "metrics_snapshot": {
@@ -19,13 +19,13 @@
       "performance": 0.08,
       "calibration": 0.15,
       "edge": 0.0,
-      "arbitrage": 0.45,
+      "arbitrage": 0.633,
       "smart_money": 0.0,
       "discipline_penalty": 0.24
     },
     "attack_signals": {
       "strong_edge_buckets": 0,
-      "arbitrage_opportunities": 1,
+      "arbitrage_opportunities": 2,
       "smart_money_wallets": 0,
       "weak_cities": 3
     }
@@ -92,19 +92,35 @@
   "arbitrage_opportunities": [
     {
       "type": "ARBITRAGE_OPPORTUNITY",
-      "city": "Shanghai",
+      "city": "Cape Town",
       "direction": "above",
-      "threshold_lower_f": 66.2,
+      "threshold_lower_f": 62.6,
+      "threshold_higher_f": 64.4,
+      "odds_lower": 0.256,
+      "odds_higher": 0.635,
+      "inconsistency_magnitude": 0.379,
+      "market_id_lower": "2122668",
+      "market_id_higher": "2122669",
+      "question_lower": "Will the highest temperature in Cape Town be 17°C on May 2?",
+      "question_higher": "Will the highest temperature in Cape Town be 18°C on May 2?",
+      "detected_at": "2026-05-02T12:04:29.146043",
+      "description": "Inkonsistenz: P(temp>64F) = 63.5% > P(temp>63F) = 25.6% in Cape Town"
+    },
+    {
+      "type": "ARBITRAGE_OPPORTUNITY",
+      "city": "London",
+      "direction": "above",
+      "threshold_lower_f": 46.4,
       "threshold_higher_f": 69.8,
-      "odds_lower": 0.0065,
-      "odds_higher": 0.145,
-      "inconsistency_magnitude": 0.1385,
-      "market_id_lower": "2130011",
-      "market_id_higher": "2130013",
-      "question_lower": "Will the highest temperature in Shanghai be 19°C on May 3?",
-      "question_higher": "Will the highest temperature in Shanghai be 21°C on May 3?",
-      "detected_at": "2026-05-02T08:32:05.212827",
-      "description": "Inkonsistenz: P(temp>70F) = 14.5% > P(temp>66F) = 0.7% in Shanghai"
+      "odds_lower": 0.0005,
+      "odds_higher": 0.265,
+      "inconsistency_magnitude": 0.2645,
+      "market_id_lower": "2122004",
+      "market_id_higher": "2122166",
+      "question_lower": "Will the lowest temperature in London be 8°C on May 2?",
+      "question_higher": "Will the highest temperature in London be 21°C on May 2?",
+      "detected_at": "2026-05-02T12:04:29.146043",
+      "description": "Inkonsistenz: P(temp>70F) = 26.5% > P(temp>46F) = 0.1% in London"
     }
   ],
   "smart_money_summary": {
@@ -119,7 +135,7 @@
       "action": "Eintrittsfilter anziehen und nur groessere Fehlbewertungen handeln",
       "reason": "Win-Rate 31.2% bei Stop-Loss-Anteil 31%. Das spricht eher fuer schlechte Entry-Selektion als fuer zu spaete Exits.",
       "suggested_changes": {
-        "MIN_EDGE": 0.29,
+        "MIN_EDGE": 0.3,
         "MIN_EDGE_ABSOLUTE": 0.05
       }
     },
@@ -163,14 +179,14 @@
       "priority": "HIGH",
       "area": "arbitrage",
       "action": "Logische Preisinkonsistenzen hedgen statt Richtung zu raten",
-      "reason": "1 Arbitrage-Kandidat(en) gefunden. Diese Setups sind meist besser als reine Directional Bets.",
+      "reason": "2 Arbitrage-Kandidat(en) gefunden. Diese Setups sind meist besser als reine Directional Bets.",
       "suggested_changes": {
-        "focus_city": "Shanghai",
+        "focus_city": "Cape Town",
         "focus_direction": "above",
-        "focus_delta": 0.1385,
+        "focus_delta": 0.379,
         "review_market_ids": [
-          "2130011",
-          "2130013"
+          "2122668",
+          "2122669"
         ]
       }
     }
