@@ -20,6 +20,7 @@
 import sys
 import json
 import logging
+import os
 import ssl
 import time
 from datetime import datetime
@@ -38,6 +39,28 @@ logger = logging.getLogger(__name__)
 
 # Error log for persistent snapshot failures
 _SNAPSHOT_ERROR_LOG = Path(__file__).parent.parent / "logs" / "snapshot_errors.log"
+
+DEFAULT_SNAPSHOT_TIMEOUT = int(os.getenv("SNAPSHOT_TIMEOUT_SECONDS", "8"))
+DEFAULT_SNAPSHOT_RETRIES = int(os.getenv("SNAPSHOT_MAX_RETRIES", "1"))
+SNAPSHOT_RETRY_DELAY_SECONDS = float(os.getenv("SNAPSHOT_RETRY_DELAY_SECONDS", "1"))
+SNAPSHOT_BATCH_DEADLINE_SECONDS = float(os.getenv("SNAPSHOT_BATCH_DEADLINE_SECONDS", "45"))
+SNAPSHOT_NEGATIVE_CACHE_TTL_SECONDS = float(os.getenv("SNAPSHOT_NEGATIVE_CACHE_TTL_SECONDS", "900"))
+
+_SNAPSHOT_NEGATIVE_CACHE: Dict[str, float] = {}
+
+
+def _negative_cache_hit(market_id: str) -> bool:
+    cached_at = _SNAPSHOT_NEGATIVE_CACHE.get(str(market_id))
+    if cached_at is None:
+        return False
+    if time.monotonic() - cached_at > SNAPSHOT_NEGATIVE_CACHE_TTL_SECONDS:
+        _SNAPSHOT_NEGATIVE_CACHE.pop(str(market_id), None)
+        return False
+    return True
+
+
+def _remember_missing_snapshot(market_id: str) -> None:
+    _SNAPSHOT_NEGATIVE_CACHE[str(market_id)] = time.monotonic()
 
 def _log_snapshot_error(market_id: str, error_text: str) -> None:
     """Append snapshot failure to persistent error log."""
@@ -103,7 +126,7 @@ class MarketSnapshotClient:
 
     GAMMA_API_BASE = "https://gamma-api.polymarket.com"
 
-    def __init__(self, timeout: int = 30, max_retries: int = 3):
+    def __init__(self, timeout: int = DEFAULT_SNAPSHOT_TIMEOUT, max_retries: int = DEFAULT_SNAPSHOT_RETRIES):
         """
         Initialize the snapshot client.
 
@@ -186,6 +209,10 @@ class MarketSnapshotClient:
             MarketSnapshot if available, None otherwise
         """
         try:
+            if _negative_cache_hit(market_id):
+                logger.debug("Snapshot negative-cache hit for %s", market_id)
+                return None
+
             # Try direct Gamma API fetch first (fast, single market)
             market_data = self._fetch_gamma_market(market_id)
 
@@ -199,6 +226,7 @@ class MarketSnapshotClient:
 
             if market_data is None:
                 logger.warning(f"Market not found: {market_id}")
+                _remember_missing_snapshot(market_id)
                 return None
 
             return self._create_snapshot(market_data)
@@ -233,21 +261,42 @@ class MarketSnapshotClient:
             Dictionary mapping market_id to MarketSnapshot (or None)
         """
         results = {}
-        _RETRY_DELAY = 5  # seconds before one retry attempt
+        batch_started = time.monotonic()
 
         for market_id in market_ids:
+            if _negative_cache_hit(market_id):
+                results[market_id] = None
+                continue
+
+            if time.monotonic() - batch_started > SNAPSHOT_BATCH_DEADLINE_SECONDS:
+                remaining = [mid for mid in market_ids if mid not in results]
+                for remaining_id in remaining:
+                    results[remaining_id] = None
+                logger.warning(
+                    "Snapshot batch deadline reached after %.1fs; skipped %d/%d remaining markets",
+                    time.monotonic() - batch_started,
+                    len(remaining),
+                    len(market_ids),
+                )
+                break
+
             try:
                 market_data = self._fetch_gamma_market(market_id)
                 if market_data is None:
                     # Single retry after short delay (transient network/rate-limit)
-                    logger.debug(f"First attempt failed for {market_id}, retrying in {_RETRY_DELAY}s")
-                    time.sleep(_RETRY_DELAY)
+                    logger.debug(
+                        "First attempt failed for %s, retrying in %.1fs",
+                        market_id,
+                        SNAPSHOT_RETRY_DELAY_SECONDS,
+                    )
+                    time.sleep(SNAPSHOT_RETRY_DELAY_SECONDS)
                     market_data = self._fetch_gamma_market(market_id)
 
                 if market_data:
                     results[market_id] = self._create_snapshot(market_data)
                 else:
                     results[market_id] = None
+                    _remember_missing_snapshot(market_id)
                     error_msg = "market not found in Gamma API after retry"
                     logger.warning(f"Snapshot unavailable for {market_id}: {error_msg}")
                     _log_snapshot_error(market_id, error_msg)

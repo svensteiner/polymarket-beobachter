@@ -17,7 +17,10 @@ from pathlib import Path
 
 logger = logging.getLogger("brain")
 
-SOUL_PATH = Path(__file__).parent / "SOUL.md"
+AGENT_ROOT = Path(__file__).parent
+SOUL_PATH = AGENT_ROOT / "SOUL.md"
+PROJECT_SOUL_PATH = AGENT_ROOT / "project" / "SOUL.md"
+PROJECT_AGENTS_PATH = AGENT_ROOT / "project" / "AGENTS.md"
 CONFIG_PATH = Path(__file__).parent / "config.json"
 
 _session_usage: dict = {
@@ -36,8 +39,15 @@ def _load_config() -> dict:
 
 
 def _load_soul() -> str:
+    parts = []
     if SOUL_PATH.exists():
-        return SOUL_PATH.read_text(encoding="utf-8")
+        parts.append(SOUL_PATH.read_text(encoding="utf-8"))
+    if PROJECT_SOUL_PATH.exists():
+        parts.append(PROJECT_SOUL_PATH.read_text(encoding="utf-8"))
+    if PROJECT_AGENTS_PATH.exists():
+        parts.append(PROJECT_AGENTS_PATH.read_text(encoding="utf-8"))
+    if parts:
+        return "\n\n---\n\n".join(parts)
     return "Du bist ein autonomer KI-Agent. Handle verantwortungsbewusst."
 
 

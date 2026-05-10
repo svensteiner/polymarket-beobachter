@@ -27,6 +27,8 @@
 import hashlib
 import json
 import logging
+import os
+import time
 import uuid
 from dataclasses import dataclass, asdict
 from datetime import datetime, timezone
@@ -51,6 +53,11 @@ INDEX_FILE = "index.json"
 
 # Valid resolution values
 VALID_RESOLUTIONS = {"YES", "NO", "INVALID", "CANCELLED", "AMBIGUOUS"}
+
+# Keep calibration useful but non-blocking. Resolution checks are read-only and
+# can lag safely; the 15-minute pipeline must not hang on old Gamma endpoints.
+RESOLUTION_REQUEST_TIMEOUT_SECONDS = float(os.getenv("RESOLUTION_REQUEST_TIMEOUT_SECONDS", "4"))
+RESOLUTION_RUN_DEADLINE_SECONDS = float(os.getenv("RESOLUTION_RUN_DEADLINE_SECONDS", "30"))
 
 # Valid decision values
 VALID_DECISIONS = {"TRADE", "NO_TRADE", "INSUFFICIENT_DATA"}
@@ -921,7 +928,7 @@ class ResolutionChecker:
             url = f"https://gamma-api.polymarket.com/markets/{market_id}"
             ctx = ssl.create_default_context()
             req = Request(url, headers={"User-Agent": "PolymarketBeobachter/1.0"})
-            resp = urlopen(req, timeout=10, context=ctx)
+            resp = urlopen(req, timeout=RESOLUTION_REQUEST_TIMEOUT_SECONDS, context=ctx)
             market = _json.loads(resp.read())
 
             if not market.get("closed"):
@@ -973,7 +980,11 @@ class ResolutionChecker:
             logger.warning(f"Failed to check resolution for {market_id}: {e}")
             return None
 
-    def update_resolutions(self, max_checks: int = 50) -> Dict[str, Any]:
+    def update_resolutions(
+        self,
+        max_checks: int = 50,
+        max_seconds: float = RESOLUTION_RUN_DEADLINE_SECONDS,
+    ) -> Dict[str, Any]:
         """
         Check unresolved markets and record any new resolutions.
 
@@ -997,9 +1008,23 @@ class ResolutionChecker:
         new_resolutions = 0
         errors = 0
 
+        started = time.monotonic()
+        checked = 0
+        deadline_hit = False
+
         for market_id in to_check:
+            if time.monotonic() - started > max_seconds:
+                deadline_hit = True
+                logger.warning(
+                    "Resolution update deadline reached after %.1fs; checked %d/%d markets",
+                    time.monotonic() - started,
+                    checked,
+                    len(to_check),
+                )
+                break
             try:
                 resolution = self.check_market_resolution(market_id)
+                checked += 1
                 if resolution:
                     success, _ = self.storage.write_resolution(resolution)
                     if success:
@@ -1009,10 +1034,11 @@ class ResolutionChecker:
                 errors += 1
 
         return {
-            "checked": len(to_check),
+            "checked": checked,
             "new_resolutions": new_resolutions,
             "errors": errors,
             "remaining_unresolved": len(unresolved) - new_resolutions,
+            "deadline_hit": deadline_hit,
         }
 
 

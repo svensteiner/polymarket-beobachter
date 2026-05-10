@@ -37,3 +37,66 @@ Traceback (most recent call last):
   File "C:\Program Files\Python312\Lib\pstats.py", line 518, in print_line
     print(func_std_string(func), file=self.stream)
 OSError: [Errno 22] Invalid argument
+
+============================================================
+CRASH: 2026-05-09T16:41:00.741154
+PID: 44632
+Traceback (most recent call last):
+  File "C:\Users\botrunner\projects\polymarket-beobachter\cockpit.py", line 866, in <module>
+    main()
+  File "C:\Users\botrunner\projects\polymarket-beobachter\cockpit.py", line 858, in main
+    sys.exit(run_once())
+             ^^^^^^^^^^
+  File "C:\Users\botrunner\projects\polymarket-beobachter\cockpit.py", line 472, in run_once
+    result = run_pipeline_with_progress()
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\botrunner\projects\polymarket-beobachter\cockpit.py", line 432, in run_pipeline_with_progress
+    result = orchestrator.run_pipeline()
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\botrunner\projects\polymarket-beobachter\app\orchestrator.py", line 228, in run_pipeline
+    outcome_result = self._run_outcome_tracker(weather_result.data)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\botrunner\projects\polymarket-beobachter\app\orchestrator.py", line 1160, in _run_outcome_tracker
+    resolution_result = checker.update_resolutions(max_checks=50)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\botrunner\projects\polymarket-beobachter\core\outcome_tracker.py", line 1002, in update_resolutions
+    resolution = self.check_market_resolution(market_id)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\botrunner\projects\polymarket-beobachter\core\outcome_tracker.py", line 924, in check_market_resolution
+    resp = urlopen(req, timeout=10, context=ctx)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Program Files\Python312\Lib\urllib\request.py", line 215, in urlopen
+    return opener.open(url, data, timeout)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Program Files\Python312\Lib\urllib\request.py", line 515, in open
+    response = self._open(req, data)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Program Files\Python312\Lib\urllib\request.py", line 532, in _open
+    result = self._call_chain(self.handle_open, protocol, protocol +
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Program Files\Python312\Lib\urllib\request.py", line 492, in _call_chain
+    result = func(*args)
+             ^^^^^^^^^^^
+  File "C:\Program Files\Python312\Lib\urllib\request.py", line 1392, in https_open
+    return self.do_open(http.client.HTTPSConnection, req,
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Program Files\Python312\Lib\urllib\request.py", line 1344, in do_open
+    h.request(req.get_method(), req.selector, req.data, headers,
+  File "C:\Program Files\Python312\Lib\http\client.py", line 1336, in request
+    self._send_request(method, url, body, headers, encode_chunked)
+  File "C:\Program Files\Python312\Lib\http\client.py", line 1382, in _send_request
+    self.endheaders(body, encode_chunked=encode_chunked)
+  File "C:\Program Files\Python312\Lib\http\client.py", line 1331, in endheaders
+    self._send_output(message_body, encode_chunked=encode_chunked)
+  File "C:\Program Files\Python312\Lib\http\client.py", line 1091, in _send_output
+    self.send(msg)
+  File "C:\Program Files\Python312\Lib\http\client.py", line 1035, in send
+    self.connect()
+  File "C:\Program Files\Python312\Lib\http\client.py", line 1470, in connect
+    super().connect()
+  File "C:\Program Files\Python312\Lib\http\client.py", line 1001, in connect
+    self.sock = self._create_connection(
+                ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Program Files\Python312\Lib\socket.py", line 850, in create_connection
+    sock.connect(sa)
+KeyboardInterrupt

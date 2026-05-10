@@ -4,6 +4,7 @@
 import logging
 import os
 import time
+from html import escape
 from datetime import datetime
 from typing import Optional, Dict, Any
 import requests
@@ -230,3 +231,68 @@ def send_pipeline_summary(pipeline_result: Dict[str, Any]) -> bool:
     parts.append(i_cht + " Markt-Lage: <b>" + condition + "</b>" + NL)
     parts.append(i_clk + " " + datetime.now().strftime("%H:%M:%S"))
     return send_message("".join(parts), disable_notification=True)
+
+
+def send_live_readiness_report(summary: Dict[str, Any]) -> bool:
+    """Sende kompakten Live-Readiness-/Edge-Bericht fuer den Dauerlauf."""
+    state = str(summary.get("state", "UNKNOWN"))
+    bot_health = str(summary.get("bot_health_status", "UNKNOWN"))
+    actionable = int(summary.get("actionable_edge_count", 0) or 0)
+    edge_obs = int(summary.get("edge_observations", 0) or 0)
+    entered = int(summary.get("paper_positions_entered", 0) or 0)
+    top_block = str(summary.get("top_guardrail_block_reason", "") or "n/a")
+    guardrail_ratio = float(summary.get("guardrail_blocked_ratio", 0.0) or 0.0)
+    duration = float(summary.get("duration_seconds", 0.0) or 0.0)
+    run_id = str(summary.get("run_id", "N/A"))
+    market_condition = str(summary.get("market_condition", "UNKNOWN"))
+    advisor_mode = str(summary.get("strategy_advisor_mode", "N/A"))
+    advisor_action = str(summary.get("strategy_advisor_top_action", "") or "keine Empfehlung")
+    drawdown = float(summary.get("drawdown_pct", 0.0) or 0.0)
+    recovery = bool(summary.get("drawdown_recovery_mode", False))
+    hunter_posture = str(summary.get("edge_hunter_posture", "UNKNOWN") or "UNKNOWN")
+    hunter_score = int(summary.get("edge_hunter_score", 0) or 0)
+    hunter_next = str(summary.get("edge_hunter_next_action", "") or "")
+    NL = chr(10)
+    scout_targets = summary.get("edge_hunter_scout_targets", []) or []
+    scout_line = ""
+    if isinstance(scout_targets, list) and scout_targets:
+        top = scout_targets[0] or {}
+        scout_line = (
+            "Scout: <b>" + escape(str(top.get("city", "?"))) + "</b> | $"
+            + escape(format(float(top.get("liquidity", 0) or 0), ",.0f"))
+            + " liq" + NL
+        )
+
+    if state != "OK" or bot_health not in {"HEALTHY", "OK"}:
+        verdict = "PAPER_ONLY"
+        reason = "Bot/Run nicht sauber genug fuer Live."
+    elif recovery or drawdown >= 10.0:
+        verdict = "PAPER_ONLY"
+        reason = "Drawdown-/Recovery-Schutz aktiv."
+    elif actionable <= 0:
+        verdict = "WAIT"
+        reason = "Keine handelbare Edge."
+    elif top_block == "intake_spread_filter" and guardrail_ratio >= 0.8:
+        verdict = "WAIT"
+        reason = "Edge aktuell vor allem Spread-/Liquiditaetsproblem."
+    else:
+        verdict = "LIVE_OK"
+        reason = "Mindestens eine handelbare Edge bei gesundem Bot."
+
+    t = (
+        "<b>LIVE-READINESS / EDGE REPORT</b>" + NL
+        + datetime.now().strftime("%Y-%m-%d %H:%M") + NL + NL
+        + "Entscheidung: <b>" + verdict + "</b>" + NL
+        + "Grund: " + reason + NL + NL
+        + "Run: <code>" + escape(run_id) + "</code>" + NL
+        + "Status: <b>" + escape(state) + "</b> | Health: <b>" + escape(bot_health) + "</b>" + NL
+        + "Dauer: <b>" + format(duration, ".0f") + "s</b> | Drawdown: <b>" + format(drawdown, ".1f") + "%</b>" + NL
+        + "Edge: detected=<b>" + str(edge_obs) + "</b>, actionable=<b>" + str(actionable) + "</b>" + NL
+        + "Hunter: <b>" + escape(hunter_posture) + "</b> | <b>" + str(hunter_score) + "/10</b>" + NL
+        + scout_line
+        + "Paper Entries: <b>" + str(entered) + "</b>" + NL
+        + "Guardrails: <b>" + format(guardrail_ratio, ".0%") + "</b> blocked | Top: <code>" + escape(top_block) + "</code>" + NL
+        + "Markt: <b>" + escape(market_condition) + "</b> | Advisor: <b>" + escape(advisor_mode) + "</b>" + NL
+        + "Naechster Hebel: " + escape((hunter_next or advisor_action)[:180])
+    )
+    return send_message(t, disable_notification=True)

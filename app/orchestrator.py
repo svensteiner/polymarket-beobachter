@@ -41,6 +41,8 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
+LIVE_READINESS_REPORT_INTERVAL_HOURS = float(os.getenv("LIVE_READINESS_REPORT_INTERVAL_HOURS", "12"))
+
 
 class RunState(Enum):
     """Pipeline run state."""
@@ -304,6 +306,13 @@ class Orchestrator:
         result.summary["agent_hypothesis"] = agent_result.get("hypothesis", "")
         result.summary["agent_proposed_actions"] = len(agent_result.get("proposed_actions", []))
 
+        edge_hunter = self._run_edge_hunter(result.summary)
+        result.summary["edge_hunter_posture"] = edge_hunter.get("posture", "UNKNOWN")
+        result.summary["edge_hunter_live_gate"] = edge_hunter.get("live_gate", "WAIT")
+        result.summary["edge_hunter_score"] = edge_hunter.get("score", 0)
+        result.summary["edge_hunter_next_action"] = edge_hunter.get("next_action", "")
+        result.summary["edge_hunter_scout_targets"] = edge_hunter.get("scout", {}).get("targets", [])
+
         # Step 6: Write status
         print("[6/6] Status schreiben ...", end="", flush=True)
         status_result = self._write_status_summary(result)
@@ -320,6 +329,9 @@ class Orchestrator:
                 send_pipeline_summary(result.summary)
         except Exception as e:
             logger.debug(f"Telegram Pipeline Summary fehlgeschlagen: {e}")
+
+        # Telegram Live-Readiness Report (alle 12h, auch wenn kein Trade passiert)
+        self._maybe_send_live_readiness_report(result.summary)
 
         # Feedback-Loop: Rule-Based Check nach jeder neuen geschlossenen Position
         # Reagiert schneller als der Evolution-Tick (der alle 10 Runs laeuft)
@@ -467,6 +479,43 @@ class Orchestrator:
                         pass
         except Exception as e:
             logger.debug(f"Arbitrage Scan fehlgeschlagen (unkritisch): {e}")
+
+    def _maybe_send_live_readiness_report(self, summary: Dict[str, Any]) -> None:
+        """Sende Live-Readiness-Bericht hoechstens alle N Stunden via Telegram."""
+        state_file = self.logs_dir / "live_readiness_report_state.json"
+        now = datetime.now()
+        interval_seconds = max(1.0, LIVE_READINESS_REPORT_INTERVAL_HOURS) * 3600
+
+        try:
+            if state_file.exists():
+                state = json.loads(state_file.read_text(encoding="utf-8"))
+                last_sent_raw = state.get("last_sent_at")
+                if last_sent_raw:
+                    last_sent = datetime.fromisoformat(last_sent_raw)
+                    if (now - last_sent).total_seconds() < interval_seconds:
+                        return
+
+            from notifications.telegram import is_configured, send_live_readiness_report
+
+            if not is_configured():
+                logger.debug("Live-Readiness Telegram Report uebersprungen: Telegram nicht konfiguriert")
+                return
+
+            sent = send_live_readiness_report(summary)
+            if sent:
+                payload = {
+                    "last_sent_at": now.isoformat(),
+                    "interval_hours": LIVE_READINESS_REPORT_INTERVAL_HOURS,
+                    "run_id": summary.get("run_id"),
+                    "actionable_edge_count": summary.get("actionable_edge_count", 0),
+                    "state": summary.get("state", "UNKNOWN"),
+                }
+                tmp = state_file.with_suffix(".tmp")
+                tmp.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+                tmp.replace(state_file)
+                logger.info("Live-Readiness Telegram Report gesendet")
+        except Exception as e:
+            logger.debug("Live-Readiness Telegram Report fehlgeschlagen (unkritisch): %s", e)
 
     def _run_gamma_discovery(self) -> None:
         """Suche neue Wetter-Maerkte via Gamma API (non-blocking, max 1x pro Stunde)."""
@@ -960,6 +1009,13 @@ class Orchestrator:
                 eligible = get_eligible_proposals(run_id=run_id)
             guardrail_summary = build_guardrail_summary(run_id=run_id)
             logger.info(f"Found {len(eligible)} eligible proposals for paper trading")
+            blocked_by_reason = guardrail_summary.get("blocked_by_reason", {}) or {}
+            top_block_reason = ""
+            if blocked_by_reason:
+                top_block_reason = max(
+                    blocked_by_reason.items(),
+                    key=lambda item: int(item[1] or 0),
+                )[0]
 
             # Simulate entries
             entered = 0
@@ -990,9 +1046,11 @@ class Orchestrator:
                 ),
                 data={
                     "proposals_eligible": len(eligible),
+                    "actionable_edge_count": len(eligible),
                     "guardrail_allowed_count": guardrail_summary.get("allowed_count", 0),
                     "guardrail_blocked_count": guardrail_summary.get("blocked_count", 0),
                     "guardrail_blocked_ratio": guardrail_summary.get("blocked_ratio", 0.0),
+                    "top_guardrail_block_reason": top_block_reason,
                     "shadow_eligible_without_inventory": guardrail_summary.get("shadow_allowed_without_inventory", 0),
                     "shadow_eligible_ratio_without_inventory": guardrail_summary.get("shadow_allowed_ratio_without_inventory", 0.0),
                     "positions_entered": entered,
@@ -1148,7 +1206,7 @@ class Orchestrator:
 
             # Update resolutions for past observations
             checker = ResolutionChecker(storage)
-            resolution_result = checker.update_resolutions(max_checks=50)
+            resolution_result = checker.update_resolutions(max_checks=12, max_seconds=30)
 
             return StepResult(
                 name="outcome_tracker",
@@ -1158,6 +1216,8 @@ class Orchestrator:
                     "observations_recorded": predictions_recorded,
                     "resolutions_updated": resolution_result.get("new_resolutions", 0),
                     "unresolved_remaining": resolution_result.get("remaining_unresolved", 0),
+                    "resolution_checks": resolution_result.get("checked", 0),
+                    "resolution_deadline_hit": resolution_result.get("deadline_hit", False),
                 }
             )
         except Exception as e:
@@ -1249,6 +1309,28 @@ class Orchestrator:
             logger.debug(f"Bot Health Monitor fehlgeschlagen (unkritisch): {e}")
             return {"status": "UNKNOWN", "summary": "", "guardrails_active": False}
 
+    def _run_edge_hunter(self, summary: Dict[str, Any]) -> Dict[str, Any]:
+        """Aktualisiere Edge-Hunter-Report fuer Actionable-Edge-Fokus."""
+        try:
+            from analytics.edge_hunter import run_edge_hunter
+
+            report = run_edge_hunter(summary)
+            logger.info(
+                "[EDGE-HUNTER] %s | %s | score=%s",
+                report.get("posture", "UNKNOWN"),
+                report.get("live_gate", "WAIT"),
+                report.get("score", 0),
+            )
+            return report
+        except Exception as e:
+            logger.debug("Edge Hunter fehlgeschlagen (unkritisch): %s", e)
+            return {
+                "posture": "UNAVAILABLE",
+                "live_gate": "WAIT",
+                "score": 0,
+                "next_action": "",
+            }
+
     def _load_strategy_advice_summary(self) -> Dict[str, Any]:
         """Lade die letzte Strategy-Advisor-Zusammenfassung fuer Status-Ausgaben."""
         try:
@@ -1297,6 +1379,7 @@ class Orchestrator:
             "observations_total": weather_step.data.get("observations_total", 0) if weather_step else 0,
             "edge_observations": weather_step.data.get("edge_observations", 0) if weather_step else 0,
             "proposals_generated": proposal_step.data.get("proposals_generated", 0) if proposal_step else 0,
+            "actionable_edge_count": paper_step.data.get("actionable_edge_count", 0) if paper_step else 0,
             "paper_positions_entered": paper_step.data.get("positions_entered", 0) if paper_step else 0,
             "paper_positions_closed": paper_step.data.get("positions_closed", 0) if paper_step else 0,
             "paper_pnl_eur": paper_step.data.get("total_pnl_eur", 0) if paper_step else 0,
@@ -1304,6 +1387,7 @@ class Orchestrator:
             "guardrail_allowed_count": paper_step.data.get("guardrail_allowed_count", 0) if paper_step else 0,
             "guardrail_blocked_count": paper_step.data.get("guardrail_blocked_count", 0) if paper_step else 0,
             "guardrail_blocked_ratio": paper_step.data.get("guardrail_blocked_ratio", 0.0) if paper_step else 0.0,
+            "top_guardrail_block_reason": paper_step.data.get("top_guardrail_block_reason", "") if paper_step else "",
             "shadow_eligible_without_inventory": paper_step.data.get("shadow_eligible_without_inventory", 0) if paper_step else 0,
             "shadow_eligible_ratio_without_inventory": paper_step.data.get("shadow_eligible_ratio_without_inventory", 0.0) if paper_step else 0.0,
             "resolutions_updated": outcome_step.data.get("resolutions_updated", 0) if outcome_step else 0,
@@ -1402,10 +1486,12 @@ class Orchestrator:
                 f"Observations:         {result.summary.get('observations_total', 0)}",
                 f"Edge detected:        {result.summary.get('edge_observations', 0)}",
                 f"Proposals generated:  {result.summary.get('proposals_generated', 0)}",
+                f"Actionable Edge:      {result.summary.get('actionable_edge_count', 0)} eligible proposal(s)",
                 f"Paper positions:      {result.summary.get('paper_positions_entered', 0)} entered, {result.summary.get('paper_positions_closed', 0)} closed",
                 f"Guardrails:           {result.summary.get('guardrail_allowed_count', 0)} pass, "
                 f"{result.summary.get('guardrail_blocked_count', 0)} blocked "
                 f"({result.summary.get('guardrail_blocked_ratio', 0.0):.0%})",
+                f"Top Block Reason:     {result.summary.get('top_guardrail_block_reason', '') or 'n/a'}",
                 f"Shadow Eligible:      {result.summary.get('shadow_eligible_without_inventory', 0)} "
                 f"without inventory ({result.summary.get('shadow_eligible_ratio_without_inventory', 0.0):.0%})",
                 f"Paper P&L (EUR):      {result.summary.get('paper_pnl_eur', 0):+.2f}",
@@ -1420,6 +1506,9 @@ class Orchestrator:
                 f"{result.summary.get('agent_policy_city_cooldowns', 0)} city cooldown(s)",
                 f"Agent Mode:           {result.summary.get('agent_mode', 'N/A')} | "
                 f"{result.summary.get('agent_proposed_actions', 0)} Proposal(s)",
+                f"Edge Hunter:          {result.summary.get('edge_hunter_posture', 'N/A')} | "
+                f"{result.summary.get('edge_hunter_live_gate', 'WAIT')} | "
+                f"{result.summary.get('edge_hunter_score', 0)}/10",
                 f"Bot Health:           {result.summary.get('bot_health_status', 'N/A')} | "
                 f"{'Guardrails aktiv' if result.summary.get('bot_health_guardrails_active') else 'keine Guardrails'}",
             ]
