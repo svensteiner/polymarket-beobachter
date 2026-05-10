@@ -25196,3 +25196,672 @@
 2026-05-10 17:59:58 | INFO     | core.weather_market_filter | WeatherMarketFilter initialized | min_liquidity=150.0 | odds_range=[0.1, 0.85] | min_hours=12.0 | cities=29
 2026-05-10 17:59:58 | INFO     | app.orchestrator | Merged 40 gamma candidates into observation pipeline
 2026-05-10 17:59:58 | INFO     | app.orchestrator | Pre-filtered 354 stale candidates (resolution < 12h away), 85 remain
+2026-05-10 18:00:24 | INFO     | collector.client | Fetched prices for 85/85 markets
+2026-05-10 18:00:24 | INFO     | app.orchestrator | Fetched real odds for 85/85 markets
+2026-05-10 18:00:24 | INFO     | app.orchestrator | Loaded 4 weather candidates for observation (skipped: 0 no-price, 125 filter [TYPE:51, ODDS:36, CITY:25, LIQUIDITY:13])
+2026-05-10 18:00:24 | INFO     | core.weather_market_filter | WeatherMarketFilter initialized | min_liquidity=150.0 | odds_range=[0.1, 0.85] | min_hours=12.0 | cities=29
+2026-05-10 18:00:24 | INFO     | core.weather_probability_model | WeatherProbabilityModel initialized | base_sigma=6.5°F | max_horizon=10 days
+2026-05-10 18:00:24 | INFO     | core.weather_engine | WeatherEngine initialized | version=1.0.0 | config_hash=900bbdf9180509a9
+2026-05-10 18:00:24 | INFO     | core.weather_engine | WeatherObserver run started | timestamp=2026-05-10T16:00:24Z
+2026-05-10 18:00:24 | INFO     | core.weather_engine | Fetched 4 weather markets
+2026-05-10 18:00:24 | INFO     | core.weather_market_filter | Filtered 4 markets: 4 passed, 0 rejected
+2026-05-10 18:00:24 | INFO     | core.weather_engine | Filtered markets: 4/4 passed
+2026-05-10 18:00:24 | INFO     | core.forecast_sources.open_meteo_ensemble | GFS-Ensemble: Chengdu | 31 members | mean=78.5°F | spread=9.9°F | daily_highs=31 members
+2026-05-10 18:00:25 | INFO     | core.forecast_sources.open_meteo_ensemble | GFS-Ensemble: San Francisco | 31 members | mean=57.5°F | spread=6.2°F | daily_highs=31 members
+2026-05-10 18:00:25 | INFO     | core.forecast_sources.open_meteo_ensemble | GFS-Ensemble: Miami | 31 members | mean=81.3°F | spread=2.3°F | daily_highs=31 members
+2026-05-10 18:00:25 | INFO     | core.forecast_sources.open_meteo_ensemble | GFS-Ensemble: Houston | 31 members | mean=73.0°F | spread=5.4°F | daily_highs=31 members
+2026-05-10 18:00:25 | INFO     | core.ensemble_builder | Ensemble member-counting: P=0.2656 (31 members, between_range 87.8°F)
+2026-05-10 18:00:26 | INFO     | core.ensemble_builder | Ensemble member-counting: P=0.0156 (31 members, between_range 64.0°F)
+2026-05-10 18:00:26 | INFO     | core.weather_engine | Ensemble OBSERVE | San Francisco | sources=4 (openweather,open_meteo_ensemble,met_norway,open_meteo) | P_ensemble=0.1008 | var=0.0005 | edge=-64.64%
+2026-05-10 18:00:26 | INFO     | core.ensemble_builder | Ensemble member-counting: P=0.0156 (31 members, between_range 76.0°F)
+2026-05-10 18:00:26 | INFO     | core.weather_engine | Ensemble OBSERVE | Miami | sources=4 (open_meteo_ensemble,openweather,met_norway,open_meteo) | P_ensemble=0.0743 | var=0.0005 | edge=-64.64%
+2026-05-10 18:00:26 | INFO     | core.ensemble_builder | Ensemble member-counting: P=0.0156 (31 members, between_range 84.0°F)
+2026-05-10 18:00:26 | INFO     | core.weather_engine | Ensemble OBSERVE | Houston | sources=4 (openweather,open_meteo_ensemble,met_norway,open_meteo) | P_ensemble=0.0763 | var=0.0005 | edge=-62.77%
+2026-05-10 18:00:26 | INFO     | core.parallel_processor | Parallel processing complete: 4/4 markets in 2.43s using io strategy
+2026-05-10 18:00:26 | INFO     | core.weather_engine | Parallel processing: 4/4 markets succeeded
+2026-05-10 18:00:26 | INFO     | core.weather_engine | WeatherObserver run complete | duration=2.45s | observations=4 | with_edge=3
+2026-05-10 18:00:26 | INFO     | app.orchestrator | Market Condition: FAVORABLE (3 edge obs)
+2026-05-10 18:00:27 | INFO     | app.orchestrator | Generated proposal for market 2220018
+2026-05-10 18:00:27 | INFO     | app.orchestrator | Generated proposal for market 2205842
+2026-05-10 18:00:27 | INFO     | app.orchestrator | Generated proposal for market 2206255
+2026-05-10 18:00:27 | INFO     | paper_trader.intake | Loaded 2000 total proposals
+2026-05-10 18:00:27 | INFO     | paper_trader.intake | Using 6 recent unique proposals (<= 4h, YES-first sort)
+2026-05-10 18:00:27 | INFO     | paper_trader.intake | Found 58 already paper-executed proposals
+2026-05-10 18:00:28 | INFO     | paper_trader.snapshot_client | Batch snapshots: 6/6 found
+2026-05-10 18:00:28 | INFO     | paper_trader.intake | [INTAKE-SPREAD] checked=6 low_liq_blocked=6 unknown=0 (of 6 candidate markets) — saved adversarial-check time
+2026-05-10 18:00:28 | INFO     | paper_trader.intake | [INTAKE-SPREAD] SKIP PROP-20260510-bb39ab8e market=2205988 edge=-0.304 — LOW-liq pre-filter (simulator would block: 9/9 historical LOW-liq lost -67%+)
+2026-05-10 18:00:28 | INFO     | paper_trader.intake | [INTAKE-SPREAD] SKIP PROP-20260510-46999e3b market=2206031 edge=-0.623 — LOW-liq pre-filter (simulator would block: 9/9 historical LOW-liq lost -67%+)
+2026-05-10 18:00:28 | INFO     | paper_trader.intake | [INTAKE-SPREAD] SKIP PROP-20260510-12a46d16 market=2206140 edge=-0.624 — LOW-liq pre-filter (simulator would block: 9/9 historical LOW-liq lost -67%+)
+2026-05-10 18:00:28 | INFO     | paper_trader.intake | [INTAKE-SPREAD] SKIP PROP-20260510-3cec64c1 market=2206255 edge=-0.628 — LOW-liq pre-filter (simulator would block: 9/9 historical LOW-liq lost -67%+)
+2026-05-10 18:00:28 | INFO     | paper_trader.intake | [INTAKE-SPREAD] SKIP PROP-20260510-0b30ce01 market=2220018 edge=-0.646 — LOW-liq pre-filter (simulator would block: 9/9 historical LOW-liq lost -67%+)
+2026-05-10 18:00:28 | INFO     | paper_trader.intake | [INTAKE-SPREAD] SKIP PROP-20260510-0fdedf05 market=2205842 edge=-0.646 — LOW-liq pre-filter (simulator would block: 9/9 historical LOW-liq lost -67%+)
+2026-05-10 18:00:28 | INFO     | paper_trader.intake | Found 0 eligible proposals for paper trading
+2026-05-10 18:00:30 | INFO     | app.orchestrator | Found 0 eligible proposals for paper trading
+2026-05-10 18:00:30 | INFO     | paper_trader.position_manager | Checking 0 open positions for resolution
+2026-05-10 18:00:31 | INFO     | core.outcome_tracker | Prediction recorded: 2220018 | TRADE
+2026-05-10 18:00:31 | INFO     | core.outcome_tracker | Prediction recorded: 2205842 | TRADE
+2026-05-10 18:00:31 | INFO     | core.outcome_tracker | Prediction recorded: 2206255 | TRADE
+2026-05-10 18:00:34 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2122165: market not found in Gamma API after retry
+2026-05-10 18:00:36 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2171173: market not found in Gamma API after retry
+2026-05-10 18:00:37 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2144736: market not found in Gamma API after retry
+2026-05-10 18:00:38 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2171151: market not found in Gamma API after retry
+2026-05-10 18:00:39 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2186776: market not found in Gamma API after retry
+2026-05-10 18:00:40 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2112321: market not found in Gamma API after retry
+2026-05-10 18:00:42 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2171116: market not found in Gamma API after retry
+2026-05-10 18:00:43 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2102203: market not found in Gamma API after retry
+2026-05-10 18:00:44 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2171117: market not found in Gamma API after retry
+2026-05-10 18:00:45 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2102101: market not found in Gamma API after retry
+2026-05-10 18:00:47 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2122236: market not found in Gamma API after retry
+2026-05-10 18:00:48 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2122290: market not found in Gamma API after retry
+2026-05-10 18:00:49 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2161825: market not found in Gamma API after retry
+2026-05-10 18:00:50 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2179135: market not found in Gamma API after retry
+2026-05-10 18:00:51 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2171152: market not found in Gamma API after retry
+2026-05-10 18:00:53 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2122166: market not found in Gamma API after retry
+2026-05-10 18:00:54 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2102088: market not found in Gamma API after retry
+2026-05-10 18:00:55 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2161810: market not found in Gamma API after retry
+2026-05-10 18:00:56 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2171129: market not found in Gamma API after retry
+2026-05-10 18:00:57 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2137144: market not found in Gamma API after retry
+2026-05-10 18:00:59 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2137254: market not found in Gamma API after retry
+2026-05-10 18:01:00 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2156853: market not found in Gamma API after retry
+2026-05-10 18:01:01 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2129817: market not found in Gamma API after retry
+2026-05-10 18:01:02 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2137156: market not found in Gamma API after retry
+2026-05-10 18:01:03 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2144802: market not found in Gamma API after retry
+2026-05-10 18:01:05 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2137278: market not found in Gamma API after retry
+2026-05-10 18:01:06 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2144867: market not found in Gamma API after retry
+2026-05-10 18:01:07 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2129942: market not found in Gamma API after retry
+2026-05-10 18:01:08 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2129863: market not found in Gamma API after retry
+2026-05-10 18:01:09 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2144686: market not found in Gamma API after retry
+2026-05-10 18:01:11 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2156879: market not found in Gamma API after retry
+2026-05-10 18:01:12 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2112300: market not found in Gamma API after retry
+2026-05-10 18:01:13 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2179086: market not found in Gamma API after retry
+2026-05-10 18:01:14 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2122177: market not found in Gamma API after retry
+2026-05-10 18:01:16 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2129941: market not found in Gamma API after retry
+2026-05-10 18:01:17 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2161867: market not found in Gamma API after retry
+2026-05-10 18:01:18 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2144676: market not found in Gamma API after retry
+2026-05-10 18:01:18 | WARNING  | paper_trader.snapshot_client | Snapshot batch deadline reached after 45.1s; skipped 16/57 remaining markets
+2026-05-10 18:01:18 | INFO     | paper_trader.snapshot_client | Batch snapshots: 4/57 found
+2026-05-10 18:01:18 | WARNING  | paper_trader.snapshot_client | Missing snapshots for: ['2122165', '2171173', '2144736', '2171151', '2186776', '2112321', '2171116', '2102203', '2171117', '2102101', '2122236', '2122290', '2161825', '2179135', '2171152', '2122166', '2102088', '2161810', '2171129', '2137144', '2137254', '2156853', '2129817', '2137156', '2144802', '2137278', '2144867', '2129942', '2129863', '2144686', '2156879', '2112300', '2179086', '2122177', '2129941', '2161867', '2144676', '2112199', '2156770', '2122295', '2082485', '2186636', '2112246', '2137178', '2186586', '2161921', '2144866', '2091488', '2144709', '2171172', '2179207', '2161847', '2137145']
+2026-05-10 18:01:18 | INFO     | analytics.outcome_analyser | Starte Outcome-Analyse...
+2026-05-10 18:01:18 | INFO     | analytics.outcome_analyser | Positions geladen: 116 Eintraege, 58 eindeutige, 32 geschlossen mit P&L
+2026-05-10 18:01:18 | INFO     | analytics.outcome_analyser | Performance-Report gespeichert: C:\Users\botrunner\projects\polymarket-beobachter\analytics\performance_report.json
+2026-05-10 18:01:18 | INFO     | app.orchestrator | Outcome-Analyser: Performance-Report aktualisiert
+2026-05-10 18:01:18 | INFO     | app.orchestrator | [SEGMENTS] 58 closed positions | risky cities: none
+2026-05-10 18:01:18 | INFO     | analytics.strategy_advisor | Strategy-Advisor: mode=balance recommendations=5
+2026-05-10 18:01:18 | INFO     | app.orchestrator | [ADVISOR] BALANCE | BALANCE: Win-Rate 31.2% | P&L -54.72 EUR | Attack 0.00 | 0 offene Positionen | 5 Empfehlung(en)
+2026-05-10 18:01:18 | INFO     | analytics.arbitrage_detector | Arbitrage Scan: 21 parseable Maerkte von 45
+2026-05-10 18:01:19 | INFO     | paper_trader.bot_health_monitor | BotHealthMonitor: status=HEALTHY triggers=none
+2026-05-10 18:01:19 | INFO     | app.orchestrator | [BOT-HEALTH] HEALTHY | HEALTHY: DD 0.0% | WR 31.2%(all-time) | Loss-Streak 0 | Guardrails blocked_cities, blocked_market_types, blocked_price_bands
+2026-05-10 18:01:20 | INFO     | app.orchestrator | [AGENT-POLICY] NORMAL | max_entry=0.850 | city_cooldowns=0
+2026-05-10 18:01:20 | INFO     | app.orchestrator | [AGENT] NORMAL | NORMAL: 0 active action(s) | 1 read-only | Open=0 | DD=0.0% | BotHealth=HEALTHY
+2026-05-10 18:01:20 | INFO     | app.orchestrator | [EDGE-HUNTER] TRACK | WAIT | score=5
+2026-05-10 18:01:21 | INFO     | evolution.strategy_agent | Strategy Agent via OpenAI (gpt-4o-mini)
+2026-05-10 18:01:24 | INFO     | httpx | HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-10 18:01:28 | INFO     | httpx | HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-10 18:01:31 | INFO     | httpx | HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-10 18:01:31 | INFO     | evolution.strategy_agent | Ziel gesetzt: trade_count → 10.0 (in 5 Tagen, Baseline: 0.0)
+2026-05-10 18:01:35 | INFO     | httpx | HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-10 18:01:39 | INFO     | httpx | HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-10 18:01:39 | INFO     | evolution.strategy_agent | Config geaendert: MIN_ODDS 0.1 -> 0.1 | MIN_ODDS bleibt bei 0.1, um Longshots zu vermeiden.
+2026-05-10 18:01:41 | INFO     | httpx | HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-10 18:01:44 | INFO     | httpx | HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-10 18:01:46 | INFO     | httpx | HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-10 18:01:46 | INFO     | evolution.strategy_agent | Mutation Hint: 'max_odds' → down (strength=0.5): Langfristige Verbesserung der Handelsqualität durch Senkung der maximalen Odds.
+2026-05-10 18:01:53 | INFO     | httpx | HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-10 18:01:53 | INFO     | evolution.strategy_agent | Diagnose: DEGRADED — Die Performance bleibt schwach mit einer Win-Rate von 31.25% und einem Verlust v
+2026-05-10 18:02:01 | INFO     | httpx | HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-10 18:02:01 | INFO     | evolution.strategy_agent | Strategy Agent: grade=DEGRADED, config_changes=1, hints=1, provider=OpenAI, iter=10
+2026-05-10 18:02:01 | INFO     | app.orchestrator | === Pipeline END === run_id=RUN-20260510-175931-dd0e2c state=OK
+2026-05-10 18:17:01 | INFO     | app.orchestrator | === Pipeline START === run_id=RUN-20260510-181701-d5ffde
+2026-05-10 18:17:01 | INFO     | core.weather_market_classifier | WeatherMarketClassifier initialized
+2026-05-10 18:17:01 | INFO     | collector.collector | ============================================================
+2026-05-10 18:17:01 | INFO     | collector.collector | WEATHER OBSERVER COLLECTOR - Starting run
+2026-05-10 18:17:01 | INFO     | collector.collector | Max markets: 500
+2026-05-10 18:17:01 | INFO     | collector.collector | Output dir: C:\Users\botrunner\projects\polymarket-beobachter\data\collector
+2026-05-10 18:17:01 | INFO     | collector.collector | Dry run: False
+2026-05-10 18:17:01 | INFO     | collector.collector | ============================================================
+2026-05-10 18:17:01 | INFO     | collector.collector | Step 1: Fetching weather markets from Polymarket API...
+2026-05-10 18:17:01 | INFO     | collector.collector |   (Using /events?tag_slug=weather and /events?tag_slug=climate)
+2026-05-10 18:17:01 | INFO     | collector.client | Fetching weather events: offset=0
+2026-05-10 18:17:01 | INFO     | collector.client | Fetching weather events: offset=100
+2026-05-10 18:17:02 | INFO     | collector.client | Fetching weather events: offset=200
+2026-05-10 18:17:02 | INFO     | collector.client | Fetching weather events: offset=300
+2026-05-10 18:17:02 | INFO     | collector.client | Fetching weather events: offset=400
+2026-05-10 18:17:03 | INFO     | collector.client | Fetching weather events: offset=500
+2026-05-10 18:17:03 | INFO     | collector.client | Fetching weather events: offset=600
+2026-05-10 18:17:04 | INFO     | collector.client | Fetching weather events: offset=700
+2026-05-10 18:17:04 | INFO     | collector.client | Fetching weather events: offset=800
+2026-05-10 18:17:05 | INFO     | collector.client | Fetching weather events: offset=900
+2026-05-10 18:17:05 | INFO     | collector.client | Fetching weather events: offset=1000
+2026-05-10 18:17:06 | INFO     | collector.client | Fetching weather events: offset=1100
+2026-05-10 18:17:06 | INFO     | collector.client | Fetching weather events: offset=1200
+2026-05-10 18:17:06 | INFO     | collector.client | Fetching weather events: offset=1300
+2026-05-10 18:17:07 | INFO     | collector.client | Fetching weather events: offset=1400
+2026-05-10 18:17:07 | INFO     | collector.client | Fetching weather events: offset=1500
+2026-05-10 18:17:08 | INFO     | collector.client | Fetching weather events: offset=1600
+2026-05-10 18:17:08 | INFO     | collector.client | Fetching weather events: offset=1700
+2026-05-10 18:17:09 | INFO     | collector.client | Fetching weather events: offset=1800
+2026-05-10 18:17:09 | INFO     | collector.client | Fetching weather events: offset=1900
+2026-05-10 18:17:10 | INFO     | collector.client | Fetching weather events: offset=2000
+2026-05-10 18:17:10 | INFO     | collector.client | Fetching weather events: offset=2100
+2026-05-10 18:17:11 | INFO     | collector.client | Fetching weather events: offset=2200
+2026-05-10 18:17:11 | INFO     | collector.client | Fetching weather events: offset=2300
+2026-05-10 18:17:12 | INFO     | collector.client | Fetching weather events: offset=2400
+2026-05-10 18:17:12 | INFO     | collector.client | Fetching weather events: offset=2500
+2026-05-10 18:17:13 | INFO     | collector.client | Fetching weather events: offset=2600
+2026-05-10 18:17:13 | INFO     | collector.client | Fetching weather events: offset=2700
+2026-05-10 18:17:14 | INFO     | collector.client | Fetching weather events: offset=2800
+2026-05-10 18:17:14 | INFO     | collector.client | Fetching weather events: offset=2900
+2026-05-10 18:17:15 | INFO     | collector.client | Fetching weather events: offset=3000
+2026-05-10 18:17:15 | INFO     | collector.client | Fetching weather events: offset=3100
+2026-05-10 18:17:16 | INFO     | collector.client | Fetching weather events: offset=3200
+2026-05-10 18:17:16 | INFO     | collector.client | Fetching weather events: offset=3300
+2026-05-10 18:17:16 | INFO     | collector.client | Fetching weather events: offset=3400
+2026-05-10 18:17:17 | INFO     | collector.client | Fetching weather events: offset=3500
+2026-05-10 18:17:17 | INFO     | collector.client | Fetching weather events: offset=3600
+2026-05-10 18:17:18 | INFO     | collector.client | Fetching weather events: offset=3700
+2026-05-10 18:17:18 | INFO     | collector.client | Fetching weather events: offset=3800
+2026-05-10 18:17:19 | INFO     | collector.client | Fetching weather events: offset=3900
+2026-05-10 18:17:19 | INFO     | collector.client | Fetching weather events: offset=4000
+2026-05-10 18:17:20 | INFO     | collector.client | Fetching weather events: offset=4100
+2026-05-10 18:17:20 | INFO     | collector.client | Fetching weather events: offset=4200
+2026-05-10 18:17:21 | INFO     | collector.client | Fetching weather events: offset=4300
+2026-05-10 18:17:21 | INFO     | collector.client | Fetching weather events: offset=4400
+2026-05-10 18:17:21 | INFO     | collector.client | Fetching weather events: offset=4500
+2026-05-10 18:17:22 | INFO     | collector.client | Total weather markets fetched: 500
+2026-05-10 18:17:22 | INFO     | collector.collector | Fetched 500 weather-tagged markets
+2026-05-10 18:17:22 | INFO     | collector.collector | Step 2: Sanitizing (removing forbidden fields)...
+2026-05-10 18:17:22 | INFO     | collector.collector | Sanitized 500 markets
+2026-05-10 18:17:22 | INFO     | collector.collector | Removed 14979 forbidden field occurrences
+2026-05-10 18:17:22 | INFO     | collector.storage | Saved raw response: C:\Users\botrunner\projects\polymarket-beobachter\data\collector\raw\2026-05-10\markets_20260510_161722.json (500 markets)
+2026-05-10 18:17:22 | INFO     | collector.collector | Step 3: Filtering for weather relevance...
+2026-05-10 18:17:22 | INFO     | collector.filter | POSSIBLE: 716941 | Will there be at least 5000 measles cases in the U.S. in 202 | text_signals=[] | structural_signals=['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-05-10 18:17:22 | INFO     | collector.filter | POSSIBLE: 716940 | Will there be at least 2000 measles cases in the U.S. in 202 | text_signals=[] | structural_signals=['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-05-10 18:17:22 | INFO     | collector.filter | POSSIBLE: 716942 | Will there be at least 10000 measles cases in the U.S. in 20 | text_signals=[] | structural_signals=['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-05-10 18:17:22 | INFO     | collector.filter | POSSIBLE: 1250830 | Will there be at least 7500 measles cases in the U.S. in 202 | text_signals=[] | structural_signals=['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-05-10 18:17:22 | INFO     | collector.filter | POSSIBLE: 1250957 | Will there be at least 12500 measles cases in the U.S. in 20 | text_signals=[] | structural_signals=['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-05-10 18:17:22 | INFO     | collector.filter | POSSIBLE: 1373742 | Will there be at least 3000 measles cases in the U.S. in 202 | text_signals=[] | structural_signals=['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-05-10 18:17:22 | INFO     | collector.filter | POSSIBLE: 1373743 | Will there be at least 4000 measles cases in the U.S. in 202 | text_signals=[] | structural_signals=['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-05-10 18:17:22 | INFO     | collector.filter | POSSIBLE: 822854 | Will there be 8 or more earthquakes of magnitude 7.0 or high | text_signals=[] | structural_signals=['polymarket_tag:weather', 'polymarket_tag:climate & science']
+2026-05-10 18:17:23 | INFO     | collector.filter | POSSIBLE: 823412 | Will there be exactly 7 earthquakes of magnitude 7.0 or high | text_signals=[] | structural_signals=['polymarket_tag:weather', 'polymarket_tag:climate & science']
+2026-05-10 18:17:23 | INFO     | collector.filter | POSSIBLE: 897843 | 9.0 or above earthquake before 2027? | text_signals=[] | structural_signals=['polymarket_tag:weather', 'polymarket_tag:climate & science']
+2026-05-10 18:17:23 | INFO     | collector.filter | POSSIBLE: 897844 | 10.0 or above earthquake before 2027? | text_signals=[] | structural_signals=['polymarket_tag:weather', 'polymarket_tag:climate & science']
+2026-05-10 18:17:23 | INFO     | collector.filter | POSSIBLE: 1058191 | Major volcano eruption (VEI ≥6) in 2026? | text_signals=[] | structural_signals=['polymarket_tag:weather', 'polymarket_tag:climate', 'polymarket_tag:climate & science']
+2026-05-10 18:17:23 | INFO     | collector.filter | POSSIBLE: 1059021 | Megaquake by June 30? | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-10 18:17:23 | INFO     | collector.filter | POSSIBLE: 1073789 | Will there be between 5 and 7 earthquakes of magnitude 7.0 o | text_signals=[] | structural_signals=['polymarket_tag:weather', 'polymarket_tag:climate & science']
+2026-05-10 18:17:23 | INFO     | collector.filter | POSSIBLE: 1073790 | Will there be between 8 and 10 earthquakes of magnitude 7.0  | text_signals=[] | structural_signals=['polymarket_tag:weather', 'polymarket_tag:climate & science']
+2026-05-10 18:17:23 | INFO     | collector.filter | POSSIBLE: 1073791 | Will there be between 11 and 13 earthquakes of magnitude 7.0 | text_signals=[] | structural_signals=['polymarket_tag:weather', 'polymarket_tag:climate & science']
+2026-05-10 18:17:23 | INFO     | collector.filter | POSSIBLE: 1073792 | Will there be between 14 and 16 earthquakes of magnitude 7.0 | text_signals=[] | structural_signals=['polymarket_tag:weather', 'polymarket_tag:climate & science']
+2026-05-10 18:17:23 | INFO     | collector.filter | POSSIBLE: 1073793 | Will there be between 17 and 19 earthquakes of magnitude 7.0 | text_signals=[] | structural_signals=['polymarket_tag:weather', 'polymarket_tag:climate & science']
+2026-05-10 18:17:23 | INFO     | collector.filter | POSSIBLE: 1073794 | Will there be 20 or more earthquakes of magnitude 7.0 or hig | text_signals=[] | structural_signals=['polymarket_tag:weather', 'polymarket_tag:climate & science']
+2026-05-10 18:17:23 | INFO     | collector.filter | POSSIBLE: 1075291 | Will there be exactly 1 confirmed VEI 4 or higher volcanic e | text_signals=[] | structural_signals=['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-05-10 18:17:23 | INFO     | collector.filter | POSSIBLE: 1075293 | Will there be exactly 3 confirmed VEI 4 or higher volcanic e | text_signals=[] | structural_signals=['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-05-10 18:17:23 | INFO     | collector.filter | POSSIBLE: 1075295 | Will there be 5 or more confirmed VEI 4 or higher volcanic e | text_signals=[] | structural_signals=['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-05-10 18:17:23 | INFO     | collector.filter | POSSIBLE: 1075290 | Will there be exactly 0 confirmed VEI 4 or higher volcanic e | text_signals=[] | structural_signals=['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-05-10 18:17:23 | INFO     | collector.filter | POSSIBLE: 1075292 | Will there be exactly 2 confirmed VEI 4 or higher volcanic e | text_signals=[] | structural_signals=['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-05-10 18:17:23 | INFO     | collector.filter | POSSIBLE: 1075294 | Will there be exactly 4 confirmed VEI 4 or higher volcanic e | text_signals=[] | structural_signals=['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-05-10 18:17:23 | INFO     | collector.filter | POSSIBLE: 1829471 | Will there be exactly 12 earthquakes of magnitude 7.0 or hig | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-10 18:17:23 | INFO     | collector.filter | POSSIBLE: 1829472 | Will there be 14 or more earthquakes of magnitude 7.0 or hig | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-10 18:17:23 | INFO     | collector.filter | POSSIBLE: 1829467 | Will there be 8 or fewer earthquakes of magnitude 7.0 or hig | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-10 18:17:23 | INFO     | collector.filter | POSSIBLE: 1829468 | Will there be exactly 9 earthquake of magnitude 7.0 or highe | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-10 18:17:23 | INFO     | collector.filter | POSSIBLE: 1829469 | Will there be exactly 10 earthquakes of magnitude 7.0 or hig | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-10 18:17:23 | INFO     | collector.filter | POSSIBLE: 1829470 | Will there be exactly 11 earthquakes of magnitude 7.0 or hig | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-10 18:17:23 | INFO     | collector.filter | POSSIBLE: 1836540 | Will there be exactly 13 earthquakes of magnitude 7.0 or hig | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-10 18:17:23 | INFO     | collector.filter | POSSIBLE: 2043890 | Another 7.0 or above earthquake by May 30, 2026? | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-10 18:17:23 | INFO     | collector.filter | POSSIBLE: 2043889 | Another 7.0 or above earthquake by May 15, 2026? | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-10 18:17:23 | INFO     | collector.filter | POSSIBLE: 2045556 | Vesuvius eruption with 1+ VEI in 2026? | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-10 18:17:23 | INFO     | collector.filter | POSSIBLE: 2045571 | Etna eruption with VEI 2+ in 2026? | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-10 18:17:23 | INFO     | collector.filter | POSSIBLE: 2070603 | Will there be at least 2200 measles cases in the U.S. by May | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-10 18:17:23 | INFO     | collector.filter | POSSIBLE: 2070602 | Will there be at least 2000 measles cases in the U.S. by May | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-10 18:17:23 | INFO     | collector.filter | POSSIBLE: 2070604 | Will there be at least 2400 measles cases in the U.S. by May | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-10 18:17:23 | INFO     | collector.filter | POSSIBLE: 2116313 | Will there be at least 1950 measles cases in the U.S. by May | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-10 18:17:23 | INFO     | collector.filter | POSSIBLE: 2110712 | Will there be at least 1900 measles cases in the U.S. by May | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-10 18:17:23 | INFO     | collector.filter | POSSIBLE: 2125438 | Will there be exactly 1 earthquake of magnitude 6.5 or highe | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-10 18:17:23 | INFO     | collector.filter | POSSIBLE: 2125440 | Will there be exactly 3 earthquakes of magnitude 6.5 or high | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-10 18:17:23 | INFO     | collector.filter | POSSIBLE: 2125442 | Will there be exactly 5 earthquakes of magnitude 6.5 or high | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-10 18:17:23 | INFO     | collector.filter | POSSIBLE: 2125437 | Will there be exactly 0 earthquakes of magnitude 6.5 or high | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-10 18:17:23 | INFO     | collector.filter | POSSIBLE: 2125439 | Will there be exactly 2 earthquakes of magnitude 6.5 or high | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-10 18:17:23 | INFO     | collector.filter | POSSIBLE: 2125441 | Will there be exactly 4 earthquakes of magnitude 6.5 or high | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-10 18:17:23 | INFO     | collector.filter | POSSIBLE: 2125443 | Will there be more than 5 earthquakes of magnitude 6.5 or hi | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-10 18:17:23 | INFO     | collector.filter | POSSIBLE: 2126095 | Will there be 3 or fewer earthquakes of magnitude 5.5 or hig | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-10 18:17:23 | INFO     | collector.filter | POSSIBLE: 2126097 | Will there be exactly 5 earthquakes of magnitude 5.5 or high | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-10 18:17:23 | INFO     | collector.filter | POSSIBLE: 2126099 | Will there be exactly 7 earthquakes of magnitude 5.5 or high | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-10 18:17:23 | INFO     | collector.filter | POSSIBLE: 2126101 | Will there be exactly 9 earthquakes of magnitude 5.5 or high | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-10 18:17:23 | INFO     | collector.filter | POSSIBLE: 2126096 | Will there be exactly 4 earthquakes of magnitude 5.5 or high | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-10 18:17:23 | INFO     | collector.filter | POSSIBLE: 2126098 | Will there be exactly 6 earthquakes of magnitude 5.5 or high | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-10 18:17:23 | INFO     | collector.filter | POSSIBLE: 2126100 | Will there be exactly 8 earthquakes of magnitude 5.5 or high | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-10 18:17:23 | INFO     | collector.filter | POSSIBLE: 2126102 | Will there be more than 9 earthquakes of magnitude 5.5 or hi | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-10 18:17:23 | INFO     | collector.filter | POSSIBLE: 2155000 | Hantavirus pandemic in 2026? | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-10 18:17:23 | INFO     | collector.filter | POSSIBLE: 2183313 | Hantavirus lab leak confirmed by June 30? | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-10 18:17:26 | INFO     | collector.filter | Filter results: 500 total | 399 CONFIRMED | 58 POSSIBLE | 43 NOT_WEATHER | 0 errors
+2026-05-10 18:17:26 | INFO     | collector.filter | === 58 WEATHER_POSSIBLE markets for review ===
+2026-05-10 18:17:26 | INFO     | collector.filter |   - [716941] Will there be at least 5000 measles cases in the U.S. in 2026?
+2026-05-10 18:17:26 | INFO     | collector.filter |     Text signals: []
+2026-05-10 18:17:26 | INFO     | collector.filter |     Structural signals: ['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-05-10 18:17:26 | INFO     | collector.filter |   - [716940] Will there be at least 2000 measles cases in the U.S. in 2026?
+2026-05-10 18:17:26 | INFO     | collector.filter |     Text signals: []
+2026-05-10 18:17:26 | INFO     | collector.filter |     Structural signals: ['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-05-10 18:17:26 | INFO     | collector.filter |   - [716942] Will there be at least 10000 measles cases in the U.S. in 2026?
+2026-05-10 18:17:26 | INFO     | collector.filter |     Text signals: []
+2026-05-10 18:17:26 | INFO     | collector.filter |     Structural signals: ['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-05-10 18:17:26 | INFO     | collector.filter |   - [1250830] Will there be at least 7500 measles cases in the U.S. in 2026?
+2026-05-10 18:17:26 | INFO     | collector.filter |     Text signals: []
+2026-05-10 18:17:26 | INFO     | collector.filter |     Structural signals: ['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-05-10 18:17:26 | INFO     | collector.filter |   - [1250957] Will there be at least 12500 measles cases in the U.S. in 2026?
+2026-05-10 18:17:26 | INFO     | collector.filter |     Text signals: []
+2026-05-10 18:17:26 | INFO     | collector.filter |     Structural signals: ['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-05-10 18:17:26 | INFO     | collector.filter |   - [1373742] Will there be at least 3000 measles cases in the U.S. in 2026?
+2026-05-10 18:17:26 | INFO     | collector.filter |     Text signals: []
+2026-05-10 18:17:26 | INFO     | collector.filter |     Structural signals: ['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-05-10 18:17:26 | INFO     | collector.filter |   - [1373743] Will there be at least 4000 measles cases in the U.S. in 2026?
+2026-05-10 18:17:26 | INFO     | collector.filter |     Text signals: []
+2026-05-10 18:17:26 | INFO     | collector.filter |     Structural signals: ['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-05-10 18:17:26 | INFO     | collector.filter |   - [822854] Will there be 8 or more earthquakes of magnitude 7.0 or higher worldwi
+2026-05-10 18:17:26 | INFO     | collector.filter |     Text signals: []
+2026-05-10 18:17:26 | INFO     | collector.filter |     Structural signals: ['polymarket_tag:weather', 'polymarket_tag:climate & science']
+2026-05-10 18:17:26 | INFO     | collector.filter |   - [823412] Will there be exactly 7 earthquakes of magnitude 7.0 or higher worldwi
+2026-05-10 18:17:26 | INFO     | collector.filter |     Text signals: []
+2026-05-10 18:17:26 | INFO     | collector.filter |     Structural signals: ['polymarket_tag:weather', 'polymarket_tag:climate & science']
+2026-05-10 18:17:26 | INFO     | collector.filter |   - [897843] 9.0 or above earthquake before 2027?
+2026-05-10 18:17:26 | INFO     | collector.filter |     Text signals: []
+2026-05-10 18:17:26 | INFO     | collector.filter |     Structural signals: ['polymarket_tag:weather', 'polymarket_tag:climate & science']
+2026-05-10 18:17:26 | INFO     | collector.collector | Filter results: {'included_weather': 399, 'possible_weather': 58, 'excluded_not_weather': 43, 'excluded_incomplete': 0, 'total': 500}
+2026-05-10 18:17:26 | INFO     | collector.collector | Step 4: Normalizing market data...
+2026-05-10 18:17:26 | INFO     | collector.collector | Normalized 500 markets
+2026-05-10 18:17:26 | INFO     | collector.collector | Found 399 weather candidates
+2026-05-10 18:17:26 | INFO     | collector.collector | Step 5: Saving outputs...
+2026-05-10 18:17:26 | INFO     | collector.storage | Saved normalized markets: C:\Users\botrunner\projects\polymarket-beobachter\data\collector\normalized\2026-05-10\markets.jsonl (500 records)
+2026-05-10 18:17:26 | INFO     | collector.storage | Saved candidates: C:\Users\botrunner\projects\polymarket-beobachter\data\collector\candidates\2026-05-10\candidates.jsonl (399 records)
+2026-05-10 18:17:26 | INFO     | collector.storage | Saved report: C:\Users\botrunner\projects\polymarket-beobachter\data\collector\reports\2026-05-10\report.md
+2026-05-10 18:17:26 | INFO     | collector.collector | ============================================================
+2026-05-10 18:17:26 | INFO     | collector.collector | COLLECTION COMPLETE
+2026-05-10 18:17:26 | INFO     | collector.collector | Duration: 25.1s
+2026-05-10 18:17:26 | INFO     | collector.collector | Fetched: 500
+2026-05-10 18:17:26 | INFO     | collector.collector | Weather Candidates: 399
+2026-05-10 18:17:26 | INFO     | collector.collector | ============================================================
+2026-05-10 18:17:26 | INFO     | core.weather_market_filter | WeatherMarketFilter initialized | min_liquidity=150.0 | odds_range=[0.1, 0.85] | min_hours=12.0 | cities=29
+2026-05-10 18:17:26 | INFO     | app.orchestrator | Merged 40 gamma candidates into observation pipeline
+2026-05-10 18:17:26 | INFO     | app.orchestrator | Pre-filtered 354 stale candidates (resolution < 12h away), 85 remain
+2026-05-10 18:17:51 | INFO     | collector.client | Fetched prices for 85/85 markets
+2026-05-10 18:17:51 | INFO     | app.orchestrator | Fetched real odds for 85/85 markets
+2026-05-10 18:17:51 | INFO     | app.orchestrator | Loaded 4 weather candidates for observation (skipped: 0 no-price, 128 filter [TYPE:51, ODDS:37, CITY:25, LIQUIDITY:15])
+2026-05-10 18:17:51 | INFO     | core.weather_market_filter | WeatherMarketFilter initialized | min_liquidity=150.0 | odds_range=[0.1, 0.85] | min_hours=12.0 | cities=29
+2026-05-10 18:17:51 | INFO     | core.weather_probability_model | WeatherProbabilityModel initialized | base_sigma=6.5°F | max_horizon=10 days
+2026-05-10 18:17:51 | INFO     | core.weather_engine | WeatherEngine initialized | version=1.0.0 | config_hash=900bbdf9180509a9
+2026-05-10 18:17:51 | INFO     | core.weather_engine | WeatherObserver run started | timestamp=2026-05-10T16:17:51Z
+2026-05-10 18:17:51 | INFO     | core.weather_engine | Fetched 4 weather markets
+2026-05-10 18:17:51 | INFO     | core.weather_market_filter | Filtered 4 markets: 4 passed, 0 rejected
+2026-05-10 18:17:51 | INFO     | core.weather_engine | Filtered markets: 4/4 passed
+2026-05-10 18:17:51 | INFO     | core.forecast_sources.open_meteo_ensemble | GFS-Ensemble: Chengdu | 31 members | mean=78.5°F | spread=9.9°F | daily_highs=31 members
+2026-05-10 18:17:51 | INFO     | core.forecast_sources.open_meteo_ensemble | GFS-Ensemble: San Francisco | 31 members | mean=57.5°F | spread=6.2°F | daily_highs=31 members
+2026-05-10 18:17:51 | INFO     | core.forecast_sources.open_meteo_ensemble | GFS-Ensemble: Miami | 31 members | mean=81.3°F | spread=2.3°F | daily_highs=31 members
+2026-05-10 18:17:52 | INFO     | core.forecast_sources.open_meteo_ensemble | GFS-Ensemble: Houston | 31 members | mean=73.0°F | spread=5.4°F | daily_highs=31 members
+2026-05-10 18:17:52 | INFO     | core.ensemble_builder | Ensemble member-counting: P=0.2656 (31 members, between_range 87.8°F)
+2026-05-10 18:17:52 | INFO     | core.ensemble_builder | Ensemble member-counting: P=0.0156 (31 members, between_range 76.0°F)
+2026-05-10 18:17:52 | INFO     | core.weather_engine | Ensemble OBSERVE | Miami | sources=4 (open_meteo,open_meteo_ensemble,openweather,met_norway) | P_ensemble=0.0743 | var=0.0005 | edge=-64.64%
+2026-05-10 18:17:52 | INFO     | core.ensemble_builder | Ensemble member-counting: P=0.0156 (31 members, between_range 64.0°F)
+2026-05-10 18:17:52 | INFO     | core.weather_engine | Ensemble OBSERVE | San Francisco | sources=4 (open_meteo,open_meteo_ensemble,openweather,met_norway) | P_ensemble=0.1008 | var=0.0005 | edge=-64.64%
+2026-05-10 18:17:52 | INFO     | core.ensemble_builder | Ensemble member-counting: P=0.0156 (31 members, between_range 84.0°F)
+2026-05-10 18:17:52 | INFO     | core.weather_engine | Ensemble OBSERVE | Houston | sources=4 (openweather,open_meteo,open_meteo_ensemble,met_norway) | P_ensemble=0.0659 | var=0.0005 | edge=-61.25%
+2026-05-10 18:17:52 | INFO     | core.parallel_processor | Parallel processing complete: 4/4 markets in 0.91s using io strategy
+2026-05-10 18:17:52 | INFO     | core.weather_engine | Parallel processing: 4/4 markets succeeded
+2026-05-10 18:17:52 | INFO     | core.weather_engine | WeatherObserver run complete | duration=0.93s | observations=4 | with_edge=3
+2026-05-10 18:17:52 | INFO     | app.orchestrator | Market Condition: FAVORABLE (3 edge obs)
+2026-05-10 18:17:52 | INFO     | app.orchestrator | Generated proposal for market 2205842
+2026-05-10 18:17:52 | INFO     | app.orchestrator | Generated proposal for market 2220018
+2026-05-10 18:17:52 | INFO     | app.orchestrator | Generated proposal for market 2206255
+2026-05-10 18:17:52 | INFO     | paper_trader.intake | Loaded 2000 total proposals
+2026-05-10 18:17:52 | INFO     | paper_trader.intake | Using 5 recent unique proposals (<= 4h, YES-first sort)
+2026-05-10 18:17:52 | INFO     | paper_trader.intake | Found 58 already paper-executed proposals
+2026-05-10 18:17:53 | INFO     | paper_trader.snapshot_client | Batch snapshots: 5/5 found
+2026-05-10 18:17:53 | INFO     | paper_trader.intake | [INTAKE-SPREAD] checked=5 low_liq_blocked=5 unknown=0 (of 5 candidate markets) — saved adversarial-check time
+2026-05-10 18:17:53 | INFO     | paper_trader.intake | [INTAKE-SPREAD] SKIP PROP-20260510-bb39ab8e market=2205988 edge=-0.304 — LOW-liq pre-filter (simulator would block: 9/9 historical LOW-liq lost -67%+)
+2026-05-10 18:17:53 | INFO     | paper_trader.intake | [INTAKE-SPREAD] SKIP PROP-20260510-f5ef9996 market=2206255 edge=-0.612 — LOW-liq pre-filter (simulator would block: 9/9 historical LOW-liq lost -67%+)
+2026-05-10 18:17:53 | INFO     | paper_trader.intake | [INTAKE-SPREAD] SKIP PROP-20260510-12a46d16 market=2206140 edge=-0.624 — LOW-liq pre-filter (simulator would block: 9/9 historical LOW-liq lost -67%+)
+2026-05-10 18:17:53 | INFO     | paper_trader.intake | [INTAKE-SPREAD] SKIP PROP-20260510-a49a9f89 market=2220018 edge=-0.646 — LOW-liq pre-filter (simulator would block: 9/9 historical LOW-liq lost -67%+)
+2026-05-10 18:17:53 | INFO     | paper_trader.intake | [INTAKE-SPREAD] SKIP PROP-20260510-788b148e market=2205842 edge=-0.646 — LOW-liq pre-filter (simulator would block: 9/9 historical LOW-liq lost -67%+)
+2026-05-10 18:17:53 | INFO     | paper_trader.intake | Found 0 eligible proposals for paper trading
+2026-05-10 18:17:54 | INFO     | app.orchestrator | Found 0 eligible proposals for paper trading
+2026-05-10 18:17:54 | INFO     | paper_trader.position_manager | Checking 0 open positions for resolution
+2026-05-10 18:17:55 | INFO     | core.outcome_tracker | Prediction recorded: 2205842 | TRADE
+2026-05-10 18:17:55 | INFO     | core.outcome_tracker | Prediction recorded: 2220018 | TRADE
+2026-05-10 18:17:55 | INFO     | core.outcome_tracker | Prediction recorded: 2206255 | TRADE
+2026-05-10 18:17:57 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2122165: market not found in Gamma API after retry
+2026-05-10 18:17:59 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2171173: market not found in Gamma API after retry
+2026-05-10 18:18:00 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2144736: market not found in Gamma API after retry
+2026-05-10 18:18:01 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2171151: market not found in Gamma API after retry
+2026-05-10 18:18:02 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2186776: market not found in Gamma API after retry
+2026-05-10 18:18:03 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2112321: market not found in Gamma API after retry
+2026-05-10 18:18:05 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2171116: market not found in Gamma API after retry
+2026-05-10 18:18:06 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2102203: market not found in Gamma API after retry
+2026-05-10 18:18:07 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2171117: market not found in Gamma API after retry
+2026-05-10 18:18:08 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2102101: market not found in Gamma API after retry
+2026-05-10 18:18:09 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2122236: market not found in Gamma API after retry
+2026-05-10 18:18:11 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2122290: market not found in Gamma API after retry
+2026-05-10 18:18:12 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2161825: market not found in Gamma API after retry
+2026-05-10 18:18:13 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2179135: market not found in Gamma API after retry
+2026-05-10 18:18:14 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2171152: market not found in Gamma API after retry
+2026-05-10 18:18:15 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2122166: market not found in Gamma API after retry
+2026-05-10 18:18:17 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2102088: market not found in Gamma API after retry
+2026-05-10 18:18:18 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2161810: market not found in Gamma API after retry
+2026-05-10 18:18:19 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2171129: market not found in Gamma API after retry
+2026-05-10 18:18:20 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2137144: market not found in Gamma API after retry
+2026-05-10 18:18:22 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2137254: market not found in Gamma API after retry
+2026-05-10 18:18:23 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2156853: market not found in Gamma API after retry
+2026-05-10 18:18:24 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2129817: market not found in Gamma API after retry
+2026-05-10 18:18:25 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2137156: market not found in Gamma API after retry
+2026-05-10 18:18:26 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2144802: market not found in Gamma API after retry
+2026-05-10 18:18:28 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2137278: market not found in Gamma API after retry
+2026-05-10 18:18:29 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2144867: market not found in Gamma API after retry
+2026-05-10 18:18:30 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2129942: market not found in Gamma API after retry
+2026-05-10 18:18:31 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2129863: market not found in Gamma API after retry
+2026-05-10 18:18:32 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2144686: market not found in Gamma API after retry
+2026-05-10 18:18:33 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2156879: market not found in Gamma API after retry
+2026-05-10 18:18:35 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2112300: market not found in Gamma API after retry
+2026-05-10 18:18:36 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2179086: market not found in Gamma API after retry
+2026-05-10 18:18:37 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2122177: market not found in Gamma API after retry
+2026-05-10 18:18:38 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2129941: market not found in Gamma API after retry
+2026-05-10 18:18:39 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2161867: market not found in Gamma API after retry
+2026-05-10 18:18:41 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2144676: market not found in Gamma API after retry
+2026-05-10 18:18:42 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2112199: market not found in Gamma API after retry
+2026-05-10 18:18:42 | WARNING  | paper_trader.snapshot_client | Snapshot batch deadline reached after 45.6s; skipped 15/57 remaining markets
+2026-05-10 18:18:42 | INFO     | paper_trader.snapshot_client | Batch snapshots: 4/57 found
+2026-05-10 18:18:42 | WARNING  | paper_trader.snapshot_client | Missing snapshots for: ['2122165', '2171173', '2144736', '2171151', '2186776', '2112321', '2171116', '2102203', '2171117', '2102101', '2122236', '2122290', '2161825', '2179135', '2171152', '2122166', '2102088', '2161810', '2171129', '2137144', '2137254', '2156853', '2129817', '2137156', '2144802', '2137278', '2144867', '2129942', '2129863', '2144686', '2156879', '2112300', '2179086', '2122177', '2129941', '2161867', '2144676', '2112199', '2156770', '2122295', '2082485', '2186636', '2112246', '2137178', '2186586', '2161921', '2144866', '2091488', '2144709', '2171172', '2179207', '2161847', '2137145']
+2026-05-10 18:18:42 | INFO     | analytics.outcome_analyser | Starte Outcome-Analyse...
+2026-05-10 18:18:42 | INFO     | analytics.outcome_analyser | Positions geladen: 116 Eintraege, 58 eindeutige, 32 geschlossen mit P&L
+2026-05-10 18:18:42 | INFO     | analytics.outcome_analyser | Performance-Report gespeichert: C:\Users\botrunner\projects\polymarket-beobachter\analytics\performance_report.json
+2026-05-10 18:18:42 | INFO     | app.orchestrator | Outcome-Analyser: Performance-Report aktualisiert
+2026-05-10 18:18:42 | INFO     | app.orchestrator | [SEGMENTS] 58 closed positions | risky cities: none
+2026-05-10 18:18:42 | INFO     | analytics.strategy_advisor | Strategy-Advisor: mode=balance recommendations=5
+2026-05-10 18:18:42 | INFO     | app.orchestrator | [ADVISOR] BALANCE | BALANCE: Win-Rate 31.2% | P&L -54.72 EUR | Attack 0.00 | 0 offene Positionen | 5 Empfehlung(en)
+2026-05-10 18:18:42 | INFO     | analytics.arbitrage_detector | Arbitrage Scan: 21 parseable Maerkte von 45
+2026-05-10 18:18:42 | INFO     | paper_trader.bot_health_monitor | BotHealthMonitor: status=HEALTHY triggers=none
+2026-05-10 18:18:42 | INFO     | app.orchestrator | [BOT-HEALTH] HEALTHY | HEALTHY: DD 0.0% | WR 31.2%(all-time) | Loss-Streak 0 | Guardrails blocked_cities, blocked_market_types, blocked_price_bands
+2026-05-10 18:18:43 | INFO     | app.orchestrator | [AGENT-POLICY] NORMAL | max_entry=0.850 | city_cooldowns=0
+2026-05-10 18:18:43 | INFO     | app.orchestrator | [AGENT] NORMAL | NORMAL: 0 active action(s) | 1 read-only | Open=0 | DD=0.0% | BotHealth=HEALTHY
+2026-05-10 18:18:43 | INFO     | app.orchestrator | [EDGE-HUNTER] TRACK | WAIT | score=5
+2026-05-10 18:18:43 | INFO     | app.orchestrator | === Pipeline END === run_id=RUN-20260510-181701-d5ffde state=OK
+2026-05-10 18:33:43 | INFO     | app.orchestrator | === Pipeline START === run_id=RUN-20260510-183343-491a1d
+2026-05-10 18:33:43 | INFO     | core.weather_market_classifier | WeatherMarketClassifier initialized
+2026-05-10 18:33:43 | INFO     | collector.collector | ============================================================
+2026-05-10 18:33:43 | INFO     | collector.collector | WEATHER OBSERVER COLLECTOR - Starting run
+2026-05-10 18:33:43 | INFO     | collector.collector | Max markets: 500
+2026-05-10 18:33:43 | INFO     | collector.collector | Output dir: C:\Users\botrunner\projects\polymarket-beobachter\data\collector
+2026-05-10 18:33:43 | INFO     | collector.collector | Dry run: False
+2026-05-10 18:33:43 | INFO     | collector.collector | ============================================================
+2026-05-10 18:33:43 | INFO     | collector.collector | Step 1: Fetching weather markets from Polymarket API...
+2026-05-10 18:33:43 | INFO     | collector.collector |   (Using /events?tag_slug=weather and /events?tag_slug=climate)
+2026-05-10 18:33:43 | INFO     | collector.client | Fetching weather events: offset=0
+2026-05-10 18:33:43 | INFO     | collector.client | Fetching weather events: offset=100
+2026-05-10 18:33:44 | INFO     | collector.client | Fetching weather events: offset=200
+2026-05-10 18:33:44 | INFO     | collector.client | Fetching weather events: offset=300
+2026-05-10 18:33:45 | INFO     | collector.client | Fetching weather events: offset=400
+2026-05-10 18:33:45 | INFO     | collector.client | Fetching weather events: offset=500
+2026-05-10 18:33:45 | INFO     | collector.client | Fetching weather events: offset=600
+2026-05-10 18:33:46 | INFO     | collector.client | Fetching weather events: offset=700
+2026-05-10 18:33:46 | INFO     | collector.client | Fetching weather events: offset=800
+2026-05-10 18:33:46 | INFO     | collector.client | Fetching weather events: offset=900
+2026-05-10 18:33:47 | INFO     | collector.client | Fetching weather events: offset=1000
+2026-05-10 18:33:47 | INFO     | collector.client | Fetching weather events: offset=1100
+2026-05-10 18:33:48 | INFO     | collector.client | Fetching weather events: offset=1200
+2026-05-10 18:33:48 | INFO     | collector.client | Fetching weather events: offset=1300
+2026-05-10 18:33:48 | INFO     | collector.client | Fetching weather events: offset=1400
+2026-05-10 18:33:49 | INFO     | collector.client | Fetching weather events: offset=1500
+2026-05-10 18:33:49 | INFO     | collector.client | Fetching weather events: offset=1600
+2026-05-10 18:33:50 | INFO     | collector.client | Fetching weather events: offset=1700
+2026-05-10 18:33:50 | INFO     | collector.client | Fetching weather events: offset=1800
+2026-05-10 18:33:50 | INFO     | collector.client | Fetching weather events: offset=1900
+2026-05-10 18:33:51 | INFO     | collector.client | Fetching weather events: offset=2000
+2026-05-10 18:33:52 | INFO     | collector.client | Fetching weather events: offset=2100
+2026-05-10 18:33:52 | INFO     | collector.client | Fetching weather events: offset=2200
+2026-05-10 18:33:53 | INFO     | collector.client | Fetching weather events: offset=2300
+2026-05-10 18:33:53 | INFO     | collector.client | Fetching weather events: offset=2400
+2026-05-10 18:33:55 | INFO     | collector.client | Fetching weather events: offset=2500
+2026-05-10 18:33:57 | INFO     | collector.client | Fetching weather events: offset=2600
+2026-05-10 18:33:57 | INFO     | collector.client | Fetching weather events: offset=2700
+2026-05-10 18:33:58 | INFO     | collector.client | Fetching weather events: offset=2800
+2026-05-10 18:33:58 | INFO     | collector.client | Fetching weather events: offset=2900
+2026-05-10 18:33:59 | INFO     | collector.client | Fetching weather events: offset=3000
+2026-05-10 18:33:59 | INFO     | collector.client | Fetching weather events: offset=3100
+2026-05-10 18:34:00 | INFO     | collector.client | Fetching weather events: offset=3200
+2026-05-10 18:34:00 | INFO     | collector.client | Fetching weather events: offset=3300
+2026-05-10 18:34:01 | INFO     | collector.client | Fetching weather events: offset=3400
+2026-05-10 18:34:01 | INFO     | collector.client | Fetching weather events: offset=3500
+2026-05-10 18:34:02 | INFO     | collector.client | Fetching weather events: offset=3600
+2026-05-10 18:34:02 | INFO     | collector.client | Fetching weather events: offset=3700
+2026-05-10 18:34:03 | INFO     | collector.client | Fetching weather events: offset=3800
+2026-05-10 18:34:03 | INFO     | collector.client | Fetching weather events: offset=3900
+2026-05-10 18:34:03 | INFO     | collector.client | Fetching weather events: offset=4000
+2026-05-10 18:34:04 | INFO     | collector.client | Fetching weather events: offset=4100
+2026-05-10 18:34:04 | INFO     | collector.client | Fetching weather events: offset=4200
+2026-05-10 18:34:05 | INFO     | collector.client | Fetching weather events: offset=4300
+2026-05-10 18:34:05 | INFO     | collector.client | Fetching weather events: offset=4400
+2026-05-10 18:34:06 | INFO     | collector.client | Fetching weather events: offset=4500
+2026-05-10 18:34:06 | INFO     | collector.client | Total weather markets fetched: 500
+2026-05-10 18:34:06 | INFO     | collector.collector | Fetched 500 weather-tagged markets
+2026-05-10 18:34:06 | INFO     | collector.collector | Step 2: Sanitizing (removing forbidden fields)...
+2026-05-10 18:34:07 | INFO     | collector.collector | Sanitized 500 markets
+2026-05-10 18:34:07 | INFO     | collector.collector | Removed 14966 forbidden field occurrences
+2026-05-10 18:34:07 | INFO     | collector.storage | Saved raw response: C:\Users\botrunner\projects\polymarket-beobachter\data\collector\raw\2026-05-10\markets_20260510_163407.json (500 markets)
+2026-05-10 18:34:07 | INFO     | collector.collector | Step 3: Filtering for weather relevance...
+2026-05-10 18:34:07 | INFO     | collector.filter | POSSIBLE: 716941 | Will there be at least 5000 measles cases in the U.S. in 202 | text_signals=[] | structural_signals=['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-05-10 18:34:07 | INFO     | collector.filter | POSSIBLE: 716940 | Will there be at least 2000 measles cases in the U.S. in 202 | text_signals=[] | structural_signals=['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-05-10 18:34:07 | INFO     | collector.filter | POSSIBLE: 716942 | Will there be at least 10000 measles cases in the U.S. in 20 | text_signals=[] | structural_signals=['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-05-10 18:34:07 | INFO     | collector.filter | POSSIBLE: 1250830 | Will there be at least 7500 measles cases in the U.S. in 202 | text_signals=[] | structural_signals=['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-05-10 18:34:07 | INFO     | collector.filter | POSSIBLE: 1250957 | Will there be at least 12500 measles cases in the U.S. in 20 | text_signals=[] | structural_signals=['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-05-10 18:34:07 | INFO     | collector.filter | POSSIBLE: 1373742 | Will there be at least 3000 measles cases in the U.S. in 202 | text_signals=[] | structural_signals=['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-05-10 18:34:07 | INFO     | collector.filter | POSSIBLE: 1373743 | Will there be at least 4000 measles cases in the U.S. in 202 | text_signals=[] | structural_signals=['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-05-10 18:34:07 | INFO     | collector.filter | POSSIBLE: 822854 | Will there be 8 or more earthquakes of magnitude 7.0 or high | text_signals=[] | structural_signals=['polymarket_tag:weather', 'polymarket_tag:climate & science']
+2026-05-10 18:34:07 | INFO     | collector.filter | POSSIBLE: 823412 | Will there be exactly 7 earthquakes of magnitude 7.0 or high | text_signals=[] | structural_signals=['polymarket_tag:weather', 'polymarket_tag:climate & science']
+2026-05-10 18:34:07 | INFO     | collector.filter | POSSIBLE: 897843 | 9.0 or above earthquake before 2027? | text_signals=[] | structural_signals=['polymarket_tag:weather', 'polymarket_tag:climate & science']
+2026-05-10 18:34:07 | INFO     | collector.filter | POSSIBLE: 897844 | 10.0 or above earthquake before 2027? | text_signals=[] | structural_signals=['polymarket_tag:weather', 'polymarket_tag:climate & science']
+2026-05-10 18:34:07 | INFO     | collector.filter | POSSIBLE: 1058191 | Major volcano eruption (VEI ≥6) in 2026? | text_signals=[] | structural_signals=['polymarket_tag:weather', 'polymarket_tag:climate', 'polymarket_tag:climate & science']
+2026-05-10 18:34:07 | INFO     | collector.filter | POSSIBLE: 1059021 | Megaquake by June 30? | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-10 18:34:07 | INFO     | collector.filter | POSSIBLE: 1073789 | Will there be between 5 and 7 earthquakes of magnitude 7.0 o | text_signals=[] | structural_signals=['polymarket_tag:weather', 'polymarket_tag:climate & science']
+2026-05-10 18:34:07 | INFO     | collector.filter | POSSIBLE: 1073790 | Will there be between 8 and 10 earthquakes of magnitude 7.0  | text_signals=[] | structural_signals=['polymarket_tag:weather', 'polymarket_tag:climate & science']
+2026-05-10 18:34:07 | INFO     | collector.filter | POSSIBLE: 1073791 | Will there be between 11 and 13 earthquakes of magnitude 7.0 | text_signals=[] | structural_signals=['polymarket_tag:weather', 'polymarket_tag:climate & science']
+2026-05-10 18:34:07 | INFO     | collector.filter | POSSIBLE: 1073792 | Will there be between 14 and 16 earthquakes of magnitude 7.0 | text_signals=[] | structural_signals=['polymarket_tag:weather', 'polymarket_tag:climate & science']
+2026-05-10 18:34:07 | INFO     | collector.filter | POSSIBLE: 1073793 | Will there be between 17 and 19 earthquakes of magnitude 7.0 | text_signals=[] | structural_signals=['polymarket_tag:weather', 'polymarket_tag:climate & science']
+2026-05-10 18:34:07 | INFO     | collector.filter | POSSIBLE: 1073794 | Will there be 20 or more earthquakes of magnitude 7.0 or hig | text_signals=[] | structural_signals=['polymarket_tag:weather', 'polymarket_tag:climate & science']
+2026-05-10 18:34:07 | INFO     | collector.filter | POSSIBLE: 1075291 | Will there be exactly 1 confirmed VEI 4 or higher volcanic e | text_signals=[] | structural_signals=['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-05-10 18:34:07 | INFO     | collector.filter | POSSIBLE: 1075293 | Will there be exactly 3 confirmed VEI 4 or higher volcanic e | text_signals=[] | structural_signals=['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-05-10 18:34:07 | INFO     | collector.filter | POSSIBLE: 1075295 | Will there be 5 or more confirmed VEI 4 or higher volcanic e | text_signals=[] | structural_signals=['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-05-10 18:34:07 | INFO     | collector.filter | POSSIBLE: 1075290 | Will there be exactly 0 confirmed VEI 4 or higher volcanic e | text_signals=[] | structural_signals=['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-05-10 18:34:07 | INFO     | collector.filter | POSSIBLE: 1075292 | Will there be exactly 2 confirmed VEI 4 or higher volcanic e | text_signals=[] | structural_signals=['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-05-10 18:34:07 | INFO     | collector.filter | POSSIBLE: 1075294 | Will there be exactly 4 confirmed VEI 4 or higher volcanic e | text_signals=[] | structural_signals=['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-05-10 18:34:07 | INFO     | collector.filter | POSSIBLE: 1829471 | Will there be exactly 12 earthquakes of magnitude 7.0 or hig | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-10 18:34:07 | INFO     | collector.filter | POSSIBLE: 1829472 | Will there be 14 or more earthquakes of magnitude 7.0 or hig | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-10 18:34:07 | INFO     | collector.filter | POSSIBLE: 1829467 | Will there be 8 or fewer earthquakes of magnitude 7.0 or hig | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-10 18:34:07 | INFO     | collector.filter | POSSIBLE: 1829468 | Will there be exactly 9 earthquake of magnitude 7.0 or highe | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-10 18:34:07 | INFO     | collector.filter | POSSIBLE: 1829469 | Will there be exactly 10 earthquakes of magnitude 7.0 or hig | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-10 18:34:07 | INFO     | collector.filter | POSSIBLE: 1829470 | Will there be exactly 11 earthquakes of magnitude 7.0 or hig | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-10 18:34:07 | INFO     | collector.filter | POSSIBLE: 1836540 | Will there be exactly 13 earthquakes of magnitude 7.0 or hig | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-10 18:34:07 | INFO     | collector.filter | POSSIBLE: 2043890 | Another 7.0 or above earthquake by May 30, 2026? | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-10 18:34:07 | INFO     | collector.filter | POSSIBLE: 2043889 | Another 7.0 or above earthquake by May 15, 2026? | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-10 18:34:07 | INFO     | collector.filter | POSSIBLE: 2045556 | Vesuvius eruption with 1+ VEI in 2026? | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-10 18:34:07 | INFO     | collector.filter | POSSIBLE: 2045571 | Etna eruption with VEI 2+ in 2026? | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-10 18:34:07 | INFO     | collector.filter | POSSIBLE: 2070603 | Will there be at least 2200 measles cases in the U.S. by May | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-10 18:34:07 | INFO     | collector.filter | POSSIBLE: 2070602 | Will there be at least 2000 measles cases in the U.S. by May | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-10 18:34:07 | INFO     | collector.filter | POSSIBLE: 2070604 | Will there be at least 2400 measles cases in the U.S. by May | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-10 18:34:07 | INFO     | collector.filter | POSSIBLE: 2116313 | Will there be at least 1950 measles cases in the U.S. by May | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-10 18:34:07 | INFO     | collector.filter | POSSIBLE: 2110712 | Will there be at least 1900 measles cases in the U.S. by May | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-10 18:34:07 | INFO     | collector.filter | POSSIBLE: 2125438 | Will there be exactly 1 earthquake of magnitude 6.5 or highe | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-10 18:34:07 | INFO     | collector.filter | POSSIBLE: 2125440 | Will there be exactly 3 earthquakes of magnitude 6.5 or high | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-10 18:34:07 | INFO     | collector.filter | POSSIBLE: 2125442 | Will there be exactly 5 earthquakes of magnitude 6.5 or high | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-10 18:34:07 | INFO     | collector.filter | POSSIBLE: 2125437 | Will there be exactly 0 earthquakes of magnitude 6.5 or high | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-10 18:34:07 | INFO     | collector.filter | POSSIBLE: 2125439 | Will there be exactly 2 earthquakes of magnitude 6.5 or high | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-10 18:34:07 | INFO     | collector.filter | POSSIBLE: 2125441 | Will there be exactly 4 earthquakes of magnitude 6.5 or high | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-10 18:34:07 | INFO     | collector.filter | POSSIBLE: 2125443 | Will there be more than 5 earthquakes of magnitude 6.5 or hi | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-10 18:34:07 | INFO     | collector.filter | POSSIBLE: 2126095 | Will there be 3 or fewer earthquakes of magnitude 5.5 or hig | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-10 18:34:07 | INFO     | collector.filter | POSSIBLE: 2126097 | Will there be exactly 5 earthquakes of magnitude 5.5 or high | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-10 18:34:07 | INFO     | collector.filter | POSSIBLE: 2126099 | Will there be exactly 7 earthquakes of magnitude 5.5 or high | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-10 18:34:07 | INFO     | collector.filter | POSSIBLE: 2126101 | Will there be exactly 9 earthquakes of magnitude 5.5 or high | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-10 18:34:07 | INFO     | collector.filter | POSSIBLE: 2126096 | Will there be exactly 4 earthquakes of magnitude 5.5 or high | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-10 18:34:07 | INFO     | collector.filter | POSSIBLE: 2126098 | Will there be exactly 6 earthquakes of magnitude 5.5 or high | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-10 18:34:07 | INFO     | collector.filter | POSSIBLE: 2126100 | Will there be exactly 8 earthquakes of magnitude 5.5 or high | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-10 18:34:07 | INFO     | collector.filter | POSSIBLE: 2126102 | Will there be more than 9 earthquakes of magnitude 5.5 or hi | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-10 18:34:07 | INFO     | collector.filter | POSSIBLE: 2155000 | Hantavirus pandemic in 2026? | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-10 18:34:08 | INFO     | collector.filter | POSSIBLE: 2183313 | Hantavirus lab leak confirmed by June 30? | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-10 18:34:10 | INFO     | collector.filter | Filter results: 500 total | 399 CONFIRMED | 58 POSSIBLE | 43 NOT_WEATHER | 0 errors
+2026-05-10 18:34:10 | INFO     | collector.filter | === 58 WEATHER_POSSIBLE markets for review ===
+2026-05-10 18:34:10 | INFO     | collector.filter |   - [716941] Will there be at least 5000 measles cases in the U.S. in 2026?
+2026-05-10 18:34:10 | INFO     | collector.filter |     Text signals: []
+2026-05-10 18:34:10 | INFO     | collector.filter |     Structural signals: ['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-05-10 18:34:10 | INFO     | collector.filter |   - [716940] Will there be at least 2000 measles cases in the U.S. in 2026?
+2026-05-10 18:34:10 | INFO     | collector.filter |     Text signals: []
+2026-05-10 18:34:10 | INFO     | collector.filter |     Structural signals: ['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-05-10 18:34:10 | INFO     | collector.filter |   - [716942] Will there be at least 10000 measles cases in the U.S. in 2026?
+2026-05-10 18:34:10 | INFO     | collector.filter |     Text signals: []
+2026-05-10 18:34:10 | INFO     | collector.filter |     Structural signals: ['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-05-10 18:34:10 | INFO     | collector.filter |   - [1250830] Will there be at least 7500 measles cases in the U.S. in 2026?
+2026-05-10 18:34:10 | INFO     | collector.filter |     Text signals: []
+2026-05-10 18:34:10 | INFO     | collector.filter |     Structural signals: ['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-05-10 18:34:10 | INFO     | collector.filter |   - [1250957] Will there be at least 12500 measles cases in the U.S. in 2026?
+2026-05-10 18:34:10 | INFO     | collector.filter |     Text signals: []
+2026-05-10 18:34:10 | INFO     | collector.filter |     Structural signals: ['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-05-10 18:34:10 | INFO     | collector.filter |   - [1373742] Will there be at least 3000 measles cases in the U.S. in 2026?
+2026-05-10 18:34:10 | INFO     | collector.filter |     Text signals: []
+2026-05-10 18:34:10 | INFO     | collector.filter |     Structural signals: ['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-05-10 18:34:10 | INFO     | collector.filter |   - [1373743] Will there be at least 4000 measles cases in the U.S. in 2026?
+2026-05-10 18:34:10 | INFO     | collector.filter |     Text signals: []
+2026-05-10 18:34:10 | INFO     | collector.filter |     Structural signals: ['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-05-10 18:34:10 | INFO     | collector.filter |   - [822854] Will there be 8 or more earthquakes of magnitude 7.0 or higher worldwi
+2026-05-10 18:34:10 | INFO     | collector.filter |     Text signals: []
+2026-05-10 18:34:10 | INFO     | collector.filter |     Structural signals: ['polymarket_tag:weather', 'polymarket_tag:climate & science']
+2026-05-10 18:34:10 | INFO     | collector.filter |   - [823412] Will there be exactly 7 earthquakes of magnitude 7.0 or higher worldwi
+2026-05-10 18:34:10 | INFO     | collector.filter |     Text signals: []
+2026-05-10 18:34:10 | INFO     | collector.filter |     Structural signals: ['polymarket_tag:weather', 'polymarket_tag:climate & science']
+2026-05-10 18:34:10 | INFO     | collector.filter |   - [897843] 9.0 or above earthquake before 2027?
+2026-05-10 18:34:10 | INFO     | collector.filter |     Text signals: []
+2026-05-10 18:34:10 | INFO     | collector.filter |     Structural signals: ['polymarket_tag:weather', 'polymarket_tag:climate & science']
+2026-05-10 18:34:10 | INFO     | collector.collector | Filter results: {'included_weather': 399, 'possible_weather': 58, 'excluded_not_weather': 43, 'excluded_incomplete': 0, 'total': 500}
+2026-05-10 18:34:10 | INFO     | collector.collector | Step 4: Normalizing market data...
+2026-05-10 18:34:10 | INFO     | collector.collector | Normalized 500 markets
+2026-05-10 18:34:10 | INFO     | collector.collector | Found 399 weather candidates
+2026-05-10 18:34:10 | INFO     | collector.collector | Step 5: Saving outputs...
+2026-05-10 18:34:10 | INFO     | collector.storage | Saved normalized markets: C:\Users\botrunner\projects\polymarket-beobachter\data\collector\normalized\2026-05-10\markets.jsonl (500 records)
+2026-05-10 18:34:10 | INFO     | collector.storage | Saved candidates: C:\Users\botrunner\projects\polymarket-beobachter\data\collector\candidates\2026-05-10\candidates.jsonl (399 records)
+2026-05-10 18:34:10 | INFO     | collector.storage | Saved report: C:\Users\botrunner\projects\polymarket-beobachter\data\collector\reports\2026-05-10\report.md
+2026-05-10 18:34:10 | INFO     | collector.collector | ============================================================
+2026-05-10 18:34:10 | INFO     | collector.collector | COLLECTION COMPLETE
+2026-05-10 18:34:10 | INFO     | collector.collector | Duration: 26.6s
+2026-05-10 18:34:10 | INFO     | collector.collector | Fetched: 500
+2026-05-10 18:34:10 | INFO     | collector.collector | Weather Candidates: 399
+2026-05-10 18:34:10 | INFO     | collector.collector | ============================================================
+2026-05-10 18:34:10 | INFO     | core.weather_market_filter | WeatherMarketFilter initialized | min_liquidity=150.0 | odds_range=[0.1, 0.85] | min_hours=12.0 | cities=29
+2026-05-10 18:34:10 | INFO     | app.orchestrator | Merged 40 gamma candidates into observation pipeline
+2026-05-10 18:34:10 | INFO     | app.orchestrator | Pre-filtered 354 stale candidates (resolution < 12h away), 85 remain
+2026-05-10 18:34:35 | INFO     | collector.client | Fetched prices for 85/85 markets
+2026-05-10 18:34:35 | INFO     | app.orchestrator | Fetched real odds for 85/85 markets
+2026-05-10 18:34:35 | INFO     | app.orchestrator | Loaded 4 weather candidates for observation (skipped: 0 no-price, 129 filter [TYPE:51, ODDS:38, CITY:25, LIQUIDITY:15])
+2026-05-10 18:34:35 | INFO     | core.weather_market_filter | WeatherMarketFilter initialized | min_liquidity=150.0 | odds_range=[0.1, 0.85] | min_hours=12.0 | cities=29
+2026-05-10 18:34:35 | INFO     | core.weather_probability_model | WeatherProbabilityModel initialized | base_sigma=6.5°F | max_horizon=10 days
+2026-05-10 18:34:35 | INFO     | core.weather_engine | WeatherEngine initialized | version=1.0.0 | config_hash=900bbdf9180509a9
+2026-05-10 18:34:35 | INFO     | core.weather_engine | WeatherObserver run started | timestamp=2026-05-10T16:34:35Z
+2026-05-10 18:34:35 | INFO     | core.weather_engine | Fetched 4 weather markets
+2026-05-10 18:34:35 | INFO     | core.weather_market_filter | Filtered 4 markets: 4 passed, 0 rejected
+2026-05-10 18:34:35 | INFO     | core.weather_engine | Filtered markets: 4/4 passed
+2026-05-10 18:34:35 | INFO     | core.forecast_sources.open_meteo_ensemble | GFS-Ensemble: San Francisco | 31 members | mean=57.5°F | spread=6.2°F | daily_highs=31 members
+2026-05-10 18:34:35 | INFO     | core.forecast_sources.open_meteo_ensemble | GFS-Ensemble: Chengdu | 31 members | mean=78.5°F | spread=9.9°F | daily_highs=31 members
+2026-05-10 18:34:35 | INFO     | core.forecast_sources.open_meteo_ensemble | GFS-Ensemble: Miami | 31 members | mean=81.3°F | spread=2.3°F | daily_highs=31 members
+2026-05-10 18:34:36 | INFO     | core.forecast_sources.open_meteo_ensemble | GFS-Ensemble: Houston | 31 members | mean=73.0°F | spread=5.4°F | daily_highs=31 members
+2026-05-10 18:34:36 | INFO     | core.ensemble_builder | Ensemble member-counting: P=0.2656 (31 members, between_range 87.8°F)
+2026-05-10 18:34:36 | INFO     | core.ensemble_builder | Ensemble member-counting: P=0.0156 (31 members, between_range 64.0°F)
+2026-05-10 18:34:36 | INFO     | core.weather_engine | Ensemble OBSERVE | San Francisco | sources=4 (openweather,open_meteo_ensemble,open_meteo,met_norway) | P_ensemble=0.0873 | var=0.0005 | edge=-63.63%
+2026-05-10 18:34:36 | INFO     | core.ensemble_builder | Ensemble member-counting: P=0.0156 (31 members, between_range 84.0°F)
+2026-05-10 18:34:36 | INFO     | core.weather_engine | Ensemble OBSERVE | Houston | sources=4 (open_meteo,open_meteo_ensemble,openweather,met_norway) | P_ensemble=0.0719 | var=0.0005 | edge=-62.17%
+2026-05-10 18:34:36 | INFO     | core.ensemble_builder | Ensemble member-counting: P=0.0156 (31 members, between_range 76.0°F)
+2026-05-10 18:34:36 | INFO     | core.weather_engine | Ensemble OBSERVE | Miami | sources=4 (open_meteo,open_meteo_ensemble,met_norway,openweather) | P_ensemble=0.0738 | var=0.0005 | edge=-64.87%
+2026-05-10 18:34:36 | INFO     | core.parallel_processor | Parallel processing complete: 4/4 markets in 1.64s using io strategy
+2026-05-10 18:34:36 | INFO     | core.weather_engine | Parallel processing: 4/4 markets succeeded
+2026-05-10 18:34:36 | INFO     | core.weather_engine | WeatherObserver run complete | duration=1.65s | observations=4 | with_edge=3
+2026-05-10 18:34:36 | INFO     | app.orchestrator | Market Condition: FAVORABLE (3 edge obs)
+2026-05-10 18:34:37 | INFO     | app.orchestrator | Generated proposal for market 2220018
+2026-05-10 18:34:37 | INFO     | app.orchestrator | Generated proposal for market 2206255
+2026-05-10 18:34:37 | INFO     | app.orchestrator | Generated proposal for market 2205842
+2026-05-10 18:34:37 | INFO     | paper_trader.intake | Loaded 2000 total proposals
+2026-05-10 18:34:37 | INFO     | paper_trader.intake | Using 5 recent unique proposals (<= 4h, YES-first sort)
+2026-05-10 18:34:37 | INFO     | paper_trader.intake | Found 58 already paper-executed proposals
+2026-05-10 18:34:38 | INFO     | paper_trader.snapshot_client | Batch snapshots: 5/5 found
+2026-05-10 18:34:38 | INFO     | paper_trader.intake | [INTAKE-SPREAD] checked=5 low_liq_blocked=5 unknown=0 (of 5 candidate markets) — saved adversarial-check time
+2026-05-10 18:34:38 | INFO     | paper_trader.intake | [INTAKE-SPREAD] SKIP PROP-20260510-bb39ab8e market=2205988 edge=-0.304 — LOW-liq pre-filter (simulator would block: 9/9 historical LOW-liq lost -67%+)
+2026-05-10 18:34:38 | INFO     | paper_trader.intake | [INTAKE-SPREAD] SKIP PROP-20260510-04c21bab market=2206255 edge=-0.622 — LOW-liq pre-filter (simulator would block: 9/9 historical LOW-liq lost -67%+)
+2026-05-10 18:34:38 | INFO     | paper_trader.intake | [INTAKE-SPREAD] SKIP PROP-20260510-12a46d16 market=2206140 edge=-0.624 — LOW-liq pre-filter (simulator would block: 9/9 historical LOW-liq lost -67%+)
+2026-05-10 18:34:38 | INFO     | paper_trader.intake | [INTAKE-SPREAD] SKIP PROP-20260510-672a7a0c market=2220018 edge=-0.636 — LOW-liq pre-filter (simulator would block: 9/9 historical LOW-liq lost -67%+)
+2026-05-10 18:34:38 | INFO     | paper_trader.intake | [INTAKE-SPREAD] SKIP PROP-20260510-9147cc77 market=2205842 edge=-0.649 — LOW-liq pre-filter (simulator would block: 9/9 historical LOW-liq lost -67%+)
+2026-05-10 18:34:38 | INFO     | paper_trader.intake | Found 0 eligible proposals for paper trading
+2026-05-10 18:34:39 | INFO     | app.orchestrator | Found 0 eligible proposals for paper trading
+2026-05-10 18:34:39 | INFO     | paper_trader.position_manager | Checking 0 open positions for resolution
+2026-05-10 18:34:40 | INFO     | core.outcome_tracker | Prediction recorded: 2220018 | TRADE
+2026-05-10 18:34:40 | INFO     | core.outcome_tracker | Prediction recorded: 2206255 | TRADE
+2026-05-10 18:34:40 | INFO     | core.outcome_tracker | Prediction recorded: 2205842 | TRADE
+2026-05-10 18:34:44 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2122165: market not found in Gamma API after retry
+2026-05-10 18:34:45 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2171173: market not found in Gamma API after retry
+2026-05-10 18:34:46 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2144736: market not found in Gamma API after retry
+2026-05-10 18:34:47 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2171151: market not found in Gamma API after retry
+2026-05-10 18:34:48 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2186776: market not found in Gamma API after retry
+2026-05-10 18:34:50 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2112321: market not found in Gamma API after retry
+2026-05-10 18:34:51 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2171116: market not found in Gamma API after retry
+2026-05-10 18:34:52 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2102203: market not found in Gamma API after retry
+2026-05-10 18:34:53 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2171117: market not found in Gamma API after retry
+2026-05-10 18:34:54 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2102101: market not found in Gamma API after retry
+2026-05-10 18:34:55 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2122236: market not found in Gamma API after retry
+2026-05-10 18:34:57 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2122290: market not found in Gamma API after retry
+2026-05-10 18:34:58 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2161825: market not found in Gamma API after retry
+2026-05-10 18:34:59 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2179135: market not found in Gamma API after retry
+2026-05-10 18:35:00 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2171152: market not found in Gamma API after retry
+2026-05-10 18:35:02 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2122166: market not found in Gamma API after retry
+2026-05-10 18:35:03 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2102088: market not found in Gamma API after retry
+2026-05-10 18:35:04 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2161810: market not found in Gamma API after retry
+2026-05-10 18:35:05 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2171129: market not found in Gamma API after retry
+2026-05-10 18:35:06 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2137144: market not found in Gamma API after retry
+2026-05-10 18:35:08 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2137254: market not found in Gamma API after retry
+2026-05-10 18:35:09 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2156853: market not found in Gamma API after retry
+2026-05-10 18:35:10 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2129817: market not found in Gamma API after retry
+2026-05-10 18:35:11 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2137156: market not found in Gamma API after retry
+2026-05-10 18:35:13 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2144802: market not found in Gamma API after retry
+2026-05-10 18:35:14 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2137278: market not found in Gamma API after retry
+2026-05-10 18:35:15 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2144867: market not found in Gamma API after retry
+2026-05-10 18:35:16 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2129942: market not found in Gamma API after retry
+2026-05-10 18:35:17 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2129863: market not found in Gamma API after retry
+2026-05-10 18:35:18 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2144686: market not found in Gamma API after retry
+2026-05-10 18:35:20 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2156879: market not found in Gamma API after retry
+2026-05-10 18:35:21 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2112300: market not found in Gamma API after retry
+2026-05-10 18:35:22 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2179086: market not found in Gamma API after retry
+2026-05-10 18:35:23 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2122177: market not found in Gamma API after retry
+2026-05-10 18:35:24 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2129941: market not found in Gamma API after retry
+2026-05-10 18:35:26 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2161867: market not found in Gamma API after retry
+2026-05-10 18:35:27 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2144676: market not found in Gamma API after retry
+2026-05-10 18:35:28 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 2112199: market not found in Gamma API after retry
+2026-05-10 18:35:28 | WARNING  | paper_trader.snapshot_client | Snapshot batch deadline reached after 45.8s; skipped 15/57 remaining markets
+2026-05-10 18:35:28 | INFO     | paper_trader.snapshot_client | Batch snapshots: 4/57 found
+2026-05-10 18:35:28 | WARNING  | paper_trader.snapshot_client | Missing snapshots for: ['2122165', '2171173', '2144736', '2171151', '2186776', '2112321', '2171116', '2102203', '2171117', '2102101', '2122236', '2122290', '2161825', '2179135', '2171152', '2122166', '2102088', '2161810', '2171129', '2137144', '2137254', '2156853', '2129817', '2137156', '2144802', '2137278', '2144867', '2129942', '2129863', '2144686', '2156879', '2112300', '2179086', '2122177', '2129941', '2161867', '2144676', '2112199', '2156770', '2122295', '2082485', '2186636', '2112246', '2137178', '2186586', '2161921', '2144866', '2091488', '2144709', '2171172', '2179207', '2161847', '2137145']
+2026-05-10 18:35:28 | INFO     | analytics.outcome_analyser | Starte Outcome-Analyse...
+2026-05-10 18:35:28 | INFO     | analytics.outcome_analyser | Positions geladen: 116 Eintraege, 58 eindeutige, 32 geschlossen mit P&L
+2026-05-10 18:35:28 | INFO     | analytics.outcome_analyser | Performance-Report gespeichert: C:\Users\botrunner\projects\polymarket-beobachter\analytics\performance_report.json
+2026-05-10 18:35:28 | INFO     | app.orchestrator | Outcome-Analyser: Performance-Report aktualisiert
+2026-05-10 18:35:28 | INFO     | app.orchestrator | [SEGMENTS] 58 closed positions | risky cities: none
+2026-05-10 18:35:28 | INFO     | analytics.strategy_advisor | Strategy-Advisor: mode=balance recommendations=5
+2026-05-10 18:35:28 | INFO     | app.orchestrator | [ADVISOR] BALANCE | BALANCE: Win-Rate 31.2% | P&L -54.72 EUR | Attack 0.00 | 0 offene Positionen | 5 Empfehlung(en)
+2026-05-10 18:35:28 | INFO     | analytics.arbitrage_detector | Arbitrage Scan: 21 parseable Maerkte von 45
+2026-05-10 18:35:29 | INFO     | collector.gamma_discovery | Gamma API Pass-1 (volume): 300 Maerkte abgerufen
+2026-05-10 18:35:30 | INFO     | collector.gamma_discovery | Gamma API Pass-2 (end_date): 500 Maerkte geprueft, 500 Wetter in Fenster (0 city-temp boundary) | neu gesamt: 49
+2026-05-10 18:35:30 | INFO     | collector.gamma_discovery | Gamma API: 49 Wetter-Maerkte gefunden (min_liq=50)
+2026-05-10 18:35:30 | INFO     | collector.gamma_discovery | Gamma Discovery: 49 Maerkte gespeichert -> C:\Users\botrunner\projects\polymarket-beobachter\data\collector\gamma\2026-05-10\gamma_candidates.jsonl
+2026-05-10 18:35:30 | INFO     | app.orchestrator | Gamma Discovery: 49 neue Wetter-Maerkte gefunden
+2026-05-10 18:35:30 | INFO     | core.general_market_observer | [GeneralMarket] No markets available for observation
+2026-05-10 18:35:30 | INFO     | paper_trader.bot_health_monitor | BotHealthMonitor: status=HEALTHY triggers=none
+2026-05-10 18:35:30 | INFO     | app.orchestrator | [BOT-HEALTH] HEALTHY | HEALTHY: DD 0.0% | WR 31.2%(all-time) | Loss-Streak 0 | Guardrails blocked_cities, blocked_market_types, blocked_price_bands
+2026-05-10 18:35:31 | INFO     | app.orchestrator | [AGENT-POLICY] NORMAL | max_entry=0.850 | city_cooldowns=0
+2026-05-10 18:35:31 | INFO     | app.orchestrator | [AGENT] NORMAL | NORMAL: 0 active action(s) | 1 read-only | Open=0 | DD=0.0% | BotHealth=HEALTHY
+2026-05-10 18:35:31 | INFO     | app.orchestrator | [EDGE-HUNTER] TRACK | WAIT | score=5
+2026-05-10 18:35:31 | INFO     | app.orchestrator | === Pipeline END === run_id=RUN-20260510-183343-491a1d state=OK
+2026-05-10 18:35:31 | WARNING  | goal_engine | [GOALS] ❌ 'Win-Rate': 31.25 (Ziel: 33.87) — Fail #1
+2026-05-10 18:35:31 | WARNING  | goal_engine | [GOALS] Stufe 1 — Alert: 'Win-Rate' = 31.25 vs Ziel 33.87
+2026-05-10 18:35:31 | WARNING  | goal_engine | [GOALS] ❌ 'Profit-Factor': 0.24 (Ziel: 0.24) — Fail #5
+2026-05-10 18:35:31 | ERROR    | goal_engine | [GOALS] Stufe 3 — schreibe Proposal fuer 'Profit-Factor'
+2026-05-10 18:35:31 | WARNING  | goal_engine | [GOALS] Proposal geschrieben: goal_fail_Profit-Factor_1778430931.json
+2026-05-10 18:35:31 | INFO     | goal_engine | [GOALS] Ziel 'Profit-Factor' gelockert → 0.232
+2026-05-10 18:35:31 | WARNING  | goal_engine | [GOALS] ❌ 'Brier-Score': 0.18 (Ziel: 0.16) — Fail #4
+2026-05-10 18:35:31 | ERROR    | goal_engine | [GOALS] Stufe 3 — schreibe Proposal fuer 'Brier-Score'
+2026-05-10 18:35:31 | WARNING  | goal_engine | [GOALS] Proposal geschrieben: goal_fail_Brier-Score_1778430931.json
+2026-05-10 18:35:31 | INFO     | goal_engine | [GOALS] Ziel 'Brier-Score' gelockert → 0.171
