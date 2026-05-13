@@ -1,5 +1,5 @@
 {
-  "summary": "Die Performance bleibt schwach mit einer Win-Rate von 31.25% und einem Verlust von -54.72 EUR über 32 Trades. Anpassungen wurden vorgenommen, um die Handelsqualität zu verbessern und die Handelsaktivität zu erhöhen. Die MIN_ODDS bleibt bei 0.1, um Longshots zu vermeiden. Ein Vorschlag zur Anpassung der MAX_ODDS wurde erstellt und zur Überprüfung eingereicht.",
+  "summary": "Die Performance bleibt schwach mit einer Win-Rate von 31.25% und einem Verlust von -54.72 EUR über 32 Trades. Anpassungen wurden vorgenommen, um die Handelsqualität zu verbessern und die Handelsaktivität zu erhöhen. Die MIN_ODDS bleibt bei 0.1, da sie bereits am Limit ist. Ein Vorschlag zur Anpassung der MAX_ODDS wurde erstellt und zur Überprüfung eingereicht.",
   "root_causes": [
     "Zu viele schwache Setups werden zugelassen; Selektivität ist zu niedrig",
     "Verluste entstehen fast ausschließlich über Stop-Losses",
@@ -9,8 +9,12 @@
     "Strengere Odds-Obergrenzen würden die Trade-Qualität verbessern",
     "Wenn die nächsten Trades weiter überwiegend per Stop-Loss enden, sollte ein Code-Patch für TP/SL oder Sizing geprüft werden"
   ],
-  "config_changes": [],
-  "mutations_applied": [],
+  "config_changes": [
+    "MIN_ODDS: 0.1 → 0.1 (Aktuelle MIN_ODDS ist bereits am Limit, keine Änderung möglich.)"
+  ],
+  "mutations_applied": [
+    "'max_odds' → down (strength=0.5): Langfristige Verbesserung der Handelsqualität durch Senkung der maximalen Odds."
+  ],
   "goals_status": "Aktiv: Trade-Anzahl 10 in 14 Tagen (Gap 10).",
   "grade": "DEGRADED",
   "code_patches": [],
