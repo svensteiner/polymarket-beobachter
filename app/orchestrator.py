@@ -42,6 +42,8 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 LIVE_READINESS_REPORT_INTERVAL_HOURS = float(os.getenv("LIVE_READINESS_REPORT_INTERVAL_HOURS", "12"))
+STATUS_SUMMARY_MAX_RUNS = int(os.getenv("STATUS_SUMMARY_MAX_RUNS", "120"))
+STATUS_SUMMARY_ROTATE_MB = float(os.getenv("STATUS_SUMMARY_ROTATE_MB", "1"))
 
 
 class RunState(Enum):
@@ -1467,13 +1469,28 @@ class Orchestrator:
         except OSError as e:
             logger.warning(f"Log-Rotation fehlgeschlagen fuer {filepath}: {e}")
 
+    @staticmethod
+    def _trim_status_summary(filepath: Path, max_runs: int = STATUS_SUMMARY_MAX_RUNS) -> None:
+        """Keep status_summary.txt small by retaining only the newest run blocks."""
+        if max_runs <= 0 or not filepath.exists():
+            return
+
+        marker = "\n" + "=" * 50 + "\nRun:"
+        content = filepath.read_text(encoding="utf-8")
+        parts = content.split(marker)
+        if len(parts) <= max_runs + 1:
+            return
+
+        retained = parts[-max_runs:]
+        filepath.write_text("".join(f"{marker}{part}" for part in retained), encoding="utf-8")
+        logger.info("Status-Summary gekuerzt: %s auf die letzten %d Runs", filepath.name, max_runs)
+
     def _write_status_summary(self, result: PipelineResult) -> StepResult:
         """Write status summary to file."""
         try:
             summary_file = self.output_dir / "status_summary.txt"
 
-            # Rotate if file exceeds 5 MB
-            self._rotate_if_needed(summary_file, max_size_mb=5)
+            self._rotate_if_needed(summary_file, max_size_mb=STATUS_SUMMARY_ROTATE_MB)
 
             entry_lines = [
                 f"\n{'='*50}",
@@ -1523,6 +1540,7 @@ class Orchestrator:
 
             with open(summary_file, 'a', encoding='utf-8') as f:
                 f.write('\n'.join(entry_lines))
+            self._trim_status_summary(summary_file)
 
             return StepResult(
                 name="status_writer",
@@ -1638,7 +1656,11 @@ class Orchestrator:
 
         if summary_file.exists():
             try:
-                content = summary_file.read_text(encoding='utf-8')
+                with open(summary_file, "rb") as f:
+                    f.seek(0, os.SEEK_END)
+                    size = f.tell()
+                    f.seek(max(0, size - 64 * 1024), os.SEEK_SET)
+                    content = f.read().decode("utf-8", errors="ignore")
                 lines = content.strip().split('\n')
                 for line in reversed(lines):
                     if line.startswith("Run:"):
