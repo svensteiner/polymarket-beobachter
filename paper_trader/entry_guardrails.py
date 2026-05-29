@@ -35,19 +35,22 @@ DEFAULT_MIN_EDGE_ABSOLUTE = 0.10     # Raised from 0.05: meaningful absolute gap
 # Evidence: 5/6 YES trades at 30-50% edge WON (80% WR). Extrapolating conservatively
 # to 24%+. At 10 EUR position + -40% SL, max downside is ~4 EUR per trade.
 YES_MIN_EDGE = 0.24
-# YES_MIN_ENTRY_PRICE: allow YES bets at 15%+ entry price (vs 30% for NO/general).
-# 2026-04-19: Lowered from 0.22 → 0.15 after observing 2 YES bets/day being blocked
-# at ep=0.17/0.195 with massive relative edge (87-110%, absolute 17-19%).
-# Evidence: YES historical WR=80% (4/5 trades). Boundary markets already at 0.15
-# (inconsistency). LOW-liq check in simulator.py is the real second-layer protection:
-# if the market lacks liquidity, the simulator blocks entry regardless of price floor.
-# Near-zero lotteries (<15%) still blocked. At 10 EUR cap + -40% SL → max downside 4 EUR.
-# REVERT TRIGGER: if YES WR < 50% over 10 new trades at ep 0.15-0.22, revert to 0.22.
-YES_MIN_ENTRY_PRICE = 0.15
-# YES_MIN_EDGE_ABSOLUTE: lower absolute gap floor for YES bets.
-# Standard bets: 10% absolute gap required. YES bets: 6.5%.
-# Ankara absolute_edge=7.24% was blocked at 10% despite meaningful divergence.
-YES_MIN_EDGE_ABSOLUTE = 0.065
+# YES_MIN_ENTRY_PRICE: 2026-05-29 lowered to 0.10 (was 0.15) to unlock real edges
+# that the systematically conservative model only finds at low YES prices.
+# Last 8h: 107 proposals, only 1 with positive YES edge (NYC ep=0.115, edge=+44%,
+# liquidity=5166 USD) — model says 15.1% vs market 10.5% → EV +3.6¢ per $1 bet.
+# Floor 0.15 blocked this; lottery-ticket protection retained via:
+#   - YES_MIN_EDGE_ABSOLUTE floor (0.04 — see below)
+#   - HIGH-confidence required by simulator.MIN_ENTRY_CONFIDENCE_RANK
+#   - simulator MIN_YES_ENTRY_PRICE=0.05 (true lottery floor at 5¢)
+# REVERT TRIGGER: if WR <40% on next 10 YES trades with ep 0.10-0.15, revert to 0.15.
+YES_MIN_ENTRY_PRICE = 0.10
+# YES_MIN_EDGE_ABSOLUTE: 2026-05-29 lowered from 0.065 → 0.04 — cheap-market YES
+# bets have inherently small absolute gaps (4-5 pp), and EV is the absolute_edge.
+# At ep=0.115 with abs_edge=0.046, EV per $1 = +4.6¢. 6.5% floor blocked all such
+# real opportunities. 4% floor still rejects noise (Brier-score-style indistinct).
+# Standard NO bets retain MIN_EDGE_ABSOLUTE (config, currently 0.03).
+YES_MIN_EDGE_ABSOLUTE = 0.04
 
 
 def describe_proposal(proposal) -> Dict[str, Any]:
@@ -153,6 +156,17 @@ def evaluate_entry_guardrails(
     min_entry_price = float(weather_config.get("MIN_ENTRY_PRICE", DEFAULT_MIN_ENTRY_PRICE))
     min_edge = float(weather_config.get("MIN_EDGE", DEFAULT_MIN_EDGE))
     min_edge_absolute = float(weather_config.get("MIN_EDGE_ABSOLUTE", DEFAULT_MIN_EDGE_ABSOLUTE))
+    # Auto-tuned soft overrides (clamped to safe BOUNDS by the tuner itself).
+    # Applied only when present in `data/agent_memory/auto_param_overrides.json`.
+    try:
+        from analytics.auto_parameter_tuner import get_overrides
+        _auto = get_overrides()
+        if "MIN_EDGE" in _auto:
+            min_edge = float(_auto["MIN_EDGE"])
+        if "MIN_EDGE_ABSOLUTE" in _auto:
+            min_edge_absolute = float(_auto["MIN_EDGE_ABSOLUTE"])
+    except Exception:
+        pass  # fail-open: keep static config values
     cooldown_cities = agent_policy.get("cooldown_cities", [])
     policy_mode = agent_policy.get("mode", "NORMAL")
 
@@ -209,9 +223,24 @@ def evaluate_entry_guardrails(
             boundary_note = " — boundary market relaxed to 0.15" if is_boundary_market else ""
             return (False, f"price_too_low|Entry price {entry_price:.2f} < min {effective_min_entry:.2f} (low-prob trap{boundary_note})")
 
-    # Check 3: City cooldown
+    # Check 3: City cooldown — policy-managed list
     if city and city in cooldown_cities:
         return (False, f"city_cooldown|City {city} is on cooldown")
+
+    # Check 3b: City cooldown — autonomously managed (auto_city_blacklist).
+    # Per-city WR threshold maintained automatically from paper_positions.jsonl.
+    if city:
+        try:
+            from analytics.auto_city_blacklist import get_blocked_cities
+            auto_blocked = {c.lower() for c in get_blocked_cities()}
+            if city.lower() in auto_blocked:
+                return (
+                    False,
+                    f"auto_city_cooldown|City {city} auto-blocked "
+                    "(see data/agent_memory/auto_city_cooldowns.json)",
+                )
+        except Exception:
+            pass  # fail-open: never block a trade because of tracker plumbing
 
     # Check 4: Policy mode restrictions
     if policy_mode == "HALT":
@@ -235,7 +264,16 @@ def evaluate_entry_guardrails(
     # Evidence: 80% WR on YES trades at 30-50% edge (5/6 wins, +8.82 EUR). The only
     # YES loss was in a LOW-liq market that is now blocked at entry.
     is_yes_bet = not is_no_bet  # is_no_bet defined above from edge sign
-    effective_min_edge = YES_MIN_EDGE if is_yes_bet else min_edge
+    # Honor auto-tuned YES_MIN_EDGE override if present.
+    _yes_min_edge_effective = YES_MIN_EDGE
+    try:
+        from analytics.auto_parameter_tuner import get_overrides as _gp
+        _ov = _gp()
+        if "YES_MIN_EDGE" in _ov:
+            _yes_min_edge_effective = float(_ov["YES_MIN_EDGE"])
+    except Exception:
+        pass
+    effective_min_edge = _yes_min_edge_effective if is_yes_bet else min_edge
     if relative_edge < effective_min_edge:
         return (False, f"min_edge|Edge {relative_edge:.2%} below minimum {effective_min_edge:.0%} ({'YES' if is_yes_bet else 'NO'} threshold)")
 

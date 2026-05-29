@@ -1492,6 +1492,37 @@ class Orchestrator:
 
             self._rotate_if_needed(summary_file, max_size_mb=STATUS_SUMMARY_ROTATE_MB)
 
+            # Live-Readiness Tracker: nach jedem Run aktualisieren, damit wir
+            # kontinuierlich sehen wie weit wir von den 6 Live-Go-Meilensteinen
+            # entfernt sind (analytics/live_readiness.json|txt).
+            readiness_info: Dict[str, Any] = {}
+            try:
+                from analytics.live_readiness_tracker import update_live_readiness
+                readiness_info = update_live_readiness()
+            except Exception as _rdy_err:  # fail-open
+                logger.debug("Live-Readiness Tracker fehlgeschlagen: %s", _rdy_err)
+
+            # AUTONOMOUS LAYER: alle drei Selbst-Steuerungs-Module nach jedem Run.
+            # Jedes Modul schreibt eigene State-Dateien + Audit-Trail in
+            # logs/autonomous_decisions.jsonl. Vollstaendig fail-open, damit ein
+            # bug in einem Modul nie die Pipeline kippen kann.
+            autonomous_status: Dict[str, Any] = {}
+            try:
+                from analytics.auto_city_blacklist import evaluate_and_persist as _city_eval
+                autonomous_status["auto_city_blacklist"] = _city_eval()
+            except Exception as _city_err:
+                logger.debug("Auto-City-Blacklist fehlgeschlagen: %s", _city_err)
+            try:
+                from analytics.auto_parameter_tuner import evaluate_and_persist as _param_eval
+                autonomous_status["auto_parameter_tuner"] = _param_eval()
+            except Exception as _param_err:
+                logger.debug("Auto-Parameter-Tuner fehlgeschlagen: %s", _param_err)
+            try:
+                from analytics.self_diagnostic_loop import run_diagnostics as _diag
+                autonomous_status["self_diagnostic"] = _diag()
+            except Exception as _diag_err:
+                logger.debug("Self-Diagnostic fehlgeschlagen: %s", _diag_err)
+
             entry_lines = [
                 f"\n{'='*50}",
                 f"Run: {result.timestamp}",
@@ -1529,6 +1560,39 @@ class Orchestrator:
                 f"Bot Health:           {result.summary.get('bot_health_status', 'N/A')} | "
                 f"{'Guardrails aktiv' if result.summary.get('bot_health_guardrails_active') else 'keine Guardrails'}",
             ]
+
+            if readiness_info:
+                blockers = readiness_info.get("blocking_issues") or []
+                blocker_label = f" | Blocker: {blockers[0][:50]}" if blockers else ""
+                entry_lines.append(
+                    f"Live-Readiness:       "
+                    f"{readiness_info.get('overall_progress_pct', 0.0):.1f}% | "
+                    f"{readiness_info.get('milestones_done', 0)}/"
+                    f"{readiness_info.get('milestones_total', 6)} Meilensteine | "
+                    f"YES-Trades {readiness_info.get('closed_yes_trades', 0)} | "
+                    f"P&L {readiness_info.get('total_paper_pnl_eur', 0.0):+.2f} EUR | "
+                    f"ETA {readiness_info.get('estimated_go_live_date') or 'n/a'}"
+                    f"{blocker_label}"
+                )
+
+            if autonomous_status:
+                city = autonomous_status.get("auto_city_blacklist") or {}
+                tuner = autonomous_status.get("auto_parameter_tuner") or {}
+                diag = autonomous_status.get("self_diagnostic") or {}
+                tune_dec = (tuner.get("decision") or {}) if isinstance(tuner, dict) else {}
+                tune_dir = tune_dec.get("direction", "hold")
+                blocked = city.get("blocked_cities") or []
+                blocked_str = ",".join(blocked[:3]) if blocked else "none"
+                if len(blocked) > 3:
+                    blocked_str += f"+{len(blocked)-3}"
+                alerts = diag.get("alerts") or []
+                alert_codes = [a.get("code") for a in alerts] if alerts else []
+                entry_lines.append(
+                    f"Autonomy:             "
+                    f"city-block=[{blocked_str}] | "
+                    f"param-tuner={tune_dir} | "
+                    f"diag={','.join(alert_codes) if alert_codes else 'ok'}"
+                )
 
             errors = [s for s in result.steps if not s.success]
             if errors:

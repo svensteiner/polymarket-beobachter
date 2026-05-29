@@ -408,20 +408,36 @@ class MarketSnapshotClient:
         else:
             spread_pct = None
 
-        # Liquidity classification:
-        # - Real bid/ask available -> spread-based bucketing (existing behaviour).
-        # - Synthetic ±1¢ bid/ask (only outcomePrices in payload) -> the
-        #   spread_pct number is *not a real spread*; using it triggers a
-        #   false LOW classification for every YES-Price <= 0.40. This caused
-        #   the observed "100% intake_spread_filter" lockout. Fall back to
-        #   the Gamma `liquidity` USD field as the trustworthy signal.
+        # Liquidity classification — dual-mode (2026-05-29 follow-up patch):
+        # Even with REAL bestBid/bestAsk, percent-spread becomes misleading on
+        # cheap YES markets: ±1.5¢ around YES=0.115 = 26% spread → false LOW.
+        # Example: NYC 2375711 has real bid=0.10/ask=0.13 + liquidity=5166 USD
+        # (clearly tradeable) but was 100% blocked.
+        # Fix: compute both classifications and take the more liquid bucket.
+        # Volume signal is authoritative when the spread% inflates due to a low
+        # YES price. Synthetic-spread case is still covered (best_bid/best_ask
+        # then come from outcomePrices ±1¢, never trustworthy in percent terms).
+        liquidity_usd = market_data.get("liquidity")
+        if liquidity_usd is None:
+            liquidity_usd = market_data.get("liquidityNum")
+
+        volume_bucket = classify_liquidity_by_volume(liquidity_usd)
         if spread_is_synthetic:
-            liquidity_usd = market_data.get("liquidity")
-            if liquidity_usd is None:
-                liquidity_usd = market_data.get("liquidityNum")
-            liquidity_bucket = classify_liquidity_by_volume(liquidity_usd)
+            spread_bucket = LiquidityBucket.UNKNOWN.value
         else:
-            liquidity_bucket = classify_liquidity(spread_pct)
+            spread_bucket = classify_liquidity(spread_pct)
+
+        # Take the better of the two buckets (HIGH > MEDIUM > LOW > UNKNOWN).
+        _rank = {
+            LiquidityBucket.HIGH.value: 3,
+            LiquidityBucket.MEDIUM.value: 2,
+            LiquidityBucket.LOW.value: 1,
+            LiquidityBucket.UNKNOWN.value: 0,
+        }
+        liquidity_bucket = (
+            spread_bucket if _rank.get(spread_bucket, 0) >= _rank.get(volume_bucket, 0)
+            else volume_bucket
+        )
 
         # Check resolution status
         is_resolved = market_data.get("closed", False) or market_data.get("resolved", False)
