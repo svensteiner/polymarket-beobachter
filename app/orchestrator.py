@@ -1522,6 +1522,16 @@ class Orchestrator:
                 autonomous_status["self_diagnostic"] = _diag()
             except Exception as _diag_err:
                 logger.debug("Self-Diagnostic fehlgeschlagen: %s", _diag_err)
+            try:
+                from analytics.hypothesis_sandbox import evaluate_and_persist as _hyp
+                autonomous_status["hypothesis_sandbox"] = _hyp()
+            except Exception as _hyp_err:
+                logger.debug("Hypothesis-Sandbox fehlgeschlagen: %s", _hyp_err)
+            try:
+                from analytics.agentic_self_score import evaluate_and_persist as _score
+                autonomous_status["agentic_score"] = _score()
+            except Exception as _score_err:
+                logger.debug("Agentic-Score fehlgeschlagen: %s", _score_err)
 
             entry_lines = [
                 f"\n{'='*50}",
@@ -1593,6 +1603,14 @@ class Orchestrator:
                     f"param-tuner={tune_dir} | "
                     f"diag={','.join(alert_codes) if alert_codes else 'ok'}"
                 )
+                score = autonomous_status.get("agentic_score") or {}
+                if score:
+                    entry_lines.append(
+                        f"Agentic-Score:        "
+                        f"{score.get('score', 0.0):.1f}/10 | "
+                        f"{score.get('fresh_components', 0)}/"
+                        f"{score.get('total_components', 10)} Module aktiv"
+                    )
 
             errors = [s for s in result.steps if not s.success]
             if errors:
