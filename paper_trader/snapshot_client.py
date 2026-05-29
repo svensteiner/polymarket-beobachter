@@ -81,6 +81,14 @@ SPREAD_HIGH_THRESHOLD = 2.0    # < 2% spread = HIGH liquidity
 SPREAD_MEDIUM_THRESHOLD = 5.0  # 2-5% spread = MEDIUM liquidity
 # > 5% spread = LOW liquidity
 
+# Volume thresholds (USD) used when the Gamma API only returns outcomePrices
+# and no real bestBid/bestAsk — in that case the spread is synthetic
+# (2-cent hardcoded) and at YES-Prices < 0.40 immer LOW => 100% Block.
+# Echte Liquidität anhand des USD-Liquidity-Feldes:
+VOLUME_HIGH_THRESHOLD_USD = 2000.0    # >= 2000 USD = HIGH
+VOLUME_MEDIUM_THRESHOLD_USD = 400.0   # 400-2000 USD = MEDIUM
+# < 400 USD = LOW (truly thin)
+
 
 def classify_liquidity(spread_pct: Optional[float]) -> str:
     """
@@ -101,6 +109,26 @@ def classify_liquidity(spread_pct: Optional[float]) -> str:
         return LiquidityBucket.MEDIUM.value
     else:
         return LiquidityBucket.LOW.value
+
+
+def classify_liquidity_by_volume(liquidity_usd: Optional[float]) -> str:
+    """
+    Fallback liquidity classification based on USD volume.
+
+    Used when only synthetic spread is available (outcomePrices-only data).
+    Avoids the false-LOW classification of low-priced YES markets.
+    """
+    if liquidity_usd is None:
+        return LiquidityBucket.UNKNOWN.value
+    try:
+        liq = float(liquidity_usd)
+    except (TypeError, ValueError):
+        return LiquidityBucket.UNKNOWN.value
+    if liq >= VOLUME_HIGH_THRESHOLD_USD:
+        return LiquidityBucket.HIGH.value
+    if liq >= VOLUME_MEDIUM_THRESHOLD_USD:
+        return LiquidityBucket.MEDIUM.value
+    return LiquidityBucket.LOW.value
 
 
 # =============================================================================
@@ -328,13 +356,17 @@ class MarketSnapshotClient:
         """
         market_id = market_data.get("id", "") or market_data.get("condition_id", "")
 
-        # Extract prices - try outcomePrices first (Gamma API format)
-        best_bid = None
-        best_ask = None
+        # Extract prices - prefer REAL bestBid/bestAsk fields when present
+        # so that real spread-based liquidity classification is possible.
+        # Only fall back to outcomePrices (synthetic 2-cent spread) when
+        # no real bid/ask exists in the payload.
+        best_bid = self._extract_price(market_data, ["bestBid", "best_bid", "bid"])
+        best_ask = self._extract_price(market_data, ["bestAsk", "best_ask", "ask"])
         mid_price = None
+        spread_is_synthetic = False  # tracks whether bid/ask came from outcomePrices
 
         outcome_prices = market_data.get("outcomePrices")
-        if outcome_prices:
+        if (best_bid is None or best_ask is None) and outcome_prices:
             try:
                 if isinstance(outcome_prices, str):
                     # Gamma API returns JSON string like "[0.55, 0.45]"
@@ -349,18 +381,15 @@ class MarketSnapshotClient:
                     # BUGFIX: Clamp YES price to valid [0.01, 0.99] range.
                     # Gamma API can return raw prices outside [0, 1].
                     yes_price = max(0.01, min(0.99, yes_price))
-                    # Use YES price as mid price, simulate spread
+                    # Use YES price as mid; synthesize ±1¢ best bid/ask. This
+                    # ±1¢ assumption is NOT a real spread measurement — it is a
+                    # placeholder used for downstream slippage math only.
                     mid_price = yes_price
                     best_bid = max(0.01, yes_price - 0.01)
                     best_ask = min(0.99, yes_price + 0.01)
+                    spread_is_synthetic = True
             except (json.JSONDecodeError, ValueError, TypeError) as e:
                 logger.debug(f"Could not parse outcomePrices: {e}")
-
-        # Fallback to bestBid/bestAsk fields
-        if best_bid is None:
-            best_bid = self._extract_price(market_data, ["bestBid", "best_bid", "bid"])
-        if best_ask is None:
-            best_ask = self._extract_price(market_data, ["bestAsk", "best_ask", "ask"])
 
         # Calculate mid price from bid/ask if not set
         if mid_price is None and best_bid is not None and best_ask is not None:
@@ -379,8 +408,20 @@ class MarketSnapshotClient:
         else:
             spread_pct = None
 
-        # Classify liquidity
-        liquidity_bucket = classify_liquidity(spread_pct)
+        # Liquidity classification:
+        # - Real bid/ask available -> spread-based bucketing (existing behaviour).
+        # - Synthetic ±1¢ bid/ask (only outcomePrices in payload) -> the
+        #   spread_pct number is *not a real spread*; using it triggers a
+        #   false LOW classification for every YES-Price <= 0.40. This caused
+        #   the observed "100% intake_spread_filter" lockout. Fall back to
+        #   the Gamma `liquidity` USD field as the trustworthy signal.
+        if spread_is_synthetic:
+            liquidity_usd = market_data.get("liquidity")
+            if liquidity_usd is None:
+                liquidity_usd = market_data.get("liquidityNum")
+            liquidity_bucket = classify_liquidity_by_volume(liquidity_usd)
+        else:
+            liquidity_bucket = classify_liquidity(spread_pct)
 
         # Check resolution status
         is_resolved = market_data.get("closed", False) or market_data.get("resolved", False)

@@ -157,7 +157,13 @@ YES_MIN_REALTIME_EDGE: Final[float] = 0.24     # mirrors entry_guardrails.YES_MI
 # This guard blocks MEDIUM+UNKNOWN liq markets when hours_to_resolution < 48h.
 # Activate: set NEAR_RES_LIQ_GUARD=1 in .env. Default OFF to allow gradual validation.
 _NEAR_RES_LIQ_GUARD_ENABLED: Final[bool] = os.environ.get("NEAR_RES_LIQ_GUARD", "0") == "1"
-NEAR_RES_LIQ_GUARD_HOURS: Final[float] = 48.0
+# 48h was calibrated to spread-based MEDIUM (3% spread). Mit dem neuen
+# Volume-basierten Bucket (USD-Liquidity 400-2000) sind viele MEDIUM-Märkte
+# strukturell anders. 24h erfasst weiterhin den Ankara-Risikofall (24.1h)
+# und gibt der Pipeline >24h-Märkte zum Traden frei.
+NEAR_RES_LIQ_GUARD_HOURS: Final[float] = float(
+    os.environ.get("NEAR_RES_LIQ_GUARD_HOURS", "24")
+)
 
 
 def _load_sl_cooloff() -> Dict[str, str]:

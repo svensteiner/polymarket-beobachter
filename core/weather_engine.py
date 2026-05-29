@@ -433,20 +433,25 @@ class WeatherEngine:
         # Target: BSS > 0 after 20 new resolved trades.
         raw_prob = ensemble.ensemble_mean_probability
 
-        # Detect market type from question for type-aware floor
+        # Detect market type from question for type-aware floor.
+        # Performance-Report 2026-05-29: BSS = -0.85. Mid-range bins (0.2-0.6)
+        # zeigen calibration error > 0.20 → systematische Überschätzung der
+        # YES-Probability. Floor erhöht (vorher 0.20/0.12/0.08 → 0.25/0.18/0.15),
+        # damit der Forecast näher am Markt landet und weniger False-Positives
+        # produziert. Trade-off: weniger extreme Edges, dafür stabiler.
         _q_lower = (market.question or "").lower()
         import re as _re
         if _re.search(r'\bbe\s+\d+|\bexactly\s+\d+', _q_lower):
-            _type_floor = 0.20   # exact: highest shrinkage
+            _type_floor = 0.25   # exact: highest shrinkage (BSS worst here)
         elif 'between' in _q_lower:
-            _type_floor = 0.12   # between: second highest
+            _type_floor = 0.18   # between: second highest
         else:
-            _type_floor = 0.08   # boundary/unknown: base
+            _type_floor = 0.15   # boundary/unknown: base (raised from 0.08)
 
         if raw_prob < 0.05 or raw_prob > 0.95:
-            shrink = max(0.30, _type_floor)
+            shrink = max(0.35, _type_floor)
         elif raw_prob < 0.15 or raw_prob > 0.85:
-            shrink = max(0.20, _type_floor)
+            shrink = max(0.25, _type_floor)
         else:
             shrink = _type_floor
         fair_prob = raw_prob * (1.0 - shrink) + market.odds_yes * shrink
