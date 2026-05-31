@@ -82,15 +82,15 @@ MIN_ENTRY_EDGE_UNKNOWN_MARKET: Final[float] = 0.18  # raised from 0.12
 MIN_ENTRY_CONFIDENCE_RANK: Final[int] = 2  # HIGH or better (raised from MEDIUM=1)
 
 # Resolution window: 60-96h is the NWP sweet spot.
-# <60h: positions enter RESOLUTION_HOLD zone too quickly → Emergency-SL fires before
-#        regular SL can protect (Atlanta -18.46 EUR at 45.95h, Ankara -7.07 EUR at 24.1h).
-#        Both losses happened because the filter in weather_market_filter uses market
-#        settlement END_DATE (often D+1 for verification) while the actual temperature
-#        event — and thus the price spike — happens D+0.  This constant acts as a
-#        second-line defence inside the simulator itself.
-# >96h: 4-day+ forecasts are unreliable.
-MIN_ENTRY_HOURS_TO_RESOLUTION: Final[float] = 30.0
-MAX_ENTRY_HOURS_TO_RESOLUTION: Final[float] = 96.0
+# 2026-05-31: Consistent with weather.yaml MIN_TIME_TO_RESOLUTION_HOURS=6 (Edge-Drought-Fix).
+# Sicherheitsnetz für die alten Atlanta/Ankara Cases:
+#   - NEAR_RES_LIQ_GUARD_HOURS=24 blockt MEDIUM/UNKNOWN-Liq Markets <24h
+#   - LOW-liq block weiterhin aktiv (spread >= 5%)
+#   - HIGH-liq Markets ≥6h dürfen jetzt rein (Same-Evening-Resolution Trading aktiviert).
+# >168h: 7+ Tage forecasts unzuverlässig (gelockert von 96h, da viele Wochen-Märkte
+#        nur freitags listed werden und Mo-Mi nicht handelbar wären).
+MIN_ENTRY_HOURS_TO_RESOLUTION: Final[float] = 6.0
+MAX_ENTRY_HOURS_TO_RESOLUTION: Final[float] = 168.0
 
 # Cities blocked due to consistently poor paper trading results (0-33% WR).
 # Re-evaluate after >=10 live trades show >=50% WR per city.
