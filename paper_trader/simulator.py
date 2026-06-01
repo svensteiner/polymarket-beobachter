@@ -1004,6 +1004,38 @@ class ExecutionSimulator:
             return (None, record)
 
         entry_price, slippage_applied = price_result
+
+        # Realtime YES-entry-price floor (post-slippage).
+        # The earlier _entry_quality_gate uses proposal.implied_probability which can
+        # be stale; here we compare the actual fill price against the absolute floor.
+        # Evidence: 2026-05-31 entries at 0.0201 / 0.0372 passed quality-gate via
+        # stale implied_probability but lost -2.51 / -3.66 EUR on resolution.
+        if side == "YES" and entry_price is not None and float(entry_price) < MIN_YES_ENTRY_PRICE:
+            _ep = float(entry_price)
+            record = PaperTradeRecord(
+                record_id=generate_record_id(),
+                timestamp=now,
+                proposal_id=proposal.proposal_id,
+                market_id=proposal.market_id,
+                action=TradeAction.SKIP.value,
+                reason=(
+                    f"Realtime YES entry {_ep:.1%} below absolute floor "
+                    f"{MIN_YES_ENTRY_PRICE:.0%} (tail-market trap, no high-conviction bypass)"
+                ),
+                position_id=None,
+                snapshot_time=snapshot.snapshot_time,
+                entry_price=entry_price,
+                exit_price=None,
+                slippage_applied=slippage_applied,
+                pnl_eur=None,
+            )
+            log_trade(record)
+            logger.warning(
+                "SKIP (RealtimeYesFloor): entry=%.4f < %.2f for %s",
+                _ep, MIN_YES_ENTRY_PRICE, proposal.market_id,
+            )
+            return (None, record)
+
         entry_exception_allowed, entry_exception_reason = evaluate_high_conviction_exception(
             proposal,
             entry_price=entry_price,
