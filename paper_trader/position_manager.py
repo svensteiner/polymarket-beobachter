@@ -846,9 +846,13 @@ class PositionManager:
     # Guardrail constants (mirrors simulator.py)
     _BLOCKED_MARKET_TYPES_NO = frozenset({"between", "exact"})
     _MIN_YES_ENTRY_PRICE = 0.05
-    _WEAK_PERFORMANCE_CITIES = frozenset({
-        "london", "los angeles", "new york", "new york city", "seattle", "san francisco",
-    })
+    # 2026-06-02: Aligned with simulator.WEAK_PERFORMANCE_CITIES (empty per
+    # 2026-04-18 autopsy). The stale hardcoded list here was force-closing
+    # legitimately-opened London/LA/NYC/Seattle/SF positions, eating slippage
+    # without giving the strategy a chance. Dynamic blocking is now handled
+    # entry-side via auto_city_blacklist; post-entry city blocks were causing
+    # pure friction loss (e.g. 2026-06-02 London trio = -1.39 EUR slippage).
+    _WEAK_PERFORMANCE_CITIES = frozenset()
 
     @staticmethod
     def _extract_city(market_question: str) -> Optional[str]:
