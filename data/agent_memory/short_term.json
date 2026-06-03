@@ -1,113 +1,6 @@
 {
   "recent_runs": [
     {
-      "timestamp": "2026-06-03T01:18:31.904968",
-      "run_id": "RUN-20260603-011831-3307a6",
-      "mode": "OBSERVE_ONLY",
-      "summary": "OBSERVE_ONLY: 0 active action(s) | 1 read-only | Open=0 | DD=0.1% | BotHealth=HEALTHY",
-      "hypothesis": "Der Markt liefert aktuell zu wenige robuste Edges; Beobachtung ist sinnvoller als aggressives Handeln.",
-      "state": "OK",
-      "drawdown_pct": 0.15,
-      "market_condition": "FAVORABLE",
-      "bot_health_status": "HEALTHY",
-      "paper_pnl_eur": 0.0,
-      "open_positions": 0,
-      "proposed_actions": [
-        {
-          "action_type": "start_shadow_experiment",
-          "title": "Shadow-Test fuer strengere Entry-Selektion vorbereiten",
-          "rationale": "Die Strategie scheint eher an Selektion/Execution als an Forecast-Kalibrierung zu leiden.",
-          "evidence": [
-            "entry_quality_too_weak",
-            "time_to_resolution_risk"
-          ],
-          "priority": "MEDIUM",
-          "risk_level": "LOW",
-          "status": "APPROVED_READ_ONLY",
-          "params": {
-            "experiment": "stricter_entry_filters"
-          }
-        }
-      ]
-    },
-    {
-      "timestamp": "2026-06-03T01:35:19.502524",
-      "run_id": "RUN-20260603-013519-4d94c2",
-      "mode": "OBSERVE_ONLY",
-      "summary": "OBSERVE_ONLY: 0 active action(s) | 1 read-only | Open=0 | DD=0.1% | BotHealth=HEALTHY",
-      "hypothesis": "Der Markt liefert aktuell zu wenige robuste Edges; Beobachtung ist sinnvoller als aggressives Handeln.",
-      "state": "OK",
-      "drawdown_pct": 0.15,
-      "market_condition": "FAVORABLE",
-      "bot_health_status": "HEALTHY",
-      "paper_pnl_eur": 0.0,
-      "open_positions": 0,
-      "proposed_actions": [
-        {
-          "action_type": "start_shadow_experiment",
-          "title": "Shadow-Test fuer strengere Entry-Selektion vorbereiten",
-          "rationale": "Die Strategie scheint eher an Selektion/Execution als an Forecast-Kalibrierung zu leiden.",
-          "evidence": [
-            "entry_quality_too_weak",
-            "time_to_resolution_risk"
-          ],
-          "priority": "MEDIUM",
-          "risk_level": "LOW",
-          "status": "APPROVED_READ_ONLY",
-          "params": {
-            "experiment": "stricter_entry_filters"
-          }
-        }
-      ]
-    },
-    {
-      "timestamp": "2026-06-03T01:51:44.665305",
-      "run_id": "RUN-20260603-015144-da575d",
-      "mode": "DEFENSIVE",
-      "summary": "DEFENSIVE: 1 active action(s) | 1 read-only | Open=1 | DD=0.1% | BotHealth=ELEVATED",
-      "hypothesis": "Kapitalschutz priorisieren; Hauptproblem aktuell: entry_quality_too_weak.",
-      "state": "OK",
-      "drawdown_pct": 0.15,
-      "market_condition": "FAVORABLE",
-      "bot_health_status": "ELEVATED",
-      "paper_pnl_eur": 0.0,
-      "open_positions": 1,
-      "proposed_actions": [
-        {
-          "action_type": "tighten_risk",
-          "title": "Risk-Regeln enger simulieren",
-          "rationale": "Drawdown/Protect-Modus spricht fuer strengere Entries und kleineres Risiko.",
-          "evidence": [
-            "drawdown=0.1%",
-            "bot_health=ELEVATED",
-            "strategy_mode=balance"
-          ],
-          "priority": "HIGH",
-          "risk_level": "LOW",
-          "status": "APPROVED",
-          "params": {
-            "target": "entry_filters_and_kelly",
-            "reason": "defensive_mode"
-          }
-        },
-        {
-          "action_type": "start_shadow_experiment",
-          "title": "Shadow-Test fuer strengere Entry-Selektion vorbereiten",
-          "rationale": "Die Strategie scheint eher an Selektion/Execution als an Forecast-Kalibrierung zu leiden.",
-          "evidence": [
-            "entry_quality_too_weak",
-            "time_to_resolution_risk"
-          ],
-          "priority": "MEDIUM",
-          "risk_level": "LOW",
-          "status": "APPROVED_READ_ONLY",
-          "params": {
-            "experiment": "stricter_entry_filters"
-          }
-        }
-      ]
-    },
-    {
       "timestamp": "2026-06-03T02:09:01.338051",
       "run_id": "RUN-20260603-020901-4bd882",
       "mode": "NORMAL",
@@ -1828,11 +1721,137 @@
           }
         }
       ]
+    },
+    {
+      "timestamp": "2026-06-03T16:43:40.445809",
+      "run_id": "RUN-20260603-164340-86595d",
+      "mode": "NORMAL",
+      "summary": "NORMAL: 0 active action(s) | 2 read-only | Open=5 | DD=0.1% | BotHealth=HEALTHY",
+      "hypothesis": "Ein Teil der Underperformance koennte aus zu teuren Entries statt aus Forecast-Qualitaet kommen.",
+      "state": "OK",
+      "drawdown_pct": 0.12,
+      "market_condition": "FAVORABLE",
+      "bot_health_status": "HEALTHY",
+      "paper_pnl_eur": 0.0,
+      "open_positions": 5,
+      "proposed_actions": [
+        {
+          "action_type": "audit_entry_guardrails",
+          "title": "Auffaellige High-Price-Entries auditieren",
+          "rationale": "Offene Positionen mit hohem Entry-Preis sind fuer konservative Agentik kritisch.",
+          "evidence": [
+            "high_price_open_positions=1"
+          ],
+          "priority": "HIGH",
+          "risk_level": "LOW",
+          "status": "APPROVED_READ_ONLY",
+          "params": {}
+        },
+        {
+          "action_type": "start_shadow_experiment",
+          "title": "Shadow-Test fuer strengere Entry-Selektion vorbereiten",
+          "rationale": "Die Strategie scheint eher an Selektion/Execution als an Forecast-Kalibrierung zu leiden.",
+          "evidence": [
+            "entry_quality_too_weak",
+            "time_to_resolution_risk"
+          ],
+          "priority": "MEDIUM",
+          "risk_level": "LOW",
+          "status": "APPROVED_READ_ONLY",
+          "params": {
+            "experiment": "stricter_entry_filters"
+          }
+        }
+      ]
+    },
+    {
+      "timestamp": "2026-06-03T17:02:59.337616",
+      "run_id": "RUN-20260603-170259-82027b",
+      "mode": "NORMAL",
+      "summary": "NORMAL: 0 active action(s) | 2 read-only | Open=5 | DD=0.1% | BotHealth=HEALTHY",
+      "hypothesis": "Ein Teil der Underperformance koennte aus zu teuren Entries statt aus Forecast-Qualitaet kommen.",
+      "state": "OK",
+      "drawdown_pct": 0.12,
+      "market_condition": "FAVORABLE",
+      "bot_health_status": "HEALTHY",
+      "paper_pnl_eur": 0.0,
+      "open_positions": 5,
+      "proposed_actions": [
+        {
+          "action_type": "audit_entry_guardrails",
+          "title": "Auffaellige High-Price-Entries auditieren",
+          "rationale": "Offene Positionen mit hohem Entry-Preis sind fuer konservative Agentik kritisch.",
+          "evidence": [
+            "high_price_open_positions=1"
+          ],
+          "priority": "HIGH",
+          "risk_level": "LOW",
+          "status": "APPROVED_READ_ONLY",
+          "params": {}
+        },
+        {
+          "action_type": "start_shadow_experiment",
+          "title": "Shadow-Test fuer strengere Entry-Selektion vorbereiten",
+          "rationale": "Die Strategie scheint eher an Selektion/Execution als an Forecast-Kalibrierung zu leiden.",
+          "evidence": [
+            "entry_quality_too_weak",
+            "time_to_resolution_risk"
+          ],
+          "priority": "MEDIUM",
+          "risk_level": "LOW",
+          "status": "APPROVED_READ_ONLY",
+          "params": {
+            "experiment": "stricter_entry_filters"
+          }
+        }
+      ]
+    },
+    {
+      "timestamp": "2026-06-03T17:21:52.631649",
+      "run_id": "RUN-20260603-172152-712369",
+      "mode": "NORMAL",
+      "summary": "NORMAL: 0 active action(s) | 2 read-only | Open=5 | DD=0.1% | BotHealth=HEALTHY",
+      "hypothesis": "Ein Teil der Underperformance koennte aus zu teuren Entries statt aus Forecast-Qualitaet kommen.",
+      "state": "OK",
+      "drawdown_pct": 0.12,
+      "market_condition": "FAVORABLE",
+      "bot_health_status": "HEALTHY",
+      "paper_pnl_eur": 0.0,
+      "open_positions": 5,
+      "proposed_actions": [
+        {
+          "action_type": "audit_entry_guardrails",
+          "title": "Auffaellige High-Price-Entries auditieren",
+          "rationale": "Offene Positionen mit hohem Entry-Preis sind fuer konservative Agentik kritisch.",
+          "evidence": [
+            "high_price_open_positions=1"
+          ],
+          "priority": "HIGH",
+          "risk_level": "LOW",
+          "status": "APPROVED_READ_ONLY",
+          "params": {}
+        },
+        {
+          "action_type": "start_shadow_experiment",
+          "title": "Shadow-Test fuer strengere Entry-Selektion vorbereiten",
+          "rationale": "Die Strategie scheint eher an Selektion/Execution als an Forecast-Kalibrierung zu leiden.",
+          "evidence": [
+            "entry_quality_too_weak",
+            "time_to_resolution_risk"
+          ],
+          "priority": "MEDIUM",
+          "risk_level": "LOW",
+          "status": "APPROVED_READ_ONLY",
+          "params": {
+            "experiment": "stricter_entry_filters"
+          }
+        }
+      ]
     }
   ],
   "active_hypotheses": [
     "Ein Teil der Underperformance koennte aus zu teuren Entries statt aus Forecast-Qualitaet kommen."
   ],
   "blocked_actions": [],
-  "last_updated": "2026-06-03T16:24:39.861513"
+  "last_updated": "2026-06-03T17:21:52.631649"
 }
