@@ -1,34 +1,34 @@
 POLYMARKET STRATEGY ADVISOR
 ========================================
-Generated: 2026-06-03T17:25:31.271168
+Generated: 2026-06-03T18:21:42.393889
 Mode:      BALANCE
-Summary:   BALANCE: Win-Rate 30.6% | P&L -80.51 EUR | Attack 0.00 | 5 offene Positionen | 7 Empfehlung(en)
+Summary:   BALANCE: Win-Rate 29.4% | P&L -90.06 EUR | Attack 0.00 | 3 offene Positionen | 7 Empfehlung(en)
 
 Metrics
 ----------------------------------------
-Trades:               49
-Win-Rate:             30.61%
-Total P&L:            -80.51 EUR
-Stop-Loss Ratio:      20.4%
-Open Positions:       5
+Trades:               51
+Win-Rate:             29.41%
+Total P&L:            -90.06 EUR
+Stop-Loss Ratio:      19.6%
+Open Positions:       3
 High-Price Opens:     1
-Allocated Capital:    0.5%
+Allocated Capital:    0.3%
 Calibration:          GOOD
 
 Recommendations
 ----------------------------------------
 1. [HIGH] Eintrittsfilter anziehen und nur groessere Fehlbewertungen handeln
    Bereich: entries
-   Grund:   Win-Rate 30.6% bei Stop-Loss-Anteil 20%. Das spricht eher fuer schlechte Entry-Selektion als fuer zu spaete Exits.
+   Grund:   Win-Rate 29.4% bei Stop-Loss-Anteil 20%. Das spricht eher fuer schlechte Entry-Selektion als fuer zu spaete Exits.
    Vorschlag: {"MIN_EDGE": 0.25, "MIN_EDGE_ABSOLUTE": 0.05}
 2. [HIGH] Restlaufzeit konservativer machen und Zombie-/Expiry-Risiko reduzieren
    Bereich: timing
-   Grund:   9 Resolution-Losses und 29 Expiry-/Zombie-Exits. Märkte werden zu lange oder zu spaet gehalten.
+   Grund:   11 Resolution-Losses und 29 Expiry-/Zombie-Exits. Märkte werden zu lange oder zu spaet gehalten.
    Vorschlag: {"MIN_TIME_TO_RESOLUTION_HOURS": 18, "SAFETY_BUFFER_HOURS": 36}
 3. [MEDIUM] Schwache Staedte temporaer auf Cooldown setzen
    Bereich: universe
    Grund:   Mehrere Staedte liefern wiederholt negatives P&L. Erst nach neuer Datenlage wieder freigeben.
-   Vorschlag: {"cooldown_cities": ["Atlanta", "Karachi", "New York City"]}
+   Vorschlag: {"cooldown_cities": ["Atlanta", "Karachi", "Paris"]}
 4. [HIGH] Entry-Preis-Guardrail pruefen
    Bereich: execution
    Grund:   1 offene Positionen wurden mit Entry >= 0.85 eroeffnet. Das passt nicht zu einem konservativen Risk/Reward-Profil und sollte auditiert werden.
@@ -36,7 +36,7 @@ Recommendations
 5. [HIGH] Wiederholt negative Setup-Buckets automatisch sperren
    Bereich: edge_memory
    Grund:   Mehrere wiederkehrende Kombinationen aus Confidence, Markt-Typ und Side zeigen negatives Edge und sollten im Intake geblockt bleiben.
-   Vorschlag: {"blocked_edge_buckets": ["premium", "high", "medium"]}
+   Vorschlag: {"blocked_edge_buckets": ["premium", "medium", "high"]}
 6. [HIGH] Logische Preisinkonsistenzen hedgen statt Richtung zu raten
    Bereich: arbitrage
    Grund:   1 Arbitrage-Kandidat(en) gefunden. Diese Setups sind meist besser als reine Directional Bets.
@@ -49,4 +49,4 @@ Weak Cities
 ----------------------------------------
 - Atlanta: 3 Trades | 33.3% WR | -20.54 EUR
 - Karachi: 3 Trades | 0.0% WR | -13.43 EUR
-- New York City: 4 Trades | 0.0% WR | -8.79 EUR
+- Paris: 6 Trades | 33.3% WR | -11.42 EUR
