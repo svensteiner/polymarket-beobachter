@@ -113,6 +113,40 @@ class PositionManager:
         """
         return self._paper_logger.get_open_positions()
 
+    # ==========================================================================
+    # POST-RESOLUTION ZOMBIE CLOSE (2026-06-03)
+    # ==========================================================================
+    # Some weather markets stay OPEN in our book past their declared resolution
+    # time because Gamma's `closed/resolved` flag flips with delay (or never, if
+    # the market gets delisted). Until 2026-06-03 these positions held inventory
+    # slots forever (top_block=inventory_limit 60-77%). Strategy:
+    #   - Past resolution by > POST_RESOLUTION_GRACE_HOURS: force-close.
+    #   - If snapshot mid_price is extreme (>=0.95 / <=0.05): treat as binary
+    #     resolved at that price → realised P&L = (price - entry) * size.
+    #   - Else if snapshot has any price: simulate_exit_market (lock in mark).
+    #   - Else: expire + release capital with 0 P&L.
+    POST_RESOLUTION_GRACE_HOURS: float = 12.0
+    POST_RESOLUTION_EXTREME_HIGH: float = 0.95
+    POST_RESOLUTION_EXTREME_LOW: float = 0.05
+
+    def _hours_past_resolution(self, position: "PaperPosition") -> Optional[float]:
+        """Return hours since the position's market should have resolved.
+
+        Negative when resolution is still in the future. None when h2r unknown.
+        """
+        hours_remaining = self._estimate_hours_to_resolution(position)
+        if hours_remaining is None:
+            return None
+        return -hours_remaining
+
+    def _expire_with_capital_release(self, position: "PaperPosition", reason: str) -> None:
+        """Expire a zombie and release its capital so the slot frees up."""
+        try:
+            release_capital(position.cost_basis_eur, 0.0, reason)
+        except Exception as exc:
+            logger.warning("Capital release failed during expire: %s", exc)
+        self._paper_logger.expire_position(position)
+
     def check_and_close_resolved(self) -> Dict[str, Any]:
         """
         Check open positions and close any that have resolved.
@@ -146,6 +180,11 @@ class PositionManager:
 
         for position in open_positions:
             snapshot = snapshots.get(position.market_id)
+            hours_past = self._hours_past_resolution(position)
+            past_grace = (
+                hours_past is not None
+                and hours_past > self.POST_RESOLUTION_GRACE_HOURS
+            )
 
             # Zombie check: fire when snapshot is unavailable (None) OR has no price
             # data (mid_price is None). Daily weather markets resolve within 1-2 days.
@@ -158,13 +197,15 @@ class PositionManager:
                     if entry_dt.tzinfo is None:
                         entry_dt = entry_dt.replace(tzinfo=timezone.utc)
                     age_days = (datetime.now(timezone.utc) - entry_dt).days
-                    if age_days >= 2:
+                    if age_days >= 2 or past_grace:
                         no_data_reason = "no snapshot" if snapshot is None else "no price data"
                         logger.info(
                             f"Zombie expiry: {position.market_id} | age={age_days}d | "
-                            f"{no_data_reason}"
+                            f"past_grace={past_grace} | {no_data_reason}"
                         )
-                        self._paper_logger.expire_position(position)
+                        self._expire_with_capital_release(
+                            position, f"zombie_expired ({no_data_reason})"
+                        )
                         closed_count += 1
                         continue
                 except Exception:
@@ -183,8 +224,84 @@ class PositionManager:
 
                 if closed_position.realized_pnl_eur is not None:
                     total_pnl += closed_position.realized_pnl_eur
-            else:
-                still_open += 1
+                continue
+
+            # Post-resolution zombie: market has a snapshot but Polymarket still
+            # reports it open well past the declared resolution time.
+            if past_grace:
+                mid = snapshot.mid_price
+                if mid >= self.POST_RESOLUTION_EXTREME_HIGH:
+                    inferred = "YES"
+                elif mid <= self.POST_RESOLUTION_EXTREME_LOW:
+                    inferred = "NO"
+                else:
+                    inferred = None
+
+                if inferred is not None:
+                    # Treat as binary settlement at extreme price.
+                    win_side = (position.side == inferred)
+                    exit_price = 1.0 if win_side else 0.0
+                    revenue = position.size_contracts * exit_price
+                    realized = revenue - position.cost_basis_eur
+                    closed_position = PaperPosition(
+                        position_id=position.position_id,
+                        proposal_id=position.proposal_id,
+                        market_id=position.market_id,
+                        market_question=position.market_question,
+                        side=position.side,
+                        status="RESOLVED",
+                        entry_time=position.entry_time,
+                        entry_price=position.entry_price,
+                        entry_slippage=position.entry_slippage,
+                        size_contracts=position.size_contracts,
+                        cost_basis_eur=position.cost_basis_eur,
+                        exit_time=datetime.now().isoformat(),
+                        exit_price=exit_price,
+                        exit_slippage=0.0,
+                        exit_reason=(
+                            f"Post-resolution zombie close: mid={mid:.3f}, inferred={inferred}, "
+                            f"hours_past={hours_past:.1f}h"
+                        ),
+                        realized_pnl_eur=realized,
+                        pnl_pct=(realized / position.cost_basis_eur * 100.0)
+                        if position.cost_basis_eur > 0 else 0.0,
+                        confidence_level=position.confidence_level,
+                        market_type=position.market_type,
+                        proposal_edge=getattr(position, "proposal_edge", None),
+                        hours_to_resolution=getattr(position, "hours_to_resolution", None),
+                        edge_bucket=getattr(position, "edge_bucket", None),
+                        city=getattr(position, "city", None),
+                        liquidity_bucket=getattr(position, "liquidity_bucket", None),
+                    )
+                    try:
+                        release_capital(
+                            position.cost_basis_eur, realized,
+                            f"Post-resolution zombie close: {position.market_id}",
+                        )
+                    except Exception as exc:
+                        logger.warning("Capital release failed (post-res zombie): %s", exc)
+                    self._paper_logger.log_position(closed_position)
+                    closed_count += 1
+                    total_pnl += realized
+                    logger.info(
+                        "ZOMBIE-RESOLVE: %s | %s | inferred %s @ mid=%.3f | "
+                        "%.1fh past res | P&L: %+.2f EUR",
+                        position.market_id, position.side, inferred, mid,
+                        hours_past, realized,
+                    )
+                    continue
+
+                # Mid not extreme: lock in current market price rather than wait.
+                closed_position, _ = simulate_exit_market(
+                    position, snapshot,
+                    f"Post-resolution lock-in: {hours_past:.1f}h past res, mid={mid:.3f}",
+                )
+                closed_count += 1
+                if closed_position.realized_pnl_eur is not None:
+                    total_pnl += closed_position.realized_pnl_eur
+                continue
+
+            still_open += 1
 
         summary = {
             "checked": len(open_positions),

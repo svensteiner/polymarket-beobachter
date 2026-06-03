@@ -85,6 +85,47 @@ logger = logging.getLogger(__name__)
 
 
 # =============================================================================
+# BRIER-AWARE SHRINKAGE BUMP (2026-06-03)
+# =============================================================================
+# self_diagnostic.json carries the latest Brier Skill Score. When BSS dips
+# below -0.5 the model is meaningfully overconfident vs the naive baseline,
+# so we shrink an extra +0.05 toward the market price on top of the per-type
+# floor. The bump is cached for 5 minutes to avoid hitting disk every market.
+_BRIER_BUMP_CACHE: Dict[str, Any] = {"ts": 0.0, "bump": 0.0}
+_BRIER_BUMP_TTL_SEC: float = 300.0
+_BRIER_BUMP_THRESHOLD: float = -0.5
+_BRIER_BUMP_VALUE: float = 0.05
+_SELF_DIAG_PATH = Path(__file__).resolve().parent.parent / "data" / "agent_memory" / "self_diagnostic.json"
+
+
+def _get_brier_shrinkage_bump() -> float:
+    """Return extra shrinkage to apply when Brier Skill Score regressed.
+
+    Reads ``data/agent_memory/self_diagnostic.json`` at most once per
+    ``_BRIER_BUMP_TTL_SEC``. Returns ``0.0`` on any error (fail-open: don't
+    distort the forecast if we can't read the file).
+    """
+    import time as _time
+    now = _time.monotonic()
+    if (now - _BRIER_BUMP_CACHE["ts"]) < _BRIER_BUMP_TTL_SEC:
+        return float(_BRIER_BUMP_CACHE["bump"])
+    bump = 0.0
+    try:
+        if _SELF_DIAG_PATH.exists():
+            with open(_SELF_DIAG_PATH, "r", encoding="utf-8") as _f:
+                _diag = json.load(_f)
+            _bss = _diag.get("brier_skill_score")
+            if isinstance(_bss, (int, float)) and _bss < _BRIER_BUMP_THRESHOLD:
+                bump = _BRIER_BUMP_VALUE
+    except Exception as _err:
+        logger.debug("Brier bump read failed (fail-open): %s", _err)
+        bump = 0.0
+    _BRIER_BUMP_CACHE["ts"] = now
+    _BRIER_BUMP_CACHE["bump"] = bump
+    return bump
+
+
+# =============================================================================
 # TYPE DEFINITIONS
 # =============================================================================
 
@@ -448,12 +489,21 @@ class WeatherEngine:
         else:
             _type_floor = 0.15   # boundary/unknown: base (raised from 0.08)
 
+        # Dynamic Brier-aware bump (2026-06-03): if self_diagnostic flagged a
+        # BRIER_REGRESSION (BSS < -0.5) on the latest snapshot, shrink an
+        # extra +0.05 to dampen overconfidence until the model stabilises.
+        # Self-clearing — once BSS recovers, the bump disappears.
+        _brier_bump = _get_brier_shrinkage_bump()
+        if _brier_bump > 0.0:
+            _type_floor = min(0.40, _type_floor + _brier_bump)
+
         if raw_prob < 0.05 or raw_prob > 0.95:
-            shrink = max(0.35, _type_floor)
+            shrink = max(0.35 + _brier_bump, _type_floor)
         elif raw_prob < 0.15 or raw_prob > 0.85:
-            shrink = max(0.25, _type_floor)
+            shrink = max(0.25 + _brier_bump, _type_floor)
         else:
             shrink = _type_floor
+        shrink = min(0.45, shrink)
         fair_prob = raw_prob * (1.0 - shrink) + market.odds_yes * shrink
         if shrink > 0.08:
             logger.debug(
