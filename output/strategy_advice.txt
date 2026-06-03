@@ -1,8 +1,8 @@
 POLYMARKET STRATEGY ADVISOR
 ========================================
-Generated: 2026-06-03T07:32:27.783782
+Generated: 2026-06-03T08:28:09.576931
 Mode:      BALANCE
-Summary:   BALANCE: Win-Rate 27.7% | P&L -82.25 EUR | Attack 0.04 | 2 offene Positionen | 6 Empfehlung(en)
+Summary:   BALANCE: Win-Rate 27.7% | P&L -82.25 EUR | Attack 0.00 | 5 offene Positionen | 7 Empfehlung(en)
 
 Metrics
 ----------------------------------------
@@ -10,9 +10,9 @@ Trades:               47
 Win-Rate:             27.66%
 Total P&L:            -82.25 EUR
 Stop-Loss Ratio:      21.3%
-Open Positions:       2
-High-Price Opens:     0
-Allocated Capital:    0.2%
+Open Positions:       5
+High-Price Opens:     1
+Allocated Capital:    0.5%
 Calibration:          GOOD
 
 Recommendations
@@ -29,15 +29,19 @@ Recommendations
    Bereich: universe
    Grund:   Mehrere Staedte liefern wiederholt negatives P&L. Erst nach neuer Datenlage wieder freigeben.
    Vorschlag: {"cooldown_cities": ["Atlanta", "Karachi", "New York City"]}
-4. [HIGH] Wiederholt negative Setup-Buckets automatisch sperren
+4. [HIGH] Entry-Preis-Guardrail pruefen
+   Bereich: execution
+   Grund:   1 offene Positionen wurden mit Entry >= 0.85 eroeffnet. Das passt nicht zu einem konservativen Risk/Reward-Profil und sollte auditiert werden.
+   Vorschlag: {"affected_positions": ["PAPER-20260603-0c62818a"], "example_prices": [0.99]}
+5. [HIGH] Wiederholt negative Setup-Buckets automatisch sperren
    Bereich: edge_memory
    Grund:   Mehrere wiederkehrende Kombinationen aus Confidence, Markt-Typ und Side zeigen negatives Edge und sollten im Intake geblockt bleiben.
    Vorschlag: {"blocked_edge_buckets": ["premium", "high", "medium"]}
-5. [HIGH] Logische Preisinkonsistenzen hedgen statt Richtung zu raten
+6. [HIGH] Logische Preisinkonsistenzen hedgen statt Richtung zu raten
    Bereich: arbitrage
    Grund:   1 Arbitrage-Kandidat(en) gefunden. Diese Setups sind meist besser als reine Directional Bets.
    Vorschlag: {"focus_city": "Mexico City", "focus_direction": "above", "focus_delta": 0.161, "review_market_ids": ["2416348", "2416350"]}
-6. [HIGH] Forecast-Qualitaet nicht mit Trading-Qualitaet verwechseln
+7. [HIGH] Forecast-Qualitaet nicht mit Trading-Qualitaet verwechseln
    Bereich: diagnostics
    Grund:   Kalibrierung ist GOOD, aber P&L bleibt negativ. Der Flaschenhals liegt eher bei Marktselektion, Preisniveau oder Exit-Handling.
 
