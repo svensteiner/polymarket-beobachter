@@ -35,16 +35,14 @@ DEFAULT_MIN_EDGE_ABSOLUTE = 0.10     # Raised from 0.05: meaningful absolute gap
 # Evidence: 5/6 YES trades at 30-50% edge WON (80% WR). Extrapolating conservatively
 # to 24%+. At 10 EUR position + -40% SL, max downside is ~4 EUR per trade.
 YES_MIN_EDGE = 0.24
-# YES_MIN_ENTRY_PRICE: 2026-05-29 lowered to 0.10 (was 0.15) to unlock real edges
-# that the systematically conservative model only finds at low YES prices.
-# Last 8h: 107 proposals, only 1 with positive YES edge (NYC ep=0.115, edge=+44%,
-# liquidity=5166 USD) — model says 15.1% vs market 10.5% → EV +3.6¢ per $1 bet.
-# Floor 0.15 blocked this; lottery-ticket protection retained via:
-#   - YES_MIN_EDGE_ABSOLUTE floor (0.04 — see below)
-#   - HIGH-confidence required by simulator.MIN_ENTRY_CONFIDENCE_RANK
-#   - simulator MIN_YES_ENTRY_PRICE=0.05 (true lottery floor at 5¢)
-# REVERT TRIGGER: if WR <40% on next 10 YES trades with ep 0.10-0.15, revert to 0.15.
-YES_MIN_ENTRY_PRICE = 0.10
+# YES_MIN_ENTRY_PRICE: 2026-06-04 REVERTED to 0.15 — revert trigger fired.
+# Recent (since 2026-05-21): 4 closed YES trades with ep < 0.15 → 0% WR, -7.36 EUR.
+# 0.15-0.22 bucket: 60% WR (5 trades, only -1.58 EUR). Floor 0.15 cleanly separates
+# the working zone from the lottery zone while preserving the productive band.
+# Trigger doc: "REVERT TRIGGER: if WR <40% on next 10 YES trades with ep 0.10-0.15"
+# was satisfied for the <0.15 region with overwhelming negative evidence.
+# Boundary markets retain 0.15 floor (unchanged); non-boundary now matches.
+YES_MIN_ENTRY_PRICE = 0.15
 # YES_MIN_EDGE_ABSOLUTE: 2026-05-29 lowered from 0.065 → 0.04 — cheap-market YES
 # bets have inherently small absolute gaps (4-5 pp), and EV is the absolute_edge.
 # At ep=0.115 with abs_edge=0.046, EV per $1 = +4.6¢. 6.5% floor blocked all such

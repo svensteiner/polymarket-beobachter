@@ -95,6 +95,11 @@ _BRIER_BUMP_CACHE: Dict[str, Any] = {"ts": 0.0, "bump": 0.0}
 _BRIER_BUMP_TTL_SEC: float = 300.0
 _BRIER_BUMP_THRESHOLD: float = -0.5
 _BRIER_BUMP_VALUE: float = 0.05
+# 2026-06-04: severe-regression tier — BSS < -0.9 triggered repeatedly
+# (latest snapshot: -0.9368). Add an extra +0.10 (total +0.15) to dampen
+# the deeper overconfidence band. Self-clearing once BSS recovers.
+_BRIER_SEVERE_THRESHOLD: float = -0.9
+_BRIER_SEVERE_EXTRA: float = 0.10
 _SELF_DIAG_PATH = Path(__file__).resolve().parent.parent / "data" / "agent_memory" / "self_diagnostic.json"
 
 
@@ -117,6 +122,8 @@ def _get_brier_shrinkage_bump() -> float:
             _bss = _diag.get("brier_skill_score")
             if isinstance(_bss, (int, float)) and _bss < _BRIER_BUMP_THRESHOLD:
                 bump = _BRIER_BUMP_VALUE
+                if _bss < _BRIER_SEVERE_THRESHOLD:
+                    bump += _BRIER_SEVERE_EXTRA
     except Exception as _err:
         logger.debug("Brier bump read failed (fail-open): %s", _err)
         bump = 0.0
@@ -489,13 +496,14 @@ class WeatherEngine:
         else:
             _type_floor = 0.15   # boundary/unknown: base (raised from 0.08)
 
-        # Dynamic Brier-aware bump (2026-06-03): if self_diagnostic flagged a
-        # BRIER_REGRESSION (BSS < -0.5) on the latest snapshot, shrink an
-        # extra +0.05 to dampen overconfidence until the model stabilises.
+        # Dynamic Brier-aware bump (2026-06-03 / hardened 2026-06-04):
+        # BSS < -0.5 → +0.05 shrinkage; BSS < -0.9 → +0.15 total. Caps raised
+        # from 0.40→0.50 (type floor) and 0.45→0.55 (final) so the severe-tier
+        # bump can actually take effect when the model is grossly miscalibrated.
         # Self-clearing — once BSS recovers, the bump disappears.
         _brier_bump = _get_brier_shrinkage_bump()
         if _brier_bump > 0.0:
-            _type_floor = min(0.40, _type_floor + _brier_bump)
+            _type_floor = min(0.50, _type_floor + _brier_bump)
 
         if raw_prob < 0.05 or raw_prob > 0.95:
             shrink = max(0.35 + _brier_bump, _type_floor)
@@ -503,7 +511,7 @@ class WeatherEngine:
             shrink = max(0.25 + _brier_bump, _type_floor)
         else:
             shrink = _type_floor
-        shrink = min(0.45, shrink)
+        shrink = min(0.55, shrink)
         fair_prob = raw_prob * (1.0 - shrink) + market.odds_yes * shrink
         if shrink > 0.08:
             logger.debug(
