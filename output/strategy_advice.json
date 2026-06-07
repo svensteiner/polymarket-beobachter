@@ -1,27 +1,27 @@
 {
-  "generated_at": "2026-06-04T12:24:16.129733",
+  "generated_at": "2026-06-07T19:23:40.471090",
   "mode": "balance",
-  "summary": "BALANCE: Win-Rate 28.9% | P&L -93.97 EUR | Attack 0.00 | 3 offene Positionen | 7 Empfehlung(en)",
+  "summary": "BALANCE: Win-Rate 28.3% | P&L -98.97 EUR | Attack 0.04 | 3 offene Positionen | 6 Empfehlung(en)",
   "metrics_snapshot": {
-    "total_trades": 52,
-    "win_rate_pct": 28.85,
-    "total_pnl_eur": -93.97,
-    "stop_loss_ratio": 0.192,
-    "resolution_loss_count": 12,
+    "total_trades": 53,
+    "win_rate_pct": 28.3,
+    "total_pnl_eur": -98.97,
+    "stop_loss_ratio": 0.189,
+    "resolution_loss_count": 13,
     "open_positions": 3,
-    "high_price_open_positions": 1,
+    "high_price_open_positions": 0,
     "allocated_capital_pct": 0.3,
     "calibration_interpretation": "GOOD",
     "top_edge_bucket": null,
     "worst_edge_bucket": "premium",
-    "attack_score": 0.0,
+    "attack_score": 0.04,
     "attack_components": {
-      "performance": 0.132,
+      "performance": 0.133,
       "calibration": 0.8,
       "edge": 0.0,
       "arbitrage": 0.45,
       "smart_money": 0.0,
-      "discipline_penalty": 0.3
+      "discipline_penalty": 0.24
     },
     "attack_signals": {
       "strong_edge_buckets": 0,
@@ -34,7 +34,6 @@
     "entry_quality_too_weak",
     "time_to_resolution_risk",
     "city_concentration_drag",
-    "high_price_exposure",
     "negative_edge_buckets",
     "arbitrage_opportunity",
     "selection_execution_gap"
@@ -71,10 +70,10 @@
   "edge_summary": [
     {
       "bucket": "premium",
-      "trade_count": 102,
+      "trade_count": 107,
       "win_count": 14,
-      "win_rate": 0.13725490196078433,
-      "avg_pnl_eur": -0.6715754077956149
+      "win_rate": 0.1308411214953271,
+      "avg_pnl_eur": -0.6401933793939506
     },
     {
       "bucket": "medium",
@@ -94,19 +93,19 @@
   "arbitrage_opportunities": [
     {
       "type": "ARBITRAGE_OPPORTUNITY",
-      "city": "Mexico City",
+      "city": "Shanghai",
       "direction": "above",
       "threshold_lower_f": 69.8,
-      "threshold_higher_f": 73.4,
-      "odds_lower": 0.044,
-      "odds_higher": 0.205,
-      "inconsistency_magnitude": 0.161,
-      "market_id_lower": "2416348",
-      "market_id_higher": "2416350",
-      "question_lower": "Will the highest temperature in Mexico City be 21°C on June 4?",
-      "question_higher": "Will the highest temperature in Mexico City be 23°C on June 4?",
-      "detected_at": "2026-06-02T20:02:03.059368",
-      "description": "Inkonsistenz: P(temp>73F) = 20.5% > P(temp>70F) = 4.4% in Mexico City"
+      "threshold_higher_f": 71.6,
+      "odds_lower": 0.021,
+      "odds_higher": 0.9825,
+      "inconsistency_magnitude": 0.9615,
+      "market_id_lower": "2450762",
+      "market_id_higher": "2450763",
+      "question_lower": "Will the lowest temperature in Shanghai be 21°C on June 7?",
+      "question_higher": "Will the lowest temperature in Shanghai be 22°C on June 7?",
+      "detected_at": "2026-06-07T17:10:46.018507",
+      "description": "Inkonsistenz: P(temp>72F) = 98.2% > P(temp>70F) = 2.1% in Shanghai"
     }
   ],
   "smart_money_summary": {
@@ -119,7 +118,7 @@
       "priority": "HIGH",
       "area": "entries",
       "action": "Eintrittsfilter anziehen und nur groessere Fehlbewertungen handeln",
-      "reason": "Win-Rate 28.9% bei Stop-Loss-Anteil 19%. Das spricht eher fuer schlechte Entry-Selektion als fuer zu spaete Exits.",
+      "reason": "Win-Rate 28.3% bei Stop-Loss-Anteil 19%. Das spricht eher fuer schlechte Entry-Selektion als fuer zu spaete Exits.",
       "suggested_changes": {
         "MIN_EDGE": 0.25,
         "MIN_EDGE_ABSOLUTE": 0.05
@@ -129,7 +128,7 @@
       "priority": "HIGH",
       "area": "timing",
       "action": "Restlaufzeit konservativer machen und Zombie-/Expiry-Risiko reduzieren",
-      "reason": "12 Resolution-Losses und 29 Expiry-/Zombie-Exits. Märkte werden zu lange oder zu spaet gehalten.",
+      "reason": "13 Resolution-Losses und 32 Expiry-/Zombie-Exits. Märkte werden zu lange oder zu spaet gehalten.",
       "suggested_changes": {
         "MIN_TIME_TO_RESOLUTION_HOURS": 18,
         "SAFETY_BUFFER_HOURS": 36
@@ -145,20 +144,6 @@
           "Atlanta",
           "Karachi",
           "Paris"
-        ]
-      }
-    },
-    {
-      "priority": "HIGH",
-      "area": "execution",
-      "action": "Entry-Preis-Guardrail pruefen",
-      "reason": "1 offene Positionen wurden mit Entry >= 0.85 eroeffnet. Das passt nicht zu einem konservativen Risk/Reward-Profil und sollte auditiert werden.",
-      "suggested_changes": {
-        "affected_positions": [
-          "PAPER-20260603-0c62818a"
-        ],
-        "example_prices": [
-          0.99
         ]
       }
     },
@@ -181,12 +166,12 @@
       "action": "Logische Preisinkonsistenzen hedgen statt Richtung zu raten",
       "reason": "1 Arbitrage-Kandidat(en) gefunden. Diese Setups sind meist besser als reine Directional Bets.",
       "suggested_changes": {
-        "focus_city": "Mexico City",
+        "focus_city": "Shanghai",
         "focus_direction": "above",
-        "focus_delta": 0.161,
+        "focus_delta": 0.9615,
         "review_market_ids": [
-          "2416348",
-          "2416350"
+          "2450762",
+          "2450763"
         ]
       }
     },

@@ -1,17 +1,17 @@
 POLYMARKET STRATEGY ADVISOR
 ========================================
-Generated: 2026-06-04T12:24:16.129733
+Generated: 2026-06-07T19:23:40.471090
 Mode:      BALANCE
-Summary:   BALANCE: Win-Rate 28.9% | P&L -93.97 EUR | Attack 0.00 | 3 offene Positionen | 7 Empfehlung(en)
+Summary:   BALANCE: Win-Rate 28.3% | P&L -98.97 EUR | Attack 0.04 | 3 offene Positionen | 6 Empfehlung(en)
 
 Metrics
 ----------------------------------------
-Trades:               52
-Win-Rate:             28.85%
-Total P&L:            -93.97 EUR
-Stop-Loss Ratio:      19.2%
+Trades:               53
+Win-Rate:             28.30%
+Total P&L:            -98.97 EUR
+Stop-Loss Ratio:      18.9%
 Open Positions:       3
-High-Price Opens:     1
+High-Price Opens:     0
 Allocated Capital:    0.3%
 Calibration:          GOOD
 
@@ -19,29 +19,25 @@ Recommendations
 ----------------------------------------
 1. [HIGH] Eintrittsfilter anziehen und nur groessere Fehlbewertungen handeln
    Bereich: entries
-   Grund:   Win-Rate 28.9% bei Stop-Loss-Anteil 19%. Das spricht eher fuer schlechte Entry-Selektion als fuer zu spaete Exits.
+   Grund:   Win-Rate 28.3% bei Stop-Loss-Anteil 19%. Das spricht eher fuer schlechte Entry-Selektion als fuer zu spaete Exits.
    Vorschlag: {"MIN_EDGE": 0.25, "MIN_EDGE_ABSOLUTE": 0.05}
 2. [HIGH] Restlaufzeit konservativer machen und Zombie-/Expiry-Risiko reduzieren
    Bereich: timing
-   Grund:   12 Resolution-Losses und 29 Expiry-/Zombie-Exits. Märkte werden zu lange oder zu spaet gehalten.
+   Grund:   13 Resolution-Losses und 32 Expiry-/Zombie-Exits. Märkte werden zu lange oder zu spaet gehalten.
    Vorschlag: {"MIN_TIME_TO_RESOLUTION_HOURS": 18, "SAFETY_BUFFER_HOURS": 36}
 3. [MEDIUM] Schwache Staedte temporaer auf Cooldown setzen
    Bereich: universe
    Grund:   Mehrere Staedte liefern wiederholt negatives P&L. Erst nach neuer Datenlage wieder freigeben.
    Vorschlag: {"cooldown_cities": ["Atlanta", "Karachi", "Paris"]}
-4. [HIGH] Entry-Preis-Guardrail pruefen
-   Bereich: execution
-   Grund:   1 offene Positionen wurden mit Entry >= 0.85 eroeffnet. Das passt nicht zu einem konservativen Risk/Reward-Profil und sollte auditiert werden.
-   Vorschlag: {"affected_positions": ["PAPER-20260603-0c62818a"], "example_prices": [0.99]}
-5. [HIGH] Wiederholt negative Setup-Buckets automatisch sperren
+4. [HIGH] Wiederholt negative Setup-Buckets automatisch sperren
    Bereich: edge_memory
    Grund:   Mehrere wiederkehrende Kombinationen aus Confidence, Markt-Typ und Side zeigen negatives Edge und sollten im Intake geblockt bleiben.
    Vorschlag: {"blocked_edge_buckets": ["premium", "medium", "high"]}
-6. [HIGH] Logische Preisinkonsistenzen hedgen statt Richtung zu raten
+5. [HIGH] Logische Preisinkonsistenzen hedgen statt Richtung zu raten
    Bereich: arbitrage
    Grund:   1 Arbitrage-Kandidat(en) gefunden. Diese Setups sind meist besser als reine Directional Bets.
-   Vorschlag: {"focus_city": "Mexico City", "focus_direction": "above", "focus_delta": 0.161, "review_market_ids": ["2416348", "2416350"]}
-7. [HIGH] Forecast-Qualitaet nicht mit Trading-Qualitaet verwechseln
+   Vorschlag: {"focus_city": "Shanghai", "focus_direction": "above", "focus_delta": 0.9615, "review_market_ids": ["2450762", "2450763"]}
+6. [HIGH] Forecast-Qualitaet nicht mit Trading-Qualitaet verwechseln
    Bereich: diagnostics
    Grund:   Kalibrierung ist GOOD, aber P&L bleibt negativ. Der Flaschenhals liegt eher bei Marktselektion, Preisniveau oder Exit-Handling.
 

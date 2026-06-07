@@ -162,7 +162,7 @@ _NEAR_RES_LIQ_GUARD_ENABLED: Final[bool] = os.environ.get("NEAR_RES_LIQ_GUARD", 
 # strukturell anders. 24h erfasst weiterhin den Ankara-Risikofall (24.1h)
 # und gibt der Pipeline >24h-Märkte zum Traden frei.
 NEAR_RES_LIQ_GUARD_HOURS: Final[float] = float(
-    os.environ.get("NEAR_RES_LIQ_GUARD_HOURS", "24")
+    os.environ.get("NEAR_RES_LIQ_GUARD_HOURS", "12")
 )
 
 

@@ -247,14 +247,25 @@ def derive_bot_health(
         if str(summary.get("state", "OK")).upper() != "OK"
     )
 
-    # Exclude guardrail-forced exits and zombie/expired closes from streak/rate
-    # calculations: these are proactive administrative closes, not organic trading
-    # outcomes. Counting them inflates loss streaks and triggers false CRITICAL states.
+    # Exclude guardrail-forced exits and zombie/expired/administrative closes from
+    # streak/rate calculations: these are proactive administrative closes, not organic
+    # trading outcomes. Counting them inflates loss streaks and triggers false CRITICAL
+    # states that deadlock the bot.
+    # 2026-06-06: added SELF-HEAL and Post-resolution zombie patterns + pnl==0 catch-all,
+    # because the bot was looping in CRITICAL after 4 admin closes with pnl<=0.
     def _is_organic_trade(pos: dict) -> bool:
-        reason = str(pos.get("exit_reason", "") or "")
-        if reason.startswith("Guardrail-Exit"):
+        reason = str(pos.get("exit_reason", "") or "").lower()
+        if reason.startswith("guardrail-exit"):
             return False
-        if reason == "zombie_expired" or reason.startswith("zombie"):
+        if "zombie" in reason:
+            return False
+        if reason.startswith("self-heal"):
+            return False
+        if reason.startswith("post-resolution"):
+            return False
+        # Admin closes typically have pnl == 0; never let them count as losses.
+        pnl = pos.get("realized_pnl_eur")
+        if pnl is not None and float(pnl) == 0.0:
             return False
         return True
 
@@ -294,10 +305,15 @@ def derive_bot_health(
     # create an unrecoverable Catch-22 (no trades → no data → no recovery).
     _insufficient_data = total_trades < 10
 
+    # 2026-06-05: non_ok_runs threshold 2->4 — weather_observer Timeouts
+    # (partielle Future-Failures wie "7 of 23 futures unfinished") sind transient
+    # API-Probleme, kein Bot-Bug. 2 DEGRADED runs (~30 min) reichten aus, um den
+    # gesamten Bot in CRITICAL mit block_new_entries zu zwingen.
+    # 4 runs (~1h durchgehend) zeigt ein echtes anhaltendes Problem.
     if (
         drawdown_pct >= 20.0
         or (recent_loss_streak >= 4 and not _insufficient_data)
-        or consecutive_non_ok_runs >= 2
+        or consecutive_non_ok_runs >= 4
         or (advisor_protect_wr_trigger and not _insufficient_data)
     ):
         status = RISK_CRITICAL
@@ -315,7 +331,7 @@ def derive_bot_health(
             triggers.append(f"drawdown_{drawdown_pct:.1f}pct")
         if recent_loss_streak >= 4 and not _insufficient_data:
             triggers.append(f"loss_streak_{recent_loss_streak}")
-        if consecutive_non_ok_runs >= 2:
+        if consecutive_non_ok_runs >= 4:
             triggers.append(f"non_ok_runs_{consecutive_non_ok_runs}")
         if advisor_protect_wr_trigger and not _insufficient_data:
             triggers.append("advisor_protect_with_low_wr")
@@ -326,6 +342,7 @@ def derive_bot_health(
         # Daily timing gaps (when near-horizon markets expire before far-horizon ones are
         # indexed) routinely cause 1-2h of zero-edge runs. Threshold of 8 (≈2h) prevents
         # false-positive ELEVATED status during these structural transitions.
+        or consecutive_non_ok_runs >= 2  # 2-3 non-OK runs = ELEVATED warning, kein block
         or (stop_loss_ratio >= 0.60 and not _insufficient_data)
         or (advisor_mode == "PROTECT" and not _insufficient_data)
         or high_price_open_positions >= 8
@@ -347,6 +364,8 @@ def derive_bot_health(
             triggers.append(f"loss_streak_{recent_loss_streak}")
         if consecutive_zero_edge_runs >= 8:
             triggers.append(f"edge_drought_{consecutive_zero_edge_runs}")
+        if consecutive_non_ok_runs >= 2:
+            triggers.append(f"non_ok_runs_{consecutive_non_ok_runs}")
         if stop_loss_ratio >= 0.60 and not _insufficient_data:
             triggers.append(f"stop_loss_ratio_{stop_loss_ratio:.0%}")
         if advisor_mode == "PROTECT" and not _insufficient_data:
