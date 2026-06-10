@@ -123,17 +123,25 @@ class ProposalIntake:
                 and p.proposal_id not in executed_ids
             })
             if candidate_market_ids:
+                # 2026-06-10 no-forward-edge decision: block LOW *and* UNKNOWN
+                # liquidity at entry. Forward validation proved the model has no
+                # market-relative edge; trading markets we cannot reliably price
+                # (synthetic spread, no order-book depth) only adds execution
+                # loss. UNKNOWN = snapshot missing or bucket not LOW/MEDIUM/HIGH.
                 snapshots = get_market_snapshots(candidate_market_ids)
                 for mid, snap in snapshots.items():
                     if snap is None:
                         spread_unknown.add(mid)
+                        spread_blocked.add(mid)
                         continue
                     liq = str(getattr(snap, "liquidity_bucket", "") or "").upper()
-                    if liq == "LOW":
+                    if liq == "LOW" or liq not in ("MEDIUM", "HIGH"):
+                        if liq not in ("LOW",):
+                            spread_unknown.add(mid)
                         spread_blocked.add(mid)
                 logger.info(
-                    "[INTAKE-SPREAD] checked=%d low_liq_blocked=%d unknown=%d "
-                    "(of %d candidate markets) — saved adversarial-check time",
+                    "[INTAKE-SPREAD] checked=%d blocked=%d (low+unknown) unknown=%d "
+                    "(of %d candidate markets) — LOW/UNKNOWN-liq entry block",
                     len(snapshots),
                     len(spread_blocked),
                     len(spread_unknown),

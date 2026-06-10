@@ -124,6 +124,38 @@ def _extract_city(question: str) -> Optional[str]:
     return None
 
 
+# 2026-06-10 no-forward-edge decision: market types with no proven edge and the
+# bulk of historical losses. exact = -36.66 EUR, at_or_above = -29.94 EUR (~-66 of
+# the -87 EUR book). A Gaussian-CDF over continuous temperature is the wrong model
+# for near-binary exact-bucket resolution. Override via weather.yaml
+# BLOCKED_MARKET_TYPES (set to [] to disable once forward edge is proven).
+DEFAULT_BLOCKED_MARKET_TYPES = ("exact", "at_or_above")
+
+_MT_BELOW_RE = re.compile(r"or\s+below|or\s+less|or\s+under|or\s+lower|\bbelow\b", re.I)
+_MT_ABOVE_RE = re.compile(r"above|or\s+above|exceed|or\s+higher|or\s+more|or\s+over", re.I)
+_MT_BETWEEN_RE = re.compile(r"\bbetween\b", re.I)
+
+
+def _detect_market_type(proposal) -> str:
+    """Resolve a proposal's market type, falling back to question-text parsing.
+
+    proposal.market_type is frequently None in this pipeline, so the question
+    text is the reliable signal. Returns one of:
+    exact | between | at_or_above | at_or_below.
+    """
+    mt = str(getattr(proposal, "market_type", "") or "").lower()
+    if mt in ("exact", "between", "at_or_above", "at_or_below"):
+        return mt
+    question = (getattr(proposal, "market_question", "") or "").lower()
+    if _MT_BELOW_RE.search(question):
+        return "at_or_below"
+    if _MT_ABOVE_RE.search(question):
+        return "at_or_above"
+    if _MT_BETWEEN_RE.search(question):
+        return "between"
+    return "exact"
+
+
 def evaluate_entry_guardrails(
     proposal,
     open_positions_count: int = 0,
@@ -171,6 +203,21 @@ def evaluate_entry_guardrails(
     # Extract proposal data
     entry_price = getattr(proposal, "implied_probability", 0)
     city = _extract_city(getattr(proposal, "market_question", ""))
+
+    # Check 0: Blocked market types (2026-06-10 no-forward-edge decision).
+    # exact + at_or_above carry ~-66 of the -87 EUR loss and have no proven
+    # forward edge over the market. Configurable via weather.yaml.
+    blocked_types = weather_config.get(
+        "BLOCKED_MARKET_TYPES", list(DEFAULT_BLOCKED_MARKET_TYPES)
+    )
+    if blocked_types:
+        mtype = _detect_market_type(proposal)
+        if mtype in {str(t).lower() for t in blocked_types}:
+            return (
+                False,
+                f"market_type_blocked|Market type '{mtype}' blocked — no proven "
+                "forward edge (exact/at_or_above = -66 EUR historical)",
+            )
 
     # Check 1: Position count limit
     if not ignore_inventory_limit:
