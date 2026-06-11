@@ -30,20 +30,25 @@ from __future__ import annotations
 
 import json
 import math
+import re
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 POSITIONS_PATH = PROJECT_ROOT / "paper_trader" / "logs" / "paper_positions.jsonl"
 OUT_JSON = PROJECT_ROOT / "analytics" / "forward_validation.json"
 OUT_TXT = PROJECT_ROOT / "analytics" / "forward_validation.txt"
+# Official Polymarket resolutions (ground truth) keyed by market_id.
+RESOLUTIONS_PATH = PROJECT_ROOT / "data" / "outcomes" / "resolutions.jsonl"
+OBS_LOG_DIR = PROJECT_ROOT / "logs"
+# Fair model-vs-market comparison point: the forecast at ~this many hours before
+# resolution. Both still carry uncertainty here; right at resolution the market
+# price trivially converges to the outcome and the comparison becomes unfair.
+DEFAULT_LEAD_HOURS = 24.0
 
-# Minimum resolved trades before the live gate is even allowed to evaluate.
+# Minimum resolved markets before the live gate is even allowed to evaluate.
 MIN_RESOLVED_FOR_GATE = 100
-# Out-of-sample split: trades whose entry_time is on/after this date form the
-# held-out test window. Frozen so the result is genuinely out-of-sample.
-DEFAULT_TEST_SPLIT_ISO = "2026-06-01"
 
 GOVERNANCE_NOTICE = (
     "Forward edge validation (model vs MARKET, not vs climatology). READ-ONLY. "
@@ -263,57 +268,216 @@ def compute_skill(rows: List[Dict[str, Any]]) -> Dict[str, Any]:
     }
 
 
-def _split_by_time(rows: List[Dict[str, Any]], split_iso: str) -> Tuple[List, List]:
-    cutoff = _parse_iso(split_iso)
-    train, test = [], []
-    for r in rows:
-        et = _parse_iso(r.get("entry_time"))
-        if cutoff is None or et is None:
-            train.append(r)
-        elif et >= cutoff:
-            test.append(r)
-        else:
-            train.append(r)
-    return train, test
+# --------------------------------------------------------------------------- #
+# Observation-based test (the large-sample model-vs-market verdict)
+# --------------------------------------------------------------------------- #
+def load_resolutions(path: Path = RESOLUTIONS_PATH) -> Dict[str, int]:
+    """Official Polymarket resolutions: market_id -> 1 (YES) / 0 (NO)."""
+    out: Dict[str, int] = {}
+    if not path.exists():
+        return out
+    for line in path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            r = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if r.get("resolved") and r.get("resolution") in ("YES", "NO"):
+            out[str(r.get("market_id"))] = 1 if r["resolution"] == "YES" else 0
+    return out
 
 
-def evaluate(rows: List[Dict[str, Any]], split_iso: str = DEFAULT_TEST_SPLIT_ISO) -> Dict[str, Any]:
-    overall_edge = compute_edge_pnl_metrics(rows)
-    overall_skill = compute_skill(rows)
-    train, test = _split_by_time(rows, split_iso)
-    oos_skill = compute_skill(test)
-    oos_edge = compute_edge_pnl_metrics(test)
+def load_all_observations(full: bool = True) -> List[Dict[str, Any]]:
+    """Load weather observations. full=all rotated logs; else active log only."""
+    if full:
+        files = sorted(OBS_LOG_DIR.glob("weather_observations*.jsonl"))
+    else:
+        active = OBS_LOG_DIR / "weather_observations.jsonl"
+        files = [active] if active.exists() else []
+    rows: List[Dict[str, Any]] = []
+    for f in files:
+        try:
+            text = f.read_text(encoding="utf-8")
+        except OSError:
+            continue
+        for line in text.splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                rows.append(json.loads(line))
+            except json.JSONDecodeError:
+                continue
+    return rows
 
-    # Live gate: strict, frozen, out-of-sample.
+
+def _obs_event_type(desc: Optional[str]) -> str:
+    """Coarse market-type from the question text."""
+    d = (desc or "").lower()
+    if "between" in d:
+        return "between"
+    if re.search(r"or\s+(?:below|less|under|lower)|\bbelow\b", d):
+        return "at_or_below"
+    if re.search(r"or\s+(?:above|higher|more|over)|\babove\b|exceed", d):
+        return "at_or_above"
+    return "exact"
+
+
+def _dedupe_by_lead(
+    observations: List[Dict[str, Any]],
+    resolutions: Dict[str, int],
+    lead_hours: float,
+) -> List[Dict[str, Any]]:
+    """One observation per resolved market: the one closest to lead_hours."""
+    best: Dict[str, Any] = {}
+    for o in observations:
+        mid = str(o.get("market_id"))
+        if mid not in resolutions:
+            continue
+        h = _num(o.get("hours_to_resolution"))
+        mp = _num(o.get("model_probability"))
+        kp = _num(o.get("market_probability"))
+        if h is None or mp is None or kp is None:
+            continue
+        dist = abs(h - lead_hours)
+        cur = best.get(mid)
+        if cur is None or dist < cur[0]:
+            best[mid] = (dist, o)
+    return [v[1] for v in best.values()]
+
+
+def compute_observation_test(
+    observations: List[Dict[str, Any]],
+    resolutions: Dict[str, int],
+    lead_hours: float = DEFAULT_LEAD_HOURS,
+) -> Dict[str, Any]:
+    """Score MODEL and RAW ensemble probability vs the MARKET, against the
+    official Polymarket resolution, on one observation per resolved market."""
+    chosen = _dedupe_by_lead(observations, resolutions, lead_hours)
+
+    model_sq: List[float] = []
+    market_sq: List[float] = []
+    outcomes: List[int] = []
+    model_hits = 0
+    market_hits = 0
+    by_type: Dict[str, Dict[str, List[float]]] = {}
+    raw_sq: List[float] = []
+    raw_market_sq: List[float] = []
+    raw_hits = 0
+
+    for o in chosen:
+        outcome = resolutions[str(o.get("market_id"))]
+        mp = _num(o.get("model_probability"))
+        kp = _num(o.get("market_probability"))
+        if mp is None or kp is None:
+            continue
+        outcomes.append(outcome)
+        model_sq.append((mp - outcome) ** 2)
+        market_sq.append((kp - outcome) ** 2)
+        model_hits += int(int(mp >= 0.5) == outcome)
+        market_hits += int(int(kp >= 0.5) == outcome)
+        bucket = by_type.setdefault(_obs_event_type(o.get("event_description")),
+                                    {"model": [], "market": []})
+        bucket["model"].append((mp - outcome) ** 2)
+        bucket["market"].append((kp - outcome) ** 2)
+        rp = _num(o.get("raw_member_probability"))
+        if rp is not None:
+            raw_sq.append((rp - outcome) ** 2)
+            raw_market_sq.append((kp - outcome) ** 2)
+            raw_hits += int(int(rp >= 0.5) == outcome)
+
+    n = len(outcomes)
+    base_rate = _mean([float(x) for x in outcomes]) if outcomes else None
+    base_sq = [(base_rate - o) ** 2 for o in outcomes] if base_rate is not None else []
+    model_brier = _mean(model_sq)
+    market_brier = _mean(market_sq)
+    skill = (round(1 - model_brier / market_brier, 4)
+             if model_brier is not None and market_brier not in (None, 0) else None)
+
+    per_type = {}
+    for mt, b in by_type.items():
+        mb, kb = _mean(b["model"]), _mean(b["market"])
+        per_type[mt] = {
+            "n": len(b["model"]),
+            "model_brier": round(mb, 4) if mb is not None else None,
+            "market_brier": round(kb, 4) if kb is not None else None,
+            "model_beats_market": (mb is not None and kb is not None and mb < kb),
+        }
+
+    raw_brier = _mean(raw_sq)
+    raw_market_brier = _mean(raw_market_sq)
+    raw_skill = (round(1 - raw_brier / raw_market_brier, 4)
+                 if raw_brier is not None and raw_market_brier not in (None, 0) else None)
+
+    return {
+        "lead_hours": lead_hours,
+        "n_resolved": n,
+        "base_rate": round(base_rate, 4) if base_rate is not None else None,
+        "model_brier": round(model_brier, 4) if model_brier is not None else None,
+        "market_brier": round(market_brier, 4) if market_brier is not None else None,
+        "baseline_brier": round(_mean(base_sq), 4) if base_sq else None,
+        "skill_vs_market": skill,
+        "model_beats_market": (model_brier is not None and market_brier is not None
+                               and model_brier < market_brier),
+        "model_directional_hit_rate": round(model_hits / n, 3) if n else None,
+        "market_favorite_hit_rate": round(market_hits / n, 3) if n else None,
+        "by_market_type": per_type,
+        "raw_ensemble": {
+            "n": len(raw_sq),
+            "raw_brier": round(raw_brier, 4) if raw_brier is not None else None,
+            "market_brier_on_subset": round(raw_market_brier, 4) if raw_market_brier is not None else None,
+            "raw_skill_vs_market": raw_skill,
+            "raw_beats_market": (raw_brier is not None and raw_market_brier is not None
+                                 and raw_brier < raw_market_brier),
+            "raw_directional_hit_rate": round(raw_hits / len(raw_sq), 3) if raw_sq else None,
+        },
+    }
+
+
+def evaluate(
+    rows: List[Dict[str, Any]],
+    *,
+    full_obs: bool = True,
+    lead_hours: float = DEFAULT_LEAD_HOURS,
+) -> Dict[str, Any]:
+    paper_edge = compute_edge_pnl_metrics(rows)
+    paper_skill = compute_skill(rows)
+    resolutions = load_resolutions()
+    observations = load_all_observations(full_obs)
+    obs = compute_observation_test(observations, resolutions, lead_hours)
+
+    # Live gate: driven by the large-sample observation test (model vs MARKET on
+    # official resolutions), with the paper-trade edge correlation as a backstop.
     reasons: List[str] = []
-    n_oos = oos_skill["n_resolved"]
-    if n_oos < MIN_RESOLVED_FOR_GATE:
+    n = obs["n_resolved"]
+    if n < MIN_RESOLVED_FOR_GATE:
+        reasons.append(f"Nur {n} aufgeloeste Markt-Observations (< {MIN_RESOLVED_FOR_GATE} noetig).")
+    if not obs["model_beats_market"]:
         reasons.append(
-            f"Nur {n_oos} aufgeloeste OOS-Trades (< {MIN_RESOLVED_FOR_GATE} noetig)."
+            f"Modell-Brier schlaegt Markt-Brier NICHT auf {n} Maerkten "
+            f"(model={obs['model_brier']} vs market={obs['market_brier']})."
         )
-    if not oos_skill["model_beats_market"]:
-        reasons.append(
-            f"Modell-Brier schlaegt Markt-Brier NICHT "
-            f"(model={oos_skill['model_brier']} vs market={oos_skill['market_brier']})."
-        )
-    hr = oos_skill["model_directional_hit_rate"]
-    if hr is None or hr <= 0.5:
-        reasons.append(f"Directional Hit-Rate {hr} <= 0.50 (kein Richtungs-Edge).")
-    corr = oos_edge["corr_edge_pnl"]
-    if corr is None or corr <= 0:
-        reasons.append(f"corr(edge, pnl) = {corr} <= 0 (Edge nicht profit-korreliert).")
+    mh, kh = obs["model_directional_hit_rate"], obs["market_favorite_hit_rate"]
+    if mh is None or kh is None or mh <= kh:
+        reasons.append(f"Modell-Hit-Rate {mh} <= Markt-Favorit {kh} (kein Richtungs-Edge).")
+    corr = paper_edge["corr_edge_pnl"]
+    if corr is not None and corr <= 0:
+        reasons.append(f"corr(edge, pnl) = {corr} <= 0 (getradete Edges anti-korreliert).")
 
-    live_eligible = len(reasons) == 0
     return {
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "governance_notice": GOVERNANCE_NOTICE,
-        "test_split_iso": split_iso,
-        "live_eligible": live_eligible,
+        "live_eligible": len(reasons) == 0,
         "live_block_reasons": reasons,
-        "overall": {"edge_pnl": overall_edge, "skill": overall_skill},
-        "out_of_sample": {"edge_pnl": oos_edge, "skill": oos_skill},
+        "observation_test": obs,
+        "paper_test": {"edge_pnl": paper_edge, "skill": paper_skill},
         "min_resolved_for_gate": MIN_RESOLVED_FOR_GATE,
-        "model_probability_semantics": "model_probability assumed = P(YES condition true).",
+        "model_probability_semantics": (
+            "model_probability=P(YES); market_probability=YES odds; "
+            "outcome from official Polymarket resolution (data/outcomes/resolutions.jsonl)."
+        ),
     }
 
 
@@ -321,12 +485,12 @@ def evaluate(rows: List[Dict[str, Any]], split_iso: str = DEFAULT_TEST_SPLIT_ISO
 # Rendering / IO
 # --------------------------------------------------------------------------- #
 def render_text(report: Dict[str, Any]) -> str:
-    o = report["overall"]
-    s = o["skill"]
-    e = o["edge_pnl"]
+    obs = report["observation_test"]
+    raw = obs.get("raw_ensemble", {})
+    p = report["paper_test"]["edge_pnl"]
     lines = [
         "=" * 60,
-        "FORWARD EDGE VALIDATION (Modell vs MARKT)",
+        "FORWARD EDGE VALIDATION (Modell & Roh-Ensemble vs MARKT)",
         f"Generiert: {report['generated_at']}",
         "=" * 60,
         f"LIVE-ELIGIBLE: {'JA' if report['live_eligible'] else 'NEIN'}",
@@ -335,35 +499,41 @@ def render_text(report: Dict[str, Any]) -> str:
         lines.append(f"  - BLOCK: {r}")
     lines += [
         "",
-        "GESAMT (alle Trades):",
-        f"  Trades mit pnl:        {e['n']}",
-        f"  Total P&L:             {e['total_pnl_eur']} EUR",
-        f"  Win-Rate:              {e['win_rate_pct']}%",
-        f"  Profit-Factor:         {e['profit_factor']}",
-        f"  corr(edge, pnl):       {e['corr_edge_pnl']}   (<0 = Edge zeigt FALSCH)",
-        f"  +Edge Trades:          {e['positive_edge_trades']} -> {e['positive_edge_pnl_eur']} EUR",
-        f"  -Edge Trades:          {e['nonpositive_edge_trades']} -> {e['nonpositive_edge_pnl_eur']} EUR",
+        f"OBSERVATION-TEST (offizielle Resolutions, ~{obs['lead_hours']}h vor Aufloesung):",
+        f"  Aufgeloeste Maerkte:   {obs['n_resolved']}",
+        f"  Basisrate (YES):       {obs['base_rate']}",
+        f"  Modell-Brier:          {obs['model_brier']}",
+        f"  Markt-Brier:           {obs['market_brier']}",
+        f"  Baseline-Brier:        {obs['baseline_brier']}",
+        f"  Skill vs Markt:        {obs['skill_vs_market']}   (>0 = Modell schlaegt Markt)",
+        f"  Modell schlaegt Markt: {'JA' if obs['model_beats_market'] else 'NEIN'}",
+        f"  Hit-Rate Modell:       {obs['model_directional_hit_rate']}",
+        f"  Hit-Rate Markt-Fav:    {obs['market_favorite_hit_rate']}",
         "",
-        "BRIER (aufgeloeste Trades — Modell muss MARKT schlagen):",
-        f"  Aufgeloeste Trades:    {s['n_resolved']}",
-        f"  Modell-Brier:          {s['model_brier']}",
-        f"  Markt-Brier:           {s['market_brier']}",
-        f"  Baseline-Brier:        {s['baseline_brier']}",
-        f"  Skill vs Markt:        {s['skill_vs_market']}   (>0 = Modell schlaegt Markt)",
-        f"  Modell schlaegt Markt: {'JA' if s['model_beats_market'] else 'NEIN'}",
-        f"  Hit-Rate Modell:       {s['model_directional_hit_rate']}",
-        f"  Hit-Rate Markt-Fav:    {s['market_favorite_hit_rate']}",
+        f"  ROH-ENSEMBLE pre-Shrinkage (n={raw.get('n')}):",
+        f"    Roh-Brier:           {raw.get('raw_brier')}",
+        f"    Markt-Brier(Subset): {raw.get('market_brier_on_subset')}",
+        f"    Roh-Skill vs Markt:  {raw.get('raw_skill_vs_market')}   (>0 = Roh schlaegt Markt!)",
+        f"    Roh schlaegt Markt:  {'JA' if raw.get('raw_beats_market') else 'NEIN'}",
     ]
-    if s.get("by_market_type"):
+    if obs.get("by_market_type"):
         lines.append("")
         lines.append("  Pro Markttyp (model_brier vs market_brier):")
-        for mt, b in sorted(s["by_market_type"].items()):
+        for mt, b in sorted(obs["by_market_type"].items()):
             verdict = "OK" if b["model_beats_market"] else "SCHLECHTER"
             lines.append(
-                f"    {mt:<12} n={b['n']:<3} model={b['model_brier']} "
+                f"    {mt:<12} n={b['n']:<5} model={b['model_brier']} "
                 f"market={b['market_brier']} -> {verdict}"
             )
-    lines += ["", "Hinweis: " + report["governance_notice"]]
+    lines += [
+        "",
+        "PAPER-TRADES (Sekundaer):",
+        f"  Trades mit pnl:        {p['n']}",
+        f"  corr(edge, pnl):       {p['corr_edge_pnl']}   (<0 = Edge zeigt FALSCH)",
+        f"  +Edge -> {p['positive_edge_pnl_eur']} EUR | -Edge -> {p['nonpositive_edge_pnl_eur']} EUR",
+        "",
+        "Hinweis: " + report["governance_notice"],
+    ]
     return "\n".join(lines)
 
 
@@ -373,16 +543,19 @@ def _atomic_write(path: Path, content: str) -> None:
     tmp.replace(path)
 
 
-def run() -> Dict[str, Any]:
+def run(full_obs: bool = True) -> Dict[str, Any]:
     rows = load_positions()
-    report = evaluate(rows)
+    report = evaluate(rows, full_obs=full_obs)
     _atomic_write(OUT_JSON, json.dumps(report, indent=2, ensure_ascii=False))
     _atomic_write(OUT_TXT, render_text(report))
     return report
 
 
 def main() -> None:
-    report = run()
+    import sys
+    # Default: full history (decisive large sample). --quick = active log only.
+    full = "--quick" not in sys.argv
+    report = run(full_obs=full)
     print(render_text(report))
 
 
