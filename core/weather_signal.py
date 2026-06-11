@@ -137,6 +137,12 @@ class WeatherObservation:
     ensemble_variance: Optional[float] = None
     ensemble_max_deviation: Optional[float] = None
 
+    # Forecast-method instrumentation (2026-06-11): enables an honest
+    # raw-ensemble-vs-market backtest once outcomes are backfilled.
+    probability_method: Optional[str] = None      # ensemble_member_counting | gaussian_cdf
+    raw_member_probability: Optional[float] = None  # pre-shrinkage 31-member count probability
+    ensemble_member_temps_f: Optional[list] = None  # raw per-member daily-high temps (°F)
+
     def __post_init__(self):
         """Validate observation fields."""
         if not (0.0 <= self.market_probability <= 1.0):
@@ -180,6 +186,9 @@ class WeatherObservation:
             "ensemble_source_names": self.ensemble_source_names,
             "ensemble_variance": self.ensemble_variance,
             "ensemble_max_deviation": self.ensemble_max_deviation,
+            "probability_method": self.probability_method,
+            "raw_member_probability": self.raw_member_probability,
+            "ensemble_member_temps_f": self.ensemble_member_temps_f,
         }
 
     def to_json(self) -> str:
@@ -215,6 +224,9 @@ def create_observation(
     ensemble_source_names: Optional[str] = None,
     ensemble_variance: Optional[float] = None,
     ensemble_max_deviation: Optional[float] = None,
+    probability_method: Optional[str] = None,
+    raw_member_probability: Optional[float] = None,
+    ensemble_member_temps_f: Optional[list] = None,
 ) -> WeatherObservation:
     """
     Factory function to create a WeatherObservation with computed fields.
@@ -269,6 +281,9 @@ def create_observation(
         ensemble_source_names=ensemble_source_names,
         ensemble_variance=ensemble_variance,
         ensemble_max_deviation=ensemble_max_deviation,
+        probability_method=probability_method,
+        raw_member_probability=raw_member_probability,
+        ensemble_member_temps_f=ensemble_member_temps_f,
     )
 
 

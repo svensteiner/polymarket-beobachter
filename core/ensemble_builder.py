@@ -65,6 +65,14 @@ class EnsembleForecast:
     # Confidence adjustment from ensemble disagreement
     confidence_adjustment: str  # "NONE", "DEGRADED_LOW_SOURCES", "DEGRADED_VARIANCE"
 
+    # Forecast-method instrumentation (2026-06-11): enables honest
+    # raw-ensemble-vs-market measurement. probability_method = which engine
+    # produced the probability; raw_member_probability = the pre-shrinkage
+    # 31-member count probability; member_daily_highs_f = the raw member highs.
+    probability_method: str = "gaussian_cdf"
+    raw_member_probability: Optional[float] = None
+    member_daily_highs_f: Optional[list] = None
+
     def to_dict(self) -> Dict[str, Any]:
         return {
             "city": self.city,
@@ -81,6 +89,11 @@ class EnsembleForecast:
             "max_source_deviation": round(self.max_source_deviation, 4),
             "confidence_adjustment": self.confidence_adjustment,
             "sources": [sf.source_name for sf in self.source_forecasts],
+            "probability_method": self.probability_method,
+            "raw_member_probability": (
+                round(self.raw_member_probability, 4)
+                if self.raw_member_probability is not None else None
+            ),
         }
 
 
@@ -165,6 +178,7 @@ class EnsembleBuilder:
         # PRIORITY: GFS Ensemble member-counting > Normal-CDF fallback
         per_source_probs: Dict[str, float] = {}
         ensemble_member_prob: Optional[float] = None
+        raw_member_highs: Optional[list] = None
 
         for sf in forecasts:
             # Try ensemble member counting first (much better calibrated)
@@ -178,6 +192,7 @@ class EnsembleBuilder:
                 if ens_prob is not None:
                     per_source_probs[sf.source_name] = ens_prob
                     ensemble_member_prob = ens_prob
+                    raw_member_highs = list(getattr(sf, "member_daily_highs", None) or [])
                     member_count = getattr(sf, "ensemble_member_count", 0)
                     logger.info(
                         f"Ensemble member-counting: P={ens_prob:.4f} "
@@ -304,6 +319,12 @@ class EnsembleBuilder:
             ensemble_variance=ensemble_var,
             max_source_deviation=max_dev,
             confidence_adjustment=adjustment,
+            probability_method=(
+                "ensemble_member_counting" if ensemble_member_prob is not None
+                else "gaussian_cdf"
+            ),
+            raw_member_probability=ensemble_member_prob,
+            member_daily_highs_f=raw_member_highs,
         )
 
     def _fetch_all(self, city: str, target_time: datetime) -> List[SourceForecast]:
