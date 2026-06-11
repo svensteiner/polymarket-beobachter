@@ -129,7 +129,7 @@ def _extract_city(question: str) -> Optional[str]:
 # the -87 EUR book). A Gaussian-CDF over continuous temperature is the wrong model
 # for near-binary exact-bucket resolution. Override via weather.yaml
 # BLOCKED_MARKET_TYPES (set to [] to disable once forward edge is proven).
-DEFAULT_BLOCKED_MARKET_TYPES = ("exact", "at_or_above")
+DEFAULT_BLOCKED_MARKET_TYPES = ("exact", "at_or_above", "between")
 
 _MT_BELOW_RE = re.compile(r"or\s+below|or\s+less|or\s+under|or\s+lower|\bbelow\b", re.I)
 _MT_ABOVE_RE = re.compile(r"above|or\s+above|exceed|or\s+higher|or\s+more|or\s+over", re.I)
@@ -204,9 +204,10 @@ def evaluate_entry_guardrails(
     entry_price = getattr(proposal, "implied_probability", 0)
     city = _extract_city(getattr(proposal, "market_question", ""))
 
-    # Check 0: Blocked market types (2026-06-10 no-forward-edge decision).
-    # exact + at_or_above carry ~-66 of the -87 EUR loss and have no proven
-    # forward edge over the market. Configurable via weather.yaml.
+    # Check 0: Blocked market types (2026-06-10/11 no-forward-edge decision).
+    # forward_validation.py (n=2496 resolved markets) shows exact, at_or_above and
+    # between all have WORSE Brier than the market; only at_or_below beats it.
+    # Configurable via weather.yaml (BLOCKED_MARKET_TYPES).
     blocked_types = weather_config.get(
         "BLOCKED_MARKET_TYPES", list(DEFAULT_BLOCKED_MARKET_TYPES)
     )
@@ -216,7 +217,7 @@ def evaluate_entry_guardrails(
             return (
                 False,
                 f"market_type_blocked|Market type '{mtype}' blocked — no proven "
-                "forward edge (exact/at_or_above = -66 EUR historical)",
+                "forward edge vs market (forward_validation n=2496)",
             )
 
     # Check 1: Position count limit

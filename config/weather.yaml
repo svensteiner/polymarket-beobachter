@@ -30,12 +30,20 @@ ALLOWED_CITIES:
 - Buenos Aires
 - Ankara
 BLOCKED_EDGE_BUCKETS: []
-# 2026-06-10 no-forward-edge decision: block market types with no proven forward
-# edge. exact (-36.66 EUR) + at_or_above (-29.94 EUR) = ~-66 of the -87 EUR loss.
-# Set to [] to re-enable once analytics/forward_validation.py reports live_eligible.
+# 2026-06-10/11 no-forward-edge decision: block market types with no proven
+# forward edge over the MARKET price (analytics/forward_validation.py, n=2496
+# resolved markets, ~24h lead). Model-Brier vs Market-Brier per type:
+#   exact        n=1346  0.1594 vs 0.1470  -> WORSE (blocked)
+#   at_or_above  n=101   0.2182 vs 0.1623  -> WORSE (blocked)
+#   between      n=1009  0.1557 vs 0.1416  -> WORSE (blocked 2026-06-11, large n)
+#   at_or_below  n=40    0.1485 vs 0.1545  -> only type that BEATS market (kept open)
+# Concentrates paper exposure on the one positive-skill type while the raw-ensemble
+# (pre-shrinkage) test accumulates. Set to [] to re-enable once
+# analytics/forward_validation.py reports live_eligible.
 BLOCKED_MARKET_TYPES:
 - exact
 - at_or_above
+- between
 CITY_CONFIG:
   Berlin:
     primary_station: EDDB
