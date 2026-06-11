@@ -1492,6 +1492,15 @@ class Orchestrator:
 
             self._rotate_if_needed(summary_file, max_size_mb=STATUS_SUMMARY_ROTATE_MB)
 
+            # Forward-Edge Validation: ZUERST aktualisieren (model vs MARKET Brier,
+            # corr(edge,pnl), OOS-Skill), damit der Live-Readiness-Freeze unten den
+            # frischen live_eligible-Status liest. READ-ONLY, fail-open.
+            try:
+                from analytics.forward_validation import run as _fwd_run
+                _fwd_run()
+            except Exception as _fwd_err:  # fail-open: gate stays blocked on stale data
+                logger.debug("Forward-Validation fehlgeschlagen: %s", _fwd_err)
+
             # Live-Readiness Tracker: nach jedem Run aktualisieren, damit wir
             # kontinuierlich sehen wie weit wir von den 6 Live-Go-Meilensteinen
             # entfernt sind (analytics/live_readiness.json|txt).
