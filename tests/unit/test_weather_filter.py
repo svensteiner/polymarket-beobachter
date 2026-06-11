@@ -13,7 +13,6 @@ from typing import List, Tuple, Callable
 
 from core.weather_market_filter import (
     WeatherMarket,
-    FilterResult,
     WeatherMarketFilter,
 )
 

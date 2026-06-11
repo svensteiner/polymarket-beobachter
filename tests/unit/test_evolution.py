@@ -2,7 +2,6 @@
 # TESTS Fuer EVOLUTION FRAMEWORK
 # =============================================================================
 
-import pytest
 from evolution.agent import Agent, DEFAULT_PARAMS, PARAM_RANGES
 
 

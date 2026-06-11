@@ -7,7 +7,6 @@ import pytest
 from analytics.arbitrage_detector import (
     _extract_temperature_threshold,
     _extract_city_from_question,
-    parse_market_info,
     detect_arbitrage,
 )
 

@@ -11,7 +11,6 @@
 # =============================================================================
 
 import unittest
-import json
 from datetime import date
 from pathlib import Path
 
@@ -20,8 +19,8 @@ import sys
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from collector.sanitizer import Sanitizer
-from collector.filter import MarketFilter, FilterResult, FilteredMarket
-from collector.normalizer import MarketNormalizer, NormalizedMarket
+from collector.filter import MarketFilter, FilterResult
+from collector.normalizer import MarketNormalizer
 
 
 class TestSanitizer(unittest.TestCase):

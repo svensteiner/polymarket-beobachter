@@ -15,11 +15,9 @@
 # was followed by a loss.
 # =============================================================================
 
-from datetime import datetime, timezone
 
 from analytics.outcome_analyser import (
     _compute_drawdown_from_trades,
-    _compute_base_metrics,
     _compute_monthly_performance,
 )
 

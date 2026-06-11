@@ -3,8 +3,6 @@ Unit Tests for CapitalManager - Atomic Write and Reconciliation
 """
 import json
 import pytest
-import tempfile
-import shutil
 from pathlib import Path
 
 

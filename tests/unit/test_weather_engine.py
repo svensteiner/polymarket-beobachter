@@ -20,7 +20,6 @@ from core.weather_engine import (
 from core.weather_market_filter import WeatherMarket
 from core.weather_probability_model import ForecastData
 from core.weather_signal import (
-    WeatherObservation,
     ObservationAction,
     WeatherConfidence,
     create_observation,
@@ -506,7 +505,6 @@ def test_load_config():
     import tempfile
     import os
     import yaml
-    from core.weather_engine import load_config
 
     config_content = {
         "MIN_LIQUIDITY": 100,
@@ -538,7 +536,6 @@ def test_create_engine_factory():
     import tempfile
     import os
     import yaml
-    from core.weather_engine import create_engine
 
     config_content = {
         "MIN_LIQUIDITY": 50,
@@ -574,7 +571,6 @@ def test_log_signal():
     """Test _log_observation writes to file correctly."""
     import tempfile
     import os
-    import json
 
     config = create_test_config()
 
@@ -646,7 +642,7 @@ def test_log_signal_creates_directory():
 
         # Verify directory was created and file exists
         assert os.path.exists(log_path), f"Log file was not created at {log_path}"
-    except Exception as e:
+    except Exception:
         # If directory creation fails, that's acceptable - log is non-critical
         # Just verify no crash occurred
         pass

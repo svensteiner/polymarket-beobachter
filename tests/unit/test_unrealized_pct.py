@@ -7,7 +7,7 @@ The old code compared them directly, giving nonsense results.
 """
 
 import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 from paper_trader.models import PaperPosition
 from paper_trader.position_manager import PositionManager

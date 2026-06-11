@@ -8,7 +8,6 @@ import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-import math
 from datetime import datetime, timedelta
 from typing import List, Tuple, Callable
 

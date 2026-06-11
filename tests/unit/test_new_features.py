@@ -1,5 +1,4 @@
-import json, math, pytest
-from pathlib import Path
+import pytest
 from unittest.mock import patch, MagicMock
 
 
@@ -433,7 +432,7 @@ class TestArbitrageDetection:
 
 class TestSmartMoneyTracking:
     def test_summary_empty_db(self):
-        from analytics.smart_money import get_smart_money_summary, _load_smart_money_db
+        from analytics.smart_money import get_smart_money_summary
         summary = get_smart_money_summary()
         assert 'total_wallets_tracked' in summary
         assert 'smart_money_wallets' in summary
@@ -447,7 +446,7 @@ class TestSmartMoneyTracking:
         assert result['is_smart_money'] is False
 
     def test_analyze_wallet_high_win_rate(self):
-        from analytics.smart_money import analyze_wallet_performance, MIN_TRADES_FOR_RANKING, MIN_WIN_RATE
+        from analytics.smart_money import analyze_wallet_performance, MIN_TRADES_FOR_RANKING
         trades = [{'won': True, 'pnl_usd': 100, 'size_usd': 500} for _ in range(int(MIN_TRADES_FOR_RANKING * 1.5))]
         result = analyze_wallet_performance('0xsmart', trades)
         assert result['win_rate'] == 1.0

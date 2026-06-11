@@ -9,7 +9,6 @@
 # that prevents that failure mode from recurring.
 # =============================================================================
 
-import pytest
 from unittest.mock import patch
 
 from evolution.strategy_agent import (

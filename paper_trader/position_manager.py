@@ -989,7 +989,6 @@ class PositionManager:
         2. YES bets entered at near-zero price (<5%) — model miscalibration signal
         3. Positions in weak-performance cities (≤33% historical WR)
         """
-        import re as _re
         market_type = str(getattr(position, "market_type", "") or "").lower()
         is_no_bet = position.side == "NO"
         entry_price = float(getattr(position, "entry_price", 0.5) or 0.5)

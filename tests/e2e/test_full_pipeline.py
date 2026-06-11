@@ -11,15 +11,11 @@
 # =============================================================================
 
 import json
-import os
 import sys
-import shutil
-import logging
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Dict, Any, List, Optional
-from unittest.mock import patch, MagicMock
-from dataclasses import dataclass
+from typing import Optional
+from unittest.mock import patch
 
 import pytest
 
@@ -34,7 +30,6 @@ sys.path.insert(0, str(PROJECT_ROOT))
 
 def _reset_all_singletons():
     """Alle globalen Singletons zuruecksetzen fuer saubere Tests."""
-    import importlib
 
     # Capital Manager
     try:
@@ -572,7 +567,6 @@ class TestProposalGeneration:
     def test_observation_to_proposal(self):
         """Eine OBSERVE-Observation wird korrekt in ein Proposal umgewandelt."""
         from core.weather_signal import (
-            WeatherObservation,
             ObservationAction,
             WeatherConfidence,
             create_observation,
@@ -636,7 +630,6 @@ class TestPaperTrading:
         # Capital Manager und Logger auf tmp-Verzeichnis umleiten
         from paper_trader.capital_manager import CapitalManager
         from paper_trader.logger import PaperTradingLogger
-        from paper_trader.simulator import ExecutionSimulator
         from paper_trader.models import MarketSnapshot
 
         # Singletons mit tmp-Pfaden initialisieren
@@ -1479,7 +1472,7 @@ class TestFullPipeline:
                 success, _ = outcome_storage.write_prediction(snapshot)
                 if success:
                     predictions_recorded += 1
-            except Exception as e:
+            except Exception:
                 pass  # Manche Observations koennen ungueltige Werte haben
 
         # --- Verifizierung ---

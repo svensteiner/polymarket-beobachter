@@ -16,18 +16,15 @@ import pytest
 import tempfile
 import shutil
 from pathlib import Path
-from datetime import datetime, timezone
+from datetime import datetime
 
 import sys
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from core.outcome_tracker import (
     PredictionSnapshot,
-    ResolutionRecord,
-    CorrectionRecord,
     EngineContext,
     OutcomeStorage,
-    IndexBuilder,
     canonical_json,
     compute_hash,
     generate_event_id,
@@ -35,9 +32,7 @@ from core.outcome_tracker import (
     get_minute_bucket,
     create_prediction_snapshot,
     create_resolution_record,
-    SCHEMA_VERSION,
     VALID_RESOLUTIONS,
-    VALID_DECISIONS,
 )
 
 

@@ -5,10 +5,10 @@
 import pytest
 import tempfile
 from pathlib import Path
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone
 
 from learning.learning_database import LearningDatabase, PredictionRecord
-from learning.outcome_tracker import OutcomeTracker, TradeContext, get_season
+from learning.outcome_tracker import TradeContext, get_season
 from learning.time_urgency import (
     TimeUrgencyCalculator,
     UrgencyPhase,

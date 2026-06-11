@@ -3,10 +3,8 @@ Tests für das Self-Healing und Auto-Code-Improvement System.
 """
 
 import json
-import tempfile
 from datetime import datetime, timedelta
-from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 import pytest
 
@@ -17,7 +15,6 @@ from shared.self_healing import (
     IssueType,
     Metrics,
     check_and_heal,
-    run_auto_improvement,
     record_pipeline_success,
     record_pipeline_failure,
 )
