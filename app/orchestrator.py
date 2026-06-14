@@ -1501,6 +1501,43 @@ class Orchestrator:
             except Exception as _fwd_err:  # fail-open: gate stays blocked on stale data
                 logger.debug("Forward-Validation fehlgeschlagen: %s", _fwd_err)
 
+            # Edge Research: direktionale NO-Fade-PnL gegen offizielle Resolutions
+            # (Favorite-Longshot-Bias). Schreibt analytics/edge_research.json|md und
+            # haelt die md-Datei bei JEDEM Lauf aktuell. READ-ONLY, fail-open.
+            try:
+                from analytics.edge_research import run as _edge_run
+                _edge_run()
+            except Exception as _edge_err:  # fail-open: research only, never blocks
+                logger.debug("Edge-Research fehlgeschlagen: %s", _edge_err)
+
+            # Gate-3 Regime-Gap-Monitor: VOR der Lane, damit sie ein frisches
+            # auto_pause-Flag liest. Pausiert NO-Fade-Entries wenn die Longshot-
+            # Verzerrung wegarbitriert ist. READ-ONLY, fail-open.
+            try:
+                from analytics.gap_monitor import run as _gap_run
+                _gap_run()
+            except Exception as _gap_err:  # fail-open
+                logger.debug("Gap-Monitor fehlgeschlagen: %s", _gap_err)
+
+            # NO-Fade Forward Shadow Lane: nimmt qualifizierende 10-20% exact/between
+            # Maerkte als NO-Paper-Position auf (held-to-resolution), misst echte CLOB-
+            # Fill-Kosten am Entry. Eigenes Ledger, kein Eingriff in den Live-Simulator.
+            # Forward-Evidenz fuer Gate 1 + Gate 2. PAPER ONLY, fail-open.
+            try:
+                from paper_trader.no_fade_lane import run as _nofade_run
+                _nofade_run()
+            except Exception as _nf_err:  # fail-open: shadow lane never blocks pipeline
+                logger.debug("NO-Fade Lane fehlgeschlagen: %s", _nf_err)
+
+            # Edge-Status: EINE Uebersichtsseite "wo stehen wir" (aggregiert
+            # edge_research + gap_monitor + Lane + Bot-Health). Zuletzt, damit sie
+            # die frischesten Zahlen sieht. READ-ONLY, fail-open.
+            try:
+                from analytics.edge_status import run as _status_run
+                _status_run()
+            except Exception as _st_err:  # fail-open
+                logger.debug("Edge-Status fehlgeschlagen: %s", _st_err)
+
             # Live-Readiness Tracker: nach jedem Run aktualisieren, damit wir
             # kontinuierlich sehen wie weit wir von den 6 Live-Go-Meilensteinen
             # entfernt sind (analytics/live_readiness.json|txt).
