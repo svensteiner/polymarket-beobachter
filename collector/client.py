@@ -45,6 +45,10 @@ class PolymarketClient:
     INITIAL_BACKOFF = 1.0  # seconds
     MAX_BACKOFF = 30.0  # seconds
 
+    # Gamma API rejects offset >= ~2000 with 422:
+    # "offset too large, use /events/keyset for deeper pagination"
+    MAX_EVENT_OFFSET = 2000
+
     # Delay between paginated API requests (seconds)
     API_DELAY_SECONDS = 0.1
     # Delay between batch event fetches (seconds)
@@ -207,14 +211,30 @@ class PolymarketClient:
             page_size = 100
 
             while len(all_markets) < max_markets:
+                if offset >= self.MAX_EVENT_OFFSET:
+                    logger.warning(
+                        f"Stopping {tag} pagination at offset={offset} "
+                        f"(Gamma API offset cap)"
+                    )
+                    break
+
                 logger.info(f"Fetching {tag} events: offset={offset}")
 
-                events = self.fetch_events(
-                    limit=page_size,
-                    offset=offset,
-                    tag_slug=tag,
-                    closed=None,  # Get all, filter later
-                )
+                try:
+                    events = self.fetch_events(
+                        limit=page_size,
+                        offset=offset,
+                        tag_slug=tag,
+                        closed=None if include_closed else False,
+                    )
+                except RuntimeError as e:
+                    # Fail open: keep what we already fetched instead of
+                    # discarding the whole run on a mid-pagination error.
+                    logger.warning(
+                        f"Pagination for {tag} aborted at offset={offset}: {e} "
+                        f"— keeping {len(all_markets)} markets fetched so far"
+                    )
+                    break
 
                 if not events:
                     break

@@ -34,6 +34,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from collector.client import PolymarketClient
 from paper_trader.models import MarketSnapshot, LiquidityBucket
+from paper_trader import market_tombstones
 
 logger = logging.getLogger(__name__)
 
@@ -237,6 +238,10 @@ class MarketSnapshotClient:
             MarketSnapshot if available, None otherwise
         """
         try:
+            if market_tombstones.is_tombstoned(market_id):
+                logger.debug("Snapshot skipped for tombstoned market %s", market_id)
+                return None
+
             if _negative_cache_hit(market_id):
                 logger.debug("Snapshot negative-cache hit for %s", market_id)
                 return None
@@ -255,8 +260,14 @@ class MarketSnapshotClient:
             if market_data is None:
                 logger.warning(f"Market not found: {market_id}")
                 _remember_missing_snapshot(market_id)
+                if market_tombstones.record_miss(market_id):
+                    logger.warning(
+                        "Market %s tombstoned after %d misses — will be skipped",
+                        market_id, market_tombstones.MISS_THRESHOLD,
+                    )
                 return None
 
+            market_tombstones.record_hit(market_id)
             return self._create_snapshot(market_data)
 
         except ConnectionError as e:
@@ -292,6 +303,10 @@ class MarketSnapshotClient:
         batch_started = time.monotonic()
 
         for market_id in market_ids:
+            if market_tombstones.is_tombstoned(market_id):
+                results[market_id] = None
+                continue
+
             if _negative_cache_hit(market_id):
                 results[market_id] = None
                 continue
@@ -321,6 +336,7 @@ class MarketSnapshotClient:
                     market_data = self._fetch_gamma_market(market_id)
 
                 if market_data:
+                    market_tombstones.record_hit(market_id)
                     results[market_id] = self._create_snapshot(market_data)
                 else:
                     results[market_id] = None
@@ -328,6 +344,11 @@ class MarketSnapshotClient:
                     error_msg = "market not found in Gamma API after retry"
                     logger.warning(f"Snapshot unavailable for {market_id}: {error_msg}")
                     _log_snapshot_error(market_id, error_msg)
+                    if market_tombstones.record_miss(market_id):
+                        logger.warning(
+                            "Market %s tombstoned after %d misses — will be skipped",
+                            market_id, market_tombstones.MISS_THRESHOLD,
+                        )
             except Exception as e:
                 error_msg = f"{type(e).__name__}: {e}"
                 logger.warning(f"Error fetching snapshot for {market_id}: {error_msg}")

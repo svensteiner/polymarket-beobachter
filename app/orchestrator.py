@@ -1529,6 +1529,16 @@ class Orchestrator:
             except Exception as _nf_err:  # fail-open: shadow lane never blocks pipeline
                 logger.debug("NO-Fade Lane fehlgeschlagen: %s", _nf_err)
 
+            # Forward-vs-Backtest Reconciliation: zerlegt die Luecke zwischen
+            # Backtest-Edge (+2,87%) und Forward-Lane (negativ) in Kosten / Regime /
+            # Selektion. Nach der Lane, damit sie das frische Ledger liest.
+            # READ-ONLY, fail-open.
+            try:
+                from analytics.forward_reconciliation import run as _recon_run
+                _recon_run()
+            except Exception as _recon_err:  # fail-open
+                logger.debug("Forward-Reconciliation fehlgeschlagen: %s", _recon_err)
+
             # Edge-Status: EINE Uebersichtsseite "wo stehen wir" (aggregiert
             # edge_research + gap_monitor + Lane + Bot-Health). Zuletzt, damit sie
             # die frischesten Zahlen sieht. READ-ONLY, fail-open.
