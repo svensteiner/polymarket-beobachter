@@ -144,6 +144,37 @@ def reconcile() -> Dict[str, Any]:
     by_type = _bucketize(resolved, lambda r: r.get("market_type") or "?")
     by_city = _bucketize(resolved, lambda r: r.get("city") or "?")
 
+    # Candidate cohort tracking (2026-07-14, edge_salvage finding): the NO-fade
+    # edge survives clean walk-forward OOS only for exact-type markets, and only
+    # clears cost at a <2c spread. Isolate that cohort in the live forward data so
+    # we watch the ACTUAL candidate as evidence accrues — without changing what the
+    # lane collects. TIGHT_SPREAD is the real half/round-trip spread threshold.
+    TIGHT_SPREAD = 0.02
+
+    def _cohort(pred) -> Dict[str, Any]:
+        sub = [r for r in resolved if pred(r)]
+        wins = sum(1 for r in sub if r.get("resolution") == "NO")
+        mods = [r["pnl_modeled_per_share"] for r in sub if r.get("pnl_modeled_per_share") is not None]
+        reals = [r["pnl_real_per_share"] for r in sub if r.get("pnl_real_per_share") is not None]
+        return {
+            "n": len(sub),
+            "win_rate": round(wins / len(sub), 4) if sub else None,
+            "net_modeled": round(_mean(mods), 5) if mods else None,
+            "net_real": round(_mean(reals), 5) if reals else None,
+        }
+
+    def _is_tight(r) -> bool:
+        sp = r.get("real_spread")
+        return sp is not None and sp < TIGHT_SPREAD
+
+    cohorts = {
+        "all": _cohort(lambda r: True),
+        "exact": _cohort(lambda r: r.get("market_type") == "exact"),
+        "between": _cohort(lambda r: r.get("market_type") == "between"),
+        "exact_tight_spread": _cohort(lambda r: r.get("market_type") == "exact" and _is_tight(r)),
+        "any_tight_spread": _cohort(_is_tight),
+    }
+
     # Backtest month coverage (which regimes the backtest edge relies on).
     bt_months = {m["month"]: m for m in backtest.get("monthly", [])} if backtest else {}
     fwd_months = set(by_month.keys())
@@ -176,6 +207,8 @@ def reconcile() -> Dict[str, Any]:
         "by_month": by_month,
         "by_type": by_type,
         "by_city": by_city,
+        "cohorts": cohorts,
+        "tight_spread_threshold": TIGHT_SPREAD,
         "backtest_months": bt_months,
         "missing_regimes": missing_regimes,
     }
@@ -215,6 +248,35 @@ def _render_md(s: Dict[str, Any]) -> str:
         f"| Ø Einstiegskosten | {fwd['avg_modeled_cost']} | {bt['implied_avg_cost']} | |",
         f"| Ø Einstiegs-P(YES) | {fwd['avg_entry_p_yes']} | ~0.142 | |",
         f"| Ø realer Spread | {fwd['avg_real_spread']} | 0.005 (synthetisch) | |",
+        "",
+        "## Kandidaten-Kohorte (edge_salvage-Fund: exact + enger Spread)",
+        "",
+        "> Die NO-Fade-Edge übersteht den sauberen Walk-Forward NUR für `exact`-"
+        f"Märkte und cleart Kosten nur bei Spread <{int(s.get('tight_spread_threshold', 0.02)*100)}c. "
+        "Hier die LIVE-Forward-Zahlen dieser Kohorte — das ist der eigentliche "
+        "Kandidat, den wir beweisen müssen (Lane sammelt weiter alles).",
+        "",
+        "| Kohorte | n | Win-Rate | Netto modelliert | Netto real |",
+        "|---|---:|---:|---:|---:|",
+    ]
+    _cohort_labels = [
+        ("all", "Alle"),
+        ("exact", "exact only"),
+        ("between", "between only (Ballast)"),
+        ("exact_tight_spread", "**exact + Spread<2c** ⟵ Kandidat"),
+        ("any_tight_spread", "beliebig + Spread<2c"),
+    ]
+    for key, label in _cohort_labels:
+        c = s.get("cohorts", {}).get(key, {})
+        lines.append(
+            f"| {label} | {c.get('n', 0)} | {_pct(c.get('win_rate'))} | "
+            f"{_pct(c.get('net_modeled'))} | {_pct(c.get('net_real'))} |"
+        )
+    lines += [
+        "",
+        "> **Lesart:** Wandert *net real* der Kandidaten-Kohorte mit wachsendem n "
+        "über 0 (idealerweise Richtung der +1–2,6% aus dem OOS-Backtest), verdichtet "
+        "sich die Edge. Bleibt sie negativ, ist auch der verengte Kandidat tot.",
         "",
         "## Zerlegung der modellierten Lücke",
         "",
