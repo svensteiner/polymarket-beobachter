@@ -1,5 +1,5 @@
 {
-  "summary": "Die Performance bleibt schwach mit einer Win-Rate von 31.58% und einem Verlust von -87.05 EUR über 57 Trades. Anpassungen wurden vorgenommen, um die Handelsqualität zu verbessern und die Handelsaktivität zu erhöhen. Die aktuellen MIN_ODDS sind am Limit, daher keine Änderung möglich. Die MAX_ODDS konnte nicht gesenkt werden, da die Änderung zu groß wäre. Die MIN_EDGE wurde erfolgreich auf 0.3 erhöht.",
+  "summary": "Die Performance bleibt schwach mit einer Win-Rate von 31.58% und einem Verlust von -87.05 EUR über 57 Trades. Anpassungen wurden vorgenommen, um die Handelsqualität zu verbessern und die Handelsaktivität zu erhöhen. Die MIN_ODDS bleibt bei 0.1, da eine Erhöhung auf 0.15 nicht möglich ist. Die MAX_ODDS konnte nicht gesenkt werden, daher wurde eine langfristige Mutation in diese Richtung gesetzt.",
   "root_causes": [
     "Zu viele schwache Setups werden zugelassen; Selektivität ist zu niedrig",
     "Verluste entstehen fast ausschließlich über Stop-Losses",
@@ -10,11 +10,13 @@
     "Wenn die nächsten Trades weiter überwiegend per Stop-Loss enden, sollte ein Code-Patch für TP/SL oder Sizing geprüft werden"
   ],
   "config_changes": [
-    "MIN_EDGE: 0.3 → 0.3 (Die aktuelle MIN_EDGE von 0.25 ist zu niedrig und erlaubt schwache Setups. Eine Erhöhung auf 0.3 könnte die Handelsqualität verbessern.)"
+    "MIN_ODDS: 0.1 → 0.1 (MIN_ODDS bleibt bei 0.1, da eine Erhöhung auf 0.15 nicht möglich ist.)"
   ],
-  "goals_status": "Aktiv: Win-Rate auf 45% bis 2026-07-21 (Gap 13.42).",
+  "mutations_applied": [
+    "'max_odds' → down (strength=0.5): Langfristige Anpassung der MAX_ODDS zur Verbesserung der Handelsqualität."
+  ],
+  "goals_status": "Aktiv: Win-Rate auf 45% bis 2026-07-21 (Gap 13.42). Ziel für Handelsaktivität auf 10 Trades bis 2026-07-29 gesetzt.",
   "grade": "DEGRADED",
   "code_patches": [],
-  "mutations_applied": [],
   "provider": "OpenAI"
 }
