@@ -1,5 +1,5 @@
 {
-  "summary": "Die Performance bleibt schwach mit einer Win-Rate von 31.58% und einem Verlust von -87.05 EUR über 57 Trades. Anpassungen wurden vorgenommen, um die Handelsqualität zu verbessern und die Handelsaktivität zu erhöhen. Die MIN_EDGE wurde auf 0.25 erhöht, um selektivere Trades zu ermöglichen. Eine langfristige Mutation für MAX_ODDS wurde gesetzt, um die Handelsqualität zu verbessern. Zudem wurde ein Ziel für die Handelsaktivität auf 10 Trades bis zum 30. Juli 2026 gesetzt.",
+  "summary": "Die Performance bleibt schwach mit einer Win-Rate von 32.2% und einem Verlust von -86.96 EUR über 59 Trades. Anpassungen wurden vorgenommen, um die Handelsqualität zu verbessern und die Handelsaktivität zu erhöhen. Die MIN_EDGE bleibt bei 0.25, während die MAX_ODDS auf 0.5 erhöht wurde, um die Handelsmöglichkeiten zu erweitern. Zudem wurde ein Ziel für die Handelsaktivität auf 10 Trades bis zum 30. Juli 2026 gesetzt. Ein Vorschlag zur Anpassung der Kelly Fraction wurde eingereicht, um den Drawdown zu reduzieren.",
   "root_causes": [
     "Zu viele schwache Setups werden zugelassen; Selektivität ist zu niedrig",
     "Verluste entstehen fast ausschließlich über Stop-Losses",
@@ -10,10 +10,12 @@
     "Wenn die nächsten Trades weiter überwiegend per Stop-Loss enden, sollte ein Code-Patch für TP/SL oder Sizing geprüft werden"
   ],
   "config_changes": [
-    "MIN_EDGE: 0.25 → 0.25 (Erhöhung der Minimalen Edge zur Verbesserung der Handelsqualität.)"
+    "MIN_ODDS: 0.1 → 0.1 (MIN_ODDS kann nicht über 0.1 erhöht werden, daher bleibt der Wert gleich.)"
   ],
-  "mutations_applied": [],
-  "goals_status": "Aktiv: Win-Rate auf 45% bis 2026-07-21 (Gap 13.42). Ziel für Handelsaktivität auf 10 Trades bis 2026-07-30 gesetzt.",
+  "mutations_applied": [
+    "'max_odds' → up (strength=0.5): Langfristige Verbesserung der Handelsqualität durch Erhöhung der maximalen Odds."
+  ],
+  "goals_status": "Aktiv: Win-Rate auf 45% bis 2026-07-21 (Gap 12.8). Ziel für Handelsaktivität auf 10 Trades bis 2026-07-30 gesetzt.",
   "grade": "DEGRADED",
   "code_patches": [],
   "provider": "OpenAI"
