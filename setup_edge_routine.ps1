@@ -53,7 +53,8 @@ if (Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue) {
 
 # Agent-Schritt via Umgebungsvariable im cmd-Aufruf steuern
 if ($NoAgent) {
-    $argument = "/c set EDGE_AGENT=0 && `"$RoutineBat`""
+    # Quoted set: 'set EDGE_AGENT=0 &&' would put the trailing space INTO the value.
+    $argument = "/c set `"EDGE_AGENT=0`" && `"$RoutineBat`""
 } else {
     $argument = "/c `"$RoutineBat`""
 }

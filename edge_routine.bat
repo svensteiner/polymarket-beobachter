@@ -51,6 +51,9 @@ echo [%DATE% %TIME%] Analyse beendet (exit=!ANALYSE_EXIT!) >> "%LOG_FILE%"
 
 :: --- Schritt 2: Agent-Arbeit (optional) ----------------------------------
 if not defined EDGE_AGENT set "EDGE_AGENT=1"
+:: Leerzeichen tolerieren (falls EDGE_AGENT unquoted gesetzt wurde)
+for /f "tokens=* delims= " %%A in ("!EDGE_AGENT!") do set "EDGE_AGENT=%%A"
+set "EDGE_AGENT=!EDGE_AGENT: =!"
 if "!EDGE_AGENT!"=="0" (
     echo [%DATE% %TIME%] Agent-Schritt uebersprungen ^(EDGE_AGENT=0^) >> "%LOG_FILE%"
     goto done
