@@ -19404,3 +19404,821 @@
 2026-07-28 01:37:42 | WARNING  | analytics.self_diagnostic_loop | Self-Diag BRIER_REGRESSION [warn]: Brier Skill Score -1.04 — Forecast schlechter als naive Baseline. Calibration-Shrinkage erhoehen oder Model-Weights neu schaetzen. -> core/weather_engine Shrinkage-Floor +0.05 erhoehen; core/model_weights neu trainieren.
 2026-07-28 01:37:43 | INFO     | app.orchestrator | Status-Summary gekuerzt: status_summary.txt auf die letzten 120 Runs
 2026-07-28 01:37:43 | INFO     | app.orchestrator | === Pipeline END === run_id=RUN-20260728-013618-34350a state=OK
+2026-07-28 01:52:43 | INFO     | app.orchestrator | === Pipeline START === run_id=RUN-20260728-015243-769cf3
+2026-07-28 01:52:43 | INFO     | core.weather_market_classifier | WeatherMarketClassifier initialized
+2026-07-28 01:52:43 | INFO     | collector.collector | ============================================================
+2026-07-28 01:52:43 | INFO     | collector.collector | WEATHER OBSERVER COLLECTOR - Starting run
+2026-07-28 01:52:43 | INFO     | collector.collector | Max markets: 500
+2026-07-28 01:52:43 | INFO     | collector.collector | Output dir: C:\Users\botrunner\projects\polymarket-beobachter\data\collector
+2026-07-28 01:52:43 | INFO     | collector.collector | Dry run: False
+2026-07-28 01:52:43 | INFO     | collector.collector | ============================================================
+2026-07-28 01:52:43 | INFO     | collector.collector | Step 1: Fetching weather markets from Polymarket API...
+2026-07-28 01:52:43 | INFO     | collector.collector |   (Using /events?tag_slug=weather and /events?tag_slug=climate)
+2026-07-28 01:52:43 | INFO     | collector.client | Fetching weather events: offset=0
+2026-07-28 01:52:43 | INFO     | collector.client | Total weather markets fetched: 500
+2026-07-28 01:52:43 | INFO     | collector.collector | Fetched 500 weather-tagged markets
+2026-07-28 01:52:43 | INFO     | collector.collector | Step 2: Sanitizing (removing forbidden fields)...
+2026-07-28 01:52:43 | INFO     | collector.collector | Sanitized 500 markets
+2026-07-28 01:52:43 | INFO     | collector.collector | Removed 15104 forbidden field occurrences
+2026-07-28 01:52:44 | INFO     | collector.storage | Saved raw response: C:\Users\botrunner\projects\polymarket-beobachter\data\collector\raw\2026-07-28\markets_20260727_235243.json (500 markets)
+2026-07-28 01:52:44 | INFO     | collector.collector | Step 3: Filtering for weather relevance...
+2026-07-28 01:52:44 | INFO     | collector.filter | POSSIBLE: 2746137 | Will there be at least 3500 measles cases in the U.S. in 202 | text_signals=[] | structural_signals=['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-07-28 01:52:44 | INFO     | collector.filter | POSSIBLE: 716941 | Will there be at least 5000 measles cases in the U.S. in 202 | text_signals=[] | structural_signals=['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-07-28 01:52:44 | INFO     | collector.filter | POSSIBLE: 716942 | Will there be at least 10000 measles cases in the U.S. in 20 | text_signals=[] | structural_signals=['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-07-28 01:52:44 | INFO     | collector.filter | POSSIBLE: 1250830 | Will there be at least 7500 measles cases in the U.S. in 202 | text_signals=[] | structural_signals=['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-07-28 01:52:44 | INFO     | collector.filter | POSSIBLE: 1250957 | Will there be at least 12500 measles cases in the U.S. in 20 | text_signals=[] | structural_signals=['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-07-28 01:52:44 | INFO     | collector.filter | POSSIBLE: 1373742 | Will there be at least 3000 measles cases in the U.S. in 202 | text_signals=[] | structural_signals=['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-07-28 01:52:44 | INFO     | collector.filter | POSSIBLE: 1373743 | Will there be at least 4000 measles cases in the U.S. in 202 | text_signals=[] | structural_signals=['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-07-28 01:52:44 | INFO     | collector.filter | POSSIBLE: 897843 | 9.0 or above earthquake before 2027? | text_signals=[] | structural_signals=['polymarket_tag:weather', 'polymarket_tag:climate & science']
+2026-07-28 01:52:44 | INFO     | collector.filter | POSSIBLE: 897844 | 10.0 or above earthquake before 2027? | text_signals=[] | structural_signals=['polymarket_tag:weather', 'polymarket_tag:climate & science']
+2026-07-28 01:52:44 | INFO     | collector.filter | POSSIBLE: 1058191 | Major volcano eruption (VEI ≥6) in 2026? | text_signals=[] | structural_signals=['polymarket_tag:weather', 'polymarket_tag:climate', 'polymarket_tag:climate & science']
+2026-07-28 01:52:44 | INFO     | collector.filter | POSSIBLE: 1073790 | Will there be between 8 and 10 earthquakes of magnitude 7.0  | text_signals=[] | structural_signals=['polymarket_tag:weather', 'polymarket_tag:climate & science']
+2026-07-28 01:52:44 | INFO     | collector.filter | POSSIBLE: 1073791 | Will there be between 11 and 13 earthquakes of magnitude 7.0 | text_signals=[] | structural_signals=['polymarket_tag:weather', 'polymarket_tag:climate & science']
+2026-07-28 01:52:44 | INFO     | collector.filter | POSSIBLE: 1073792 | Will there be between 14 and 16 earthquakes of magnitude 7.0 | text_signals=[] | structural_signals=['polymarket_tag:weather', 'polymarket_tag:climate & science']
+2026-07-28 01:52:44 | INFO     | collector.filter | POSSIBLE: 1073793 | Will there be between 17 and 19 earthquakes of magnitude 7.0 | text_signals=[] | structural_signals=['polymarket_tag:weather', 'polymarket_tag:climate & science']
+2026-07-28 01:52:44 | INFO     | collector.filter | POSSIBLE: 1073794 | Will there be 20 or more earthquakes of magnitude 7.0 or hig | text_signals=[] | structural_signals=['polymarket_tag:weather', 'polymarket_tag:climate & science']
+2026-07-28 01:52:44 | INFO     | collector.filter | POSSIBLE: 1075290 | Will there be exactly 0 confirmed VEI 4 or higher volcanic e | text_signals=[] | structural_signals=['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-07-28 01:52:44 | INFO     | collector.filter | POSSIBLE: 1075291 | Will there be exactly 1 confirmed VEI 4 or higher volcanic e | text_signals=[] | structural_signals=['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-07-28 01:52:44 | INFO     | collector.filter | POSSIBLE: 1075292 | Will there be exactly 2 confirmed VEI 4 or higher volcanic e | text_signals=[] | structural_signals=['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-07-28 01:52:44 | INFO     | collector.filter | POSSIBLE: 1075293 | Will there be exactly 3 confirmed VEI 4 or higher volcanic e | text_signals=[] | structural_signals=['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-07-28 01:52:44 | INFO     | collector.filter | POSSIBLE: 1075294 | Will there be exactly 4 confirmed VEI 4 or higher volcanic e | text_signals=[] | structural_signals=['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-07-28 01:52:44 | INFO     | collector.filter | POSSIBLE: 1075295 | Will there be 5 or more confirmed VEI 4 or higher volcanic e | text_signals=[] | structural_signals=['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-07-28 01:52:44 | INFO     | collector.filter | POSSIBLE: 2045556 | Vesuvius eruption with 1+ VEI in 2026? | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 01:52:44 | INFO     | collector.filter | POSSIBLE: 2045571 | Etna eruption with VEI 2+ in 2026? | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 01:52:44 | INFO     | collector.filter | POSSIBLE: 2155000 | Hantavirus pandemic in 2026? | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 01:52:44 | INFO     | collector.filter | POSSIBLE: 2255929 | AI data center in space by December 31, 2026? | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 01:52:44 | INFO     | collector.filter | POSSIBLE: 2255930 | AI data center in space by December 31, 2027? | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 01:52:44 | INFO     | collector.filter | POSSIBLE: 2270137 | Ebola pandemic in 2026? | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 01:52:44 | INFO     | collector.filter | POSSIBLE: 2326368 | Will South Sudan have an Ebola case in 2026? | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 01:52:44 | INFO     | collector.filter | POSSIBLE: 2326369 | Will Rwanda have an Ebola case in 2026? | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 01:52:44 | INFO     | collector.filter | POSSIBLE: 2326370 | Will Burundi have an Ebola case in 2026? | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 01:52:44 | INFO     | collector.filter | POSSIBLE: 2326371 | Will the United States have an Ebola case in 2026? | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 01:52:44 | INFO     | collector.filter | POSSIBLE: 2326372 | Will Canada have an Ebola case in 2026? | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 01:52:44 | INFO     | collector.filter | POSSIBLE: 2326373 | Will Kenya have an Ebola case in 2026? | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 01:52:44 | INFO     | collector.filter | POSSIBLE: 2326374 | Will India have an Ebola case in 2026? | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 01:52:44 | INFO     | collector.filter | POSSIBLE: 2326375 | Will the Republic of the Congo have an Ebola case in 2026? | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 01:52:44 | INFO     | collector.filter | POSSIBLE: 2326376 | Will Nigeria have an Ebola case in 2026? | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 01:52:44 | INFO     | collector.filter | POSSIBLE: 2326377 | Will Ethiopia have an Ebola case in 2026? | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 01:52:44 | INFO     | collector.filter | POSSIBLE: 2326378 | Will Somalia have an Ebola case in 2026? | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 01:52:44 | INFO     | collector.filter | POSSIBLE: 2326379 | Will China have an Ebola case in 2026? | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 01:52:44 | INFO     | collector.filter | POSSIBLE: 2409772 | Did an engine failure cause the Blue Origin New Glenn explos | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 01:52:44 | INFO     | collector.filter | POSSIBLE: 2409773 | Did a propellant leak cause the Blue Origin New Glenn explos | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 01:52:44 | INFO     | collector.filter | POSSIBLE: 2409774 | Did a valve or plumbing failure cause the Blue Origin New Gl | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 01:52:44 | INFO     | collector.filter | POSSIBLE: 2409775 | Did a ground support equipment failure cause the Blue Origin | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 01:52:45 | INFO     | collector.filter | POSSIBLE: 2409776 | Did a software or control system failure cause the Blue Orig | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 01:52:45 | INFO     | collector.filter | POSSIBLE: 2409777 | Did another cause lead to the Blue Origin New Glenn explosio | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 01:52:45 | INFO     | collector.filter | POSSIBLE: 2409778 | Will no cause of the Blue Origin New Glenn explosion be anno | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 01:52:45 | INFO     | collector.filter | POSSIBLE: 2412063 | Blue Origin New Glenn launch in 2026? | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 01:52:45 | INFO     | collector.filter | POSSIBLE: 2586481 | Megaquake by July 31? | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 01:52:45 | INFO     | collector.filter | POSSIBLE: 2753470 | Will there be at least 2400 measles cases in the U.S. by Jul | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 01:52:45 | INFO     | collector.filter | POSSIBLE: 2922747 | Will there be at least 2350 measles cases in the U.S. by Jul | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 01:52:45 | INFO     | collector.filter | POSSIBLE: 3133900 | Will there be at least 2375 measles cases in the U.S. by Jul | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 01:52:45 | INFO     | collector.filter | POSSIBLE: 3133937 | Will there be at least 2380 measles cases in the U.S. by Jul | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 01:52:45 | INFO     | collector.filter | POSSIBLE: 2929861 | Will there be at least 5000 cyclosporiasis cases in the U.S. | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 01:52:45 | INFO     | collector.filter | POSSIBLE: 2934809 | Will there be at least 10000 cyclosporiasis cases in the U.S | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 01:52:45 | INFO     | collector.filter | POSSIBLE: 3127318 | Will there be at least 7500 cyclosporiasis cases in the U.S. | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 01:52:45 | INFO     | collector.filter | POSSIBLE: 2995701 | Will there be 8 or fewer earthquakes of magnitude 5.5 or hig | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 01:52:45 | INFO     | collector.filter | POSSIBLE: 2995702 | Will there be exactly 9 earthquakes of magnitude 5.5 or high | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 01:52:45 | INFO     | collector.filter | POSSIBLE: 2995703 | Will there be exactly 10 earthquakes of magnitude 5.5 or hig | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 01:52:45 | INFO     | collector.filter | POSSIBLE: 3081707 | Will there be exactly 0 earthquakes of magnitude 6.5 or high | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 01:52:45 | INFO     | collector.filter | POSSIBLE: 3081708 | Will there be exactly 1 earthquake of magnitude 6.5 or highe | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 01:52:45 | INFO     | collector.filter | POSSIBLE: 3081709 | Will there be exactly 2 earthquakes of magnitude 6.5 or high | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 01:52:45 | INFO     | collector.filter | POSSIBLE: 3081710 | Will there be exactly 3 earthquakes of magnitude 6.5 or high | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 01:52:45 | INFO     | collector.filter | POSSIBLE: 3081711 | Will there be exactly 4 earthquakes of magnitude 6.5 or high | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 01:52:45 | INFO     | collector.filter | POSSIBLE: 3081712 | Will there be exactly 5 earthquakes of magnitude 6.5 or high | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 01:52:45 | INFO     | collector.filter | POSSIBLE: 3081713 | Will there be more than 5 earthquakes of magnitude 6.5 or hi | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 01:52:45 | INFO     | collector.filter | POSSIBLE: 3086840 | Will the Total Solar Eclipse be highly visible in Reykjavík? | text_signals=[] | structural_signals=['polymarket_tag:weather', 'polymarket_tag:climate']
+2026-07-28 01:52:45 | INFO     | collector.filter | POSSIBLE: 3093426 | Will the U.S. weekly flu hospitalization rate per 100,000 in | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 01:52:45 | INFO     | collector.filter | POSSIBLE: 3093427 | Will the U.S. weekly flu hospitalization rate per 100,000 in | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 01:52:45 | INFO     | collector.filter | POSSIBLE: 3093428 | Will the U.S. weekly flu hospitalization rate per 100,000 in | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 01:52:45 | INFO     | collector.filter | POSSIBLE: 3102669 | Will there be 6 or fewer earthquakes of magnitude 5.5 or hig | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 01:52:45 | INFO     | collector.filter | POSSIBLE: 3102670 | Will there be exactly 7 earthquakes of magnitude 5.5 or high | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 01:52:45 | INFO     | collector.filter | POSSIBLE: 3102671 | Will there be exactly 8 earthquakes of magnitude 5.5 or high | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 01:52:45 | INFO     | collector.filter | POSSIBLE: 3102672 | Will there be exactly 9 earthquakes of magnitude 5.5 or high | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 01:52:45 | INFO     | collector.filter | POSSIBLE: 3102673 | Will there be exactly 10 earthquakes of magnitude 5.5 or hig | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 01:52:45 | INFO     | collector.filter | POSSIBLE: 3102674 | Will there be exactly 11 earthquakes of magnitude 5.5 or hig | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 01:52:45 | INFO     | collector.filter | POSSIBLE: 3102675 | Will there be exactly 12 earthquakes of magnitude 5.5 or hig | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 01:52:45 | INFO     | collector.filter | POSSIBLE: 3102676 | Will there be exactly 13 earthquakes of magnitude 5.5 or hig | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 01:52:45 | INFO     | collector.filter | POSSIBLE: 3102677 | Will there be more than 13 earthquakes of magnitude 5.5 or h | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 01:52:47 | INFO     | collector.filter | Filter results: 500 total | 375 CONFIRMED | 78 POSSIBLE | 47 NOT_WEATHER | 0 errors
+2026-07-28 01:52:47 | INFO     | collector.filter | === 78 WEATHER_POSSIBLE markets for review ===
+2026-07-28 01:52:47 | INFO     | collector.filter |   - [2746137] Will there be at least 3500 measles cases in the U.S. in 2026?
+2026-07-28 01:52:47 | INFO     | collector.filter |     Text signals: []
+2026-07-28 01:52:47 | INFO     | collector.filter |     Structural signals: ['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-07-28 01:52:47 | INFO     | collector.filter |   - [716941] Will there be at least 5000 measles cases in the U.S. in 2026?
+2026-07-28 01:52:47 | INFO     | collector.filter |     Text signals: []
+2026-07-28 01:52:47 | INFO     | collector.filter |     Structural signals: ['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-07-28 01:52:47 | INFO     | collector.filter |   - [716942] Will there be at least 10000 measles cases in the U.S. in 2026?
+2026-07-28 01:52:47 | INFO     | collector.filter |     Text signals: []
+2026-07-28 01:52:47 | INFO     | collector.filter |     Structural signals: ['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-07-28 01:52:47 | INFO     | collector.filter |   - [1250830] Will there be at least 7500 measles cases in the U.S. in 2026?
+2026-07-28 01:52:47 | INFO     | collector.filter |     Text signals: []
+2026-07-28 01:52:47 | INFO     | collector.filter |     Structural signals: ['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-07-28 01:52:47 | INFO     | collector.filter |   - [1250957] Will there be at least 12500 measles cases in the U.S. in 2026?
+2026-07-28 01:52:47 | INFO     | collector.filter |     Text signals: []
+2026-07-28 01:52:47 | INFO     | collector.filter |     Structural signals: ['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-07-28 01:52:47 | INFO     | collector.filter |   - [1373742] Will there be at least 3000 measles cases in the U.S. in 2026?
+2026-07-28 01:52:47 | INFO     | collector.filter |     Text signals: []
+2026-07-28 01:52:47 | INFO     | collector.filter |     Structural signals: ['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-07-28 01:52:47 | INFO     | collector.filter |   - [1373743] Will there be at least 4000 measles cases in the U.S. in 2026?
+2026-07-28 01:52:47 | INFO     | collector.filter |     Text signals: []
+2026-07-28 01:52:47 | INFO     | collector.filter |     Structural signals: ['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-07-28 01:52:47 | INFO     | collector.filter |   - [897843] 9.0 or above earthquake before 2027?
+2026-07-28 01:52:47 | INFO     | collector.filter |     Text signals: []
+2026-07-28 01:52:47 | INFO     | collector.filter |     Structural signals: ['polymarket_tag:weather', 'polymarket_tag:climate & science']
+2026-07-28 01:52:47 | INFO     | collector.filter |   - [897844] 10.0 or above earthquake before 2027?
+2026-07-28 01:52:47 | INFO     | collector.filter |     Text signals: []
+2026-07-28 01:52:47 | INFO     | collector.filter |     Structural signals: ['polymarket_tag:weather', 'polymarket_tag:climate & science']
+2026-07-28 01:52:47 | INFO     | collector.filter |   - [1058191] Major volcano eruption (VEI ≥6) in 2026?
+2026-07-28 01:52:47 | INFO     | collector.filter |     Text signals: []
+2026-07-28 01:52:47 | INFO     | collector.filter |     Structural signals: ['polymarket_tag:weather', 'polymarket_tag:climate', 'polymarket_tag:climate & science']
+2026-07-28 01:52:47 | INFO     | collector.collector | Filter results: {'included_weather': 375, 'possible_weather': 78, 'excluded_not_weather': 47, 'excluded_incomplete': 0, 'total': 500}
+2026-07-28 01:52:47 | INFO     | collector.collector | Step 4: Normalizing market data...
+2026-07-28 01:52:47 | INFO     | collector.collector | Normalized 500 markets
+2026-07-28 01:52:47 | INFO     | collector.collector | Found 375 weather candidates
+2026-07-28 01:52:47 | INFO     | collector.collector | Step 5: Saving outputs...
+2026-07-28 01:52:48 | INFO     | collector.storage | Saved normalized markets: C:\Users\botrunner\projects\polymarket-beobachter\data\collector\normalized\2026-07-28\markets.jsonl (500 records)
+2026-07-28 01:52:48 | INFO     | collector.storage | Saved candidates: C:\Users\botrunner\projects\polymarket-beobachter\data\collector\candidates\2026-07-28\candidates.jsonl (375 records)
+2026-07-28 01:52:48 | INFO     | collector.storage | Saved report: C:\Users\botrunner\projects\polymarket-beobachter\data\collector\reports\2026-07-28\report.md
+2026-07-28 01:52:48 | INFO     | collector.collector | ============================================================
+2026-07-28 01:52:48 | INFO     | collector.collector | COLLECTION COMPLETE
+2026-07-28 01:52:48 | INFO     | collector.collector | Duration: 4.9s
+2026-07-28 01:52:48 | INFO     | collector.collector | Fetched: 500
+2026-07-28 01:52:48 | INFO     | collector.collector | Weather Candidates: 375
+2026-07-28 01:52:48 | INFO     | collector.collector | ============================================================
+2026-07-28 01:52:48 | INFO     | core.weather_market_filter | WeatherMarketFilter initialized | min_liquidity=150.0 | odds_range=[0.1, 0.85] | min_hours=6.0 | cities=29
+2026-07-28 01:52:48 | INFO     | app.orchestrator | Merged 23 gamma candidates into observation pipeline
+2026-07-28 01:52:48 | INFO     | app.orchestrator | Pre-filtered 245 stale candidates (resolution < 6h away), 153 remain
+2026-07-28 01:53:31 | INFO     | collector.client | Fetched prices for 153/153 markets
+2026-07-28 01:53:31 | INFO     | app.orchestrator | Fetched real odds for 153/153 markets
+2026-07-28 01:53:31 | INFO     | app.orchestrator | Loaded 14 weather candidates for observation (skipped: 0 no-price, 226 filter [ODDS:95, TYPE:70, CITY:28, LIQUIDITY:25, RESOLUTION:8])
+2026-07-28 01:53:31 | INFO     | core.weather_market_filter | WeatherMarketFilter initialized | min_liquidity=150.0 | odds_range=[0.1, 0.85] | min_hours=6.0 | cities=29
+2026-07-28 01:53:31 | INFO     | core.weather_probability_model | WeatherProbabilityModel initialized | base_sigma=6.5°F | max_horizon=10 days
+2026-07-28 01:53:31 | INFO     | core.weather_engine | WeatherEngine initialized | version=1.0.0 | config_hash=f198b5917b30f1c3
+2026-07-28 01:53:31 | INFO     | core.weather_engine | WeatherObserver run started | timestamp=2026-07-27T23:53:31Z
+2026-07-28 01:53:31 | INFO     | core.weather_engine | Fetched 14 weather markets
+2026-07-28 01:53:31 | INFO     | core.weather_market_filter | Filtered 14 markets: 14 passed, 0 rejected
+2026-07-28 01:53:31 | INFO     | core.weather_engine | Filtered markets: 14/14 passed
+2026-07-28 01:53:32 | INFO     | core.forecast_sources.open_meteo_ensemble | GFS-Ensemble: Paris | 31 members | mean=77.1°F | spread=5.2°F | daily_highs=31 members
+2026-07-28 01:53:32 | INFO     | core.forecast_sources.open_meteo_ensemble | GFS-Ensemble: London | 31 members | mean=70.5°F | spread=5.3°F | daily_highs=31 members
+2026-07-28 01:53:32 | INFO     | core.ensemble_builder | Ensemble member-counting: P=0.1094 (31 members, between_range 87.8°F)
+2026-07-28 01:53:32 | INFO     | core.forecast_sources.open_meteo_ensemble | GFS-Ensemble: Seoul | 31 members | mean=83.5°F | spread=3.4°F | daily_highs=31 members
+2026-07-28 01:53:32 | INFO     | core.ensemble_builder | Ensemble member-counting: P=0.3906 (31 members, between_range 87.8°F)
+2026-07-28 01:53:32 | INFO     | core.forecast_sources.open_meteo_ensemble | GFS-Ensemble: London | 31 members | mean=70.5°F | spread=5.3°F | daily_highs=31 members
+2026-07-28 01:53:32 | INFO     | core.ensemble_builder | Ensemble member-counting: P=0.1094 (31 members, between_range 87.8°F)
+2026-07-28 01:53:32 | INFO     | core.weather_engine | Ensemble OBSERVE | London | sources=4 (open_meteo,openweather,met_norway,open_meteo_ensemble) | P_ensemble=0.2950 | var=0.0077 | edge=40.46%
+2026-07-28 01:53:32 | INFO     | core.forecast_sources.open_meteo_ensemble | GFS-Ensemble: Paris | 31 members | mean=77.1°F | spread=5.2°F | daily_highs=31 members
+2026-07-28 01:53:32 | INFO     | core.weather_engine | Ensemble OBSERVE | Seoul | sources=4 (open_meteo,open_meteo_ensemble,openweather,met_norway) | P_ensemble=0.2350 | var=0.0031 | edge=-44.04%
+2026-07-28 01:53:32 | INFO     | core.forecast_sources.open_meteo_ensemble | GFS-Ensemble: Seoul | 31 members | mean=83.5°F | spread=3.4°F | daily_highs=31 members
+2026-07-28 01:53:32 | INFO     | core.ensemble_builder | Ensemble member-counting: P=0.3906 (31 members, between_range 86.0°F)
+2026-07-28 01:53:32 | INFO     | core.ensemble_builder | Ensemble member-counting: P=0.3281 (31 members, between_range 91.4°F)
+2026-07-28 01:53:32 | INFO     | core.weather_engine | NEAR-MISS YES | Paris | P_model=0.2652 P_market=0.2200 edge=19.19% (below min=30%) | between_range | Will the highest temperature in Paris be 33°C on July 28?
+2026-07-28 01:53:32 | INFO     | core.forecast_sources.open_meteo_ensemble | GFS-Ensemble: Paris | 31 members | mean=77.1°F | spread=5.2°F | daily_highs=31 members
+2026-07-28 01:53:32 | INFO     | core.ensemble_builder | Ensemble member-counting: P=0.1094 (31 members, between_range 86.0°F)
+2026-07-28 01:53:32 | INFO     | core.forecast_sources.open_meteo_ensemble | GFS-Ensemble: Seoul | 31 members | mean=83.5°F | spread=3.4°F | daily_highs=31 members
+2026-07-28 01:53:33 | INFO     | core.forecast_sources.open_meteo_ensemble | GFS-Ensemble: Ankara | 31 members | mean=63.5°F | spread=2.5°F | daily_highs=31 members
+2026-07-28 01:53:33 | INFO     | core.weather_engine | Ensemble OBSERVE | Seoul | sources=4 (open_meteo,open_meteo_ensemble,met_norway,openweather) | P_ensemble=0.1883 | var=0.0031 | edge=-38.25%
+2026-07-28 01:53:33 | INFO     | core.ensemble_builder | Ensemble member-counting: P=0.2656 (31 members, between_range 89.6°F)
+2026-07-28 01:53:33 | INFO     | core.weather_engine | Ensemble OBSERVE | Paris | sources=4 (open_meteo,openweather,open_meteo_ensemble,met_norway) | P_ensemble=0.3760 | var=0.0063 | edge=-34.03%
+2026-07-28 01:53:33 | INFO     | core.ensemble_builder | Ensemble member-counting: P=0.2969 (31 members, between_range 89.6°F)
+2026-07-28 01:53:33 | INFO     | core.ensemble_builder | Ensemble member-counting: P=0.2031 (31 members, between_range 86.0°F)
+2026-07-28 01:53:33 | INFO     | core.forecast_sources.open_meteo_ensemble | GFS-Ensemble: London | 31 members | mean=70.5°F | spread=5.3°F | daily_highs=31 members
+2026-07-28 01:53:33 | INFO     | core.forecast_sources.open_meteo_ensemble | GFS-Ensemble: Ankara | 31 members | mean=63.5°F | spread=2.5°F | daily_highs=31 members
+2026-07-28 01:53:33 | INFO     | core.weather_engine | YES-NEAR-MISS ADMITTED | Seoul | P_model=0.2370 P_market=0.1850 edge=26.93% (yes_min=24%) | between_range | Will the highest temperature in Seoul be 32°C on July 28?
+2026-07-28 01:53:33 | INFO     | core.weather_engine | NEAR-MISS-ABS BLOCKED | Seoul | abs_edge=5.20% < yes_abs_floor=6.50% (ensemble)
+2026-07-28 01:53:33 | INFO     | core.forecast_sources.open_meteo_ensemble | GFS-Ensemble: Helsinki | 31 members | mean=70.3°F | spread=5.3°F | daily_highs=31 members
+2026-07-28 01:53:33 | INFO     | core.ensemble_builder | Ensemble member-counting: P=0.1406 (31 members, between_range 84.2°F)
+2026-07-28 01:53:33 | INFO     | core.ensemble_builder | Ensemble member-counting: P=0.0156 (31 members, between_range 75.2°F)
+2026-07-28 01:53:33 | INFO     | core.forecast_sources.open_meteo_ensemble | GFS-Ensemble: Ankara | 31 members | mean=63.5°F | spread=2.5°F | daily_highs=31 members
+2026-07-28 01:53:33 | INFO     | core.forecast_sources.open_meteo_ensemble | GFS-Ensemble: Seoul | 31 members | mean=81.3°F | spread=2.3°F | daily_highs=31 members
+2026-07-28 01:53:33 | INFO     | core.ensemble_builder | Ensemble member-counting: P=0.0156 (31 members, between_range 87.8°F)
+2026-07-28 01:53:33 | INFO     | core.weather_engine | Ensemble OBSERVE | Ankara | sources=4 (open_meteo,openweather,open_meteo_ensemble,met_norway) | P_ensemble=0.0695 | var=0.0005 | edge=-36.85%
+2026-07-28 01:53:33 | INFO     | core.ensemble_builder | Ensemble member-counting: P=0.0156 (31 members, between_range 86.0°F)
+2026-07-28 01:53:33 | INFO     | core.weather_engine | Ensemble OBSERVE | Seoul | sources=4 (open_meteo_ensemble,openweather,open_meteo,met_norway) | P_ensemble=0.1609 | var=0.0005 | edge=-44.52%
+2026-07-28 01:53:34 | INFO     | core.ensemble_builder | Ensemble member-counting: P=0.5781 (31 members, between_range 84.2°F)
+2026-07-28 01:53:34 | INFO     | core.weather_engine | YES-NEAR-MISS ADMITTED | Ankara | P_model=0.4444 P_market=0.3450 edge=27.01% (yes_min=24%) | between_range | Will the highest temperature in Ankara be 29°C on July 28?
+2026-07-28 01:53:34 | INFO     | core.weather_engine | Ensemble OBSERVE | Ankara | sources=4 (open_meteo,openweather,open_meteo_ensemble,met_norway) | P_ensemble=0.4444 | var=0.0079 | edge=28.81%
+2026-07-28 01:53:34 | INFO     | core.parallel_processor | Parallel processing complete: 14/14 markets in 2.57s using io strategy
+2026-07-28 01:53:34 | INFO     | core.weather_engine | Parallel processing: 14/14 markets succeeded
+2026-07-28 01:53:34 | INFO     | core.weather_engine | WeatherObserver run complete | duration=2.59s | observations=14 | with_edge=7
+2026-07-28 01:53:34 | INFO     | app.orchestrator | Market Condition: FAVORABLE (7 edge obs)
+2026-07-28 01:53:34 | INFO     | app.orchestrator | Generated proposal for market 3108738
+2026-07-28 01:53:34 | INFO     | app.orchestrator | Generated proposal for market 3108763
+2026-07-28 01:53:34 | INFO     | app.orchestrator | Generated proposal for market 3108762
+2026-07-28 01:53:34 | INFO     | app.orchestrator | Generated proposal for market 3108749
+2026-07-28 01:53:34 | INFO     | app.orchestrator | Generated proposal for market 3108773
+2026-07-28 01:53:35 | INFO     | app.orchestrator | Generated proposal for market 3124759
+2026-07-28 01:53:35 | INFO     | app.orchestrator | Generated proposal for market 3108771
+2026-07-28 01:53:35 | INFO     | paper_trader.intake | Loaded 2000 total proposals
+2026-07-28 01:53:35 | INFO     | paper_trader.intake | Using 12 recent unique proposals (<= 4h, YES-first sort)
+2026-07-28 01:53:35 | INFO     | paper_trader.intake | Found 99 already paper-executed proposals
+2026-07-28 01:53:36 | INFO     | paper_trader.snapshot_client | Batch snapshots: 12/12 found
+2026-07-28 01:53:36 | INFO     | paper_trader.intake | [INTAKE-SPREAD] checked=12 blocked=0 (low+unknown) unknown=0 (of 12 candidate markets) — LOW/UNKNOWN-liq entry block
+2026-07-28 01:53:36 | INFO     | paper_trader.intake | Proposal PROP-20260728-c59c468f blocked by entry guardrail: Market type 'exact' blocked — no proven forward edge vs market (forward_validation n=2496) [side=? ep=0.210 edge=+0.405 YES-opportunity-missed?]
+2026-07-28 01:53:36 | INFO     | paper_trader.shadow_tracker | SHADOW_ENTER: SHADOW-20260727235336-dc3c86 | market=3108738 edge=+40.5% ep=21.0% blocked_by=market_type_blocked
+2026-07-28 01:53:36 | INFO     | paper_trader.intake | Proposal PROP-20260728-417a28e6 blocked by entry guardrail: Market type 'exact' blocked — no proven forward edge vs market (forward_validation n=2496) [side=? ep=0.210 edge=+0.323 YES-opportunity-missed?]
+2026-07-28 01:53:37 | INFO     | paper_trader.intake | Proposal PROP-20260728-0d28e302 blocked by entry guardrail: Market type 'exact' blocked — no proven forward edge vs market (forward_validation n=2496) [side=? ep=0.345 edge=+0.288 YES-opportunity-missed?]
+2026-07-28 01:53:37 | INFO     | paper_trader.shadow_tracker | SHADOW_ENTER: SHADOW-20260727235337-9f4b1d | market=3108771 edge=+28.8% ep=34.5% blocked_by=market_type_blocked
+2026-07-28 01:53:37 | INFO     | paper_trader.intake | Proposal PROP-20260728-e930f08d blocked by entry guardrail: Market type 'exact' blocked — no proven forward edge vs market (forward_validation n=2496) [side=? ep=0.490 edge=-0.333 NO-bet-correct-block]
+2026-07-28 01:53:37 | INFO     | paper_trader.intake | Proposal PROP-20260728-bd8abf79 blocked by entry guardrail: Market type 'exact' blocked — no proven forward edge vs market (forward_validation n=2496) [side=? ep=0.570 edge=-0.340 NO-bet-correct-block]
+2026-07-28 01:53:37 | INFO     | paper_trader.intake | Proposal PROP-20260728-ecbebf31 blocked by entry guardrail: Market type 'exact' blocked — no proven forward edge vs market (forward_validation n=2496) [side=? ep=0.330 edge=-0.351 NO-bet-correct-block]
+2026-07-28 01:53:37 | INFO     | paper_trader.intake | Proposal PROP-20260728-b7305c8a blocked by entry guardrail: Market type 'exact' blocked — no proven forward edge vs market (forward_validation n=2496) [side=? ep=0.110 edge=-0.369 NO-bet-correct-block]
+2026-07-28 01:53:37 | INFO     | paper_trader.intake | Proposal PROP-20260728-9c9a0bd1 blocked by entry guardrail: Market type 'exact' blocked — no proven forward edge vs market (forward_validation n=2496) [side=? ep=0.305 edge=-0.382 NO-bet-correct-block]
+2026-07-28 01:53:37 | INFO     | paper_trader.intake | Proposal PROP-20260728-fa8136f8 blocked by entry guardrail: Market type 'exact' blocked — no proven forward edge vs market (forward_validation n=2496) [side=? ep=0.420 edge=-0.440 NO-bet-correct-block]
+2026-07-28 01:53:37 | INFO     | paper_trader.intake | Proposal PROP-20260727-535f6cc4 blocked by entry guardrail: Market type 'exact' blocked — no proven forward edge vs market (forward_validation n=2496) [side=? ep=0.175 edge=-0.441 NO-bet-correct-block]
+2026-07-28 01:53:37 | INFO     | paper_trader.intake | Proposal PROP-20260728-2c97b9dc blocked by entry guardrail: Market type 'exact' blocked — no proven forward edge vs market (forward_validation n=2496) [side=? ep=0.290 edge=-0.445 NO-bet-correct-block]
+2026-07-28 01:53:37 | INFO     | paper_trader.intake | Proposal PROP-20260728-962e2354 blocked by entry guardrail: Market type 'between' blocked — no proven forward edge vs market (forward_validation n=2496) [side=? ep=0.415 edge=-0.479 NO-bet-correct-block]
+2026-07-28 01:53:37 | INFO     | paper_trader.intake | Found 0 eligible proposals for paper trading
+2026-07-28 01:53:41 | INFO     | app.orchestrator | Found 0 eligible proposals for paper trading
+2026-07-28 01:53:41 | INFO     | paper_trader.position_manager | Checking 0 open positions for resolution
+2026-07-28 01:53:42 | INFO     | core.outcome_tracker | Prediction recorded: 3108738 | TRADE
+2026-07-28 01:53:42 | INFO     | core.outcome_tracker | Prediction recorded: 3108763 | TRADE
+2026-07-28 01:53:42 | INFO     | core.outcome_tracker | Prediction recorded: 3108762 | TRADE
+2026-07-28 01:53:42 | INFO     | core.outcome_tracker | Prediction recorded: 3108749 | TRADE
+2026-07-28 01:53:42 | INFO     | core.outcome_tracker | Prediction recorded: 3108773 | TRADE
+2026-07-28 01:53:42 | INFO     | core.outcome_tracker | Prediction recorded: 3124759 | TRADE
+2026-07-28 01:53:42 | INFO     | core.outcome_tracker | Prediction recorded: 3108771 | TRADE
+2026-07-28 01:53:44 | INFO     | core.outcome_tracker | Resolution recorded: 3097009 | NO
+2026-07-28 01:53:44 | INFO     | core.outcome_tracker | Resolution recorded: 3096423 | NO
+2026-07-28 01:53:44 | INFO     | core.outcome_tracker | Resolution recorded: 3096425 | NO
+2026-07-28 01:53:46 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 3096429: market not found in Gamma API after retry
+2026-07-28 01:53:46 | INFO     | paper_trader.snapshot_client | Batch snapshots: 5/30 found
+2026-07-28 01:53:46 | WARNING  | paper_trader.snapshot_client | Missing snapshots for: ['3050165', '3050423', '3074104', '3096473', '3050188', '3076548', '3050193', '3050289', '3096466', '3050192', '3076561', '3076584', '3050243', '3096429', '3077328', '3076681', '3096748', '3076564', '3050154', '3096450', '3076562', '3074103', '3096518', '3050191', '3050151']
+2026-07-28 01:53:46 | INFO     | analytics.outcome_analyser | Starte Outcome-Analyse...
+2026-07-28 01:53:46 | INFO     | analytics.outcome_analyser | Positions geladen: 198 Eintraege, 99 eindeutige, 59 geschlossen mit P&L
+2026-07-28 01:53:46 | INFO     | analytics.outcome_analyser | Performance-Report gespeichert: C:\Users\botrunner\projects\polymarket-beobachter\analytics\performance_report.json
+2026-07-28 01:53:46 | INFO     | app.orchestrator | Outcome-Analyser: Performance-Report aktualisiert
+2026-07-28 01:53:46 | INFO     | app.orchestrator | [SEGMENTS] 99 closed positions | risky cities: none
+2026-07-28 01:53:46 | INFO     | analytics.strategy_advisor | Strategy-Advisor: mode=balance recommendations=6
+2026-07-28 01:53:46 | INFO     | app.orchestrator | [ADVISOR] BALANCE | BALANCE: Win-Rate 32.2% | P&L -86.96 EUR | Attack 0.04 | 0 offene Positionen | 6 Empfehlung(en)
+2026-07-28 01:53:46 | INFO     | analytics.arbitrage_detector | Arbitrage Scan: 6 parseable Maerkte von 25
+2026-07-28 01:53:46 | INFO     | paper_trader.bot_health_monitor | BotHealthMonitor: status=HEALTHY triggers=none
+2026-07-28 01:53:46 | INFO     | app.orchestrator | [BOT-HEALTH] HEALTHY | HEALTHY: DD 0.0% | WR 32.2%(all-time) | Loss-Streak 0 | Guardrails blocked_cities, blocked_market_types, blocked_price_bands
+2026-07-28 01:53:47 | INFO     | app.orchestrator | [AGENT-POLICY] NORMAL | max_entry=0.850 | city_cooldowns=0
+2026-07-28 01:53:47 | INFO     | app.orchestrator | [AGENT] NORMAL | NORMAL: 0 active action(s) | 1 read-only | Open=0 | DD=0.0% | BotHealth=HEALTHY
+2026-07-28 01:53:47 | INFO     | app.orchestrator | [EDGE-HUNTER] TRACK | WAIT | score=5
+2026-07-28 01:54:00 | INFO     | paper_trader.no_fade_lane | NOFADE_PAUSE: gap-monitor regime guard active — keine neuen Entries.
+2026-07-28 01:54:00 | INFO     | analytics.live_readiness_tracker | Live-Readiness: 44.4% | 2/6 Meilensteine | ETA GESPERRT — Forward-Edge unbewiesen
+2026-07-28 01:54:00 | INFO     | analytics.auto_parameter_tuner | Auto-Param: direction=brier_pause WR=35% trades=20 idle=11.238009383425926 | overrides={'MIN_EDGE': 0.2, 'YES_MIN_EDGE': 0.24, 'MIN_EDGE_ABSOLUTE': 0.03}
+2026-07-28 01:54:00 | WARNING  | analytics.self_diagnostic_loop | Self-Diag NO_EDGE_DROUGHT [warn]: 0 Edge ueber 6 Runs — Forecast/Modell sieht nichts Tradeables im Markt. -> Pruefe Forecast-API-Verfuegbarkeit + MIN_EDGE Schwelle. Evtl. lockern oder Provider-Failover triggern.
+2026-07-28 01:54:00 | WARNING  | analytics.self_diagnostic_loop | Self-Diag BRIER_REGRESSION [warn]: Brier Skill Score -1.04 — Forecast schlechter als naive Baseline. Calibration-Shrinkage erhoehen oder Model-Weights neu schaetzen. -> core/weather_engine Shrinkage-Floor +0.05 erhoehen; core/model_weights neu trainieren.
+2026-07-28 01:54:00 | INFO     | app.orchestrator | Status-Summary gekuerzt: status_summary.txt auf die letzten 120 Runs
+2026-07-28 01:54:00 | INFO     | app.orchestrator | === Pipeline END === run_id=RUN-20260728-015243-769cf3 state=OK
+2026-07-28 02:09:00 | INFO     | app.orchestrator | === Pipeline START === run_id=RUN-20260728-020900-18f099
+2026-07-28 02:09:00 | INFO     | core.weather_market_classifier | WeatherMarketClassifier initialized
+2026-07-28 02:09:00 | INFO     | collector.collector | ============================================================
+2026-07-28 02:09:00 | INFO     | collector.collector | WEATHER OBSERVER COLLECTOR - Starting run
+2026-07-28 02:09:00 | INFO     | collector.collector | Max markets: 500
+2026-07-28 02:09:00 | INFO     | collector.collector | Output dir: C:\Users\botrunner\projects\polymarket-beobachter\data\collector
+2026-07-28 02:09:00 | INFO     | collector.collector | Dry run: False
+2026-07-28 02:09:00 | INFO     | collector.collector | ============================================================
+2026-07-28 02:09:00 | INFO     | collector.collector | Step 1: Fetching weather markets from Polymarket API...
+2026-07-28 02:09:00 | INFO     | collector.collector |   (Using /events?tag_slug=weather and /events?tag_slug=climate)
+2026-07-28 02:09:00 | INFO     | collector.client | Fetching weather events: offset=0
+2026-07-28 02:09:01 | INFO     | collector.client | Total weather markets fetched: 500
+2026-07-28 02:09:01 | INFO     | collector.collector | Fetched 500 weather-tagged markets
+2026-07-28 02:09:01 | INFO     | collector.collector | Step 2: Sanitizing (removing forbidden fields)...
+2026-07-28 02:09:01 | INFO     | collector.collector | Sanitized 500 markets
+2026-07-28 02:09:01 | INFO     | collector.collector | Removed 15077 forbidden field occurrences
+2026-07-28 02:09:01 | INFO     | collector.storage | Saved raw response: C:\Users\botrunner\projects\polymarket-beobachter\data\collector\raw\2026-07-28\markets_20260728_000901.json (500 markets)
+2026-07-28 02:09:01 | INFO     | collector.collector | Step 3: Filtering for weather relevance...
+2026-07-28 02:09:01 | INFO     | collector.filter | POSSIBLE: 2746137 | Will there be at least 3500 measles cases in the U.S. in 202 | text_signals=[] | structural_signals=['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-07-28 02:09:01 | INFO     | collector.filter | POSSIBLE: 716941 | Will there be at least 5000 measles cases in the U.S. in 202 | text_signals=[] | structural_signals=['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-07-28 02:09:01 | INFO     | collector.filter | POSSIBLE: 716942 | Will there be at least 10000 measles cases in the U.S. in 20 | text_signals=[] | structural_signals=['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-07-28 02:09:01 | INFO     | collector.filter | POSSIBLE: 1250830 | Will there be at least 7500 measles cases in the U.S. in 202 | text_signals=[] | structural_signals=['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-07-28 02:09:01 | INFO     | collector.filter | POSSIBLE: 1250957 | Will there be at least 12500 measles cases in the U.S. in 20 | text_signals=[] | structural_signals=['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-07-28 02:09:01 | INFO     | collector.filter | POSSIBLE: 1373742 | Will there be at least 3000 measles cases in the U.S. in 202 | text_signals=[] | structural_signals=['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-07-28 02:09:01 | INFO     | collector.filter | POSSIBLE: 1373743 | Will there be at least 4000 measles cases in the U.S. in 202 | text_signals=[] | structural_signals=['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-07-28 02:09:01 | INFO     | collector.filter | POSSIBLE: 897843 | 9.0 or above earthquake before 2027? | text_signals=[] | structural_signals=['polymarket_tag:weather', 'polymarket_tag:climate & science']
+2026-07-28 02:09:01 | INFO     | collector.filter | POSSIBLE: 897844 | 10.0 or above earthquake before 2027? | text_signals=[] | structural_signals=['polymarket_tag:weather', 'polymarket_tag:climate & science']
+2026-07-28 02:09:01 | INFO     | collector.filter | POSSIBLE: 1058191 | Major volcano eruption (VEI ≥6) in 2026? | text_signals=[] | structural_signals=['polymarket_tag:weather', 'polymarket_tag:climate', 'polymarket_tag:climate & science']
+2026-07-28 02:09:01 | INFO     | collector.filter | POSSIBLE: 1073790 | Will there be between 8 and 10 earthquakes of magnitude 7.0  | text_signals=[] | structural_signals=['polymarket_tag:weather', 'polymarket_tag:climate & science']
+2026-07-28 02:09:01 | INFO     | collector.filter | POSSIBLE: 1073791 | Will there be between 11 and 13 earthquakes of magnitude 7.0 | text_signals=[] | structural_signals=['polymarket_tag:weather', 'polymarket_tag:climate & science']
+2026-07-28 02:09:02 | INFO     | collector.filter | POSSIBLE: 1073792 | Will there be between 14 and 16 earthquakes of magnitude 7.0 | text_signals=[] | structural_signals=['polymarket_tag:weather', 'polymarket_tag:climate & science']
+2026-07-28 02:09:02 | INFO     | collector.filter | POSSIBLE: 1073793 | Will there be between 17 and 19 earthquakes of magnitude 7.0 | text_signals=[] | structural_signals=['polymarket_tag:weather', 'polymarket_tag:climate & science']
+2026-07-28 02:09:02 | INFO     | collector.filter | POSSIBLE: 1073794 | Will there be 20 or more earthquakes of magnitude 7.0 or hig | text_signals=[] | structural_signals=['polymarket_tag:weather', 'polymarket_tag:climate & science']
+2026-07-28 02:09:02 | INFO     | collector.filter | POSSIBLE: 1075290 | Will there be exactly 0 confirmed VEI 4 or higher volcanic e | text_signals=[] | structural_signals=['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-07-28 02:09:02 | INFO     | collector.filter | POSSIBLE: 1075291 | Will there be exactly 1 confirmed VEI 4 or higher volcanic e | text_signals=[] | structural_signals=['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-07-28 02:09:02 | INFO     | collector.filter | POSSIBLE: 1075292 | Will there be exactly 2 confirmed VEI 4 or higher volcanic e | text_signals=[] | structural_signals=['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-07-28 02:09:02 | INFO     | collector.filter | POSSIBLE: 1075293 | Will there be exactly 3 confirmed VEI 4 or higher volcanic e | text_signals=[] | structural_signals=['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-07-28 02:09:02 | INFO     | collector.filter | POSSIBLE: 1075294 | Will there be exactly 4 confirmed VEI 4 or higher volcanic e | text_signals=[] | structural_signals=['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-07-28 02:09:02 | INFO     | collector.filter | POSSIBLE: 1075295 | Will there be 5 or more confirmed VEI 4 or higher volcanic e | text_signals=[] | structural_signals=['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-07-28 02:09:02 | INFO     | collector.filter | POSSIBLE: 2045556 | Vesuvius eruption with 1+ VEI in 2026? | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:09:02 | INFO     | collector.filter | POSSIBLE: 2045571 | Etna eruption with VEI 2+ in 2026? | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:09:02 | INFO     | collector.filter | POSSIBLE: 2155000 | Hantavirus pandemic in 2026? | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:09:02 | INFO     | collector.filter | POSSIBLE: 2255929 | AI data center in space by December 31, 2026? | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:09:02 | INFO     | collector.filter | POSSIBLE: 2255930 | AI data center in space by December 31, 2027? | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:09:02 | INFO     | collector.filter | POSSIBLE: 2270137 | Ebola pandemic in 2026? | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:09:02 | INFO     | collector.filter | POSSIBLE: 2326368 | Will South Sudan have an Ebola case in 2026? | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:09:02 | INFO     | collector.filter | POSSIBLE: 2326369 | Will Rwanda have an Ebola case in 2026? | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:09:02 | INFO     | collector.filter | POSSIBLE: 2326370 | Will Burundi have an Ebola case in 2026? | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:09:02 | INFO     | collector.filter | POSSIBLE: 2326371 | Will the United States have an Ebola case in 2026? | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:09:02 | INFO     | collector.filter | POSSIBLE: 2326372 | Will Canada have an Ebola case in 2026? | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:09:02 | INFO     | collector.filter | POSSIBLE: 2326373 | Will Kenya have an Ebola case in 2026? | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:09:02 | INFO     | collector.filter | POSSIBLE: 2326374 | Will India have an Ebola case in 2026? | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:09:02 | INFO     | collector.filter | POSSIBLE: 2326375 | Will the Republic of the Congo have an Ebola case in 2026? | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:09:02 | INFO     | collector.filter | POSSIBLE: 2326376 | Will Nigeria have an Ebola case in 2026? | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:09:02 | INFO     | collector.filter | POSSIBLE: 2326377 | Will Ethiopia have an Ebola case in 2026? | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:09:02 | INFO     | collector.filter | POSSIBLE: 2326378 | Will Somalia have an Ebola case in 2026? | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:09:02 | INFO     | collector.filter | POSSIBLE: 2326379 | Will China have an Ebola case in 2026? | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:09:02 | INFO     | collector.filter | POSSIBLE: 2409772 | Did an engine failure cause the Blue Origin New Glenn explos | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:09:02 | INFO     | collector.filter | POSSIBLE: 2409773 | Did a propellant leak cause the Blue Origin New Glenn explos | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:09:02 | INFO     | collector.filter | POSSIBLE: 2409774 | Did a valve or plumbing failure cause the Blue Origin New Gl | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:09:02 | INFO     | collector.filter | POSSIBLE: 2409775 | Did a ground support equipment failure cause the Blue Origin | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:09:02 | INFO     | collector.filter | POSSIBLE: 2409776 | Did a software or control system failure cause the Blue Orig | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:09:02 | INFO     | collector.filter | POSSIBLE: 2409777 | Did another cause lead to the Blue Origin New Glenn explosio | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:09:02 | INFO     | collector.filter | POSSIBLE: 2409778 | Will no cause of the Blue Origin New Glenn explosion be anno | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:09:02 | INFO     | collector.filter | POSSIBLE: 2412063 | Blue Origin New Glenn launch in 2026? | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:09:02 | INFO     | collector.filter | POSSIBLE: 2586481 | Megaquake by July 31? | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:09:02 | INFO     | collector.filter | POSSIBLE: 2753470 | Will there be at least 2400 measles cases in the U.S. by Jul | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:09:02 | INFO     | collector.filter | POSSIBLE: 2922747 | Will there be at least 2350 measles cases in the U.S. by Jul | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:09:02 | INFO     | collector.filter | POSSIBLE: 3133900 | Will there be at least 2375 measles cases in the U.S. by Jul | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:09:02 | INFO     | collector.filter | POSSIBLE: 3133937 | Will there be at least 2380 measles cases in the U.S. by Jul | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:09:02 | INFO     | collector.filter | POSSIBLE: 2929861 | Will there be at least 5000 cyclosporiasis cases in the U.S. | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:09:03 | INFO     | collector.filter | POSSIBLE: 2934809 | Will there be at least 10000 cyclosporiasis cases in the U.S | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:09:03 | INFO     | collector.filter | POSSIBLE: 3127318 | Will there be at least 7500 cyclosporiasis cases in the U.S. | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:09:03 | INFO     | collector.filter | POSSIBLE: 2995701 | Will there be 8 or fewer earthquakes of magnitude 5.5 or hig | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:09:03 | INFO     | collector.filter | POSSIBLE: 2995702 | Will there be exactly 9 earthquakes of magnitude 5.5 or high | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:09:03 | INFO     | collector.filter | POSSIBLE: 2995703 | Will there be exactly 10 earthquakes of magnitude 5.5 or hig | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:09:03 | INFO     | collector.filter | POSSIBLE: 3081707 | Will there be exactly 0 earthquakes of magnitude 6.5 or high | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:09:03 | INFO     | collector.filter | POSSIBLE: 3081708 | Will there be exactly 1 earthquake of magnitude 6.5 or highe | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:09:03 | INFO     | collector.filter | POSSIBLE: 3081709 | Will there be exactly 2 earthquakes of magnitude 6.5 or high | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:09:03 | INFO     | collector.filter | POSSIBLE: 3081710 | Will there be exactly 3 earthquakes of magnitude 6.5 or high | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:09:03 | INFO     | collector.filter | POSSIBLE: 3081711 | Will there be exactly 4 earthquakes of magnitude 6.5 or high | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:09:03 | INFO     | collector.filter | POSSIBLE: 3081712 | Will there be exactly 5 earthquakes of magnitude 6.5 or high | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:09:03 | INFO     | collector.filter | POSSIBLE: 3081713 | Will there be more than 5 earthquakes of magnitude 6.5 or hi | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:09:03 | INFO     | collector.filter | POSSIBLE: 3086840 | Will the Total Solar Eclipse be highly visible in Reykjavík? | text_signals=[] | structural_signals=['polymarket_tag:weather', 'polymarket_tag:climate']
+2026-07-28 02:09:03 | INFO     | collector.filter | POSSIBLE: 3093426 | Will the U.S. weekly flu hospitalization rate per 100,000 in | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:09:03 | INFO     | collector.filter | POSSIBLE: 3093427 | Will the U.S. weekly flu hospitalization rate per 100,000 in | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:09:03 | INFO     | collector.filter | POSSIBLE: 3093428 | Will the U.S. weekly flu hospitalization rate per 100,000 in | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:09:03 | INFO     | collector.filter | POSSIBLE: 3102669 | Will there be 6 or fewer earthquakes of magnitude 5.5 or hig | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:09:03 | INFO     | collector.filter | POSSIBLE: 3102670 | Will there be exactly 7 earthquakes of magnitude 5.5 or high | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:09:03 | INFO     | collector.filter | POSSIBLE: 3102671 | Will there be exactly 8 earthquakes of magnitude 5.5 or high | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:09:03 | INFO     | collector.filter | POSSIBLE: 3102672 | Will there be exactly 9 earthquakes of magnitude 5.5 or high | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:09:03 | INFO     | collector.filter | POSSIBLE: 3102673 | Will there be exactly 10 earthquakes of magnitude 5.5 or hig | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:09:03 | INFO     | collector.filter | POSSIBLE: 3102674 | Will there be exactly 11 earthquakes of magnitude 5.5 or hig | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:09:03 | INFO     | collector.filter | POSSIBLE: 3102675 | Will there be exactly 12 earthquakes of magnitude 5.5 or hig | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:09:03 | INFO     | collector.filter | POSSIBLE: 3102676 | Will there be exactly 13 earthquakes of magnitude 5.5 or hig | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:09:03 | INFO     | collector.filter | POSSIBLE: 3102677 | Will there be more than 13 earthquakes of magnitude 5.5 or h | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:09:05 | INFO     | collector.filter | Filter results: 500 total | 375 CONFIRMED | 78 POSSIBLE | 47 NOT_WEATHER | 0 errors
+2026-07-28 02:09:05 | INFO     | collector.filter | === 78 WEATHER_POSSIBLE markets for review ===
+2026-07-28 02:09:05 | INFO     | collector.filter |   - [2746137] Will there be at least 3500 measles cases in the U.S. in 2026?
+2026-07-28 02:09:05 | INFO     | collector.filter |     Text signals: []
+2026-07-28 02:09:05 | INFO     | collector.filter |     Structural signals: ['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-07-28 02:09:05 | INFO     | collector.filter |   - [716941] Will there be at least 5000 measles cases in the U.S. in 2026?
+2026-07-28 02:09:05 | INFO     | collector.filter |     Text signals: []
+2026-07-28 02:09:05 | INFO     | collector.filter |     Structural signals: ['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-07-28 02:09:05 | INFO     | collector.filter |   - [716942] Will there be at least 10000 measles cases in the U.S. in 2026?
+2026-07-28 02:09:05 | INFO     | collector.filter |     Text signals: []
+2026-07-28 02:09:05 | INFO     | collector.filter |     Structural signals: ['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-07-28 02:09:05 | INFO     | collector.filter |   - [1250830] Will there be at least 7500 measles cases in the U.S. in 2026?
+2026-07-28 02:09:05 | INFO     | collector.filter |     Text signals: []
+2026-07-28 02:09:05 | INFO     | collector.filter |     Structural signals: ['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-07-28 02:09:05 | INFO     | collector.filter |   - [1250957] Will there be at least 12500 measles cases in the U.S. in 2026?
+2026-07-28 02:09:05 | INFO     | collector.filter |     Text signals: []
+2026-07-28 02:09:05 | INFO     | collector.filter |     Structural signals: ['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-07-28 02:09:05 | INFO     | collector.filter |   - [1373742] Will there be at least 3000 measles cases in the U.S. in 2026?
+2026-07-28 02:09:05 | INFO     | collector.filter |     Text signals: []
+2026-07-28 02:09:05 | INFO     | collector.filter |     Structural signals: ['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-07-28 02:09:05 | INFO     | collector.filter |   - [1373743] Will there be at least 4000 measles cases in the U.S. in 2026?
+2026-07-28 02:09:05 | INFO     | collector.filter |     Text signals: []
+2026-07-28 02:09:05 | INFO     | collector.filter |     Structural signals: ['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-07-28 02:09:05 | INFO     | collector.filter |   - [897843] 9.0 or above earthquake before 2027?
+2026-07-28 02:09:05 | INFO     | collector.filter |     Text signals: []
+2026-07-28 02:09:05 | INFO     | collector.filter |     Structural signals: ['polymarket_tag:weather', 'polymarket_tag:climate & science']
+2026-07-28 02:09:05 | INFO     | collector.filter |   - [897844] 10.0 or above earthquake before 2027?
+2026-07-28 02:09:05 | INFO     | collector.filter |     Text signals: []
+2026-07-28 02:09:05 | INFO     | collector.filter |     Structural signals: ['polymarket_tag:weather', 'polymarket_tag:climate & science']
+2026-07-28 02:09:05 | INFO     | collector.filter |   - [1058191] Major volcano eruption (VEI ≥6) in 2026?
+2026-07-28 02:09:05 | INFO     | collector.filter |     Text signals: []
+2026-07-28 02:09:05 | INFO     | collector.filter |     Structural signals: ['polymarket_tag:weather', 'polymarket_tag:climate', 'polymarket_tag:climate & science']
+2026-07-28 02:09:05 | INFO     | collector.collector | Filter results: {'included_weather': 375, 'possible_weather': 78, 'excluded_not_weather': 47, 'excluded_incomplete': 0, 'total': 500}
+2026-07-28 02:09:05 | INFO     | collector.collector | Step 4: Normalizing market data...
+2026-07-28 02:09:05 | INFO     | collector.collector | Normalized 500 markets
+2026-07-28 02:09:05 | INFO     | collector.collector | Found 375 weather candidates
+2026-07-28 02:09:05 | INFO     | collector.collector | Step 5: Saving outputs...
+2026-07-28 02:09:05 | INFO     | collector.storage | Saved normalized markets: C:\Users\botrunner\projects\polymarket-beobachter\data\collector\normalized\2026-07-28\markets.jsonl (500 records)
+2026-07-28 02:09:05 | INFO     | collector.storage | Saved candidates: C:\Users\botrunner\projects\polymarket-beobachter\data\collector\candidates\2026-07-28\candidates.jsonl (375 records)
+2026-07-28 02:09:05 | INFO     | collector.storage | Saved report: C:\Users\botrunner\projects\polymarket-beobachter\data\collector\reports\2026-07-28\report.md
+2026-07-28 02:09:05 | INFO     | collector.collector | ============================================================
+2026-07-28 02:09:05 | INFO     | collector.collector | COLLECTION COMPLETE
+2026-07-28 02:09:05 | INFO     | collector.collector | Duration: 4.7s
+2026-07-28 02:09:05 | INFO     | collector.collector | Fetched: 500
+2026-07-28 02:09:05 | INFO     | collector.collector | Weather Candidates: 375
+2026-07-28 02:09:05 | INFO     | collector.collector | ============================================================
+2026-07-28 02:09:05 | INFO     | core.weather_market_filter | WeatherMarketFilter initialized | min_liquidity=150.0 | odds_range=[0.1, 0.85] | min_hours=6.0 | cities=29
+2026-07-28 02:09:05 | INFO     | app.orchestrator | Merged 23 gamma candidates into observation pipeline
+2026-07-28 02:09:05 | INFO     | app.orchestrator | Pre-filtered 243 stale candidates (resolution < 6h away), 155 remain
+2026-07-28 02:09:49 | INFO     | collector.client | Fetched prices for 155/155 markets
+2026-07-28 02:09:49 | INFO     | app.orchestrator | Fetched real odds for 155/155 markets
+2026-07-28 02:09:49 | INFO     | app.orchestrator | Loaded 14 weather candidates for observation (skipped: 0 no-price, 225 filter [ODDS:97, TYPE:70, CITY:30, LIQUIDITY:20, RESOLUTION:8])
+2026-07-28 02:09:49 | INFO     | core.weather_market_filter | WeatherMarketFilter initialized | min_liquidity=150.0 | odds_range=[0.1, 0.85] | min_hours=6.0 | cities=29
+2026-07-28 02:09:49 | INFO     | core.weather_probability_model | WeatherProbabilityModel initialized | base_sigma=6.5°F | max_horizon=10 days
+2026-07-28 02:09:49 | INFO     | core.weather_engine | WeatherEngine initialized | version=1.0.0 | config_hash=f198b5917b30f1c3
+2026-07-28 02:09:49 | INFO     | core.weather_engine | WeatherObserver run started | timestamp=2026-07-28T00:09:49Z
+2026-07-28 02:09:49 | INFO     | core.weather_engine | Fetched 14 weather markets
+2026-07-28 02:09:49 | INFO     | core.weather_market_filter | Filtered 14 markets: 14 passed, 0 rejected
+2026-07-28 02:09:49 | INFO     | core.weather_engine | Filtered markets: 14/14 passed
+2026-07-28 02:09:49 | INFO     | core.forecast_sources.open_meteo_ensemble | GFS-Ensemble: Paris | 31 members | mean=77.1°F | spread=5.2°F | daily_highs=31 members
+2026-07-28 02:09:49 | INFO     | core.forecast_sources.open_meteo_ensemble | GFS-Ensemble: London | 31 members | mean=70.5°F | spread=5.3°F | daily_highs=31 members
+2026-07-28 02:09:49 | INFO     | core.forecast_sources.open_meteo_ensemble | GFS-Ensemble: Seoul | 31 members | mean=83.5°F | spread=3.4°F | daily_highs=31 members
+2026-07-28 02:09:50 | INFO     | core.ensemble_builder | Ensemble member-counting: P=0.1094 (31 members, between_range 87.8°F)
+2026-07-28 02:09:50 | INFO     | core.forecast_sources.open_meteo_ensemble | GFS-Ensemble: London | 31 members | mean=70.5°F | spread=5.3°F | daily_highs=31 members
+2026-07-28 02:09:50 | INFO     | core.ensemble_builder | Ensemble member-counting: P=0.3906 (31 members, between_range 87.8°F)
+2026-07-28 02:09:50 | INFO     | core.ensemble_builder | Ensemble member-counting: P=0.1094 (31 members, between_range 87.8°F)
+2026-07-28 02:09:50 | INFO     | core.weather_engine | Ensemble OBSERVE | London | sources=4 (open_meteo,openweather,open_meteo_ensemble,met_norway) | P_ensemble=0.2963 | var=0.0077 | edge=34.67%
+2026-07-28 02:09:50 | INFO     | core.weather_engine | Ensemble OBSERVE | Seoul | sources=4 (open_meteo,open_meteo_ensemble,openweather,met_norway) | P_ensemble=0.2243 | var=0.0031 | edge=-43.22%
+2026-07-28 02:09:50 | INFO     | core.forecast_sources.open_meteo_ensemble | GFS-Ensemble: Paris | 31 members | mean=77.1°F | spread=5.2°F | daily_highs=31 members
+2026-07-28 02:09:50 | INFO     | core.forecast_sources.open_meteo_ensemble | GFS-Ensemble: Paris | 31 members | mean=77.1°F | spread=5.2°F | daily_highs=31 members
+2026-07-28 02:09:50 | INFO     | core.ensemble_builder | Ensemble member-counting: P=0.3906 (31 members, between_range 86.0°F)
+2026-07-28 02:09:50 | INFO     | core.forecast_sources.open_meteo_ensemble | GFS-Ensemble: Seoul | 31 members | mean=83.5°F | spread=3.4°F | daily_highs=31 members
+2026-07-28 02:09:50 | INFO     | core.ensemble_builder | Ensemble member-counting: P=0.3281 (31 members, between_range 91.4°F)
+2026-07-28 02:09:50 | INFO     | core.weather_engine | NEAR-MISS YES | Paris | P_model=0.2632 P_market=0.2150 edge=21.03% (below min=30%) | between_range | Will the highest temperature in Paris be 33°C on July 28?
+2026-07-28 02:09:50 | INFO     | core.forecast_sources.open_meteo_ensemble | GFS-Ensemble: Seoul | 31 members | mean=83.5°F | spread=3.4°F | daily_highs=31 members
+2026-07-28 02:09:50 | INFO     | core.ensemble_builder | Ensemble member-counting: P=0.2656 (31 members, between_range 89.6°F)
+2026-07-28 02:09:50 | INFO     | core.forecast_sources.open_meteo_ensemble | GFS-Ensemble: Ankara | 31 members | mean=63.5°F | spread=2.5°F | daily_highs=31 members
+2026-07-28 02:09:50 | INFO     | core.weather_engine | Ensemble OBSERVE | Paris | sources=4 (open_meteo,open_meteo_ensemble,openweather,met_norway) | P_ensemble=0.3712 | var=0.0063 | edge=-34.88%
+2026-07-28 02:09:50 | INFO     | core.ensemble_builder | Ensemble member-counting: P=0.1094 (31 members, between_range 86.0°F)
+2026-07-28 02:09:50 | INFO     | core.ensemble_builder | Ensemble member-counting: P=0.2969 (31 members, between_range 89.6°F)
+2026-07-28 02:09:50 | INFO     | core.weather_engine | Ensemble OBSERVE | Seoul | sources=4 (open_meteo,open_meteo_ensemble,openweather,met_norway) | P_ensemble=0.1983 | var=0.0031 | edge=-39.90%
+2026-07-28 02:09:50 | INFO     | core.weather_engine | Ensemble OBSERVE | Seoul | sources=4 (open_meteo_ensemble,open_meteo,openweather,met_norway) | P_ensemble=0.2082 | var=0.0067 | edge=73.51%
+2026-07-28 02:09:50 | INFO     | core.forecast_sources.open_meteo_ensemble | GFS-Ensemble: Ankara | 31 members | mean=63.5°F | spread=2.5°F | daily_highs=31 members
+2026-07-28 02:09:50 | INFO     | core.forecast_sources.open_meteo_ensemble | GFS-Ensemble: London | 31 members | mean=70.5°F | spread=5.3°F | daily_highs=31 members
+2026-07-28 02:09:50 | INFO     | core.forecast_sources.open_meteo_ensemble | GFS-Ensemble: Ankara | 31 members | mean=63.5°F | spread=2.5°F | daily_highs=31 members
+2026-07-28 02:09:51 | INFO     | core.forecast_sources.open_meteo_ensemble | GFS-Ensemble: Helsinki | 31 members | mean=70.3°F | spread=5.3°F | daily_highs=31 members
+2026-07-28 02:09:51 | INFO     | core.ensemble_builder | Ensemble member-counting: P=0.0156 (31 members, between_range 75.2°F)
+2026-07-28 02:09:51 | INFO     | core.forecast_sources.open_meteo_ensemble | GFS-Ensemble: Seoul | 31 members | mean=81.3°F | spread=2.3°F | daily_highs=31 members
+2026-07-28 02:09:51 | INFO     | core.ensemble_builder | Ensemble member-counting: P=0.0156 (31 members, between_range 86.0°F)
+2026-07-28 02:09:51 | INFO     | core.weather_engine | Ensemble OBSERVE | Seoul | sources=4 (open_meteo,openweather,open_meteo_ensemble,met_norway) | P_ensemble=0.1602 | var=0.0005 | edge=-44.77%
+2026-07-28 02:09:51 | INFO     | core.ensemble_builder | Ensemble member-counting: P=0.2031 (31 members, between_range 86.0°F)
+2026-07-28 02:09:51 | INFO     | core.ensemble_builder | Ensemble member-counting: P=0.1406 (31 members, between_range 84.2°F)
+2026-07-28 02:10:00 | INFO     | core.ensemble_builder | Ensemble member-counting: P=0.5781 (31 members, between_range 84.2°F)
+2026-07-28 02:10:00 | INFO     | core.weather_engine | YES-NEAR-MISS ADMITTED | Ankara | P_model=0.4396 P_market=0.3350 edge=29.42% (yes_min=24%) | between_range | Will the highest temperature in Ankara be 29°C on July 28?
+2026-07-28 02:10:00 | INFO     | core.weather_engine | Ensemble OBSERVE | Ankara | sources=3 (open_meteo_ensemble,met_norway,openweather) | P_ensemble=0.4396 | var=0.0079 | edge=31.21%
+2026-07-28 02:10:00 | INFO     | core.ensemble_builder | Ensemble member-counting: P=0.0156 (31 members, between_range 87.8°F)
+2026-07-28 02:10:00 | INFO     | core.weather_engine | Ensemble OBSERVE | Ankara | sources=3 (open_meteo_ensemble,met_norway,openweather) | P_ensemble=0.0754 | var=0.0005 | edge=-39.68%
+2026-07-28 02:10:00 | INFO     | core.parallel_processor | Parallel processing complete: 14/14 markets in 11.22s using io strategy
+2026-07-28 02:10:00 | INFO     | core.weather_engine | Parallel processing: 14/14 markets succeeded
+2026-07-28 02:10:00 | INFO     | core.weather_engine | WeatherObserver run complete | duration=11.25s | observations=14 | with_edge=8
+2026-07-28 02:10:00 | INFO     | app.orchestrator | Market Condition: FAVORABLE (8 edge obs)
+2026-07-28 02:10:00 | INFO     | app.orchestrator | Generated proposal for market 3108738
+2026-07-28 02:10:00 | INFO     | app.orchestrator | Generated proposal for market 3108763
+2026-07-28 02:10:01 | INFO     | app.orchestrator | Generated proposal for market 3108749
+2026-07-28 02:10:01 | INFO     | app.orchestrator | Generated proposal for market 3108762
+2026-07-28 02:10:01 | INFO     | app.orchestrator | Generated proposal for market 3108764
+2026-07-28 02:10:01 | INFO     | app.orchestrator | Generated proposal for market 3124759
+2026-07-28 02:10:01 | INFO     | app.orchestrator | Generated proposal for market 3108771
+2026-07-28 02:10:01 | INFO     | app.orchestrator | Generated proposal for market 3108773
+2026-07-28 02:10:01 | INFO     | paper_trader.intake | Loaded 2000 total proposals
+2026-07-28 02:10:01 | INFO     | paper_trader.intake | Using 12 recent unique proposals (<= 4h, YES-first sort)
+2026-07-28 02:10:02 | INFO     | paper_trader.intake | Found 99 already paper-executed proposals
+2026-07-28 02:10:03 | INFO     | paper_trader.snapshot_client | Batch snapshots: 12/12 found
+2026-07-28 02:10:03 | INFO     | paper_trader.intake | [INTAKE-SPREAD] checked=12 blocked=0 (low+unknown) unknown=0 (of 12 candidate markets) — LOW/UNKNOWN-liq entry block
+2026-07-28 02:10:03 | INFO     | paper_trader.intake | Proposal PROP-20260728-62a288bf blocked by entry guardrail: Market type 'exact' blocked — no proven forward edge vs market (forward_validation n=2496) [side=? ep=0.120 edge=+0.735 YES-opportunity-missed?]
+2026-07-28 02:10:03 | INFO     | paper_trader.intake | Proposal PROP-20260728-c37b1053 blocked by entry guardrail: Market type 'exact' blocked — no proven forward edge vs market (forward_validation n=2496) [side=? ep=0.220 edge=+0.347 YES-opportunity-missed?]
+2026-07-28 02:10:03 | INFO     | paper_trader.intake | Proposal PROP-20260728-8f9d2577 blocked by entry guardrail: Market type 'exact' blocked — no proven forward edge vs market (forward_validation n=2496) [side=? ep=0.335 edge=+0.312 YES-opportunity-missed?]
+2026-07-28 02:10:03 | INFO     | paper_trader.intake | Proposal PROP-20260728-e930f08d blocked by entry guardrail: Market type 'exact' blocked — no proven forward edge vs market (forward_validation n=2496) [side=? ep=0.490 edge=-0.333 NO-bet-correct-block]
+2026-07-28 02:10:03 | INFO     | paper_trader.intake | Proposal PROP-20260728-3f742b2c blocked by entry guardrail: Market type 'exact' blocked — no proven forward edge vs market (forward_validation n=2496) [side=? ep=0.570 edge=-0.349 NO-bet-correct-block]
+2026-07-28 02:10:04 | INFO     | paper_trader.intake | Proposal PROP-20260728-ecbebf31 blocked by entry guardrail: Market type 'exact' blocked — no proven forward edge vs market (forward_validation n=2496) [side=? ep=0.330 edge=-0.351 NO-bet-correct-block]
+2026-07-28 02:10:04 | INFO     | paper_trader.intake | Proposal PROP-20260728-c5d368c4 blocked by entry guardrail: Market type 'exact' blocked — no proven forward edge vs market (forward_validation n=2496) [side=? ep=0.125 edge=-0.397 NO-bet-correct-block]
+2026-07-28 02:10:04 | INFO     | paper_trader.intake | Proposal PROP-20260728-7d07f1ea blocked by entry guardrail: Market type 'exact' blocked — no proven forward edge vs market (forward_validation n=2496) [side=? ep=0.330 edge=-0.399 NO-bet-correct-block]
+2026-07-28 02:10:04 | INFO     | paper_trader.intake | Proposal PROP-20260728-774e7487 blocked by entry guardrail: Market type 'exact' blocked — no proven forward edge vs market (forward_validation n=2496) [side=? ep=0.395 edge=-0.432 NO-bet-correct-block]
+2026-07-28 02:10:04 | INFO     | paper_trader.intake | Proposal PROP-20260727-535f6cc4 blocked by entry guardrail: Market type 'exact' blocked — no proven forward edge vs market (forward_validation n=2496) [side=? ep=0.175 edge=-0.441 NO-bet-correct-block]
+2026-07-28 02:10:04 | INFO     | paper_trader.intake | Proposal PROP-20260728-8a0df560 blocked by entry guardrail: Market type 'exact' blocked — no proven forward edge vs market (forward_validation n=2496) [side=? ep=0.290 edge=-0.448 NO-bet-correct-block]
+2026-07-28 02:10:04 | INFO     | paper_trader.intake | Proposal PROP-20260728-962e2354 blocked by entry guardrail: Market type 'between' blocked — no proven forward edge vs market (forward_validation n=2496) [side=? ep=0.415 edge=-0.479 NO-bet-correct-block]
+2026-07-28 02:10:04 | INFO     | paper_trader.intake | Found 0 eligible proposals for paper trading
+2026-07-28 02:10:09 | INFO     | app.orchestrator | Found 0 eligible proposals for paper trading
+2026-07-28 02:10:09 | INFO     | paper_trader.position_manager | Checking 0 open positions for resolution
+2026-07-28 02:10:11 | INFO     | core.outcome_tracker | Prediction recorded: 3108738 | TRADE
+2026-07-28 02:10:11 | INFO     | core.outcome_tracker | Prediction recorded: 3108763 | TRADE
+2026-07-28 02:10:11 | INFO     | core.outcome_tracker | Prediction recorded: 3108749 | TRADE
+2026-07-28 02:10:11 | INFO     | core.outcome_tracker | Prediction recorded: 3108762 | TRADE
+2026-07-28 02:10:11 | INFO     | core.outcome_tracker | Prediction recorded: 3108764 | TRADE
+2026-07-28 02:10:11 | INFO     | core.outcome_tracker | Prediction recorded: 3124759 | TRADE
+2026-07-28 02:10:11 | INFO     | core.outcome_tracker | Prediction recorded: 3108771 | TRADE
+2026-07-28 02:10:11 | INFO     | core.outcome_tracker | Prediction recorded: 3108773 | TRADE
+2026-07-28 02:10:13 | INFO     | core.outcome_tracker | Resolution recorded: 3096429 | NO
+2026-07-28 02:10:15 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 3096429: market not found in Gamma API after retry
+2026-07-28 02:10:15 | INFO     | paper_trader.snapshot_client | Batch snapshots: 5/30 found
+2026-07-28 02:10:15 | WARNING  | paper_trader.snapshot_client | Missing snapshots for: ['3050165', '3050423', '3074104', '3096473', '3050188', '3076548', '3050193', '3050289', '3096466', '3050192', '3076561', '3076584', '3050243', '3096429', '3077328', '3076681', '3096748', '3076564', '3050154', '3096450', '3076562', '3074103', '3096518', '3050191', '3050151']
+2026-07-28 02:10:15 | INFO     | paper_trader.shadow_tracker | SHADOW_EXPIRE_STALE: SHADOW-20260724223108-547bd5 | market=3050151 — entry+25h+48h past
+2026-07-28 02:10:15 | INFO     | paper_trader.shadow_tracker | SHADOW_EXPIRE_STALE: SHADOW-20260724224702-7d9750 | market=3050154 — entry+25h+48h past
+2026-07-28 02:10:15 | INFO     | paper_trader.shadow_tracker | SHADOW_EXPIRE_STALE: SHADOW-20260724230309-751230 | market=3050191 — entry+24h+48h past
+2026-07-28 02:10:15 | INFO     | paper_trader.shadow_tracker | SHADOW_EXPIRE_STALE: SHADOW-20260725005717-1d9187 | market=3050188 — entry+23h+48h past
+2026-07-28 02:10:15 | INFO     | paper_trader.shadow_tracker | SHADOW_EXPIRE_STALE: SHADOW-20260725051947-653339 | market=3050289 — entry+18h+48h past
+2026-07-28 02:10:15 | INFO     | paper_trader.shadow_tracker | SHADOW_EXPIRE_STALE: SHADOW-20260725082641-904d1e | market=3050193 — entry+15h+48h past
+2026-07-28 02:10:15 | INFO     | paper_trader.shadow_tracker | SHADOW_EXPIRE_STALE: SHADOW-20260725113555-7715fc | market=3050165 — entry+12h+48h past
+2026-07-28 02:10:15 | INFO     | paper_trader.shadow_tracker | SHADOW_EXPIRE_STALE: SHADOW-20260725164434-1bc33a | market=3074104 — entry+7h+48h past
+2026-07-28 02:10:15 | INFO     | app.orchestrator | ShadowTracker: 5 updated, 8 resolved
+2026-07-28 02:10:15 | INFO     | analytics.outcome_analyser | Starte Outcome-Analyse...
+2026-07-28 02:10:15 | INFO     | analytics.outcome_analyser | Positions geladen: 198 Eintraege, 99 eindeutige, 59 geschlossen mit P&L
+2026-07-28 02:10:15 | INFO     | analytics.outcome_analyser | Performance-Report gespeichert: C:\Users\botrunner\projects\polymarket-beobachter\analytics\performance_report.json
+2026-07-28 02:10:15 | INFO     | app.orchestrator | Outcome-Analyser: Performance-Report aktualisiert
+2026-07-28 02:10:15 | INFO     | app.orchestrator | [SEGMENTS] 99 closed positions | risky cities: none
+2026-07-28 02:10:15 | INFO     | analytics.strategy_advisor | Strategy-Advisor: mode=balance recommendations=6
+2026-07-28 02:10:15 | INFO     | app.orchestrator | [ADVISOR] BALANCE | BALANCE: Win-Rate 32.2% | P&L -86.96 EUR | Attack 0.04 | 0 offene Positionen | 6 Empfehlung(en)
+2026-07-28 02:10:15 | INFO     | analytics.arbitrage_detector | Arbitrage Scan: 6 parseable Maerkte von 25
+2026-07-28 02:10:15 | INFO     | paper_trader.bot_health_monitor | BotHealthMonitor: status=HEALTHY triggers=none
+2026-07-28 02:10:15 | INFO     | app.orchestrator | [BOT-HEALTH] HEALTHY | HEALTHY: DD 0.0% | WR 32.2%(all-time) | Loss-Streak 0 | Guardrails blocked_cities, blocked_market_types, blocked_price_bands
+2026-07-28 02:10:16 | INFO     | app.orchestrator | [AGENT-POLICY] NORMAL | max_entry=0.850 | city_cooldowns=0
+2026-07-28 02:10:16 | INFO     | app.orchestrator | [AGENT] NORMAL | NORMAL: 0 active action(s) | 1 read-only | Open=0 | DD=0.0% | BotHealth=HEALTHY
+2026-07-28 02:10:16 | INFO     | app.orchestrator | [EDGE-HUNTER] TRACK | WAIT | score=5
+2026-07-28 02:10:29 | INFO     | paper_trader.no_fade_lane | NOFADE_PAUSE: gap-monitor regime guard active — keine neuen Entries.
+2026-07-28 02:10:29 | INFO     | analytics.live_readiness_tracker | Live-Readiness: 44.4% | 2/6 Meilensteine | ETA GESPERRT — Forward-Edge unbewiesen
+2026-07-28 02:10:29 | INFO     | analytics.auto_parameter_tuner | Auto-Param: direction=brier_pause WR=35% trades=20 idle=11.249456502025463 | overrides={'MIN_EDGE': 0.2, 'YES_MIN_EDGE': 0.24, 'MIN_EDGE_ABSOLUTE': 0.03}
+2026-07-28 02:10:29 | WARNING  | analytics.self_diagnostic_loop | Self-Diag NO_EDGE_DROUGHT [warn]: 0 Edge ueber 6 Runs — Forecast/Modell sieht nichts Tradeables im Markt. -> Pruefe Forecast-API-Verfuegbarkeit + MIN_EDGE Schwelle. Evtl. lockern oder Provider-Failover triggern.
+2026-07-28 02:10:29 | WARNING  | analytics.self_diagnostic_loop | Self-Diag BRIER_REGRESSION [warn]: Brier Skill Score -1.04 — Forecast schlechter als naive Baseline. Calibration-Shrinkage erhoehen oder Model-Weights neu schaetzen. -> core/weather_engine Shrinkage-Floor +0.05 erhoehen; core/model_weights neu trainieren.
+2026-07-28 02:10:30 | INFO     | app.orchestrator | Status-Summary gekuerzt: status_summary.txt auf die letzten 120 Runs
+2026-07-28 02:10:30 | INFO     | app.orchestrator | === Pipeline END === run_id=RUN-20260728-020900-18f099 state=OK
+2026-07-28 02:25:30 | INFO     | app.orchestrator | === Pipeline START === run_id=RUN-20260728-022530-532e65
+2026-07-28 02:25:30 | INFO     | core.weather_market_classifier | WeatherMarketClassifier initialized
+2026-07-28 02:25:30 | INFO     | collector.collector | ============================================================
+2026-07-28 02:25:30 | INFO     | collector.collector | WEATHER OBSERVER COLLECTOR - Starting run
+2026-07-28 02:25:30 | INFO     | collector.collector | Max markets: 500
+2026-07-28 02:25:30 | INFO     | collector.collector | Output dir: C:\Users\botrunner\projects\polymarket-beobachter\data\collector
+2026-07-28 02:25:30 | INFO     | collector.collector | Dry run: False
+2026-07-28 02:25:30 | INFO     | collector.collector | ============================================================
+2026-07-28 02:25:30 | INFO     | collector.collector | Step 1: Fetching weather markets from Polymarket API...
+2026-07-28 02:25:30 | INFO     | collector.collector |   (Using /events?tag_slug=weather and /events?tag_slug=climate)
+2026-07-28 02:25:30 | INFO     | collector.client | Fetching weather events: offset=0
+2026-07-28 02:25:30 | INFO     | collector.client | Total weather markets fetched: 500
+2026-07-28 02:25:30 | INFO     | collector.collector | Fetched 500 weather-tagged markets
+2026-07-28 02:25:30 | INFO     | collector.collector | Step 2: Sanitizing (removing forbidden fields)...
+2026-07-28 02:25:31 | INFO     | collector.collector | Sanitized 500 markets
+2026-07-28 02:25:31 | INFO     | collector.collector | Removed 15072 forbidden field occurrences
+2026-07-28 02:25:31 | INFO     | collector.storage | Saved raw response: C:\Users\botrunner\projects\polymarket-beobachter\data\collector\raw\2026-07-28\markets_20260728_002531.json (500 markets)
+2026-07-28 02:25:31 | INFO     | collector.collector | Step 3: Filtering for weather relevance...
+2026-07-28 02:25:31 | INFO     | collector.filter | POSSIBLE: 2746137 | Will there be at least 3500 measles cases in the U.S. in 202 | text_signals=[] | structural_signals=['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-07-28 02:25:31 | INFO     | collector.filter | POSSIBLE: 716941 | Will there be at least 5000 measles cases in the U.S. in 202 | text_signals=[] | structural_signals=['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-07-28 02:25:31 | INFO     | collector.filter | POSSIBLE: 716942 | Will there be at least 10000 measles cases in the U.S. in 20 | text_signals=[] | structural_signals=['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-07-28 02:25:31 | INFO     | collector.filter | POSSIBLE: 1250830 | Will there be at least 7500 measles cases in the U.S. in 202 | text_signals=[] | structural_signals=['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-07-28 02:25:31 | INFO     | collector.filter | POSSIBLE: 1250957 | Will there be at least 12500 measles cases in the U.S. in 20 | text_signals=[] | structural_signals=['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-07-28 02:25:31 | INFO     | collector.filter | POSSIBLE: 1373742 | Will there be at least 3000 measles cases in the U.S. in 202 | text_signals=[] | structural_signals=['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-07-28 02:25:31 | INFO     | collector.filter | POSSIBLE: 1373743 | Will there be at least 4000 measles cases in the U.S. in 202 | text_signals=[] | structural_signals=['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-07-28 02:25:31 | INFO     | collector.filter | POSSIBLE: 897843 | 9.0 or above earthquake before 2027? | text_signals=[] | structural_signals=['polymarket_tag:weather', 'polymarket_tag:climate & science']
+2026-07-28 02:25:31 | INFO     | collector.filter | POSSIBLE: 897844 | 10.0 or above earthquake before 2027? | text_signals=[] | structural_signals=['polymarket_tag:weather', 'polymarket_tag:climate & science']
+2026-07-28 02:25:31 | INFO     | collector.filter | POSSIBLE: 1058191 | Major volcano eruption (VEI ≥6) in 2026? | text_signals=[] | structural_signals=['polymarket_tag:weather', 'polymarket_tag:climate', 'polymarket_tag:climate & science']
+2026-07-28 02:25:31 | INFO     | collector.filter | POSSIBLE: 1073790 | Will there be between 8 and 10 earthquakes of magnitude 7.0  | text_signals=[] | structural_signals=['polymarket_tag:weather', 'polymarket_tag:climate & science']
+2026-07-28 02:25:31 | INFO     | collector.filter | POSSIBLE: 1073791 | Will there be between 11 and 13 earthquakes of magnitude 7.0 | text_signals=[] | structural_signals=['polymarket_tag:weather', 'polymarket_tag:climate & science']
+2026-07-28 02:25:31 | INFO     | collector.filter | POSSIBLE: 1073792 | Will there be between 14 and 16 earthquakes of magnitude 7.0 | text_signals=[] | structural_signals=['polymarket_tag:weather', 'polymarket_tag:climate & science']
+2026-07-28 02:25:31 | INFO     | collector.filter | POSSIBLE: 1073793 | Will there be between 17 and 19 earthquakes of magnitude 7.0 | text_signals=[] | structural_signals=['polymarket_tag:weather', 'polymarket_tag:climate & science']
+2026-07-28 02:25:31 | INFO     | collector.filter | POSSIBLE: 1073794 | Will there be 20 or more earthquakes of magnitude 7.0 or hig | text_signals=[] | structural_signals=['polymarket_tag:weather', 'polymarket_tag:climate & science']
+2026-07-28 02:25:31 | INFO     | collector.filter | POSSIBLE: 1075290 | Will there be exactly 0 confirmed VEI 4 or higher volcanic e | text_signals=[] | structural_signals=['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-07-28 02:25:31 | INFO     | collector.filter | POSSIBLE: 1075291 | Will there be exactly 1 confirmed VEI 4 or higher volcanic e | text_signals=[] | structural_signals=['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-07-28 02:25:31 | INFO     | collector.filter | POSSIBLE: 1075292 | Will there be exactly 2 confirmed VEI 4 or higher volcanic e | text_signals=[] | structural_signals=['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-07-28 02:25:31 | INFO     | collector.filter | POSSIBLE: 1075293 | Will there be exactly 3 confirmed VEI 4 or higher volcanic e | text_signals=[] | structural_signals=['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-07-28 02:25:31 | INFO     | collector.filter | POSSIBLE: 1075294 | Will there be exactly 4 confirmed VEI 4 or higher volcanic e | text_signals=[] | structural_signals=['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-07-28 02:25:31 | INFO     | collector.filter | POSSIBLE: 1075295 | Will there be 5 or more confirmed VEI 4 or higher volcanic e | text_signals=[] | structural_signals=['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-07-28 02:25:31 | INFO     | collector.filter | POSSIBLE: 2045556 | Vesuvius eruption with 1+ VEI in 2026? | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:25:31 | INFO     | collector.filter | POSSIBLE: 2045571 | Etna eruption with VEI 2+ in 2026? | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:25:31 | INFO     | collector.filter | POSSIBLE: 2155000 | Hantavirus pandemic in 2026? | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:25:31 | INFO     | collector.filter | POSSIBLE: 2255929 | AI data center in space by December 31, 2026? | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:25:31 | INFO     | collector.filter | POSSIBLE: 2255930 | AI data center in space by December 31, 2027? | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:25:31 | INFO     | collector.filter | POSSIBLE: 2270137 | Ebola pandemic in 2026? | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:25:32 | INFO     | collector.filter | POSSIBLE: 2326368 | Will South Sudan have an Ebola case in 2026? | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:25:32 | INFO     | collector.filter | POSSIBLE: 2326369 | Will Rwanda have an Ebola case in 2026? | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:25:32 | INFO     | collector.filter | POSSIBLE: 2326370 | Will Burundi have an Ebola case in 2026? | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:25:32 | INFO     | collector.filter | POSSIBLE: 2326371 | Will the United States have an Ebola case in 2026? | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:25:32 | INFO     | collector.filter | POSSIBLE: 2326372 | Will Canada have an Ebola case in 2026? | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:25:32 | INFO     | collector.filter | POSSIBLE: 2326373 | Will Kenya have an Ebola case in 2026? | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:25:32 | INFO     | collector.filter | POSSIBLE: 2326374 | Will India have an Ebola case in 2026? | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:25:32 | INFO     | collector.filter | POSSIBLE: 2326375 | Will the Republic of the Congo have an Ebola case in 2026? | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:25:32 | INFO     | collector.filter | POSSIBLE: 2326376 | Will Nigeria have an Ebola case in 2026? | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:25:32 | INFO     | collector.filter | POSSIBLE: 2326377 | Will Ethiopia have an Ebola case in 2026? | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:25:32 | INFO     | collector.filter | POSSIBLE: 2326378 | Will Somalia have an Ebola case in 2026? | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:25:32 | INFO     | collector.filter | POSSIBLE: 2326379 | Will China have an Ebola case in 2026? | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:25:32 | INFO     | collector.filter | POSSIBLE: 2409772 | Did an engine failure cause the Blue Origin New Glenn explos | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:25:32 | INFO     | collector.filter | POSSIBLE: 2409773 | Did a propellant leak cause the Blue Origin New Glenn explos | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:25:32 | INFO     | collector.filter | POSSIBLE: 2409774 | Did a valve or plumbing failure cause the Blue Origin New Gl | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:25:32 | INFO     | collector.filter | POSSIBLE: 2409775 | Did a ground support equipment failure cause the Blue Origin | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:25:32 | INFO     | collector.filter | POSSIBLE: 2409776 | Did a software or control system failure cause the Blue Orig | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:25:32 | INFO     | collector.filter | POSSIBLE: 2409777 | Did another cause lead to the Blue Origin New Glenn explosio | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:25:32 | INFO     | collector.filter | POSSIBLE: 2409778 | Will no cause of the Blue Origin New Glenn explosion be anno | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:25:32 | INFO     | collector.filter | POSSIBLE: 2412063 | Blue Origin New Glenn launch in 2026? | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:25:32 | INFO     | collector.filter | POSSIBLE: 2586481 | Megaquake by July 31? | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:25:32 | INFO     | collector.filter | POSSIBLE: 2753470 | Will there be at least 2400 measles cases in the U.S. by Jul | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:25:32 | INFO     | collector.filter | POSSIBLE: 2922747 | Will there be at least 2350 measles cases in the U.S. by Jul | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:25:32 | INFO     | collector.filter | POSSIBLE: 3133900 | Will there be at least 2375 measles cases in the U.S. by Jul | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:25:32 | INFO     | collector.filter | POSSIBLE: 3133937 | Will there be at least 2380 measles cases in the U.S. by Jul | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:25:32 | INFO     | collector.filter | POSSIBLE: 2929861 | Will there be at least 5000 cyclosporiasis cases in the U.S. | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:25:32 | INFO     | collector.filter | POSSIBLE: 2934809 | Will there be at least 10000 cyclosporiasis cases in the U.S | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:25:32 | INFO     | collector.filter | POSSIBLE: 3127318 | Will there be at least 7500 cyclosporiasis cases in the U.S. | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:25:32 | INFO     | collector.filter | POSSIBLE: 2995701 | Will there be 8 or fewer earthquakes of magnitude 5.5 or hig | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:25:32 | INFO     | collector.filter | POSSIBLE: 2995702 | Will there be exactly 9 earthquakes of magnitude 5.5 or high | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:25:32 | INFO     | collector.filter | POSSIBLE: 2995703 | Will there be exactly 10 earthquakes of magnitude 5.5 or hig | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:25:32 | INFO     | collector.filter | POSSIBLE: 3081707 | Will there be exactly 0 earthquakes of magnitude 6.5 or high | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:25:32 | INFO     | collector.filter | POSSIBLE: 3081708 | Will there be exactly 1 earthquake of magnitude 6.5 or highe | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:25:32 | INFO     | collector.filter | POSSIBLE: 3081709 | Will there be exactly 2 earthquakes of magnitude 6.5 or high | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:25:32 | INFO     | collector.filter | POSSIBLE: 3081710 | Will there be exactly 3 earthquakes of magnitude 6.5 or high | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:25:32 | INFO     | collector.filter | POSSIBLE: 3081711 | Will there be exactly 4 earthquakes of magnitude 6.5 or high | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:25:32 | INFO     | collector.filter | POSSIBLE: 3081712 | Will there be exactly 5 earthquakes of magnitude 6.5 or high | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:25:32 | INFO     | collector.filter | POSSIBLE: 3081713 | Will there be more than 5 earthquakes of magnitude 6.5 or hi | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:25:32 | INFO     | collector.filter | POSSIBLE: 3086840 | Will the Total Solar Eclipse be highly visible in Reykjavík? | text_signals=[] | structural_signals=['polymarket_tag:weather', 'polymarket_tag:climate']
+2026-07-28 02:25:32 | INFO     | collector.filter | POSSIBLE: 3093426 | Will the U.S. weekly flu hospitalization rate per 100,000 in | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:25:33 | INFO     | collector.filter | POSSIBLE: 3093427 | Will the U.S. weekly flu hospitalization rate per 100,000 in | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:25:33 | INFO     | collector.filter | POSSIBLE: 3093428 | Will the U.S. weekly flu hospitalization rate per 100,000 in | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:25:33 | INFO     | collector.filter | POSSIBLE: 3102669 | Will there be 6 or fewer earthquakes of magnitude 5.5 or hig | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:25:33 | INFO     | collector.filter | POSSIBLE: 3102670 | Will there be exactly 7 earthquakes of magnitude 5.5 or high | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:25:33 | INFO     | collector.filter | POSSIBLE: 3102671 | Will there be exactly 8 earthquakes of magnitude 5.5 or high | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:25:33 | INFO     | collector.filter | POSSIBLE: 3102672 | Will there be exactly 9 earthquakes of magnitude 5.5 or high | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:25:33 | INFO     | collector.filter | POSSIBLE: 3102673 | Will there be exactly 10 earthquakes of magnitude 5.5 or hig | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:25:33 | INFO     | collector.filter | POSSIBLE: 3102674 | Will there be exactly 11 earthquakes of magnitude 5.5 or hig | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:25:33 | INFO     | collector.filter | POSSIBLE: 3102675 | Will there be exactly 12 earthquakes of magnitude 5.5 or hig | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:25:33 | INFO     | collector.filter | POSSIBLE: 3102676 | Will there be exactly 13 earthquakes of magnitude 5.5 or hig | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:25:33 | INFO     | collector.filter | POSSIBLE: 3102677 | Will there be more than 13 earthquakes of magnitude 5.5 or h | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-07-28 02:25:35 | INFO     | collector.filter | Filter results: 500 total | 375 CONFIRMED | 78 POSSIBLE | 47 NOT_WEATHER | 0 errors
+2026-07-28 02:25:35 | INFO     | collector.filter | === 78 WEATHER_POSSIBLE markets for review ===
+2026-07-28 02:25:35 | INFO     | collector.filter |   - [2746137] Will there be at least 3500 measles cases in the U.S. in 2026?
+2026-07-28 02:25:35 | INFO     | collector.filter |     Text signals: []
+2026-07-28 02:25:35 | INFO     | collector.filter |     Structural signals: ['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-07-28 02:25:35 | INFO     | collector.filter |   - [716941] Will there be at least 5000 measles cases in the U.S. in 2026?
+2026-07-28 02:25:35 | INFO     | collector.filter |     Text signals: []
+2026-07-28 02:25:35 | INFO     | collector.filter |     Structural signals: ['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-07-28 02:25:35 | INFO     | collector.filter |   - [716942] Will there be at least 10000 measles cases in the U.S. in 2026?
+2026-07-28 02:25:35 | INFO     | collector.filter |     Text signals: []
+2026-07-28 02:25:35 | INFO     | collector.filter |     Structural signals: ['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-07-28 02:25:35 | INFO     | collector.filter |   - [1250830] Will there be at least 7500 measles cases in the U.S. in 2026?
+2026-07-28 02:25:35 | INFO     | collector.filter |     Text signals: []
+2026-07-28 02:25:35 | INFO     | collector.filter |     Structural signals: ['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-07-28 02:25:35 | INFO     | collector.filter |   - [1250957] Will there be at least 12500 measles cases in the U.S. in 2026?
+2026-07-28 02:25:35 | INFO     | collector.filter |     Text signals: []
+2026-07-28 02:25:35 | INFO     | collector.filter |     Structural signals: ['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-07-28 02:25:35 | INFO     | collector.filter |   - [1373742] Will there be at least 3000 measles cases in the U.S. in 2026?
+2026-07-28 02:25:35 | INFO     | collector.filter |     Text signals: []
+2026-07-28 02:25:35 | INFO     | collector.filter |     Structural signals: ['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-07-28 02:25:35 | INFO     | collector.filter |   - [1373743] Will there be at least 4000 measles cases in the U.S. in 2026?
+2026-07-28 02:25:35 | INFO     | collector.filter |     Text signals: []
+2026-07-28 02:25:35 | INFO     | collector.filter |     Structural signals: ['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-07-28 02:25:35 | INFO     | collector.filter |   - [897843] 9.0 or above earthquake before 2027?
+2026-07-28 02:25:35 | INFO     | collector.filter |     Text signals: []
+2026-07-28 02:25:35 | INFO     | collector.filter |     Structural signals: ['polymarket_tag:weather', 'polymarket_tag:climate & science']
+2026-07-28 02:25:35 | INFO     | collector.filter |   - [897844] 10.0 or above earthquake before 2027?
+2026-07-28 02:25:35 | INFO     | collector.filter |     Text signals: []
+2026-07-28 02:25:35 | INFO     | collector.filter |     Structural signals: ['polymarket_tag:weather', 'polymarket_tag:climate & science']
+2026-07-28 02:25:35 | INFO     | collector.filter |   - [1058191] Major volcano eruption (VEI ≥6) in 2026?
+2026-07-28 02:25:35 | INFO     | collector.filter |     Text signals: []
+2026-07-28 02:25:35 | INFO     | collector.filter |     Structural signals: ['polymarket_tag:weather', 'polymarket_tag:climate', 'polymarket_tag:climate & science']
+2026-07-28 02:25:35 | INFO     | collector.collector | Filter results: {'included_weather': 375, 'possible_weather': 78, 'excluded_not_weather': 47, 'excluded_incomplete': 0, 'total': 500}
+2026-07-28 02:25:35 | INFO     | collector.collector | Step 4: Normalizing market data...
+2026-07-28 02:25:35 | INFO     | collector.collector | Normalized 500 markets
+2026-07-28 02:25:35 | INFO     | collector.collector | Found 375 weather candidates
+2026-07-28 02:25:35 | INFO     | collector.collector | Step 5: Saving outputs...
+2026-07-28 02:25:35 | INFO     | collector.storage | Saved normalized markets: C:\Users\botrunner\projects\polymarket-beobachter\data\collector\normalized\2026-07-28\markets.jsonl (500 records)
+2026-07-28 02:25:35 | INFO     | collector.storage | Saved candidates: C:\Users\botrunner\projects\polymarket-beobachter\data\collector\candidates\2026-07-28\candidates.jsonl (375 records)
+2026-07-28 02:25:35 | INFO     | collector.storage | Saved report: C:\Users\botrunner\projects\polymarket-beobachter\data\collector\reports\2026-07-28\report.md
+2026-07-28 02:25:35 | INFO     | collector.collector | ============================================================
+2026-07-28 02:25:35 | INFO     | collector.collector | COLLECTION COMPLETE
+2026-07-28 02:25:35 | INFO     | collector.collector | Duration: 5.1s
+2026-07-28 02:25:35 | INFO     | collector.collector | Fetched: 500
+2026-07-28 02:25:35 | INFO     | collector.collector | Weather Candidates: 375
+2026-07-28 02:25:35 | INFO     | collector.collector | ============================================================
+2026-07-28 02:25:35 | INFO     | core.weather_market_filter | WeatherMarketFilter initialized | min_liquidity=150.0 | odds_range=[0.1, 0.85] | min_hours=6.0 | cities=29
+2026-07-28 02:25:35 | INFO     | app.orchestrator | Merged 23 gamma candidates into observation pipeline
+2026-07-28 02:25:35 | INFO     | app.orchestrator | Pre-filtered 243 stale candidates (resolution < 6h away), 155 remain
+2026-07-28 02:26:20 | INFO     | collector.client | Fetched prices for 155/155 markets
+2026-07-28 02:26:20 | INFO     | app.orchestrator | Fetched real odds for 155/155 markets
+2026-07-28 02:26:20 | INFO     | app.orchestrator | Loaded 15 weather candidates for observation (skipped: 0 no-price, 229 filter [ODDS:98, TYPE:70, CITY:30, LIQUIDITY:23, RESOLUTION:8])
+2026-07-28 02:26:20 | INFO     | core.weather_market_filter | WeatherMarketFilter initialized | min_liquidity=150.0 | odds_range=[0.1, 0.85] | min_hours=6.0 | cities=29
+2026-07-28 02:26:20 | INFO     | core.weather_probability_model | WeatherProbabilityModel initialized | base_sigma=6.5°F | max_horizon=10 days
+2026-07-28 02:26:20 | INFO     | core.weather_engine | WeatherEngine initialized | version=1.0.0 | config_hash=f198b5917b30f1c3
+2026-07-28 02:26:20 | INFO     | core.weather_engine | WeatherObserver run started | timestamp=2026-07-28T00:26:20Z
+2026-07-28 02:26:20 | INFO     | core.weather_engine | Fetched 15 weather markets
+2026-07-28 02:26:20 | INFO     | core.weather_market_filter | Filtered 15 markets: 15 passed, 0 rejected
+2026-07-28 02:26:20 | INFO     | core.weather_engine | Filtered markets: 15/15 passed
+2026-07-28 02:26:20 | INFO     | core.forecast_sources.open_meteo_ensemble | GFS-Ensemble: Paris | 31 members | mean=77.1°F | spread=5.2°F | daily_highs=31 members
+2026-07-28 02:26:20 | INFO     | core.forecast_sources.open_meteo_ensemble | GFS-Ensemble: Seoul | 31 members | mean=83.5°F | spread=3.4°F | daily_highs=31 members
+2026-07-28 02:26:20 | INFO     | core.forecast_sources.open_meteo_ensemble | GFS-Ensemble: London | 31 members | mean=70.5°F | spread=5.3°F | daily_highs=31 members
+2026-07-28 02:26:20 | INFO     | core.ensemble_builder | Ensemble member-counting: P=0.1094 (31 members, between_range 86.0°F)
+2026-07-28 02:26:20 | INFO     | core.forecast_sources.open_meteo_ensemble | GFS-Ensemble: Seoul | 31 members | mean=83.5°F | spread=3.4°F | daily_highs=31 members
+2026-07-28 02:26:21 | INFO     | core.ensemble_builder | Ensemble member-counting: P=0.3281 (31 members, between_range 91.4°F)
+2026-07-28 02:26:21 | INFO     | core.weather_engine | Ensemble OBSERVE | Seoul | sources=4 (open_meteo,openweather,open_meteo_ensemble,met_norway) | P_ensemble=0.2123 | var=0.0031 | edge=-41.82%
+2026-07-28 02:26:21 | INFO     | core.ensemble_builder | Ensemble member-counting: P=0.1406 (31 members, between_range 84.2°F)
+2026-07-28 02:26:21 | INFO     | core.forecast_sources.open_meteo_ensemble | GFS-Ensemble: London | 31 members | mean=70.5°F | spread=5.3°F | daily_highs=31 members
+2026-07-28 02:26:21 | INFO     | core.weather_engine | NEAR-MISS YES | Paris | P_model=0.2632 P_market=0.2150 edge=21.03% (below min=30%) | between_range | Will the highest temperature in Paris be 33°C on July 28?
+2026-07-28 02:26:21 | INFO     | core.forecast_sources.open_meteo_ensemble | GFS-Ensemble: Paris | 31 members | mean=77.1°F | spread=5.2°F | daily_highs=31 members
+2026-07-28 02:26:21 | INFO     | core.ensemble_builder | Ensemble member-counting: P=0.3906 (31 members, between_range 86.0°F)
+2026-07-28 02:26:21 | INFO     | core.forecast_sources.open_meteo_ensemble | GFS-Ensemble: London | 31 members | mean=70.5°F | spread=5.3°F | daily_highs=31 members
+2026-07-28 02:26:21 | INFO     | core.ensemble_builder | Ensemble member-counting: P=0.1094 (31 members, between_range 87.8°F)
+2026-07-28 02:26:21 | INFO     | core.ensemble_builder | Ensemble member-counting: P=0.3906 (31 members, between_range 87.8°F)
+2026-07-28 02:26:21 | INFO     | core.forecast_sources.open_meteo_ensemble | GFS-Ensemble: Seoul | 31 members | mean=83.5°F | spread=3.4°F | daily_highs=31 members
+2026-07-28 02:26:21 | INFO     | core.weather_engine | Ensemble OBSERVE | London | sources=4 (open_meteo,open_meteo_ensemble,openweather,met_norway) | P_ensemble=0.2763 | var=0.0077 | edge=62.52%
+2026-07-28 02:26:21 | INFO     | core.forecast_sources.open_meteo_ensemble | GFS-Ensemble: Ankara | 31 members | mean=63.5°F | spread=2.5°F | daily_highs=31 members
+2026-07-28 02:26:21 | INFO     | core.ensemble_builder | Ensemble member-counting: P=0.1094 (31 members, between_range 87.8°F)
+2026-07-28 02:26:21 | INFO     | core.forecast_sources.open_meteo_ensemble | GFS-Ensemble: Seoul | 31 members | mean=83.5°F | spread=3.4°F | daily_highs=31 members
+2026-07-28 02:26:21 | INFO     | core.weather_engine | Ensemble OBSERVE | Seoul | sources=4 (open_meteo,open_meteo_ensemble,openweather,met_norway) | P_ensemble=0.2243 | var=0.0031 | edge=-43.22%
+2026-07-28 02:26:22 | INFO     | core.forecast_sources.open_meteo_ensemble | GFS-Ensemble: Paris | 31 members | mean=77.1°F | spread=5.2°F | daily_highs=31 members
+2026-07-28 02:26:22 | INFO     | core.ensemble_builder | Ensemble member-counting: P=0.5781 (31 members, between_range 84.2°F)
+2026-07-28 02:26:22 | INFO     | core.ensemble_builder | Ensemble member-counting: P=0.2969 (31 members, between_range 89.6°F)
+2026-07-28 02:26:22 | INFO     | core.weather_engine | YES-NEAR-MISS ADMITTED | Ankara | P_model=0.4396 P_market=0.3350 edge=29.42% (yes_min=24%) | between_range | Will the highest temperature in Ankara be 29°C on July 28?
+2026-07-28 02:26:22 | INFO     | core.forecast_sources.open_meteo_ensemble | GFS-Ensemble: Ankara | 31 members | mean=63.5°F | spread=2.5°F | daily_highs=31 members
+2026-07-28 02:26:22 | INFO     | core.weather_engine | Ensemble OBSERVE | Ankara | sources=4 (open_meteo_ensemble,open_meteo,openweather,met_norway) | P_ensemble=0.4396 | var=0.0079 | edge=31.21%
+2026-07-28 02:26:22 | INFO     | core.weather_engine | Ensemble OBSERVE | Seoul | sources=4 (open_meteo,open_meteo_ensemble,openweather,met_norway) | P_ensemble=0.2082 | var=0.0067 | edge=73.51%
+2026-07-28 02:26:22 | INFO     | core.forecast_sources.open_meteo_ensemble | GFS-Ensemble: Helsinki | 31 members | mean=70.3°F | spread=5.3°F | daily_highs=31 members
+2026-07-28 02:26:22 | INFO     | core.forecast_sources.open_meteo_ensemble | GFS-Ensemble: Seoul | 31 members | mean=81.3°F | spread=2.3°F | daily_highs=31 members
+2026-07-28 02:26:22 | INFO     | core.ensemble_builder | Ensemble member-counting: P=0.0156 (31 members, between_range 75.2°F)
+2026-07-28 02:26:22 | INFO     | core.forecast_sources.open_meteo_ensemble | GFS-Ensemble: Ankara | 31 members | mean=63.5°F | spread=2.5°F | daily_highs=31 members
+2026-07-28 02:26:22 | INFO     | core.ensemble_builder | Ensemble member-counting: P=0.0156 (31 members, between_range 87.8°F)
+2026-07-28 02:26:22 | INFO     | core.weather_engine | Ensemble OBSERVE | Ankara | sources=4 (open_meteo,openweather,open_meteo_ensemble,met_norway) | P_ensemble=0.0754 | var=0.0005 | edge=-39.68%
+2026-07-28 02:26:22 | INFO     | core.ensemble_builder | Ensemble member-counting: P=0.2656 (31 members, between_range 89.6°F)
+2026-07-28 02:26:22 | INFO     | core.weather_engine | Ensemble OBSERVE | Paris | sources=4 (open_meteo_ensemble,open_meteo,met_norway,openweather) | P_ensemble=0.3692 | var=0.0063 | edge=-34.65%
+2026-07-28 02:26:23 | INFO     | core.ensemble_builder | Ensemble member-counting: P=0.2031 (31 members, between_range 86.0°F)
+2026-07-28 02:26:25 | INFO     | core.ensemble_builder | Ensemble member-counting: P=0.0156 (31 members, between_range 86.0°F)
+2026-07-28 02:26:25 | INFO     | core.weather_engine | Ensemble OBSERVE | Seoul | sources=4 (open_meteo_ensemble,open_meteo,met_norway,openweather) | P_ensemble=0.1577 | var=0.0005 | edge=-44.68%
+2026-07-28 02:26:30 | INFO     | core.ensemble_builder | Ensemble member-counting: P=0.0156 (31 members, between_range 84.2°F)
+2026-07-28 02:26:30 | INFO     | core.weather_engine | Ensemble OBSERVE | Seoul | sources=3 (open_meteo_ensemble,openweather,met_norway) | P_ensemble=0.0647 | var=0.0005 | edge=-38.38%
+2026-07-28 02:26:30 | INFO     | core.parallel_processor | Parallel processing complete: 15/15 markets in 10.27s using io strategy
+2026-07-28 02:26:30 | INFO     | core.weather_engine | Parallel processing: 15/15 markets succeeded
+2026-07-28 02:26:30 | INFO     | core.weather_engine | WeatherObserver run complete | duration=10.30s | observations=15 | with_edge=9
+2026-07-28 02:26:30 | INFO     | app.orchestrator | Market Condition: FAVORABLE (9 edge obs)
+2026-07-28 02:26:30 | INFO     | app.orchestrator | Generated proposal for market 3108762
+2026-07-28 02:26:30 | INFO     | app.orchestrator | Generated proposal for market 3108738
+2026-07-28 02:26:30 | INFO     | app.orchestrator | Generated proposal for market 3108763
+2026-07-28 02:26:31 | INFO     | app.orchestrator | Generated proposal for market 3108771
+2026-07-28 02:26:31 | INFO     | app.orchestrator | Generated proposal for market 3108764
+2026-07-28 02:26:31 | INFO     | app.orchestrator | Generated proposal for market 3108773
+2026-07-28 02:26:31 | INFO     | app.orchestrator | Generated proposal for market 3108749
+2026-07-28 02:26:31 | INFO     | app.orchestrator | Generated proposal for market 3124759
+2026-07-28 02:26:31 | INFO     | app.orchestrator | Generated proposal for market 3108761
+2026-07-28 02:26:31 | INFO     | paper_trader.intake | Loaded 2000 total proposals
+2026-07-28 02:26:31 | INFO     | paper_trader.intake | Using 13 recent unique proposals (<= 4h, YES-first sort)
+2026-07-28 02:26:32 | INFO     | paper_trader.intake | Found 99 already paper-executed proposals
+2026-07-28 02:26:33 | INFO     | paper_trader.snapshot_client | Batch snapshots: 13/13 found
+2026-07-28 02:26:33 | INFO     | paper_trader.intake | [INTAKE-SPREAD] checked=13 blocked=0 (low+unknown) unknown=0 (of 13 candidate markets) — LOW/UNKNOWN-liq entry block
+2026-07-28 02:26:33 | INFO     | paper_trader.intake | Proposal PROP-20260728-bc80e2a5 blocked by entry guardrail: Market type 'exact' blocked — no proven forward edge vs market (forward_validation n=2496) [side=? ep=0.120 edge=+0.735 YES-opportunity-missed?]
+2026-07-28 02:26:33 | INFO     | paper_trader.intake | Proposal PROP-20260728-82792083 blocked by entry guardrail: Market type 'exact' blocked — no proven forward edge vs market (forward_validation n=2496) [side=? ep=0.170 edge=+0.625 YES-opportunity-missed?]
+2026-07-28 02:26:33 | INFO     | paper_trader.intake | Proposal PROP-20260728-d59db938 blocked by entry guardrail: Market type 'exact' blocked — no proven forward edge vs market (forward_validation n=2496) [side=? ep=0.335 edge=+0.312 YES-opportunity-missed?]
+2026-07-28 02:26:34 | INFO     | paper_trader.intake | Proposal PROP-20260728-e930f08d blocked by entry guardrail: Market type 'exact' blocked — no proven forward edge vs market (forward_validation n=2496) [side=? ep=0.490 edge=-0.333 NO-bet-correct-block]
+2026-07-28 02:26:34 | INFO     | paper_trader.intake | Proposal PROP-20260728-f87f1286 blocked by entry guardrail: Market type 'exact' blocked — no proven forward edge vs market (forward_validation n=2496) [side=? ep=0.565 edge=-0.347 NO-bet-correct-block]
+2026-07-28 02:26:34 | INFO     | paper_trader.intake | Proposal PROP-20260728-ecbebf31 blocked by entry guardrail: Market type 'exact' blocked — no proven forward edge vs market (forward_validation n=2496) [side=? ep=0.330 edge=-0.351 NO-bet-correct-block]
+2026-07-28 02:26:34 | INFO     | paper_trader.intake | Proposal PROP-20260728-321a7ea5 blocked by entry guardrail: Market type 'exact' blocked — no proven forward edge vs market (forward_validation n=2496) [side=? ep=0.105 edge=-0.384 NO-bet-correct-block]
+2026-07-28 02:26:34 | INFO     | paper_trader.intake | Proposal PROP-20260728-5521e831 blocked by entry guardrail: Market type 'exact' blocked — no proven forward edge vs market (forward_validation n=2496) [side=? ep=0.125 edge=-0.397 NO-bet-correct-block]
+2026-07-28 02:26:34 | INFO     | paper_trader.intake | Proposal PROP-20260728-bde68e41 blocked by entry guardrail: Market type 'exact' blocked — no proven forward edge vs market (forward_validation n=2496) [side=? ep=0.365 edge=-0.418 NO-bet-correct-block]
+2026-07-28 02:26:34 | INFO     | paper_trader.intake | Proposal PROP-20260728-8aa27b67 blocked by entry guardrail: Market type 'exact' blocked — no proven forward edge vs market (forward_validation n=2496) [side=? ep=0.395 edge=-0.432 NO-bet-correct-block]
+2026-07-28 02:26:34 | INFO     | paper_trader.intake | Proposal PROP-20260727-535f6cc4 blocked by entry guardrail: Market type 'exact' blocked — no proven forward edge vs market (forward_validation n=2496) [side=? ep=0.175 edge=-0.441 NO-bet-correct-block]
+2026-07-28 02:26:34 | INFO     | paper_trader.intake | Proposal PROP-20260728-d4954862 blocked by entry guardrail: Market type 'exact' blocked — no proven forward edge vs market (forward_validation n=2496) [side=? ep=0.285 edge=-0.447 NO-bet-correct-block]
+2026-07-28 02:26:34 | INFO     | paper_trader.intake | Proposal PROP-20260728-962e2354 blocked by entry guardrail: Market type 'between' blocked — no proven forward edge vs market (forward_validation n=2496) [side=? ep=0.415 edge=-0.479 NO-bet-correct-block]
+2026-07-28 02:26:34 | INFO     | paper_trader.intake | Found 0 eligible proposals for paper trading
+2026-07-28 02:26:41 | INFO     | app.orchestrator | Found 0 eligible proposals for paper trading
+2026-07-28 02:26:41 | INFO     | paper_trader.position_manager | Checking 0 open positions for resolution
+2026-07-28 02:26:44 | INFO     | core.outcome_tracker | Prediction recorded: 3108762 | TRADE
+2026-07-28 02:26:44 | INFO     | core.outcome_tracker | Prediction recorded: 3108738 | TRADE
+2026-07-28 02:26:44 | INFO     | core.outcome_tracker | Prediction recorded: 3108763 | TRADE
+2026-07-28 02:26:44 | INFO     | core.outcome_tracker | Prediction recorded: 3108771 | TRADE
+2026-07-28 02:26:44 | INFO     | core.outcome_tracker | Prediction recorded: 3108764 | TRADE
+2026-07-28 02:26:44 | INFO     | core.outcome_tracker | Prediction recorded: 3108773 | TRADE
+2026-07-28 02:26:44 | INFO     | core.outcome_tracker | Prediction recorded: 3108749 | TRADE
+2026-07-28 02:26:44 | INFO     | core.outcome_tracker | Prediction recorded: 3124759 | TRADE
+2026-07-28 02:26:44 | INFO     | core.outcome_tracker | Prediction recorded: 3108761 | TRADE
+2026-07-28 02:26:48 | WARNING  | paper_trader.snapshot_client | Snapshot unavailable for 3096429: market not found in Gamma API after retry
+2026-07-28 02:26:48 | WARNING  | paper_trader.snapshot_client | Market 3096429 tombstoned after 3 misses — will be skipped
+2026-07-28 02:26:48 | INFO     | paper_trader.snapshot_client | Batch snapshots: 5/22 found
+2026-07-28 02:26:48 | WARNING  | paper_trader.snapshot_client | Missing snapshots for: ['3050423', '3096473', '3076548', '3096466', '3050192', '3076561', '3076584', '3050243', '3096429', '3077328', '3076681', '3096748', '3076564', '3096450', '3076562', '3074103', '3096518']
+2026-07-28 02:26:48 | INFO     | paper_trader.shadow_tracker | SHADOW_EXPIRE_STALE: SHADOW-20260725051947-c3a17b | market=3050243 — entry+18h+48h past
+2026-07-28 02:26:48 | INFO     | paper_trader.shadow_tracker | SHADOW_EXPIRE_STALE: SHADOW-20260725102739-14a5ac | market=3050423 — entry+13h+48h past
+2026-07-28 02:26:48 | INFO     | app.orchestrator | ShadowTracker: 5 updated, 2 resolved
+2026-07-28 02:26:48 | INFO     | analytics.outcome_analyser | Starte Outcome-Analyse...
+2026-07-28 02:26:48 | INFO     | analytics.outcome_analyser | Positions geladen: 198 Eintraege, 99 eindeutige, 59 geschlossen mit P&L
+2026-07-28 02:26:48 | INFO     | analytics.outcome_analyser | Performance-Report gespeichert: C:\Users\botrunner\projects\polymarket-beobachter\analytics\performance_report.json
+2026-07-28 02:26:48 | INFO     | app.orchestrator | Outcome-Analyser: Performance-Report aktualisiert
+2026-07-28 02:26:48 | INFO     | app.orchestrator | [SEGMENTS] 99 closed positions | risky cities: none
+2026-07-28 02:26:48 | INFO     | analytics.strategy_advisor | Strategy-Advisor: mode=balance recommendations=6
+2026-07-28 02:26:48 | INFO     | app.orchestrator | [ADVISOR] BALANCE | BALANCE: Win-Rate 32.2% | P&L -86.96 EUR | Attack 0.04 | 0 offene Positionen | 6 Empfehlung(en)
+2026-07-28 02:26:48 | INFO     | analytics.arbitrage_detector | Arbitrage Scan: 6 parseable Maerkte von 25
+2026-07-28 02:26:48 | INFO     | collector.gamma_discovery | Gamma API Pass-1 (volume): 100 Maerkte abgerufen
+2026-07-28 02:26:49 | WARNING  | collector.gamma_discovery | Gamma API Pass-2 fehlgeschlagen (non-critical): 422 Client Error: Unprocessable Entity for url: https://gamma-api.polymarket.com/markets?limit=500&active=true&closed=false&order=end_date_iso&ascending=true
+2026-07-28 02:26:49 | INFO     | collector.gamma_discovery | Gamma API: 22 Wetter-Maerkte gefunden (min_liq=50)
+2026-07-28 02:26:49 | INFO     | collector.gamma_discovery | Gamma Discovery: 22 Maerkte gespeichert -> C:\Users\botrunner\projects\polymarket-beobachter\data\collector\gamma\2026-07-28\gamma_candidates.jsonl
+2026-07-28 02:26:49 | INFO     | app.orchestrator | Gamma Discovery: 22 neue Wetter-Maerkte gefunden
+2026-07-28 02:26:49 | INFO     | core.general_market_observer | [GeneralMarket] No markets available for observation
+2026-07-28 02:26:49 | INFO     | paper_trader.bot_health_monitor | BotHealthMonitor: status=HEALTHY triggers=none
+2026-07-28 02:26:49 | INFO     | app.orchestrator | [BOT-HEALTH] HEALTHY | HEALTHY: DD 0.0% | WR 32.2%(all-time) | Loss-Streak 0 | Guardrails blocked_cities, blocked_market_types, blocked_price_bands
+2026-07-28 02:26:50 | INFO     | app.orchestrator | [AGENT-POLICY] NORMAL | max_entry=0.850 | city_cooldowns=0
+2026-07-28 02:26:50 | INFO     | app.orchestrator | [AGENT] NORMAL | NORMAL: 0 active action(s) | 1 read-only | Open=0 | DD=0.0% | BotHealth=HEALTHY
+2026-07-28 02:26:51 | INFO     | app.orchestrator | [EDGE-HUNTER] TRACK | WAIT | score=5
+2026-07-28 02:27:09 | INFO     | paper_trader.no_fade_lane | NOFADE_PAUSE: gap-monitor regime guard active — keine neuen Entries.
+2026-07-28 02:27:09 | INFO     | analytics.live_readiness_tracker | Live-Readiness: 44.4% | 2/6 Meilensteine | ETA GESPERRT — Forward-Edge unbewiesen
+2026-07-28 02:27:09 | INFO     | analytics.auto_parameter_tuner | Auto-Param: direction=brier_pause WR=35% trades=20 idle=11.261033694837963 | overrides={'MIN_EDGE': 0.2, 'YES_MIN_EDGE': 0.24, 'MIN_EDGE_ABSOLUTE': 0.03}
+2026-07-28 02:27:09 | WARNING  | analytics.self_diagnostic_loop | Self-Diag NO_EDGE_DROUGHT [warn]: 0 Edge ueber 6 Runs — Forecast/Modell sieht nichts Tradeables im Markt. -> Pruefe Forecast-API-Verfuegbarkeit + MIN_EDGE Schwelle. Evtl. lockern oder Provider-Failover triggern.
+2026-07-28 02:27:09 | WARNING  | analytics.self_diagnostic_loop | Self-Diag BRIER_REGRESSION [warn]: Brier Skill Score -1.04 — Forecast schlechter als naive Baseline. Calibration-Shrinkage erhoehen oder Model-Weights neu schaetzen. -> core/weather_engine Shrinkage-Floor +0.05 erhoehen; core/model_weights neu trainieren.
+2026-07-28 02:27:13 | INFO     | app.orchestrator | Status-Summary gekuerzt: status_summary.txt auf die letzten 120 Runs
+2026-07-28 02:27:14 | INFO     | evolution.strategy_agent | Strategy Agent via OpenAI (gpt-4o-mini)
+2026-07-28 02:27:15 | INFO     | httpx | HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-07-28 02:27:17 | INFO     | httpx | HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-07-28 02:27:18 | INFO     | httpx | HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-07-28 02:27:21 | INFO     | httpx | HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-07-28 02:27:21 | INFO     | evolution.strategy_agent | Mutation Hint: 'max_odds' → down (strength=0.5): Langfristige Evolution in Richtung niedrigerer Odds lenken.
+2026-07-28 02:27:22 | INFO     | httpx | HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-07-28 02:27:22 | INFO     | evolution.strategy_agent | Config geaendert: MIN_ODDS 0.1 -> 0.1 | Erhöhung der minimalen Odds, um die Handelsqualität zu verbessern und die Wahrscheinlichkeit für profitable Trades zu erhöhen.
+2026-07-28 02:27:24 | INFO     | httpx | HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-07-28 02:27:24 | INFO     | evolution.strategy_agent | Ziel gesetzt: trade_count → 10.0 (in 14 Tagen, Baseline: 0.0)
+2026-07-28 02:27:25 | INFO     | httpx | HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-07-28 02:27:27 | INFO     | httpx | HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-07-28 02:27:28 | INFO     | httpx | HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-07-28 02:27:29 | INFO     | httpx | HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-07-28 02:27:31 | INFO     | httpx | HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-07-28 02:27:32 | INFO     | httpx | HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-07-28 02:27:33 | INFO     | httpx | HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-07-28 02:27:34 | INFO     | httpx | HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-07-28 02:27:36 | INFO     | httpx | HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-07-28 02:27:36 | INFO     | evolution.strategy_agent | Strategy Agent: grade=?, config_changes=1, hints=1, provider=OpenAI, iter=15
+2026-07-28 02:27:36 | INFO     | app.orchestrator | === Pipeline END === run_id=RUN-20260728-022530-532e65 state=OK
