@@ -1,6 +1,6 @@
 # Edge-Routine — Digest
 
-**Lauf:** 2026-07-28T07:12:53.549886+00:00  
+**Lauf:** 2026-07-28T11:00:07.518840+00:00  
 **Status:** OK
 
 ## Was hat sich geändert
