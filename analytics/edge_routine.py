@@ -68,6 +68,7 @@ def _run_scans() -> Dict[str, Any]:
     steps = [
         ("cost_model", "analytics.cost_model"),
         ("edge_scanner", "analytics.edge_scanner"),
+        ("model_skill_scan", "analytics.model_skill_scan"),
         ("arb_capturability", "analytics.arb_capturability"),
         ("forward_reconciliation", "analytics.forward_reconciliation"),
     ]
@@ -89,6 +90,7 @@ def _run_scans() -> Dict[str, Any]:
 # --------------------------------------------------------------------------- #
 def _snapshot(scans: Dict[str, Any]) -> Dict[str, Any]:
     sc = scans.get("edge_scanner") or {}
+    skill = scans.get("model_skill_scan") or {}
     arb = scans.get("arb_capturability") or {}
     cost = scans.get("cost_model") or {}
     gap = _read_json(GAP_JSON)
@@ -119,6 +121,10 @@ def _snapshot(scans: Dict[str, Any]) -> Dict[str, Any]:
         "best_q": best_q,
         "best_net": best_net,
         "best_t": best_t,
+        "model_skill_survivors": [f"{x.get('city')}×{x.get('type')}"
+                                  for x in (skill.get("survivors") or [])],
+        "model_skill_cells_tested": skill.get("n_cells_tested"),
+        "model_skill_diff_oos": ((skill.get("global_test") or {}).get("mean_diff")),
         "arb_capturable": arb.get("capturable"),
         "arb_net_per_set": arb.get("avg_net_per_set"),
         "regime_auto_pause": gap.get("auto_pause"),
@@ -161,6 +167,12 @@ def _diff(prev: Optional[Dict[str, Any]], cur: Dict[str, Any]) -> List[str]:
         elif cn <= 0 < pn:
             out.append(f"🔻 Kandidaten-Kohorte wieder unter Break-even ({cn*100:+.2f}%).")
 
+    new_skill = set(cur.get("model_skill_survivors") or []) - set(prev.get("model_skill_survivors") or [])
+    if new_skill:
+        out.append(f"🟢 **NEUE Modell-Skill-Nische: {', '.join(sorted(new_skill))}** "
+                   "— Modell-Brier < Markt-Brier OOS, BH-korrigiert. Unabhängig nachrechnen, "
+                   "Regime-Stabilität prüfen, dann Forward-Shadow. KEIN Kapital.")
+
     if not prev.get("arb_capturable") and cur.get("arb_capturable"):
         out.append("🟢 **Arbitrage ist nach realen Kosten erntbar geworden** — vor jeder "
                    "Schlussfolgerung Vollständigkeit der Bucket-Mengen und Order-Book-Tiefe prüfen.")
@@ -192,8 +204,16 @@ def _worklist(cur: Dict[str, Any]) -> List[str]:
                      "Vollständigkeit VOR dem Handel prüfbar ist statt aus dem Ausgang. "
                      "Erst dann ist der Arbitrage-Test valide wiederholbar — und es wäre die "
                      "einzige modell- UND regime-unabhängige Edge-Klasse.")
-        items.append("**B4:** Konditionaler Modell-Skill-Scan — Zellen (Stadt × Typ × "
-                     "Lead-Bucket × Monat) mit Modell-Brier < Markt-Brier OOS, BH-korrigiert.")
+        if cur.get("model_skill_survivors"):
+            items.append("**B4-Folge:** Modell-Skill-Nische(n) "
+                         f"{', '.join(cur['model_skill_survivors'])} verifizieren "
+                         "und in Forward-Shadow überführen.")
+        else:
+            items.append("**B4 erledigt (negativ):** Konditionaler Modell-Skill-Scan "
+                         "(`analytics/model_skill_scan.py`) findet KEINE Stadt×Typ-Nische mit "
+                         "Modell-Brier < Markt-Brier OOS (BH-korrigiert). Forecaster ist auch "
+                         "konditional nicht überlegen — nicht erneut aufrollen ohne neues "
+                         "Modell-/Datenmaterial.")
         items.append("**B5:** Preis-Momentum — zuerst verifizieren, ob "
                      "`logs/weather_observations*.jsonl` mehrere Snapshots je Markt enthält.")
         items.append("**Neue Hypothesen** sind billig: ein Eintrag in `HYPOTHESES` in "
@@ -235,6 +255,8 @@ def _render_md(cur: Dict[str, Any], changes: List[str], work: List[str]) -> str:
         f"| Forward aufgelöst (Gate 1: 150) | {cur.get('forward_resolved')} |",
         f"| Kandidaten-Kohorte (exact+eng) | n={cur.get('cohort_n')} · "
         f"net real {pct(cur.get('cohort_net_real'))} |",
+        f"| Modell-Skill-Nische (B4) | {', '.join(cur.get('model_skill_survivors') or []) or 'KEINE'} "
+        f"(getestet {cur.get('model_skill_cells_tested')} Zellen · Δ OOS {pct(cur.get('model_skill_diff_oos'))}) |",
         f"| Arbitrage erntbar | {'JA' if cur.get('arb_capturable') else 'nein'} "
         f"({pct(cur.get('arb_net_per_set'))}/Set) |",
         f"| Half-Spread (kalibriert) | {cur.get('half_spread_realistic')} |",
