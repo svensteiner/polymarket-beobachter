@@ -70,6 +70,7 @@ def _run_scans() -> Dict[str, Any]:
         ("edge_scanner", "analytics.edge_scanner"),
         ("model_skill_scan", "analytics.model_skill_scan"),
         ("arb_capturability", "analytics.arb_capturability"),
+        ("arb_partition_coverage", "analytics.arb_partition_coverage"),
         ("forward_reconciliation", "analytics.forward_reconciliation"),
     ]
     for name, module_path in steps:
@@ -92,6 +93,7 @@ def _snapshot(scans: Dict[str, Any]) -> Dict[str, Any]:
     sc = scans.get("edge_scanner") or {}
     skill = scans.get("model_skill_scan") or {}
     arb = scans.get("arb_capturability") or {}
+    arbpart = scans.get("arb_partition_coverage") or {}
     cost = scans.get("cost_model") or {}
     gap = _read_json(GAP_JSON)
     fwd = _read_json(FWD_JSON)
@@ -127,6 +129,10 @@ def _snapshot(scans: Dict[str, Any]) -> Dict[str, Any]:
         "model_skill_diff_oos": ((skill.get("global_test") or {}).get("mean_diff")),
         "arb_capturable": arb.get("capturable"),
         "arb_net_per_set": arb.get("avg_net_per_set"),
+        "arb_partition_in_universe": arbpart.get("partitions_in_universe"),
+        "arb_partition_complete": arbpart.get("complete_partitions"),
+        "arb_partition_cov_median": arbpart.get("price_coverage_median"),
+        "arb_partition_cov_max": arbpart.get("price_coverage_max"),
         "regime_auto_pause": gap.get("auto_pause"),
         "regime_gap_14d": ((gap.get("trailing") or {}).get("d14") or {}).get("gap"),
         "cohort_n": cohort.get("n"),
@@ -230,6 +236,9 @@ def _render_md(cur: Dict[str, Any], changes: List[str], work: List[str]) -> str:
     def pct(x):
         return "—" if x is None else f"{x*100:+.2f}%"
 
+    def _cov(x):  # unsigned percentage for coverage fractions
+        return "—" if x is None else f"{x*100:.1f}%"
+
     lines = [
         "# Edge-Routine — Digest",
         "",
@@ -259,6 +268,9 @@ def _render_md(cur: Dict[str, Any], changes: List[str], work: List[str]) -> str:
         f"(getestet {cur.get('model_skill_cells_tested')} Zellen · Δ OOS {pct(cur.get('model_skill_diff_oos'))}) |",
         f"| Arbitrage erntbar | {'JA' if cur.get('arb_capturable') else 'nein'} "
         f"({pct(cur.get('arb_net_per_set'))}/Set) |",
+        f"| Arb-Partitionen (negRisk) | {cur.get('arb_partition_complete')}/"
+        f"{cur.get('arb_partition_in_universe')} vollständig · Preis-Coverage "
+        f"median {_cov(cur.get('arb_partition_cov_median'))} / max {_cov(cur.get('arb_partition_cov_max'))} |",
         f"| Half-Spread (kalibriert) | {cur.get('half_spread_realistic')} |",
         "",
         "## Nächste Arbeit",
