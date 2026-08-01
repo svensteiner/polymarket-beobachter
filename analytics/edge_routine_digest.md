@@ -1,26 +1,26 @@
 # Edge-Routine — Digest
 
-**Lauf:** 2026-07-30T17:00:23.654090+00:00  
+**Lauf:** 2026-08-01T11:00:21.563713+00:00  
 **Status:** OK
 
 ## Was hat sich geändert
 
-- 🟢 **Regime-Guard hat DEPAUSIERT** — die Longshot-Verzerrung ist zurück. NO-Fade-Lane nimmt wieder Entries auf; Kandidaten-Kohorte beobachten.
+- Keine entscheidungsrelevante Änderung seit dem letzten Lauf.
 
 ## Aktueller Stand
 
 | Kennzahl | Wert |
 |---|---|
 | Überlebende Hypothesen | **KEINE** |
-| Hypothesen getestet / OOS n | 15 / 1287 |
-| Bester Kandidat | `no_fade_10_20` · net +0.37% · t=0.767 · q=1.0 |
+| Hypothesen getestet / OOS n | 15 / 1315 |
+| Bester Kandidat | `no_fade_10_20` · net +0.47% · t=0.856 · q=1.0 |
 | Regime-Guard | ✅ aktiv |
-| Forward aufgelöst (Gate 1: 150) | 201 |
-| Kandidaten-Kohorte (exact+eng) | n=44 · net real +2.15% |
-| Modell-Skill-Nische (B4) | KEINE (getestet 2 Zellen · Δ OOS -1.78%) |
-| Arbitrage erntbar | nein (-4.08%/Set) |
-| Arb-Partitionen (negRisk) | 0/82 vollständig · Preis-Coverage median 18.2% / max 45.5% |
-| Half-Spread (kalibriert) | 0.00508 |
+| Forward aufgelöst (Gate 1: 150) | 210 |
+| Kandidaten-Kohorte (exact+eng) | n=45 · net real +2.40% |
+| Modell-Skill-Nische (B4) | KEINE (getestet 2 Zellen · Δ OOS -1.79%) |
+| Arbitrage erntbar | nein (-3.85%/Set) |
+| Arb-Partitionen (negRisk) | 0/68 vollständig · Preis-Coverage median 18.2% / max 45.5% |
+| Half-Spread (kalibriert) | 0.00509 |
 
 ## Nächste Arbeit
 

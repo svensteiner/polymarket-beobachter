@@ -1,14 +1,14 @@
 # Cross-Market-Arbitrage — Partitions-Coverage (autoritativ via negRiskMarketID)
 
-**Generiert:** 2026-07-30T17:00:23.622341+00:00  
-**Roh-Snapshots ausgewertet:** 559 · Half-Spread 0.0051 · Lead 24.0h  
+**Generiert:** 2026-08-01T11:00:21.533968+00:00  
+**Roh-Snapshots ausgewertet:** 534 · Half-Spread 0.0051 · Lead 24.0h  
 
 > **Fortschritt gegenüber `arb_capturability.py`:** Dort wurden Buckets per Heuristik `(Stadt, Datum, Metrik)` gruppiert — eine Schätzung, die nie beweisen kann, dass man eine *vollständige* Partition sieht. Polymarket liefert die Partition aber autoritativ: alle Buckets eines Multi-Outcome-Events teilen dieselbe `negRiskMarketID` (`negRisk`-Märkte sind per Konstruktion disjunkt & vollständig, genau ein Bucket löst YES auf). Der Collector persistiert dieses Feld bereits in jedem Roh-Snapshot. **Partitions-Zugehörigkeit ist damit ex-ante bekannt — aus der Marktstruktur, ohne jede Outcome-Konditionierung.**
 
 ## Datenlage
 
-- negRisk-Partitionen gesamt (≥3 Buckets): **405**
-- davon in unserem beobachteten+aufgelösten Universum (tägliche Stadt-Temp): **82**
+- negRisk-Partitionen gesamt (≥3 Buckets): **392**
+- davon in unserem beobachteten+aufgelösten Universum (tägliche Stadt-Temp): **68**
 - **vollständig bepreist UND aufgelöst: 0**
 
 ## Der harte Blocker: Preis-Coverage
@@ -19,7 +19,7 @@ Um die Arbitrage-Summe S = Σ YES-Preise zu bilden, brauchen wir den Preis **jed
 |---|---:|
 | Preis-Coverage min | 9.1% |
 | Preis-Coverage **median** | **18.2%** |
-| Preis-Coverage mean | 21.0% |
+| Preis-Coverage mean | 19.5% |
 | Preis-Coverage max | 45.5% |
 | Partitionen mit Coverage ≥80% | 0 |
 
@@ -27,14 +27,8 @@ Um die Arbitrage-Summe S = Σ YES-Preise zu bilden, brauchen wir den Preis **jed
 
 | negRiskID | Event | Buckets | bepreist | aufgelöst | Coverage | komplett |
 |---|---|---:|---:|---:|---:|:---:|
-| `0x6b62e0a8ba` | Highest temperature in Seoul on July 25? | 11 | 5 | 5 | 45.5% | — |
 | `0xc352ad34aa` | Highest temperature in London on July 26? | 11 | 5 | 5 | 45.5% | — |
 | `0x267ea5766d` | Highest temperature in Seoul on July 26? | 11 | 5 | 5 | 45.5% | — |
-| `0xd3331055f0` | Highest temperature in Seattle on July 23? | 11 | 4 | 4 | 36.4% | — |
-| `0x6e6f9ea3aa` | Highest temperature in Seoul on July 24? | 11 | 4 | 4 | 36.4% | — |
-| `0x34d3c192a2` | Highest temperature in Helsinki on July 24? | 11 | 4 | 4 | 36.4% | — |
-| `0xfd2458cbd2` | Highest temperature in Buenos Aires on July 24? | 11 | 4 | 4 | 36.4% | — |
-| `0x87e69ba7de` | Highest temperature in Ankara on July 25? | 11 | 4 | 4 | 36.4% | — |
 | `0x06ee133894` | Highest temperature in Madrid on July 25? | 11 | 4 | 4 | 36.4% | — |
 | `0xaf3522d838` | Highest temperature in Paris on July 26? | 11 | 4 | 4 | 36.4% | — |
 | `0x28db592af6` | Highest temperature in London on July 28? | 11 | 4 | 4 | 36.4% | — |
@@ -42,11 +36,17 @@ Um die Arbitrage-Summe S = Σ YES-Preise zu bilden, brauchen wir den Preis **jed
 | `0xe8ead9a016` | Highest temperature in London on July 29? | 11 | 4 | 4 | 36.4% | — |
 | `0x2d224918a7` | Highest temperature in Seoul (Incheon) on July 30? | 11 | 4 | 4 | 36.4% | — |
 | `0xa0e5c62f16` | Highest temperature in Tokyo on July 30? | 11 | 4 | 4 | 36.4% | — |
-| `0xf69e0c8178` | Highest temperature in Paris on July 23? | 11 | 3 | 3 | 27.3% | — |
-| `0x9ed8b03d6f` | Highest temperature in Paris on July 24? | 11 | 3 | 3 | 27.3% | — |
-| `0x346e488038` | Highest temperature in Ankara on July 24? | 11 | 3 | 3 | 27.3% | — |
-| `0x8ed745021b` | Highest temperature in Chengdu on July 24? | 11 | 3 | 3 | 27.3% | — |
-| `0x15b0952ec5` | Highest temperature in Seattle on July 24? | 11 | 3 | 3 | 27.3% | — |
+| `0x8ffaa08fee` | Highest temperature in London on July 30? | 11 | 4 | 4 | 36.4% | — |
+| `0x8e88b514f7` | Highest temperature in Paris on July 30? | 11 | 4 | 4 | 36.4% | — |
+| `0x0fc5fca76e` | Highest temperature in Seoul on July 31? | 11 | 4 | 4 | 36.4% | — |
+| `0x50d86a2a44` | Highest temperature in London on July 25? | 11 | 3 | 3 | 27.3% | — |
+| `0xef36f1409f` | Highest temperature in Toronto on July 25? | 11 | 3 | 3 | 27.3% | — |
+| `0xef869f33f8` | Highest temperature in Seattle on July 25? | 11 | 3 | 3 | 27.3% | — |
+| `0x61019298eb` | Highest temperature in London on July 27? | 11 | 3 | 3 | 27.3% | — |
+| `0xc5ba675976` | Highest temperature in Paris on July 27? | 11 | 3 | 3 | 27.3% | — |
+| `0x7d9d42e634` | Highest temperature in Ankara on July 27? | 11 | 3 | 3 | 27.3% | — |
+| `0xb7c1f2442c` | Highest temperature in Chengdu on July 27? | 11 | 3 | 3 | 27.3% | — |
+| `0x782e5a1d77` | Highest temperature in Paris on July 28? | 11 | 3 | 3 | 27.3% | — |
 
 ## Verdikt
 
