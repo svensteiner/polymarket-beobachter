@@ -1,14 +1,14 @@
 # Cross-Market-Arbitrage — Partitions-Coverage (autoritativ via negRiskMarketID)
 
-**Generiert:** 2026-08-01T17:00:18.978535+00:00  
-**Roh-Snapshots ausgewertet:** 539 · Half-Spread 0.0051 · Lead 24.0h  
+**Generiert:** 2026-08-02T05:00:22.769488+00:00  
+**Roh-Snapshots ausgewertet:** 496 · Half-Spread 0.0051 · Lead 24.0h  
 
 > **Fortschritt gegenüber `arb_capturability.py`:** Dort wurden Buckets per Heuristik `(Stadt, Datum, Metrik)` gruppiert — eine Schätzung, die nie beweisen kann, dass man eine *vollständige* Partition sieht. Polymarket liefert die Partition aber autoritativ: alle Buckets eines Multi-Outcome-Events teilen dieselbe `negRiskMarketID` (`negRisk`-Märkte sind per Konstruktion disjunkt & vollständig, genau ein Bucket löst YES auf). Der Collector persistiert dieses Feld bereits in jedem Roh-Snapshot. **Partitions-Zugehörigkeit ist damit ex-ante bekannt — aus der Marktstruktur, ohne jede Outcome-Konditionierung.**
 
 ## Datenlage
 
-- negRisk-Partitionen gesamt (≥3 Buckets): **404**
-- davon in unserem beobachteten+aufgelösten Universum (tägliche Stadt-Temp): **68**
+- negRisk-Partitionen gesamt (≥3 Buckets): **382**
+- davon in unserem beobachteten+aufgelösten Universum (tägliche Stadt-Temp): **62**
 - **vollständig bepreist UND aufgelöst: 0**
 
 ## Der harte Blocker: Preis-Coverage
@@ -19,7 +19,7 @@ Um die Arbitrage-Summe S = Σ YES-Preise zu bilden, brauchen wir den Preis **jed
 |---|---:|
 | Preis-Coverage min | 9.1% |
 | Preis-Coverage **median** | **18.2%** |
-| Preis-Coverage mean | 19.5% |
+| Preis-Coverage mean | 19.2% |
 | Preis-Coverage max | 45.5% |
 | Partitionen mit Coverage ≥80% | 0 |
 
@@ -28,8 +28,6 @@ Um die Arbitrage-Summe S = Σ YES-Preise zu bilden, brauchen wir den Preis **jed
 | negRiskID | Event | Buckets | bepreist | aufgelöst | Coverage | komplett |
 |---|---|---:|---:|---:|---:|:---:|
 | `0xc352ad34aa` | Highest temperature in London on July 26? | 11 | 5 | 5 | 45.5% | — |
-| `0x267ea5766d` | Highest temperature in Seoul on July 26? | 11 | 5 | 5 | 45.5% | — |
-| `0x06ee133894` | Highest temperature in Madrid on July 25? | 11 | 4 | 4 | 36.4% | — |
 | `0xaf3522d838` | Highest temperature in Paris on July 26? | 11 | 4 | 4 | 36.4% | — |
 | `0x28db592af6` | Highest temperature in London on July 28? | 11 | 4 | 4 | 36.4% | — |
 | `0xeea70af521` | Highest temperature in Seoul on July 28? | 11 | 4 | 4 | 36.4% | — |
@@ -39,14 +37,16 @@ Um die Arbitrage-Summe S = Σ YES-Preise zu bilden, brauchen wir den Preis **jed
 | `0x8ffaa08fee` | Highest temperature in London on July 30? | 11 | 4 | 4 | 36.4% | — |
 | `0x8e88b514f7` | Highest temperature in Paris on July 30? | 11 | 4 | 4 | 36.4% | — |
 | `0x0fc5fca76e` | Highest temperature in Seoul on July 31? | 11 | 4 | 4 | 36.4% | — |
-| `0x50d86a2a44` | Highest temperature in London on July 25? | 11 | 3 | 3 | 27.3% | — |
-| `0xef36f1409f` | Highest temperature in Toronto on July 25? | 11 | 3 | 3 | 27.3% | — |
-| `0xef869f33f8` | Highest temperature in Seattle on July 25? | 11 | 3 | 3 | 27.3% | — |
 | `0x61019298eb` | Highest temperature in London on July 27? | 11 | 3 | 3 | 27.3% | — |
 | `0xc5ba675976` | Highest temperature in Paris on July 27? | 11 | 3 | 3 | 27.3% | — |
 | `0x7d9d42e634` | Highest temperature in Ankara on July 27? | 11 | 3 | 3 | 27.3% | — |
 | `0xb7c1f2442c` | Highest temperature in Chengdu on July 27? | 11 | 3 | 3 | 27.3% | — |
 | `0x782e5a1d77` | Highest temperature in Paris on July 28? | 11 | 3 | 3 | 27.3% | — |
+| `0x10189f4cfb` | Highest temperature in Ankara on July 28? | 11 | 3 | 3 | 27.3% | — |
+| `0x536027425d` | Lowest temperature in London on July 29? | 11 | 3 | 3 | 27.3% | — |
+| `0xe0186cf3d7` | Highest temperature in Ankara on July 29? | 11 | 3 | 3 | 27.3% | — |
+| `0x21b9817727` | Highest temperature in Tokyo on July 31? | 11 | 3 | 3 | 27.3% | — |
+| `0xcff854830d` | Highest temperature in Chengdu on July 31? | 11 | 3 | 3 | 27.3% | — |
 
 ## Verdikt
 

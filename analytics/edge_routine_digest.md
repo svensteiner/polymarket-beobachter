@@ -1,25 +1,25 @@
 # Edge-Routine — Digest
 
-**Lauf:** 2026-08-01T17:00:19.017715+00:00  
+**Lauf:** 2026-08-02T05:00:22.800638+00:00  
 **Status:** OK
 
 ## Was hat sich geändert
 
-- Keine entscheidungsrelevante Änderung seit dem letzten Lauf.
+- 🔻 Kandidaten-Kohorte wieder unter Break-even (-1.00%).
 
 ## Aktueller Stand
 
 | Kennzahl | Wert |
 |---|---|
 | Überlebende Hypothesen | **KEINE** |
-| Hypothesen getestet / OOS n | 15 / 1315 |
-| Bester Kandidat | `no_fade_10_20` · net +0.47% · t=0.856 · q=1.0 |
+| Hypothesen getestet / OOS n | 15 / 1328 |
+| Bester Kandidat | `no_fade_10_20` · net +0.27% · t=0.684 · q=1.0 |
 | Regime-Guard | ✅ aktiv |
-| Forward aufgelöst (Gate 1: 150) | 210 |
-| Kandidaten-Kohorte (exact+eng) | n=45 · net real +2.40% |
-| Modell-Skill-Nische (B4) | KEINE (getestet 2 Zellen · Δ OOS -1.79%) |
+| Forward aufgelöst (Gate 1: 150) | 218 |
+| Kandidaten-Kohorte (exact+eng) | n=48 · net real -1.00% |
+| Modell-Skill-Nische (B4) | KEINE (getestet 2 Zellen · Δ OOS -1.76%) |
 | Arbitrage erntbar | nein (-3.85%/Set) |
-| Arb-Partitionen (negRisk) | 0/68 vollständig · Preis-Coverage median 18.2% / max 45.5% |
+| Arb-Partitionen (negRisk) | 0/62 vollständig · Preis-Coverage median 18.2% / max 45.5% |
 | Half-Spread (kalibriert) | 0.00509 |
 
 ## Nächste Arbeit
