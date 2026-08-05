@@ -1,26 +1,26 @@
 # Edge-Routine — Digest
 
-**Lauf:** 2026-08-04T17:00:22.600455+00:00  
+**Lauf:** 2026-08-05T05:00:22.922339+00:00  
 **Status:** OK
 
 ## Was hat sich geändert
 
-- Keine entscheidungsrelevante Änderung seit dem letzten Lauf.
+- 🟢 Kandidaten-Kohorte ist über Break-even (+0.58%, n=55) — bei kleinem n noch Rauschen, weiter sammeln.
 
 ## Aktueller Stand
 
 | Kennzahl | Wert |
 |---|---|
 | Überlebende Hypothesen | **KEINE** |
-| Hypothesen getestet / OOS n | 15 / 1350 |
-| Bester Kandidat | `no_fade_10_20` · net +0.52% · t=0.923 · q=1.0 |
+| Hypothesen getestet / OOS n | 15 / 1366 |
+| Bester Kandidat | `no_fade_10_20` · net +0.64% · t=0.985 · q=1.0 |
 | Regime-Guard | ✅ aktiv |
-| Forward aufgelöst (Gate 1: 150) | 233 |
-| Kandidaten-Kohorte (exact+eng) | n=51 · net real -0.10% |
-| Modell-Skill-Nische (B4) | KEINE (getestet 2 Zellen · Δ OOS -1.72%) |
-| Arbitrage erntbar | nein (-4.09%/Set) |
-| Arb-Partitionen (negRisk) | 0/54 vollständig · Preis-Coverage median 9.1% / max 36.4% |
-| Half-Spread (kalibriert) | 0.00512 |
+| Forward aufgelöst (Gate 1: 150) | 244 |
+| Kandidaten-Kohorte (exact+eng) | n=55 · net real +0.58% |
+| Modell-Skill-Nische (B4) | KEINE (getestet 2 Zellen · Δ OOS -1.71%) |
+| Arbitrage erntbar | nein (-2.98%/Set) |
+| Arb-Partitionen (negRisk) | 0/52 vollständig · Preis-Coverage median 18.2% / max 36.4% |
+| Half-Spread (kalibriert) | 0.00211 |
 
 ## Nächste Arbeit
 
