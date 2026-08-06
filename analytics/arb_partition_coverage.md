@@ -1,14 +1,14 @@
 # Cross-Market-Arbitrage — Partitions-Coverage (autoritativ via negRiskMarketID)
 
-**Generiert:** 2026-08-06T11:00:26.185501+00:00  
-**Roh-Snapshots ausgewertet:** 511 · Half-Spread 0.0016 · Lead 24.0h  
+**Generiert:** 2026-08-06T17:00:26.643573+00:00  
+**Roh-Snapshots ausgewertet:** 532 · Half-Spread 0.0016 · Lead 24.0h  
 
 > **Fortschritt gegenüber `arb_capturability.py`:** Dort wurden Buckets per Heuristik `(Stadt, Datum, Metrik)` gruppiert — eine Schätzung, die nie beweisen kann, dass man eine *vollständige* Partition sieht. Polymarket liefert die Partition aber autoritativ: alle Buckets eines Multi-Outcome-Events teilen dieselbe `negRiskMarketID` (`negRisk`-Märkte sind per Konstruktion disjunkt & vollständig, genau ein Bucket löst YES auf). Der Collector persistiert dieses Feld bereits in jedem Roh-Snapshot. **Partitions-Zugehörigkeit ist damit ex-ante bekannt — aus der Marktstruktur, ohne jede Outcome-Konditionierung.**
 
 ## Datenlage
 
-- negRisk-Partitionen gesamt (≥3 Buckets): **381**
-- davon in unserem beobachteten+aufgelösten Universum (tägliche Stadt-Temp): **49**
+- negRisk-Partitionen gesamt (≥3 Buckets): **397**
+- davon in unserem beobachteten+aufgelösten Universum (tägliche Stadt-Temp): **53**
 - **vollständig bepreist UND aufgelöst: 0**
 
 ## Der harte Blocker: Preis-Coverage
@@ -19,7 +19,7 @@ Um die Arbitrage-Summe S = Σ YES-Preise zu bilden, brauchen wir den Preis **jed
 |---|---:|
 | Preis-Coverage min | 9.1% |
 | Preis-Coverage **median** | **9.1%** |
-| Preis-Coverage mean | 16.7% |
+| Preis-Coverage mean | 16.6% |
 | Preis-Coverage max | 36.4% |
 | Partitionen mit Coverage ≥80% | 0 |
 
@@ -41,12 +41,12 @@ Um die Arbitrage-Summe S = Σ YES-Preise zu bilden, brauchen wir den Preis **jed
 | `0x81db8ea47e` | Highest temperature in Madrid on August 1? | 11 | 3 | 3 | 27.3% | — |
 | `0xc5ce91a23b` | Highest temperature in London on August 3? | 11 | 3 | 3 | 27.3% | — |
 | `0x991aec1c19` | Highest temperature in Paris on August 3? | 11 | 3 | 3 | 27.3% | — |
+| `0x8cee6108d2` | Highest temperature in Tokyo on August 6? | 11 | 3 | 3 | 27.3% | — |
 | `0x3afca28161` | Highest temperature in Ankara on August 1? | 11 | 2 | 2 | 18.2% | — |
 | `0x1978efbd2a` | Highest temperature in Madrid on August 3? | 11 | 2 | 2 | 18.2% | — |
 | `0x590f42a54f` | Highest temperature in Seoul (Incheon) on August 4? | 11 | 2 | 2 | 18.2% | — |
 | `0x8af56fac62` | Highest temperature in Ankara on August 4? | 11 | 2 | 2 | 18.2% | — |
 | `0xf71333c091` | Highest temperature in Helsinki on August 4? | 11 | 2 | 2 | 18.2% | — |
-| `0x842a3e4a69` | Highest temperature in Seoul (Incheon) on August 5? | 11 | 2 | 2 | 18.2% | — |
 
 ## Verdikt
 
