@@ -1,96 +1,6 @@
 {
   "recent_runs": [
     {
-      "timestamp": "2026-08-07T22:41:59.277096",
-      "run_id": "RUN-20260807-224159-855b46",
-      "mode": "NORMAL",
-      "summary": "NORMAL: 0 active action(s) | 1 read-only | Open=0 | DD=0.0% | BotHealth=HEALTHY",
-      "hypothesis": "Die aktuelle Policy ist nutzbar, braucht aber strukturierte Diagnostik pro Marktregime.",
-      "state": "OK",
-      "drawdown_pct": 0.0,
-      "market_condition": "FAVORABLE",
-      "bot_health_status": "HEALTHY",
-      "paper_pnl_eur": 0.0,
-      "open_positions": 0,
-      "proposed_actions": [
-        {
-          "action_type": "start_shadow_experiment",
-          "title": "Shadow-Test fuer strengere Entry-Selektion vorbereiten",
-          "rationale": "Die Strategie scheint eher an Selektion/Execution als an Forecast-Kalibrierung zu leiden.",
-          "evidence": [
-            "entry_quality_too_weak",
-            "time_to_resolution_risk"
-          ],
-          "priority": "MEDIUM",
-          "risk_level": "LOW",
-          "status": "APPROVED_READ_ONLY",
-          "params": {
-            "experiment": "stricter_entry_filters"
-          }
-        }
-      ]
-    },
-    {
-      "timestamp": "2026-08-07T22:58:21.544132",
-      "run_id": "RUN-20260807-225821-5af978",
-      "mode": "NORMAL",
-      "summary": "NORMAL: 0 active action(s) | 1 read-only | Open=0 | DD=0.0% | BotHealth=HEALTHY",
-      "hypothesis": "Die aktuelle Policy ist nutzbar, braucht aber strukturierte Diagnostik pro Marktregime.",
-      "state": "OK",
-      "drawdown_pct": 0.0,
-      "market_condition": "FAVORABLE",
-      "bot_health_status": "HEALTHY",
-      "paper_pnl_eur": 0.0,
-      "open_positions": 0,
-      "proposed_actions": [
-        {
-          "action_type": "start_shadow_experiment",
-          "title": "Shadow-Test fuer strengere Entry-Selektion vorbereiten",
-          "rationale": "Die Strategie scheint eher an Selektion/Execution als an Forecast-Kalibrierung zu leiden.",
-          "evidence": [
-            "entry_quality_too_weak",
-            "time_to_resolution_risk"
-          ],
-          "priority": "MEDIUM",
-          "risk_level": "LOW",
-          "status": "APPROVED_READ_ONLY",
-          "params": {
-            "experiment": "stricter_entry_filters"
-          }
-        }
-      ]
-    },
-    {
-      "timestamp": "2026-08-07T23:14:32.630267",
-      "run_id": "RUN-20260807-231432-4f06e2",
-      "mode": "NORMAL",
-      "summary": "NORMAL: 0 active action(s) | 1 read-only | Open=0 | DD=0.0% | BotHealth=HEALTHY",
-      "hypothesis": "Die aktuelle Policy ist nutzbar, braucht aber strukturierte Diagnostik pro Marktregime.",
-      "state": "OK",
-      "drawdown_pct": 0.0,
-      "market_condition": "FAVORABLE",
-      "bot_health_status": "HEALTHY",
-      "paper_pnl_eur": 0.0,
-      "open_positions": 0,
-      "proposed_actions": [
-        {
-          "action_type": "start_shadow_experiment",
-          "title": "Shadow-Test fuer strengere Entry-Selektion vorbereiten",
-          "rationale": "Die Strategie scheint eher an Selektion/Execution als an Forecast-Kalibrierung zu leiden.",
-          "evidence": [
-            "entry_quality_too_weak",
-            "time_to_resolution_risk"
-          ],
-          "priority": "MEDIUM",
-          "risk_level": "LOW",
-          "status": "APPROVED_READ_ONLY",
-          "params": {
-            "experiment": "stricter_entry_filters"
-          }
-        }
-      ]
-    },
-    {
       "timestamp": "2026-08-07T23:30:47.549497",
       "run_id": "RUN-20260807-233047-ee6224",
       "mode": "NORMAL",
@@ -1623,11 +1533,191 @@
           "params": {}
         }
       ]
+    },
+    {
+      "timestamp": "2026-08-08T12:52:23.567194",
+      "run_id": "RUN-20260808-125223-0d7bc8",
+      "mode": "DEFENSIVE",
+      "summary": "DEFENSIVE: 1 active action(s) | 2 read-only | Open=0 | DD=0.0% | BotHealth=ELEVATED",
+      "hypothesis": "Kapitalschutz priorisieren; Hauptproblem aktuell: entry_quality_too_weak.",
+      "state": "OK",
+      "drawdown_pct": 0.0,
+      "market_condition": "FAVORABLE",
+      "bot_health_status": "ELEVATED",
+      "paper_pnl_eur": 0.0,
+      "open_positions": 0,
+      "proposed_actions": [
+        {
+          "action_type": "tighten_risk",
+          "title": "Risk-Regeln enger simulieren",
+          "rationale": "Drawdown/Protect-Modus spricht fuer strengere Entries und kleineres Risiko.",
+          "evidence": [
+            "drawdown=0.0%",
+            "bot_health=ELEVATED",
+            "strategy_mode=balance"
+          ],
+          "priority": "HIGH",
+          "risk_level": "LOW",
+          "status": "APPROVED",
+          "params": {
+            "target": "entry_filters_and_kelly",
+            "reason": "defensive_mode"
+          }
+        },
+        {
+          "action_type": "start_shadow_experiment",
+          "title": "Shadow-Test fuer strengere Entry-Selektion vorbereiten",
+          "rationale": "Die Strategie scheint eher an Selektion/Execution als an Forecast-Kalibrierung zu leiden.",
+          "evidence": [
+            "entry_quality_too_weak",
+            "time_to_resolution_risk"
+          ],
+          "priority": "MEDIUM",
+          "risk_level": "LOW",
+          "status": "APPROVED_READ_ONLY",
+          "params": {
+            "experiment": "stricter_entry_filters"
+          }
+        },
+        {
+          "action_type": "revert_last_change",
+          "title": "Juengste Aenderungen auf Rollback-Bedarf pruefen",
+          "rationale": "Anhaltender Defensive-Modus rechtfertigt einen strukturierten Blick auf juengste Eingriffe.",
+          "evidence": [
+            "last_mode=DEFENSIVE",
+            "recent_runs=50"
+          ],
+          "priority": "MEDIUM",
+          "risk_level": "LOW",
+          "status": "APPROVED_READ_ONLY",
+          "params": {}
+        }
+      ]
+    },
+    {
+      "timestamp": "2026-08-08T13:10:03.468706",
+      "run_id": "RUN-20260808-131003-c503de",
+      "mode": "DEFENSIVE",
+      "summary": "DEFENSIVE: 1 active action(s) | 2 read-only | Open=0 | DD=0.0% | BotHealth=ELEVATED",
+      "hypothesis": "Kapitalschutz priorisieren; Hauptproblem aktuell: entry_quality_too_weak.",
+      "state": "OK",
+      "drawdown_pct": 0.0,
+      "market_condition": "FAVORABLE",
+      "bot_health_status": "ELEVATED",
+      "paper_pnl_eur": 0.0,
+      "open_positions": 0,
+      "proposed_actions": [
+        {
+          "action_type": "tighten_risk",
+          "title": "Risk-Regeln enger simulieren",
+          "rationale": "Drawdown/Protect-Modus spricht fuer strengere Entries und kleineres Risiko.",
+          "evidence": [
+            "drawdown=0.0%",
+            "bot_health=ELEVATED",
+            "strategy_mode=balance"
+          ],
+          "priority": "HIGH",
+          "risk_level": "LOW",
+          "status": "APPROVED",
+          "params": {
+            "target": "entry_filters_and_kelly",
+            "reason": "defensive_mode"
+          }
+        },
+        {
+          "action_type": "start_shadow_experiment",
+          "title": "Shadow-Test fuer strengere Entry-Selektion vorbereiten",
+          "rationale": "Die Strategie scheint eher an Selektion/Execution als an Forecast-Kalibrierung zu leiden.",
+          "evidence": [
+            "entry_quality_too_weak",
+            "time_to_resolution_risk"
+          ],
+          "priority": "MEDIUM",
+          "risk_level": "LOW",
+          "status": "APPROVED_READ_ONLY",
+          "params": {
+            "experiment": "stricter_entry_filters"
+          }
+        },
+        {
+          "action_type": "revert_last_change",
+          "title": "Juengste Aenderungen auf Rollback-Bedarf pruefen",
+          "rationale": "Anhaltender Defensive-Modus rechtfertigt einen strukturierten Blick auf juengste Eingriffe.",
+          "evidence": [
+            "last_mode=DEFENSIVE",
+            "recent_runs=50"
+          ],
+          "priority": "MEDIUM",
+          "risk_level": "LOW",
+          "status": "APPROVED_READ_ONLY",
+          "params": {}
+        }
+      ]
+    },
+    {
+      "timestamp": "2026-08-08T13:30:24.342445",
+      "run_id": "RUN-20260808-133024-8fb14a",
+      "mode": "DEFENSIVE",
+      "summary": "DEFENSIVE: 1 active action(s) | 2 read-only | Open=0 | DD=0.0% | BotHealth=ELEVATED",
+      "hypothesis": "Kapitalschutz priorisieren; Hauptproblem aktuell: entry_quality_too_weak.",
+      "state": "OK",
+      "drawdown_pct": 0.0,
+      "market_condition": "FAVORABLE",
+      "bot_health_status": "ELEVATED",
+      "paper_pnl_eur": 0.0,
+      "open_positions": 0,
+      "proposed_actions": [
+        {
+          "action_type": "tighten_risk",
+          "title": "Risk-Regeln enger simulieren",
+          "rationale": "Drawdown/Protect-Modus spricht fuer strengere Entries und kleineres Risiko.",
+          "evidence": [
+            "drawdown=0.0%",
+            "bot_health=ELEVATED",
+            "strategy_mode=balance"
+          ],
+          "priority": "HIGH",
+          "risk_level": "LOW",
+          "status": "APPROVED",
+          "params": {
+            "target": "entry_filters_and_kelly",
+            "reason": "defensive_mode"
+          }
+        },
+        {
+          "action_type": "start_shadow_experiment",
+          "title": "Shadow-Test fuer strengere Entry-Selektion vorbereiten",
+          "rationale": "Die Strategie scheint eher an Selektion/Execution als an Forecast-Kalibrierung zu leiden.",
+          "evidence": [
+            "entry_quality_too_weak",
+            "time_to_resolution_risk"
+          ],
+          "priority": "MEDIUM",
+          "risk_level": "LOW",
+          "status": "APPROVED_READ_ONLY",
+          "params": {
+            "experiment": "stricter_entry_filters"
+          }
+        },
+        {
+          "action_type": "revert_last_change",
+          "title": "Juengste Aenderungen auf Rollback-Bedarf pruefen",
+          "rationale": "Anhaltender Defensive-Modus rechtfertigt einen strukturierten Blick auf juengste Eingriffe.",
+          "evidence": [
+            "last_mode=DEFENSIVE",
+            "recent_runs=50"
+          ],
+          "priority": "MEDIUM",
+          "risk_level": "LOW",
+          "status": "APPROVED_READ_ONLY",
+          "params": {}
+        }
+      ]
     }
   ],
   "active_hypotheses": [
     "Kapitalschutz priorisieren; Hauptproblem aktuell: entry_quality_too_weak."
   ],
   "blocked_actions": [],
-  "last_updated": "2026-08-08T12:34:33.342434"
+  "last_updated": "2026-08-08T13:30:24.342445"
 }

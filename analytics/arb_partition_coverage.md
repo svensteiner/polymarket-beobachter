@@ -1,14 +1,14 @@
 # Cross-Market-Arbitrage — Partitions-Coverage (autoritativ via negRiskMarketID)
 
-**Generiert:** 2026-08-08T05:00:34.835581+00:00  
-**Roh-Snapshots ausgewertet:** 498 · Half-Spread 0.0017 · Lead 24.0h  
+**Generiert:** 2026-08-08T11:00:29.203507+00:00  
+**Roh-Snapshots ausgewertet:** 518 · Half-Spread 0.0017 · Lead 24.0h  
 
 > **Fortschritt gegenüber `arb_capturability.py`:** Dort wurden Buckets per Heuristik `(Stadt, Datum, Metrik)` gruppiert — eine Schätzung, die nie beweisen kann, dass man eine *vollständige* Partition sieht. Polymarket liefert die Partition aber autoritativ: alle Buckets eines Multi-Outcome-Events teilen dieselbe `negRiskMarketID` (`negRisk`-Märkte sind per Konstruktion disjunkt & vollständig, genau ein Bucket löst YES auf). Der Collector persistiert dieses Feld bereits in jedem Roh-Snapshot. **Partitions-Zugehörigkeit ist damit ex-ante bekannt — aus der Marktstruktur, ohne jede Outcome-Konditionierung.**
 
 ## Datenlage
 
-- negRisk-Partitionen gesamt (≥3 Buckets): **370**
-- davon in unserem beobachteten+aufgelösten Universum (tägliche Stadt-Temp): **54**
+- negRisk-Partitionen gesamt (≥3 Buckets): **386**
+- davon in unserem beobachteten+aufgelösten Universum (tägliche Stadt-Temp): **55**
 - **vollständig bepreist UND aufgelöst: 0**
 
 ## Der harte Blocker: Preis-Coverage
