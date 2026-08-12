@@ -1,14 +1,14 @@
 # Cross-Market-Arbitrage — Partitions-Coverage (autoritativ via negRiskMarketID)
 
-**Generiert:** 2026-08-11T11:00:22.944610+00:00  
-**Roh-Snapshots ausgewertet:** 551 · Half-Spread 0.0041 · Lead 24.0h  
+**Generiert:** 2026-08-12T17:00:36.277666+00:00  
+**Roh-Snapshots ausgewertet:** 572 · Half-Spread 0.0021 · Lead 24.0h  
 
 > **Fortschritt gegenüber `arb_capturability.py`:** Dort wurden Buckets per Heuristik `(Stadt, Datum, Metrik)` gruppiert — eine Schätzung, die nie beweisen kann, dass man eine *vollständige* Partition sieht. Polymarket liefert die Partition aber autoritativ: alle Buckets eines Multi-Outcome-Events teilen dieselbe `negRiskMarketID` (`negRisk`-Märkte sind per Konstruktion disjunkt & vollständig, genau ein Bucket löst YES auf). Der Collector persistiert dieses Feld bereits in jedem Roh-Snapshot. **Partitions-Zugehörigkeit ist damit ex-ante bekannt — aus der Marktstruktur, ohne jede Outcome-Konditionierung.**
 
 ## Datenlage
 
-- negRisk-Partitionen gesamt (≥3 Buckets): **397**
-- davon in unserem beobachteten+aufgelösten Universum (tägliche Stadt-Temp): **59**
+- negRisk-Partitionen gesamt (≥3 Buckets): **410**
+- davon in unserem beobachteten+aufgelösten Universum (tägliche Stadt-Temp): **60**
 - **vollständig bepreist UND aufgelöst: 0**
 
 ## Der harte Blocker: Preis-Coverage
@@ -19,7 +19,7 @@ Um die Arbitrage-Summe S = Σ YES-Preise zu bilden, brauchen wir den Preis **jed
 |---|---:|
 | Preis-Coverage min | 9.1% |
 | Preis-Coverage **median** | **9.1%** |
-| Preis-Coverage mean | 16.6% |
+| Preis-Coverage mean | 16.4% |
 | Preis-Coverage max | 45.5% |
 | Partitionen mit Coverage ≥80% | 0 |
 
@@ -28,25 +28,25 @@ Um die Arbitrage-Summe S = Σ YES-Preise zu bilden, brauchen wir den Preis **jed
 | negRiskID | Event | Buckets | bepreist | aufgelöst | Coverage | komplett |
 |---|---|---:|---:|---:|---:|:---:|
 | `0x8cee6108d2` | Highest temperature in Tokyo on August 6? | 11 | 5 | 5 | 45.5% | — |
-| `0x910978b550` | Highest temperature in London on August 4? | 11 | 4 | 4 | 36.4% | — |
-| `0x8bcb295b50` | Highest temperature in Paris on August 4? | 11 | 4 | 4 | 36.4% | — |
 | `0x8025bc5c1d` | Highest temperature in Paris on August 5? | 11 | 4 | 4 | 36.4% | — |
 | `0xbc3394545d` | Highest temperature in Paris on August 7? | 11 | 4 | 4 | 36.4% | — |
 | `0x52795afd4d` | Highest temperature in Paris on August 9? | 11 | 4 | 4 | 36.4% | — |
+| `0xe4cd6f59dc` | Highest temperature in Seoul (Incheon) on August 11? | 11 | 4 | 4 | 36.4% | — |
 | `0x23fb22b671` | Highest temperature in London on August 5? | 11 | 3 | 3 | 27.3% | — |
-| `0x2f9149f774` | Highest temperature in Ankara on August 5? | 11 | 3 | 3 | 27.3% | — |
 | `0x2f77979e7f` | Highest temperature in Seoul (Incheon) on August 6? | 11 | 3 | 3 | 27.3% | — |
 | `0xe6b7a7e3fc` | Highest temperature in Chengdu on August 8? | 11 | 3 | 3 | 27.3% | — |
 | `0x08bc059d7a` | Highest temperature in London on August 9? | 11 | 3 | 3 | 27.3% | — |
 | `0xbb519e2afb` | Highest temperature in Ankara on August 9? | 11 | 3 | 3 | 27.3% | — |
 | `0x76255f9304` | Highest temperature in Chengdu on August 10? | 11 | 3 | 3 | 27.3% | — |
 | `0x9c141d22db` | Lowest temperature in London on August 10? | 11 | 3 | 3 | 27.3% | — |
-| `0x842a3e4a69` | Highest temperature in Seoul (Incheon) on August 5? | 11 | 2 | 2 | 18.2% | — |
+| `0x897cacd720` | Highest temperature in London on August 11? | 11 | 3 | 3 | 27.3% | — |
+| `0xfc9f304965` | Highest temperature in Paris on August 11? | 11 | 3 | 3 | 27.3% | — |
 | `0xd473c07c7b` | Highest temperature in Madrid on August 5? | 11 | 2 | 2 | 18.2% | — |
 | `0xa173316513` | Highest temperature in San Francisco on August 5? | 11 | 2 | 2 | 18.2% | — |
 | `0x3237d2f1d6` | Lowest temperature in London on August 6? | 11 | 2 | 2 | 18.2% | — |
 | `0x33133a8329` | Highest temperature in Paris on August 6? | 11 | 2 | 2 | 18.2% | — |
 | `0x26d42bfd38` | Highest temperature in Atlanta on August 6? | 11 | 2 | 2 | 18.2% | — |
+| `0xf10b2296e9` | Highest temperature in London on August 7? | 11 | 2 | 2 | 18.2% | — |
 
 ## Verdikt
 
