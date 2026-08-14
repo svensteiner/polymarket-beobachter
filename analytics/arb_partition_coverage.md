@@ -1,14 +1,14 @@
 # Cross-Market-Arbitrage — Partitions-Coverage (autoritativ via negRiskMarketID)
 
-**Generiert:** 2026-08-14T11:00:41.655635+00:00  
-**Roh-Snapshots ausgewertet:** 565 · Half-Spread 0.0051 · Lead 24.0h  
+**Generiert:** 2026-08-14T17:00:37.594198+00:00  
+**Roh-Snapshots ausgewertet:** 586 · Half-Spread 0.0051 · Lead 24.0h  
 
 > **Fortschritt gegenüber `arb_capturability.py`:** Dort wurden Buckets per Heuristik `(Stadt, Datum, Metrik)` gruppiert — eine Schätzung, die nie beweisen kann, dass man eine *vollständige* Partition sieht. Polymarket liefert die Partition aber autoritativ: alle Buckets eines Multi-Outcome-Events teilen dieselbe `negRiskMarketID` (`negRisk`-Märkte sind per Konstruktion disjunkt & vollständig, genau ein Bucket löst YES auf). Der Collector persistiert dieses Feld bereits in jedem Roh-Snapshot. **Partitions-Zugehörigkeit ist damit ex-ante bekannt — aus der Marktstruktur, ohne jede Outcome-Konditionierung.**
 
 ## Datenlage
 
-- negRisk-Partitionen gesamt (≥3 Buckets): **396**
-- davon in unserem beobachteten+aufgelösten Universum (tägliche Stadt-Temp): **59**
+- negRisk-Partitionen gesamt (≥3 Buckets): **414**
+- davon in unserem beobachteten+aufgelösten Universum (tägliche Stadt-Temp): **62**
 - **vollständig bepreist UND aufgelöst: 0**
 
 ## Der harte Blocker: Preis-Coverage
@@ -19,7 +19,7 @@ Um die Arbitrage-Summe S = Σ YES-Preise zu bilden, brauchen wir den Preis **jed
 |---|---:|
 | Preis-Coverage min | 9.1% |
 | Preis-Coverage **median** | **9.1%** |
-| Preis-Coverage mean | 15.6% |
+| Preis-Coverage mean | 15.5% |
 | Preis-Coverage max | 36.4% |
 | Partitionen mit Coverage ≥80% | 0 |
 

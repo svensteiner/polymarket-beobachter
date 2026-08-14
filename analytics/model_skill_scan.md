@@ -1,7 +1,7 @@
 # Conditional Model-Skill Scan — findet der Forecaster EINE Nische?
 
-**Generiert:** 2026-08-14T11:00:08.089381+00:00  
-**Lead:** ~24.0h · **OOS-Cutoff:** 2026-06-01 · TRAIN n=2172 · TEST n=1515  
+**Generiert:** 2026-08-14T17:00:07.937057+00:00  
+**Lead:** ~24.0h · **OOS-Cutoff:** 2026-06-01 · TRAIN n=2172 · TEST n=1520  
 **Raster:** Stadt × Typ · min n/Zelle = 30 · FDR-Korrektur: Benjamini-Hochberg @ α=0.05
 
 > **Metrik:** gepaarte Brier-Differenz je Markt `d = (Markt_p − y)² − (Modell_p − y)²`. **d > 0 ⇒ Modell schärfer als Markt.** Walk-forward: Zelle ist Kandidat nur, wenn sie auf TRAIN positiv ist; genau **einmal** auf TEST ausgewertet. Cluster-t nach (Stadt, Datum). Nur was die BH-Korrektur übersteht, zählt.
@@ -10,9 +10,9 @@
 
 | Fenster | n | Markt-Brier | Modell-Brier | Δ (Markt−Modell) | Cluster-t |
 |---|---:|---:|---:|---:|---:|
-| Gesamt | 3687 | 0.15302 | 0.16842 | -0.015400 | -6.567 |
+| Gesamt | 3692 | 0.15318 | 0.16843 | -0.015252 | -6.493 |
 | Train | 2172 | 0.14272 | 0.15677 | -0.014045 | -4.487 |
-| TEST (OOS) | 1515 | 0.16779 | 0.18513 | -0.017343 | -4.794 |
+| TEST (OOS) | 1520 | 0.16812 | 0.1851 | -0.016977 | -4.694 |
 
 *Δ < 0 heißt: der Markt ist im Schnitt schärfer als das Modell (Modell-Brier höher). Das ist der bekannte globale Befund — die Frage ist, ob es eine Ausnahme-Zelle gibt.*
 
@@ -21,7 +21,7 @@
 | Stadt | Typ | n(tr) | Δ(tr) | n(te) | Δ(te) | Cluster-t(te) | p | q (BH) | Verdikt |
 |---|---|---:|---:|---:|---:|---:|---:|---:|---|
 | Seattle | between | 93 | +0.0003 | 67 | -0.0085 | -0.101 | 1.0 | 1.0 | ❌ negativ auf TEST |
-| Seoul | exact | 86 | +0.0057 | 166 | -0.0220 | -2.738 | 1.0 | 1.0 | ❌ negativ auf TEST |
+| Seoul | exact | 86 | +0.0057 | 168 | -0.0210 | -2.528 | 1.0 | 1.0 | ❌ negativ auf TEST |
 
 ## Verdikt
 
