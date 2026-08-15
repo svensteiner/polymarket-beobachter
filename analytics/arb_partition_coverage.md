@@ -1,14 +1,14 @@
 # Cross-Market-Arbitrage — Partitions-Coverage (autoritativ via negRiskMarketID)
 
-**Generiert:** 2026-08-14T17:00:37.594198+00:00  
-**Roh-Snapshots ausgewertet:** 586 · Half-Spread 0.0051 · Lead 24.0h  
+**Generiert:** 2026-08-15T05:00:40.798996+00:00  
+**Roh-Snapshots ausgewertet:** 546 · Half-Spread 0.0051 · Lead 24.0h  
 
 > **Fortschritt gegenüber `arb_capturability.py`:** Dort wurden Buckets per Heuristik `(Stadt, Datum, Metrik)` gruppiert — eine Schätzung, die nie beweisen kann, dass man eine *vollständige* Partition sieht. Polymarket liefert die Partition aber autoritativ: alle Buckets eines Multi-Outcome-Events teilen dieselbe `negRiskMarketID` (`negRisk`-Märkte sind per Konstruktion disjunkt & vollständig, genau ein Bucket löst YES auf). Der Collector persistiert dieses Feld bereits in jedem Roh-Snapshot. **Partitions-Zugehörigkeit ist damit ex-ante bekannt — aus der Marktstruktur, ohne jede Outcome-Konditionierung.**
 
 ## Datenlage
 
-- negRisk-Partitionen gesamt (≥3 Buckets): **414**
-- davon in unserem beobachteten+aufgelösten Universum (tägliche Stadt-Temp): **62**
+- negRisk-Partitionen gesamt (≥3 Buckets): **382**
+- davon in unserem beobachteten+aufgelösten Universum (tägliche Stadt-Temp): **55**
 - **vollständig bepreist UND aufgelöst: 0**
 
 ## Der harte Blocker: Preis-Coverage
@@ -19,7 +19,7 @@ Um die Arbitrage-Summe S = Σ YES-Preise zu bilden, brauchen wir den Preis **jed
 |---|---:|
 | Preis-Coverage min | 9.1% |
 | Preis-Coverage **median** | **9.1%** |
-| Preis-Coverage mean | 15.5% |
+| Preis-Coverage mean | 15.4% |
 | Preis-Coverage max | 36.4% |
 | Partitionen mit Coverage ≥80% | 0 |
 
@@ -27,12 +27,10 @@ Um die Arbitrage-Summe S = Σ YES-Preise zu bilden, brauchen wir den Preis **jed
 
 | negRiskID | Event | Buckets | bepreist | aufgelöst | Coverage | komplett |
 |---|---|---:|---:|---:|---:|:---:|
-| `0xbc3394545d` | Highest temperature in Paris on August 7? | 11 | 4 | 4 | 36.4% | — |
 | `0x52795afd4d` | Highest temperature in Paris on August 9? | 11 | 4 | 4 | 36.4% | — |
 | `0xe4cd6f59dc` | Highest temperature in Seoul (Incheon) on August 11? | 11 | 4 | 4 | 36.4% | — |
 | `0x7c10be8bea` | Highest temperature in Tokyo on August 13? | 11 | 4 | 4 | 36.4% | — |
 | `0x1d28c9421c` | Highest temperature in Chengdu on August 13? | 11 | 4 | 4 | 36.4% | — |
-| `0xe6b7a7e3fc` | Highest temperature in Chengdu on August 8? | 11 | 3 | 3 | 27.3% | — |
 | `0x08bc059d7a` | Highest temperature in London on August 9? | 11 | 3 | 3 | 27.3% | — |
 | `0xbb519e2afb` | Highest temperature in Ankara on August 9? | 11 | 3 | 3 | 27.3% | — |
 | `0x76255f9304` | Highest temperature in Chengdu on August 10? | 11 | 3 | 3 | 27.3% | — |
@@ -41,12 +39,14 @@ Um die Arbitrage-Summe S = Σ YES-Preise zu bilden, brauchen wir den Preis **jed
 | `0xfc9f304965` | Highest temperature in Paris on August 11? | 11 | 3 | 3 | 27.3% | — |
 | `0x18a9602bfc` | Highest temperature in London on August 12? | 11 | 3 | 3 | 27.3% | — |
 | `0x3945531806` | Highest temperature in Seoul (Incheon) on August 13? | 11 | 3 | 3 | 27.3% | — |
-| `0xf10b2296e9` | Highest temperature in London on August 7? | 11 | 2 | 2 | 18.2% | — |
-| `0xdfe2984dc5` | Highest temperature in Madrid on August 7? | 11 | 2 | 2 | 18.2% | — |
-| `0xaef057257d` | Highest temperature in Seoul (Incheon) on August 8? | 11 | 2 | 2 | 18.2% | — |
+| `0x79360a5b4c` | Highest temperature in Seoul (Incheon) on August 14? | 11 | 3 | 3 | 27.3% | — |
 | `0x5ab913a65b` | Highest temperature in Seoul (Incheon) on August 9? | 11 | 2 | 2 | 18.2% | — |
 | `0xc12543d440` | Highest temperature in Madrid on August 9? | 11 | 2 | 2 | 18.2% | — |
 | `0x17328cf940` | Highest temperature in Seoul (Incheon) on August 10? | 11 | 2 | 2 | 18.2% | — |
+| `0x0157a48540` | Highest temperature in Paris on August 12? | 11 | 2 | 2 | 18.2% | — |
+| `0xf536483434` | Highest temperature in Seoul (Incheon) on August 12? | 11 | 2 | 2 | 18.2% | — |
+| `0x68f33c4c99` | Lowest temperature in Tokyo on August 13? | 11 | 2 | 2 | 18.2% | — |
+| `0x26ed4aed1e` | Highest temperature in Tokyo on August 14? | 11 | 2 | 2 | 18.2% | — |
 
 ## Verdikt
 
