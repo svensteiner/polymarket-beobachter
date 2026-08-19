@@ -1529,6 +1529,15 @@ class Orchestrator:
             except Exception as _nf_err:  # fail-open: shadow lane never blocks pipeline
                 logger.debug("NO-Fade Lane fehlgeschlagen: %s", _nf_err)
 
+            # NO-Fade PAPER HARVEST: handelt nur den live-positiven Subset
+            # (exact + CLOB-Spread < 2c). Eigenes Ledger + Paper-Kapital,
+            # Hold-to-Resolution, kein TP/SL, kein Live-Order. Fail-open.
+            try:
+                from paper_trader.no_fade_harvest import run as _harvest_run
+                _harvest_run()
+            except Exception as _hv_err:
+                logger.debug("NO-Fade Harvest fehlgeschlagen: %s", _hv_err)
+
             # Forward-vs-Backtest Reconciliation: zerlegt die Luecke zwischen
             # Backtest-Edge (+2,87%) und Forward-Lane (negativ) in Kosten / Regime /
             # Selektion. Nach der Lane, damit sie das frische Ledger liest.

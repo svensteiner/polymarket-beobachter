@@ -507,6 +507,7 @@ def _snapshot_code_mtimes() -> dict:
         "paper_trader/position_manager.py",
         "paper_trader/entry_guardrails.py",
         "paper_trader/capital_manager.py",
+        "paper_trader/no_fade_harvest.py",
         "app/orchestrator.py",
     ]
     mtimes = {}
