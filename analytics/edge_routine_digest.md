@@ -1,25 +1,25 @@
 # Edge-Routine — Digest
 
-**Lauf:** 2026-08-21T05:00:24.767477+00:00  
+**Lauf:** 2026-08-21T11:00:18.952265+00:00  
 **Status:** OK
 
 ## Was hat sich geändert
 
-- Keine entscheidungsrelevante Änderung seit dem letzten Lauf.
+- 🛑 Regime-Guard hat PAUSIERT — Verzerrung verschwunden, keine neuen Entries.
 
 ## Aktueller Stand
 
 | Kennzahl | Wert |
 |---|---|
 | Überlebende Hypothesen | **KEINE** |
-| Hypothesen getestet / OOS n | 15 / 1611 |
-| Bester Kandidat | `no_fade_10_20` · net +0.39% · t=0.635 · q=1.0 |
-| Regime-Guard | ✅ aktiv |
-| Forward aufgelöst (Gate 1: 150) | 393 |
+| Hypothesen getestet / OOS n | 15 / 1615 |
+| Bester Kandidat | `no_fade_10_20` · net +0.30% · t=0.539 · q=1.0 |
+| Regime-Guard | 🛑 PAUSIERT |
+| Forward aufgelöst (Gate 1: 150) | 396 |
 | Kandidaten-Kohorte (exact+eng) | n=82 · net real +1.22% |
 | Modell-Skill-Nische (B4) | KEINE (getestet 2 Zellen · Δ OOS -1.71%) |
 | Arbitrage erntbar | nein (-4.36%/Set) |
-| Arb-Partitionen (negRisk) | 0/42 vollständig · Preis-Coverage median 9.1% / max 54.5% |
+| Arb-Partitionen (negRisk) | 0/45 vollständig · Preis-Coverage median 9.1% / max 54.5% |
 | Half-Spread (kalibriert) | 0.00517 |
 
 ## Nächste Arbeit
@@ -28,6 +28,7 @@
 2. **B4 erledigt (negativ):** Konditionaler Modell-Skill-Scan (`analytics/model_skill_scan.py`) findet KEINE Stadt×Typ-Nische mit Modell-Brier < Markt-Brier OOS (BH-korrigiert). Forecaster ist auch konditional nicht überlegen — nicht erneut aufrollen ohne neues Modell-/Datenmaterial.
 3. **B5:** Preis-Momentum — zuerst verifizieren, ob `logs/weather_observations*.jsonl` mehrere Snapshots je Markt enthält.
 4. **Neue Hypothesen** sind billig: ein Eintrag in `HYPOTHESES` in `analytics/edge_scanner.py` genügt, das Harness erledigt Walk-Forward, reale Kosten und BH-Korrektur.
+5. NO-Fade bleibt regime-pausiert — nicht daran weiterarbeiten, solange der Gap negativ ist.
 
 ---
 *Läuft 3x täglich lokal (Task `WeatherObserver-EdgeRoutine`). Plan + Methoden-Guardrails: `reports/edge_search_plan_2026-07-27.md` · Historie: `data/edge_routine_history.jsonl`*
