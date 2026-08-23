@@ -1,25 +1,25 @@
 # Edge-Routine — Digest
 
-**Lauf:** 2026-08-22T17:00:22.906687+00:00  
+**Lauf:** 2026-08-23T05:00:22.724389+00:00  
 **Status:** OK
 
 ## Was hat sich geändert
 
-- Keine entscheidungsrelevante Änderung seit dem letzten Lauf.
+- 🟢 **Regime-Guard hat DEPAUSIERT** — die Longshot-Verzerrung ist zurück. NO-Fade-Lane nimmt wieder Entries auf; Kandidaten-Kohorte beobachten.
 
 ## Aktueller Stand
 
 | Kennzahl | Wert |
 |---|---|
 | Überlebende Hypothesen | **KEINE** |
-| Hypothesen getestet / OOS n | 15 / 1639 |
-| Bester Kandidat | `no_fade_10_20` · net +0.19% · t=0.449 · q=1.0 |
-| Regime-Guard | 🛑 PAUSIERT |
+| Hypothesen getestet / OOS n | 15 / 1649 |
+| Bester Kandidat | `no_fade_10_20` · net +0.25% · t=0.504 · q=1.0 |
+| Regime-Guard | ✅ aktiv |
 | Forward aufgelöst (Gate 1: 150) | 398 |
 | Kandidaten-Kohorte (exact+eng) | n=83 · net real +1.35% |
-| Modell-Skill-Nische (B4) | KEINE (getestet 2 Zellen · Δ OOS -1.68%) |
+| Modell-Skill-Nische (B4) | KEINE (getestet 2 Zellen · Δ OOS -1.66%) |
 | Arbitrage erntbar | nein (-4.25%/Set) |
-| Arb-Partitionen (negRisk) | 0/49 vollständig · Preis-Coverage median 9.1% / max 54.5% |
+| Arb-Partitionen (negRisk) | 0/40 vollständig · Preis-Coverage median 9.1% / max 45.5% |
 | Half-Spread (kalibriert) | 0.00517 |
 
 ## Nächste Arbeit
@@ -28,7 +28,6 @@
 2. **B4 erledigt (negativ):** Konditionaler Modell-Skill-Scan (`analytics/model_skill_scan.py`) findet KEINE Stadt×Typ-Nische mit Modell-Brier < Markt-Brier OOS (BH-korrigiert). Forecaster ist auch konditional nicht überlegen — nicht erneut aufrollen ohne neues Modell-/Datenmaterial.
 3. **B5:** Preis-Momentum — zuerst verifizieren, ob `logs/weather_observations*.jsonl` mehrere Snapshots je Markt enthält.
 4. **Neue Hypothesen** sind billig: ein Eintrag in `HYPOTHESES` in `analytics/edge_scanner.py` genügt, das Harness erledigt Walk-Forward, reale Kosten und BH-Korrektur.
-5. NO-Fade bleibt regime-pausiert — nicht daran weiterarbeiten, solange der Gap negativ ist.
 
 ---
 *Läuft 3x täglich lokal (Task `WeatherObserver-EdgeRoutine`). Plan + Methoden-Guardrails: `reports/edge_search_plan_2026-07-27.md` · Historie: `data/edge_routine_history.jsonl`*
