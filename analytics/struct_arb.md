@@ -1,6 +1,6 @@
 # Structural Arbitrage — Paper Trading
 
-**Generiert:** 2026-08-24T19:26:49.767181+00:00  
+**Generiert:** 2026-08-24T20:28:40.701694+00:00  
 
 > PAPER ONLY — model-free complete-set / binary-lock after real CLOB asks + taker fees. Cash if no net edge. Kein Live-Order. Active-leg filter + ask coverage >= 0.92.
 
@@ -23,7 +23,7 @@
   - BINARY_LOCK | net=-0.005716 gap=0.015716 | Will US withdraw from NATO by...?
   - BINARY_LOCK | net=-0.005874 gap=0.015874 | Which candidates will advance to Brazil's presidential runoff?
   - BINARY_LOCK | net=-0.005874 gap=0.015874 | Will Ukraine agree to cede territory to Russia by...?
-  - BUY_NO_SET | net=-0.023492 gap=0.033492 | OpenAI IPO Closing Market Cap
+  - BUY_NO_SET | net=-0.034044 gap=0.044044 | OpenAI IPO Closing Market Cap
 
 ## Ledger
 
