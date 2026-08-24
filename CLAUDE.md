@@ -26,6 +26,8 @@ Kein Polymarket-API-Key. Alles lokal. Pipeline alle 15 Min — nicht extra start
 
 Naechster Schritt: Kein MIN_NET-Locker, kein Other-Skip. SD-Legacy nicht schliessen. Naechste Kante: Binaries mit vollen Books / Maker-Resting (Near-Miss ~ -0.14c nach Fee) oder mehr Events — nur wenn klein und klar. Groesse nur erhoehen wenn `analytics/struct_arb.md` ueber Tage `entered>0` **und** positives P&L nach echten Fills zeigt.
 
+2026-08-24 Querdenker (kein Code, kein Entry): Post-close Wetter vs NOAA/METAR. Seoul Aug-24 bereits auto-resolved. Offene Aug-24 Daily-Temps (endDate 12:00Z, closed=false) sind nach METAR schon eingepreist: London 22C ask 0.998, Paris 27C 0.996, Chengdu 37C 1.00, Madrid 29C ask 0.85 bei METAR-Max 29C. US-Maxima (NYC/ORD/MIA) noch intra-day, kein Post-Close. Nested FDV/by-date Leitern: Ask-Inversionen ja, tradeable Bid-Ask-Arb (bid_hi > ask_lo) = 0. Kein post_close_sniper bis Winner-Ask klar unter 0.90 nach offizieller Obs.
+
 2026-08-24 Cleanup: Tote Module geloescht (LLM-Parser, Charts-CLI, unused loggers). Wetter-Preis-Fetch nur noch city-temp; Forecast-APIs fuer blockierte Typen aus; Evolution/LLM-Analyst/General-Scan aus dem 15-Min-Zyklus.
 
 ## Status lesen (Live, jeden Zyklus)
