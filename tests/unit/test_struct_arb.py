@@ -94,6 +94,13 @@ def test_partition_is_complete_requires_yes_in_open_interval():
     ]
     assert partition_is_complete(incomplete) is False
 
+    already_won = [
+        {"closed": True, "yes_price": 1.0},
+        {"closed": False, "yes_price": 0.12},
+        {"closed": False, "yes_price": 0.34},
+    ]
+    assert partition_is_complete(already_won) is False
+
 
 def test_nobel_incomplete_never_tradable():
     """20 priced of 71 → incomplete partition is never tradable."""
@@ -166,26 +173,17 @@ def test_record_entry_and_close(monkeypatch, tmp_path):
             offset = kwargs.get("offset", 0)
             return events if offset == 0 else []
 
-    # Cheap YES asks so completeset_yes_net >> MIN_NET (3*0.20=0.60 + fees).
-    def fake_yes_book(market_id: str):
-        class B:
-            def to_dict(self):
-                return {
-                    "ok": True,
-                    "yes_best_ask": 0.20,
-                    "real_spread": 0.01,
-                    "ask_depth_shares": 50.0,
-                    "reason": "ok",
-                }
-
-        return B()
+    def fake_token(token_id: str, budget):
+        return {
+            "ok": True,
+            "best_ask": 0.20,
+            "real_spread": 0.01,
+            "ask_depth_shares": 50.0,
+            "reason": "ok",
+        }
 
     monkeypatch.setattr(sa, "_make_client", lambda: FakeClient())
-    monkeypatch.setattr(
-        "paper_trader.clob_book.fetch_yes_book_cost",
-        fake_yes_book,
-    )
-    # Avoid binary-lock CLOB traffic in this unit test.
+    monkeypatch.setattr(sa, "_fetch_token", fake_token)
     monkeypatch.setattr(sa, "MAX_BOOK_FETCHES", 10)
 
     entered = sa.record_entries()
@@ -201,46 +199,69 @@ def test_record_entry_and_close(monkeypatch, tmp_path):
     # Duplicate partition_id must not re-enter.
     assert sa.record_entries() == 0
 
-    # Close when all legs resolved (YES on m0).
-    closed_events = [
-        {
-            "id": "evt-1",
-            "closed": False,
-            "negRisk": True,
-            "markets": [
-                {
-                    "id": "m0",
-                    "closed": True,
-                    "negRiskMarketID": "nr-1",
-                    "outcomePrices": json.dumps([1.0, 0.0]),
-                },
-                {
-                    "id": "m1",
-                    "closed": True,
-                    "negRiskMarketID": "nr-1",
-                    "outcomePrices": json.dumps([0.0, 1.0]),
-                },
-                {
-                    "id": "m2",
-                    "closed": True,
-                    "negRiskMarketID": "nr-1",
-                    "outcomePrices": json.dumps([0.0, 1.0]),
-                },
-            ],
-        }
-    ]
+    closed_by_id = {
+        "m0": {"id": "m0", "closed": True, "outcomePrices": json.dumps([1.0, 0.0])},
+        "m1": {"id": "m1", "closed": True, "outcomePrices": json.dumps([0.0, 1.0])},
+        "m2": {"id": "m2", "closed": True, "outcomePrices": json.dumps([0.0, 1.0])},
+    }
 
-    class FakeClientClosed:
-        def fetch_events(self, **kwargs):
-            offset = kwargs.get("offset", 0)
-            return closed_events if offset == 0 else []
-
-    monkeypatch.setattr(sa, "_make_client", lambda: FakeClientClosed())
+    monkeypatch.setattr(sa, "_fetch_gamma_market", lambda mid: closed_by_id.get(str(mid)))
     closed = sa.close_resolved()
     assert closed == 1
     rows = [json.loads(line) for line in ledger.read_text(encoding="utf-8").splitlines()]
     assert rows[0]["status"] == "RESOLVED"
     assert rows[0]["pnl_eur"] > 0
+
+
+def test_depth_must_cover_sized_shares(monkeypatch, tmp_path):
+    """5 EUR / cheap set needs more shares than a 5-share depth gate."""
+    import paper_trader.struct_arb as sa
+
+    ledger = tmp_path / "struct_arb.jsonl"
+    monkeypatch.setattr(sa, "LEDGER_PATH", ledger)
+    monkeypatch.setattr(sa, "OUT_MD", tmp_path / "d.md")
+    monkeypatch.setattr(sa, "OUT_JSON", tmp_path / "d.json")
+    monkeypatch.setattr(sa, "NOTIONAL_EUR", 5.0)
+
+    events = [
+        {
+            "id": "evt-thin",
+            "title": "Thin book partition",
+            "closed": False,
+            "negRisk": True,
+            "markets": [
+                {
+                    "id": f"t{i}",
+                    "closed": False,
+                    "negRiskMarketID": "nr-thin",
+                    "question": f"Bucket {i}?",
+                    "outcomePrices": json.dumps([0.10, 0.90]),
+                    "clobTokenIds": json.dumps([f"y{i}", f"n{i}"]),
+                    "outcomes": json.dumps(["Yes", "No"]),
+                }
+                for i in range(3)
+            ],
+        }
+    ]
+
+    class FakeClient:
+        def fetch_events(self, **kwargs):
+            offset = kwargs.get("offset", 0)
+            return events if offset == 0 else []
+
+    def fake_token(token_id: str, budget):
+        # cost ~0.60 → need ~8.3 shares; depth 6 is too thin
+        return {
+            "ok": True,
+            "best_ask": 0.20,
+            "ask_depth_shares": 6.0,
+            "reason": "ok",
+        }
+
+    monkeypatch.setattr(sa, "_make_client", lambda: FakeClient())
+    monkeypatch.setattr(sa, "_fetch_token", fake_token)
+    assert sa.record_entries() == 0
+    assert not ledger.exists() or not ledger.read_text(encoding="utf-8").strip()
 
 
 def test_inventory_full_blocks_entry(monkeypatch, tmp_path):
@@ -264,6 +285,64 @@ def test_inventory_full_blocks_entry(monkeypatch, tmp_path):
     assert sa.record_entries() == 0
 
 
+def test_binary_lock_probes_when_gamma_mids_sum_to_one(monkeypatch, tmp_path):
+    """Gamma YES+NO mids always sum to 1 — that must NOT skip CLOB probes."""
+    import paper_trader.struct_arb as sa
+
+    ledger = tmp_path / "struct_arb.jsonl"
+    monkeypatch.setattr(sa, "LEDGER_PATH", ledger)
+    monkeypatch.setattr(sa, "OUT_MD", tmp_path / "b.md")
+    monkeypatch.setattr(sa, "OUT_JSON", tmp_path / "b.json")
+
+    events = [
+        {
+            "id": "bin-evt",
+            "title": "Standalone binary",
+            "closed": False,
+            "negRisk": False,
+            "volume24hr": 1000,
+            "markets": [
+                {
+                    "id": "bin-1",
+                    "closed": False,
+                    "question": "Will X happen?",
+                    "outcomePrices": json.dumps([0.50, 0.50]),
+                    "clobTokenIds": json.dumps(["tok-yes", "tok-no"]),
+                    "outcomes": json.dumps(["Yes", "No"]),
+                }
+            ],
+        }
+    ]
+
+    class FakeClient:
+        def fetch_events(self, **kwargs):
+            offset = kwargs.get("offset", 0)
+            return events if offset == 0 else []
+
+    def fake_token(token_id: str, budget):
+        # Asks must clear taker fees: 0.46+0.47+fees ≈ 0.97 → net > MIN_NET.
+        ask = 0.46 if token_id == "tok-yes" else 0.47
+        return {
+            "ok": True,
+            "best_ask": ask,
+            "ask_depth_shares": 20.0,
+            "reason": "ok",
+        }
+
+    monkeypatch.setattr(sa, "_make_client", lambda: FakeClient())
+    monkeypatch.setattr(sa, "_fetch_token", fake_token)
+
+    from paper_trader.struct_arb_math import binary_lock_net, tradeable_net
+
+    assert tradeable_net(binary_lock_net(0.46, 0.47)) is True
+    entered = sa.record_entries()
+    assert entered == 1
+    rows = [json.loads(line) for line in ledger.read_text(encoding="utf-8").splitlines()]
+    assert rows[0]["side"] == "BINARY_LOCK"
+    assert rows[0]["partition_id"] == "binary:bin-1"
+    assert rows[0]["governance_notice"] == "PAPER ONLY — no live order"
+
+
 def test_run_fail_open_and_writes_reports(monkeypatch, tmp_path):
     import paper_trader.struct_arb as sa
 
@@ -276,6 +355,11 @@ def test_run_fail_open_and_writes_reports(monkeypatch, tmp_path):
 
     monkeypatch.setattr(sa, "record_entries", boom)
     monkeypatch.setattr(sa, "close_resolved", boom)
+
+    def boom_summary():
+        raise RuntimeError("corrupt ledger")
+
+    monkeypatch.setattr(sa, "summary", boom_summary)
     result = sa.run()
     assert isinstance(result, dict)
     assert "scanned" in result

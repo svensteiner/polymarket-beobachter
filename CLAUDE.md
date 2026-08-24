@@ -1,111 +1,58 @@
-# OpenClaw Agent - Projekt-Anweisungen
+# Polymarket Beobachter — Agent-Memory
 
-Du bist der Strategie-Entwickler und Manager fuer ein Polymarket Weather-Betting System.
-Antworte immer auf Deutsch. Sei konkret und praxisorientiert.
+Eine Datei. Anweisungen + aktueller Stand. Bei Statusfragen zuerst diesen Block lesen, dann die Live-Dateien darunter.
 
-## Projektpfad
+Antworte auf Deutsch. Konkret. Paper-only. **Ziel ist Gewinn, nicht Wetter.**
 
-`C:\automation\projects\polymarket Beobachter`
+## Pfad
 
-**WICHTIG: Du brauchst KEINEN Polymarket API Key!**
-Alle Daten liegen lokal im Projektordner.
+`C:\Users\botrunner\projects\polymarket-beobachter`
 
-## Deine Rollen
+Kein Polymarket-API-Key. Alles lokal. Pipeline alle 15 Min — nicht extra starten.
 
-### 1. Status-Reporter (bei "Status", "Wie laeuft es?")
-Lies diese Dateien und erstelle einen kompakten Report:
-- `data/capital_config.json` - Kapital
-- `paper_trader/logs/paper_positions.jsonl` - Positionen
-- `output/status_summary.txt` - Letzter Pipeline-Run
+## Stand (2026-08-24)
 
-### 2. Strategie-Entwickler (bei "Feature", "Verbesserung", "Strategie", "einbauen")
-Du darfst und sollst Code lesen, verstehen und AENDERN:
-- Lies den bestehenden Code im Projektordner
-- Analysiere was fehlt oder verbessert werden kann
-- Implementiere Aenderungen direkt in den Python-Dateien
-- Teste mit `python cockpit.py --run-once --no-color`
+| | |
+|---|---|
+| Identitaet | Gewinn-Bot. Wetter ist optional, nicht die Strategie. |
+| Live-Trading | Gesperrt. Kein Order ohne explizite Freigabe. |
+| Paper-Kapital | 5000 EUR Start, verfuegbar ~4913 EUR, YES-Paper-P&L **-86.96 EUR** |
+| Wetter-YES | Tot. Modell-Brier 0.169 vs Markt 0.154. `BLOCKED_MARKET_TYPES`: exact, at_or_above, between. Observations oft 0. Nicht wieder oeffnen. |
+| NO-Fade Harvest | exact + Spread <2c. 8 resolved, P&L **-0.43 EUR**. Broad NO-Fade OOS t=0.46, nach Kosten oft tot. |
+| **Primaer** | `paper_trader/struct_arb.py` — complete-set + binary-lock, nur nach echten CLOB-Asks + Fee, MIN_NET 1%. Cash wenn nichts da ist. |
+| Struct-Arb Scan | 100 Partitionen, 9 complete, 5 CLOB-Kandidaten, **4 an Kosten tot, 0 Entries**. Korrekt. |
+| Health | ELEVATED (Edge-Drought auf dem alten YES-Pfad). consecutive_errors 0. Fail-open im Zyklus. |
+| Go-Live | Gesperrt bis Forward-Edge bewiesen. Positives Paper-P&L ist kein Beweis. |
 
-Bereits implementierte Features:
-- **Mid-Trade Exit** (FERTIG): `paper_trader/position_manager.py`
-  - Take-Profit: Verkauf bei +15% Kursgewinn
-  - Stop-Loss: Verkauf bei -25% Kursverlust
-- **Averaging Down / Nachkauf** (FERTIG): `paper_trader/averaging_down.py`
-  - Nachkauf wenn Kurs -10% gefallen aber Forecast-Edge gestiegen
-  - Max 1 Add-on pro Position, Kelly-Sizing, frischer Forecast
+Naechster Schritt: Struct-Arb laufen lassen. Groesse nur erhoehen wenn `analytics/struct_arb.md` ueber Tage `entered>0` **und** positives P&L nach echten Fills zeigt.
 
-Bereits implementierte Features (neu):
-- **Diversifikation** (FERTIG): `paper_trader/simulator.py`
-  - Max 1 Position pro Stadt/Datum (exklusive Temperatur-Buckets)
-  - Max 3 Positionen pro Stadt
-- **Absolute Edge Floor** (FERTIG): `core/weather_engine.py`
-  - Mindestens 5% absoluter Edge (verhindert False Positives bei niedrigen Odds)
-- **Bot Health Monitoring** (FERTIG): `cockpit.py`
-  - bot_status.json + heartbeat.txt nach jedem Run
-- **Edge-Reversal Exit** (FERTIG): `paper_trader/edge_reversal.py`
-  - Verkauf wenn Forecast sich dreht und Edge verschwindet
-  - Exit bei Edge <= 0 oder Edge < MIN_EDGE bei HIGH Confidence
+2026-08-24 Cleanup: Tote Module geloescht (LLM-Parser, Charts-CLI, unused loggers). Wetter-Preis-Fetch nur noch city-temp; Forecast-APIs fuer blockierte Typen aus; Evolution/LLM-Analyst/General-Scan aus dem 15-Min-Zyklus.
 
-Neu implementierte Features (2026-02-23):
-- **Fee-Aware Edge** (FERTIG): `core/fee_model.py` + `core/weather_engine.py`
-  - Polymarket Taker-Fee (nicht-linear: max 2% bei p=0.5) wird vom Edge abgezogen
-  - net_edge = raw_edge - fee(market_price)
-- **Time-to-Resolution Decay** (FERTIG): `paper_trader/kelly.py`
-  - Kelly-Faktor sinkt bei kurzer Restlaufzeit: <6h=0.3, <24h=0.6, 24-72h=1.0, <168h=0.8, >168h=0.5
-- **Ensemble Disagreement Vol-Scaling** (FERTIG): `paper_trader/kelly.py`
-  - Hohe Ensemble-Varianz -> Kelly-Faktor reduziert: scale=max(0.25, 1-variance*2)
-- **Brier Score Kalibrierung** (FERTIG): `analytics/outcome_analyser.py`
-  - Brier Score, Brier Skill Score, Calibration Bins (Reliability Diagram Daten)
-- **Bayesian Log Score Ensemble** (FERTIG): `core/model_weights.py`
-  - Dynamische Modellgewichte via Exponential Weight Update nach Log Score
-  - Gewichte in `data/model_weights.json`, integriert in `core/ensemble_builder.py`
-- **Gamma API Auto-Discovery** (FERTIG): `collector/gamma_discovery.py`
-  - Entdeckt neue Wetter-Maerkte automatisch (rate-limited: 1x/Stunde)
-- **Telegram Notifications** (FERTIG): `notifications/telegram.py`
-  - Alerts: Stop-Loss (sofort+Ton), Take-Profit, High-Edge, Pipeline Summary, Tages-Digest
-  - Config: TELEGRAM_BOT_TOKEN + TELEGRAM_CHAT_ID in .env
-- **Arbitrage-Detektion** (FERTIG): `analytics/arbitrage_detector.py`
-  - Erkennt logisch inkonsistente Maerkte (gleiche Stadt, versch. Temperaturschwellen)
-  - Output: `output/arbitrage_opportunities.json`
-- **Smart Money Tracking** (FERTIG): `analytics/smart_money.py`
-  - Verfolgt grosse Wallets via CLOB API + Subgraph GraphQL
-  - DB: `data/smart_money.json`
+## Status lesen (Live, jeden Zyklus)
 
-### 3. Code-Architekt (bei "Architektur", "wie funktioniert")
-Erklaere die Pipeline und schlage strukturelle Verbesserungen vor:
-- `app/orchestrator.py` - Haupt-Pipeline
-- `core/weather_engine.py` - Observer Engine
-- `core/multi_forecast.py` - Wetter-APIs
-- `paper_trader/simulator.py` - Trade-Simulation
-- `paper_trader/capital_manager.py` - Kapital-Management
-- `paper_trader/position_manager.py` - Position-Lifecycle + Mid-Trade Exits
-- `paper_trader/averaging_down.py` - Nachkauf-Logik
-- `paper_trader/edge_reversal.py` - Edge-Reversal Exit
-- `config/weather.yaml` - Strategie-Parameter
+- `analytics/struct_arb.md` — Primaer-Lane
+- `analytics/edge_status.md` — NO-Fade + Health
+- `output/status_summary.txt` — letzte Pipeline-Runs
+- `logs/bot_status.json` / `logs/bot_health.json`
+- `data/capital_config.json`
+- `data/struct_arb.jsonl` / `data/no_fade_harvest.jsonl`
 
-## Strategie-Parameter (aktuell)
+## Strategie
 
-| Parameter | Wert | Datei |
-|-----------|------|-------|
-| MIN_EDGE | 12% relativ | config/weather.yaml |
-| MIN_EDGE_ABSOLUTE | 5% absolut | config/weather.yaml |
-| MAX_ODDS | 35% | config/weather.yaml |
-| Kelly | 0.25 Quarter-Kelly | paper_trader/kelly.py |
-| Max Position | 250 EUR | paper_trader/kelly.py |
-| Max Positionen | 10 | data/capital_config.json |
-| Kapital | 5000 EUR (Paper) | data/capital_config.json |
-| Take-Profit | 15% | paper_trader/position_manager.py |
-| Stop-Loss | -25% | paper_trader/position_manager.py |
-| Nachkauf Min Drop | -10% | paper_trader/averaging_down.py |
-| Max Add-ons | 1 pro Position | paper_trader/averaging_down.py |
-| Max pro Stadt/Datum | 1 (exklusiv) | paper_trader/simulator.py |
-| Max pro Stadt | 3 | paper_trader/simulator.py |
-| Edge-Reversal Exit | Edge<=0 oder <MIN_EDGE@HIGH | paper_trader/edge_reversal.py |
+1. **Struct Arb (aktiv, Paper):** Gamma-Events ohne Wetter-Filter. Trade nur vollstaendige Partitionen oder Binary-Lock. Netto >= 1% nach Ask+Fee. Tiefe muss die Shares decken. Incomplete (z.B. 20/71) nie. `collector/sanitizer.py` nicht anfassen.
+2. **Wetter-YES (eingefroren):** Forecast schlaegt den Markt nicht, auch nicht konditional. Guardrails bleiben.
+3. **NO-Fade (Schatten/Harvest):** Research + kleines Harvest-Ledger. Nicht die Identitaet. Regime-abhaengig.
+4. **Umsetzung:** Plaene hier entscheiden, Code an guenstigere Modelle geben. Tests vor Merge. Kein Live.
+
+Kernmodule: `app/orchestrator.py`, `paper_trader/struct_arb.py`, `paper_trader/struct_arb_math.py`, `paper_trader/clob_book.py`, `config/weather.yaml`.
 
 ## Regeln
 
-- Antworte auf Deutsch
-- Du DARFST Code aendern wenn der User es verlangt oder zustimmt
-- Kein Live-Trading ohne explizite Freigabe (nur Paper-Mode)
-- Erklaere VOR jeder Aenderung kurz was du vorhast
-- Teste nach Aenderungen
-- Pipeline laeuft automatisch alle 15 Min - du musst sie nicht starten
+- Deutsch. Vor Aenderungen kurz sagen was passiert. Danach testen (`pytest` fuer die Lane, nicht immer vollen Cockpit-Run).
+- Kein Live-Trading, keine Keys, keine Kapitalerhoehung ohne Freigabe.
+- Stabilitaet vor Aktivitaet: lieber Cash als erzwungene Trades.
+- Diesen Stand in **dieser Datei** aktualisieren wenn sich die Strategie oder der Ledger-Zustand aendert — keine zweite Memory-Datei.
+
+## Legacy (nicht neu bauen)
+
+Paper-YES-Stack existiert noch und bleibt fuer den alten Simulator: TP +15% / SL -25%, Averaging-Down, Diversifikation, Fee-Model, Kelly-Decay, Ensemble, Telegram, Gamma-Discovery, Wetter-Engine. Nicht reaktivieren solange Struct-Arb die Primaer-Lane ist.

@@ -262,14 +262,9 @@ class Orchestrator:
         # Step 5e: Strategy Advisor (persistente Empfehlungen, read-only)
         self._run_strategy_advisor()
 
-        # Step 5f: Arbitrage Scan (READ-ONLY, non-blocking)
-        self._run_arbitrage_scan(weather_result.data)
-
-        # Step 5g: Gamma Discovery (suche neue Maerkte, non-blocking)
+        # Wetter-Threshold-Arb und LLM-General-Scan sind tot (kein Edge).
+        # Gamma-Discovery bleibt (stündlich) für Harvest-Universum.
         self._run_gamma_discovery()
-
-        # Step 5h: General Market Observer (non-weather edge scan, OBSERVE-ONLY)
-        self._run_general_market_observer(weather_result.data)
 
         # Build summary with pipeline duration
         duration_seconds = round(time.perf_counter() - pipeline_start, 2)
@@ -347,14 +342,8 @@ class Orchestrator:
             except Exception as e:
                 logger.debug(f"Feedback-Loop Rule-Check fehlgeschlagen (unkritisch): {e}")
 
-        # Evolution Tick (non-blocking, triggert alle 10 Runs automatisch)
-        try:
-            from evolution.tournament import cmd_tick
-            import types
-            tick_args = types.SimpleNamespace(force=False)
-            cmd_tick(tick_args)
-        except Exception as e:
-            logger.debug(f"Evolution Tick fehlgeschlagen (unkritisch): {e}")
+        # Evolution-LLM-Tick aus: YES-Lane ist eingefroren, ~15 OpenAI-Calls
+        # alle 10 Runs ohne Edge. Wieder anschalten wenn Wetter-YES live geht.
 
         # Cleanup old audit logs (>90 days)
         try:
@@ -362,21 +351,7 @@ class Orchestrator:
         except Exception as e:
             logger.warning(f"Audit-Log cleanup fehlgeschlagen: {e}")
 
-        # LLM Strategy Analyst: GPT-5.4 mini Analyse alle 10 Runs
-        try:
-            from core.llm_strategy_analyst import should_run_analysis, run_strategy_analysis
-            if should_run_analysis(run_count=getattr(self, '_run_count', 0)):
-                analysis = run_strategy_analysis(
-                    self.base_dir, result.summary,
-                    run_count=getattr(self, '_run_count', 0)
-                )
-                if analysis:
-                    result.summary["llm_assessment"] = analysis.get("overall_assessment", "?")
-                    result.summary["llm_live_readiness"] = analysis.get("live_readiness_pct", 0)
-                    if analysis.get("action_items"):
-                        logger.info(f"[LLM ANALYST] Actions: {analysis['action_items'][:3]}")
-        except Exception as e:
-            logger.debug(f"LLM Strategy Analyst uebersprungen: {e}")
+        # LLM Strategy Analyst aus — keine YES-Edge zum Analysieren.
 
         # Self-Improvement-Cycle: kontinuierliche Parameter-Optimierung
         self._run_improvement_cycle()
@@ -407,80 +382,6 @@ class Orchestrator:
         logger.info(f"=== Pipeline END === run_id={run_id} state={result.state.value}")
 
         return result
-
-    def _run_arbitrage_scan(self, weather_data: dict) -> None:
-        """Scanne Wetter-Maerkte auf Arbitrage-Moeglichkeiten (non-blocking)."""
-        try:
-            from analytics.arbitrage_detector import run_arbitrage_scan
-            import json
-            from datetime import date
-
-            # Lade aktuelle Kandidaten - Gamma bevorzugen (enthaelt outcomePrices)
-            today = date.today().isoformat()
-            gamma_root = self.data_dir / "collector" / "gamma"
-            candidates_root = self.data_dir / "collector" / "candidates"
-
-            candidates_file = None
-            use_gamma = False
-
-            # Gamma-Datei hat Preisdaten → fuer Arbitrage bevorzugen
-            gamma_today = gamma_root / today / "gamma_candidates.jsonl"
-            if gamma_today.exists() and gamma_today.stat().st_size > 0:
-                candidates_file = gamma_today
-                use_gamma = True
-            elif gamma_root.exists():
-                for day_dir in sorted(gamma_root.iterdir(), reverse=True):
-                    f = day_dir / "gamma_candidates.jsonl"
-                    if f.exists() and f.stat().st_size > 0:
-                        candidates_file = f
-                        use_gamma = True
-                        break
-
-            # Fallback auf sanitierte Kandidaten
-            if not candidates_file:
-                sanitized_today = candidates_root / today / "candidates.jsonl"
-                if sanitized_today.exists():
-                    candidates_file = sanitized_today
-                elif candidates_root.exists():
-                    for day_dir in sorted(candidates_root.iterdir(), reverse=True):
-                        f = day_dir / "candidates.jsonl"
-                        if f.exists() and f.stat().st_size > 0:
-                            candidates_file = f
-                            break
-
-            candidates = []
-            if candidates_file and candidates_file.exists():
-                logger.debug(f"Arbitrage Quelle: {'Gamma' if use_gamma else 'Sanitiert'} ({candidates_file.name})")
-                with open(candidates_file, "r", encoding="utf-8") as f:
-                    for line in f:
-                        line = line.strip()
-                        if line:
-                            try:
-                                candidates.append(json.loads(line))
-                            except Exception:
-                                pass
-
-            if candidates:
-                output_file = str(self.output_dir / "arbitrage_opportunities.json")
-                opportunities = run_arbitrage_scan(candidates, output_file=output_file)
-                if opportunities:
-                    logger.info(f"Arbitrage: {len(opportunities)} Moeglichkeiten gefunden")
-                    # Telegram Alert fuer grosse Arbitrage-Chancen
-                    try:
-                        from notifications.telegram import send_message
-                        for opp in opportunities[:3]:  # Max 3 Alerts
-                            if opp.inconsistency_magnitude >= 0.05:
-                                text = (
-                                    f"💰 <b>ARBITRAGE CHANCE</b>\n"
-                                    f"📍 Stadt: {opp.city}\n"
-                                    f"📊 Delta: {opp.inconsistency_magnitude:.1%}\n"
-                                    f"❓ {opp._describe()[:100]}"
-                                )
-                                send_message(text, disable_notification=True)
-                    except Exception:
-                        pass
-        except Exception as e:
-            logger.debug(f"Arbitrage Scan fehlgeschlagen (unkritisch): {e}")
 
     def _maybe_send_live_readiness_report(self, summary: Dict[str, Any]) -> None:
         """Sende Live-Readiness-Bericht hoechstens alle N Stunden via Telegram."""
@@ -543,34 +444,6 @@ class Orchestrator:
 
         except Exception as e:
             logger.debug(f"Gamma Discovery fehlgeschlagen (unkritisch): {e}")
-
-    def _run_general_market_observer(self, weather_data: dict) -> None:
-        """Scan non-weather markets for LLM-computed edge. OBSERVE-ONLY, non-blocking."""
-        try:
-            # Rate-limit: max once per hour
-            import time
-            marker_file = self.data_dir / ".general_market_last_run"
-            if marker_file.exists() and time.time() - marker_file.stat().st_mtime < 3600:
-                return
-
-            # Pass markets collected this run if available
-            markets = weather_data.get("all_markets_raw") or []
-
-            from core.general_market_observer import run_general_market_observation
-            summary = run_general_market_observation(self.base_dir, markets or None)
-
-            high_edge = summary.get("high_edge_count", 0)
-            obs = summary.get("observations_with_edge", 0)
-            if obs > 0:
-                logger.info(
-                    "[GeneralMarket] %d observations, %d high-edge (>= 20%%)",
-                    obs, high_edge,
-                )
-
-            marker_file.touch()
-
-        except Exception as e:
-            logger.debug("General market observer failed (non-critical): %s", e)
 
     def _record_equity_snapshot(self, reason: str = "pipeline_run") -> None:
         """Speichere aktuellen Equity-Wert fuer DrawdownProtector."""
@@ -734,23 +607,48 @@ class Orchestrator:
                 except Exception:
                     return None
 
+            def _looks_like_city_temp(title: str) -> bool:
+                t = (title or "").lower()
+                return any(
+                    h in t
+                    for h in (
+                        "temperature", "degrees", "celsius", "fahrenheit",
+                        "°c", "°f", "° c", "° f",
+                    )
+                )
+
             pre_filtered = []
             skipped_stale = 0
+            skipped_not_city_temp = 0
             for c in raw_candidates:
+                title = c.get("title") or c.get("question") or ""
+                if not _looks_like_city_temp(title):
+                    skipped_not_city_temp += 1
+                    continue
                 res_dt = _parse_end_date(c.get("end_date", ""))
                 if res_dt is None:
                     pre_filtered.append(c)
                     continue
                 hours_away = (res_dt - _now_utc).total_seconds() / 3600
-                if hours_away >= _min_hours:
-                    pre_filtered.append(c)
-                else:
+                if hours_away < _min_hours:
                     skipped_stale += 1
-            if skipped_stale:
-                logger.info(f"Pre-filtered {skipped_stale} stale candidates (resolution < {_min_hours}h away), {len(pre_filtered)} remain")
+                    continue
+                pre_filtered.append(c)
+            if skipped_stale or skipped_not_city_temp:
+                logger.info(
+                    "Pre-filtered %d stale + %d non-city-temp candidates, %d remain",
+                    skipped_stale, skipped_not_city_temp, len(pre_filtered),
+                )
 
-            # Step 2: Fetch real market odds from Polymarket API
-            market_ids = [c.get("market_id", "") for c in pre_filtered if c.get("market_id")]
+            # Step 2: Fetch real market odds only when the candidate has none.
+            market_ids = []
+            for c in pre_filtered:
+                mid = c.get("market_id", "")
+                if not mid:
+                    continue
+                if c.get("outcomePrices"):
+                    continue
+                market_ids.append(mid)
             real_prices = {}
             if market_ids:
                 try:

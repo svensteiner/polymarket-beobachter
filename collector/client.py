@@ -339,7 +339,7 @@ class PolymarketClient:
                     "liquidity": market.get("liquidity"),
                 }
 
-                time.sleep(0.2)
+                time.sleep(0.05)
 
             except Exception as e:
                 logger.warning(f"Failed to fetch prices for {market_id}: {e}")

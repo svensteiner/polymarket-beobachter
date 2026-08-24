@@ -294,6 +294,7 @@ def create_no_signal(
     market_probability: float,
     reason: str,
     config_snapshot: Dict[str, Any],
+    hours_to_resolution: Optional[float] = None,
 ) -> WeatherObservation:
     """
     Factory function to create a NO_SIGNAL observation.
@@ -324,6 +325,7 @@ def create_no_signal(
         confidence=WeatherConfidence.LOW,
         action=ObservationAction.NO_SIGNAL,
         config_snapshot=config_snapshot,
+        hours_to_resolution=hours_to_resolution,
     )
 
 

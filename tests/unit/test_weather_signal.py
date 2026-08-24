@@ -225,12 +225,14 @@ def test_create_no_signal_factory():
         market_probability=0.05,
         reason="Insufficient edge",
         config_snapshot=config,
+        hours_to_resolution=12.5,
     )
 
     assert observation.market_id == "no-signal-test"
     assert observation.action == ObservationAction.NO_SIGNAL
     assert observation.confidence == WeatherConfidence.LOW
     assert "Insufficient edge" in observation.event_description
+    assert observation.hours_to_resolution == 12.5
 
 
 def test_confidence_enum_values():

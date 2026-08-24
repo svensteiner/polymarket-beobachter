@@ -16,6 +16,8 @@ from core.weather_engine import (
     EngineRunResult,
     load_config,
     create_engine,
+    question_market_type,
+    should_skip_forecast,
 )
 from core.weather_market_filter import WeatherMarket
 from core.weather_probability_model import ForecastData
@@ -654,6 +656,17 @@ def test_log_signal_creates_directory():
 # TEST REGISTRY
 # =============================================================================
 
+def test_question_market_type_and_skip_forecast():
+    assert question_market_type("Will the highest temperature in London be 22°C?") == "exact"
+    assert question_market_type("Will it be between 20-21C in Paris?") == "between"
+    assert question_market_type("91°F or above in Denver?") == "at_or_above"
+    assert question_market_type("16°C or below in Seoul?") == "at_or_below"
+    blocked = ["exact", "at_or_above", "between"]
+    assert should_skip_forecast("London 22°C", blocked) is True
+    assert should_skip_forecast("16°C or below in Seoul?", blocked) is False
+    assert should_skip_forecast("anything", []) is False
+
+
 def get_tests() -> List[Tuple[str, Callable]]:
     """Return list of all tests."""
     return [
@@ -682,4 +695,5 @@ def get_tests() -> List[Tuple[str, Callable]]:
         ("create_engine_factory", test_create_engine_factory),
         ("log_signal", test_log_signal),
         ("log_signal_creates_directory", test_log_signal_creates_directory),
+        ("skip_forecast_blocked_types", test_question_market_type_and_skip_forecast),
     ]

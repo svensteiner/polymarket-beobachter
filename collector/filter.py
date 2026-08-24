@@ -109,7 +109,7 @@ class MarketFilter:
                 classification.matched_structural_signals
             )
 
-            logger.info(
+            logger.debug(
                 f"POSSIBLE: {classification.market_id} | "
                 f"{classification.market_title[:60] if classification.market_title else 'N/A'} | "
                 f"text_signals={classification.matched_text_signals} | "
@@ -185,12 +185,10 @@ class MarketFilter:
         # Log POSSIBLE markets for manual review
         possible_markets = [f for f in filtered if f.result == FilterResult.POSSIBLE_WEATHER]
         if possible_markets:
-            logger.info(f"=== {len(possible_markets)} WEATHER_POSSIBLE markets for review ===")
-            for fm in possible_markets[:10]:  # Limit to first 10
-                title = fm.market.get("question") or fm.market.get("title") or "N/A"
-                logger.info(f"  - [{fm.market.get('id', '?')}] {title[:70]}")
-                logger.info(f"    Text signals: {fm.classification_result.matched_text_signals}")
-                logger.info(f"    Structural signals: {fm.classification_result.matched_structural_signals}")
+            logger.debug(
+                "=== %d WEATHER_POSSIBLE markets for review ===",
+                len(possible_markets),
+            )
 
         return filtered, counts
 

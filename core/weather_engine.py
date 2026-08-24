@@ -84,6 +84,25 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
+def question_market_type(question: str) -> str:
+    """Cheap question classifier: exact / between / at_or_above / at_or_below."""
+    d = (question or "").lower()
+    if "between" in d:
+        return "between"
+    if "or below" in d or " or less" in d or "under" in d:
+        return "at_or_below"
+    if "or above" in d or "or higher" in d or "exceed" in d:
+        return "at_or_above"
+    return "exact"
+
+
+def should_skip_forecast(question: str, blocked_types) -> bool:
+    if not blocked_types:
+        return False
+    blocked = {str(t).lower() for t in blocked_types}
+    return question_market_type(question) in blocked
+
+
 # =============================================================================
 # BRIER-AWARE SHRINKAGE BUMP (2026-06-03)
 # =============================================================================
@@ -420,6 +439,30 @@ class WeatherEngine:
         logger.debug(f"Processing market: {market.market_id}")
 
         city = market.detected_city or "Unknown"
+
+        # Blocked types have no YES-model edge. Skip forecast APIs but still
+        # emit an observation (with hours) so the NO-fade harvest can see them.
+        if should_skip_forecast(
+            market.question or "",
+            self.config.get("BLOCKED_MARKET_TYPES"),
+        ):
+            hours = None
+            try:
+                res = market.resolution_time
+                if res is not None:
+                    if getattr(res, "tzinfo", None) is None:
+                        res = res.replace(tzinfo=timezone.utc)
+                    hours = (res - datetime.now(timezone.utc)).total_seconds() / 3600.0
+            except Exception:
+                hours = None
+            return create_no_signal(
+                market_id=market.market_id, city=city,
+                event_description=market.question,
+                market_probability=market.odds_yes,
+                reason="blocked_type_skip_forecast",
+                config_snapshot=self.config,
+                hours_to_resolution=hours,
+            )
 
         # Check threshold early (needed for both paths)
         if market.detected_threshold is None:
