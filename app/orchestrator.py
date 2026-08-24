@@ -1538,6 +1538,16 @@ class Orchestrator:
             except Exception as _hv_err:
                 logger.debug("NO-Fade Harvest fehlgeschlagen: %s", _hv_err)
 
+            # Structural Arbitrage PAPER LANE: complete-set / binary-lock nur
+            # bei model-freiem Netto-Edge nach echten CLOB-Asks+Fees. Cash sonst.
+            # Eigenes Ledger, kein Live-Order. Fail-open.
+            struct_arb_info: Dict[str, Any] = {}
+            try:
+                from paper_trader.struct_arb import run as _struct_arb_run
+                struct_arb_info = _struct_arb_run() or {}
+            except Exception as _sa_err:
+                logger.warning("Struct-Arb fehlgeschlagen: %s", _sa_err)
+
             # Forward-vs-Backtest Reconciliation: zerlegt die Luecke zwischen
             # Backtest-Edge (+2,87%) und Forward-Lane (negativ) in Kosten / Regime /
             # Selektion. Nach der Lane, damit sie das frische Ledger liest.
@@ -1634,6 +1644,13 @@ class Orchestrator:
                 f"{result.summary.get('edge_hunter_score', 0)}/10",
                 f"Bot Health:           {result.summary.get('bot_health_status', 'N/A')} | "
                 f"{'Guardrails aktiv' if result.summary.get('bot_health_guardrails_active') else 'keine Guardrails'}",
+                (
+                    f"Struct Arb:           scanned={struct_arb_info.get('scanned', 0)} "
+                    f"complete={struct_arb_info.get('complete', 0)} "
+                    f"entered={struct_arb_info.get('entered_this_cycle', 0)} "
+                    f"open={struct_arb_info.get('open', 0)} "
+                    f"pnl={struct_arb_info.get('realized_pnl_eur', 0):+.2f}"
+                ),
             ]
 
             if readiness_info:
