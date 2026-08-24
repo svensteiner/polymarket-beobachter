@@ -19,8 +19,8 @@ Kein Polymarket-API-Key. Alles lokal. Pipeline alle 15 Min — nicht extra start
 | Paper-Kapital | 5000 EUR Start, verfuegbar ~4913 EUR, YES-Paper-P&L **-86.96 EUR** |
 | Wetter-YES | Tot. Modell-Brier 0.169 vs Markt 0.154. `BLOCKED_MARKET_TYPES`: exact, at_or_above, between. Observations oft 0. Nicht wieder oeffnen. |
 | NO-Fade Harvest | exact + Spread <2c. 8 resolved, P&L **-0.43 EUR**. Broad NO-Fade OOS t=0.46, nach Kosten oft tot. |
-| **Primaer** | `paper_trader/struct_arb.py` — complete-set + binary-lock, nur nach echten CLOB-Asks + Fee, MIN_NET 1%. Active-leg Filter + Ask-Coverage >= 0.92. Cash wenn nichts da ist. |
-| Struct-Arb Scan | Active-leg + Coverage 0.92. **1 Paper-Entry: South Dakota Senate** (D+R, n=2, 11 Placeholders gedroppt, asks 0.018+0.965, net +1.29%, coverage 0.983). 86 complete, 14 cost-rejects. PAPER ONLY. |
+| **Primaer** | `paper_trader/struct_arb.py` — complete-set + binary-lock, nur nach echten CLOB-Asks + Fee, MIN_NET 1%. Active-leg Filter + Ask-Coverage >= 0.92. Bei knapper Book-Budget: CLOB-Probe-Reihenfolge 2-leg zuerst, dann hoechstes Gamma-`est_net` (`completeset_yes_net` auf bestAsk/yes). Cash wenn nichts da ist. |
+| Struct-Arb Scan | Active-leg + Coverage 0.92 + Gamma-est_net Probe-Ranking. **1 Paper-Entry: South Dakota Senate** (D+R, n=2, 11 Placeholders gedroppt, asks 0.018+0.965, net +1.29%, coverage 0.983). Budget-Skips zuvor 19 — Ranking zielt auf mehr MIN_NET-Locks. PAPER ONLY. |
 | Health | ELEVATED (Edge-Drought auf dem alten YES-Pfad). consecutive_errors 0. Fail-open im Zyklus. |
 | Go-Live | Gesperrt bis Forward-Edge bewiesen. Positives Paper-P&L ist kein Beweis. |
 
@@ -39,7 +39,7 @@ Naechster Schritt: Struct-Arb laufen lassen. Groesse nur erhoehen wenn `analytic
 
 ## Strategie
 
-1. **Struct Arb (aktiv, Paper):** Gamma-Events ohne Wetter-Filter. Nur live Legs (active/liquidity/yes_price/bestBid); Inactive-Placeholders droppen. Ask-Coverage >= 0.92. Netto >= 1% nach Ask+Fee. Tiefe muss Shares decken. Incomplete (z.B. Nobel 20/71) nie. `collector/sanitizer.py` nicht anfassen.
+1. **Struct Arb (aktiv, Paper):** Gamma-Events ohne Wetter-Filter. Nur live Legs (active/liquidity/yes_price/bestBid); Inactive-Placeholders droppen. Ask-Coverage >= 0.92. Netto >= 1% nach Ask+Fee. Tiefe muss Shares decken. Incomplete (z.B. Nobel 20/71) nie. CLOB-Probes: 2-leg first, dann absteigend Gamma-`est_net` (BUY_YES_SET); Binary analog. `collector/sanitizer.py` nicht anfassen.
 2. **Wetter-YES (eingefroren):** Forecast schlaegt den Markt nicht, auch nicht konditional. Guardrails bleiben.
 3. **NO-Fade (Schatten/Harvest):** Research + kleines Harvest-Ledger. Nicht die Identitaet. Regime-abhaengig.
 4. **Umsetzung:** Plaene hier entscheiden, Code an guenstigere Modelle geben. Tests vor Merge. Kein Live.
