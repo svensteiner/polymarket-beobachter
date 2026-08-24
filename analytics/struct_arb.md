@@ -1,6 +1,6 @@
 # Structural Arbitrage — Paper Trading
 
-**Generiert:** 2026-08-24T14:29:24.001715+00:00  
+**Generiert:** 2026-08-24T15:24:08.999642+00:00  
 
 > PAPER ONLY — model-free complete-set / binary-lock after real CLOB asks + taker fees. Cash if no net edge. Kein Live-Order. Active-leg filter + ask coverage >= 0.92.
 
@@ -9,9 +9,9 @@
 - Scanned partitions/markets: **107**
 - Complete partitions: **16**
 - Candidates (prefilter): **12**
-- Rejected (cost/net < MIN_NET): **10**
-- Book fetches: **44**
-- Skip counts: `budget=1, cost_negative=10, legs_out_of_range=1, no_real_book=2, prefilter=4, residual_other=90`
+- Rejected (cost/net < MIN_NET): **11**
+- Book fetches: **45**
+- Skip counts: `budget=1, cost_negative=11, legs_out_of_range=1, no_real_book=1, prefilter=4, residual_other=90`
 - Legs out-of-range hist: `n=13:1`
 
 ## Near-miss nets (closest to MIN_NET)
@@ -22,8 +22,8 @@
   - BINARY_LOCK | net=-0.004637 gap=0.014637 | Putin and Zelenskyy shake hands by...?
   - BINARY_LOCK | net=-0.005716 gap=0.015716 | Will US withdraw from NATO by...?
   - BINARY_LOCK | net=-0.005874 gap=0.015874 | Which candidates will advance to Brazil's presidential runoff?
+  - BINARY_LOCK | net=-0.005874 gap=0.015874 | Will Ukraine agree to cede territory to Russia by...?
   - BUY_NO_SET | net=-0.023492 gap=0.033492 | OpenAI IPO Closing Market Cap
-  - BUY_YES_SET | net=-0.056685 gap=0.066685 | How many Gold Cards will Trump sell in 2026?
 
 ## Ledger
 
