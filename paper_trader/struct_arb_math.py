@@ -9,6 +9,7 @@
 from __future__ import annotations
 
 import json
+import re
 from typing import Any, Mapping, Optional, Sequence
 
 MIN_NET: float = 0.01
@@ -99,8 +100,9 @@ def _member_float(member: Mapping[str, Any], *keys: str) -> Optional[float]:
 def member_is_live(member: Mapping[str, Any]) -> bool:
     """True for open legs that look tradeable (not inactive placeholders).
 
-    Placeholders (Person A–J / Other) are typically active=false, liquidity=0,
+    Placeholders (Person/Option A–J) are typically active=false, liquidity=0,
     no outcomePrices, and produce CLOB HTTPError — they must not inflate n.
+    Residual Other / catch-all is NOT a harmless placeholder (see skipped_inactive_ok).
     """
     if member.get("closed"):
         return False
@@ -116,6 +118,28 @@ def member_is_live(member: Mapping[str, Any]) -> bool:
     if best_bid is not None and best_bid > 0.0:
         return True
     return False
+
+
+# Template unused slots only. Does not match Other / catch-all / Person K+.
+PLACEHOLDER_TITLE_RE = re.compile(r"(?:person|option)\s+[a-j]\b", re.IGNORECASE)
+
+
+def skipped_inactive_ok(skipped_members: Optional[Sequence[Mapping[str, Any]]]) -> bool:
+    """True iff every skipped non-closed non-live member is a Person/Option A-J placeholder.
+
+    Residual Other / Other-candidate / catch-all / unmatched titles can still resolve YES
+    and wipe the remaining D+R (or similar) legs -- not a clean complete set.
+    Empty skip list is vacuously OK (residual_risk none).
+    """
+    for m in skipped_members or []:
+        if not isinstance(m, Mapping):
+            return False
+        if m.get("closed") or member_is_live(m):
+            continue
+        title = str(m.get("groupItemTitle") or m.get("question") or "").strip()
+        if not PLACEHOLDER_TITLE_RE.search(title):
+            return False
+    return True
 
 
 def member_gamma_ask(member: Mapping[str, Any]) -> Optional[float]:

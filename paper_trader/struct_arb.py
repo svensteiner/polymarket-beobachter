@@ -34,6 +34,7 @@ from paper_trader.struct_arb_math import (
     member_is_live,
     partition_is_complete,
     set_pnl_eur,
+    skipped_inactive_ok,
     tradeable_net,
 )
 
@@ -47,7 +48,7 @@ OUT_JSON = PROJECT_ROOT / "analytics" / "struct_arb.json"
 NOTIONAL_EUR = 5.0
 MAX_OPEN = 6
 MAX_EVENTS = 300
-MAX_BOOK_FETCHES = 30
+MAX_BOOK_FETCHES = 45
 BOOK_DEADLINE_SECONDS = 25.0
 BINARY_MAX_PROBES = 8
 GOVERNANCE_NOTICE = "PAPER ONLY — no live order"
@@ -389,6 +390,7 @@ def _book_entry(
     min_depth: float,
     skipped_inactive: int = 0,
     coverage: Optional[float] = None,
+    residual_risk: str = "none",
 ) -> bool:
     existing = _existing_partition_ids(_load_ledger())
     if partition_id in existing:
@@ -413,6 +415,7 @@ def _book_entry(
         "notional_eur": float(NOTIONAL_EUR),
         "skipped_inactive": int(skipped_inactive),
         "coverage": round(cov, 6),
+        "residual_risk": "placeholders_only" if str(residual_risk) == "placeholders_only" else "none",
         "status": "OPEN",
         "resolution": None,
         "winner_market_id": None,
@@ -494,7 +497,14 @@ def record_entries() -> int:
         # Drop inactive placeholders; keep closed winners/losers for completeness.
         closed_members = [m for m in members if m.get("closed")]
         scan_members = closed_members + members_live
-        skipped_inactive = len(members) - len(scan_members)
+        skipped_members = [
+            m for m in members
+            if not m.get("closed") and not member_is_live(m)
+        ]
+        skipped_inactive = len(skipped_members)
+        if skipped_members and not skipped_inactive_ok(skipped_members):
+            skips["residual_other"] += 1
+            continue
         # Fill yes_price from bestAsk when Gamma mid is missing (prefilter + complete).
         for m in scan_members:
             if m.get("yes_price") is None:
@@ -603,6 +613,7 @@ def record_entries() -> int:
             min_depth=min(depths) if depths else 0.0,
             skipped_inactive=skipped_inactive,
             coverage=coverage,
+            residual_risk="placeholders_only" if skipped_inactive else "none",
         ):
             existing.add(pid)
             entered += 1

@@ -9,6 +9,7 @@ import pytest
 from paper_trader.struct_arb_math import (
     MIN_ASK_COVERAGE,
     MIN_NET,
+    PLACEHOLDER_TITLE_RE,
     ask_coverage_ok,
     binary_lock_net,
     completeset_no_net,
@@ -17,6 +18,7 @@ from paper_trader.struct_arb_math import (
     member_is_live,
     partition_is_complete,
     set_pnl_eur,
+    skipped_inactive_ok,
     taker_fee,
     tradeable_net,
 )
@@ -198,6 +200,7 @@ def test_record_entry_and_close(monkeypatch, tmp_path):
     assert rows[0]["side"] == "BUY_YES_SET"
     assert rows[0]["notional_eur"] == 5.0
     assert rows[0]["governance_notice"] == "PAPER ONLY — no live order"
+    assert rows[0]["residual_risk"] == "none"
     assert "partition_id" in rows[0]
 
     # Duplicate partition_id must not re-enter.
@@ -404,7 +407,7 @@ def test_ask_coverage_ok_threshold():
 
 
 def test_us_election_placeholders_treated_as_n2_complete(monkeypatch, tmp_path):
-    """2 live D+R + 11 inactive placeholders → scan as n=2 complete set."""
+    """2 live D+R + 10 inactive Person A-J placeholders → n=2 complete set (placeholders_only)."""
     import paper_trader.struct_arb as sa
 
     ledger = tmp_path / "struct_arb.jsonl"
@@ -449,6 +452,7 @@ def test_us_election_placeholders_treated_as_n2_complete(monkeypatch, tmp_path):
             "liquidity": 0,
             "liquidityNum": 0,
             "negRiskMarketID": "nr-sd",
+            "groupItemTitle": f"Person {chr(65 + i)}",
             "question": f"Person {chr(65 + i)}?",
             "outcomePrices": None,
             "bestAsk": None,
@@ -456,7 +460,7 @@ def test_us_election_placeholders_treated_as_n2_complete(monkeypatch, tmp_path):
             "clobTokenIds": json.dumps([f"yes-ph{i}", f"no-ph{i}"]),
             "outcomes": json.dumps(["Yes", "No"]),
         }
-        for i in range(11)
+        for i in range(10)  # Person A-J
     ]
     events = [
         {
@@ -501,7 +505,8 @@ def test_us_election_placeholders_treated_as_n2_complete(monkeypatch, tmp_path):
     assert entered == 1
     rows = [json.loads(line) for line in ledger.read_text(encoding="utf-8").splitlines()]
     assert rows[0]["n_legs"] == 2
-    assert rows[0]["skipped_inactive"] == 11
+    assert rows[0]["skipped_inactive"] == 10
+    assert rows[0]["residual_risk"] == "placeholders_only"
     assert rows[0]["coverage"] == pytest.approx(0.983, abs=1e-6)
     assert "South Dakota" in rows[0]["title"]
 
@@ -537,4 +542,149 @@ def test_partition_probe_order_prefers_higher_gamma_net():
     bad = {"yes_price": 0.49, "no_price": 0.49, "volume": 9999.0}
     bins = sorted([bad, good], key=sa._binary_probe_sort_key)
     assert bins[0] is good
+
+def test_placeholder_title_re_person_option_a_to_j():
+    assert PLACEHOLDER_TITLE_RE.search("Person A")
+    assert PLACEHOLDER_TITLE_RE.search("person j")
+    assert PLACEHOLDER_TITLE_RE.search("Option C")
+    assert PLACEHOLDER_TITLE_RE.search("OPTION B?")
+    assert PLACEHOLDER_TITLE_RE.search("Will Person A win?")
+    assert not PLACEHOLDER_TITLE_RE.search("Other")
+    assert not PLACEHOLDER_TITLE_RE.search("Other candidate")
+    assert not PLACEHOLDER_TITLE_RE.search("Catch-all")
+    assert not PLACEHOLDER_TITLE_RE.search("Person K")
+    assert not PLACEHOLDER_TITLE_RE.search("Independent")
+
+
+def test_skipped_inactive_ok_placeholders_only():
+    skipped = [
+        {
+            "closed": False,
+            "active": False,
+            "liquidity": 0,
+            "groupItemTitle": f"Person {chr(65 + i)}",
+        }
+        for i in range(10)
+    ]
+    assert skipped_inactive_ok(skipped) is True
+    assert skipped_inactive_ok([]) is True
+    assert skipped_inactive_ok(None) is True
+    # Closed / live members in the list are ignored.
+    mixed = skipped + [{"closed": True, "groupItemTitle": "Other", "active": False}]
+    assert skipped_inactive_ok(mixed) is True
+
+
+def test_skipped_inactive_ok_rejects_other():
+    skipped = [
+        {"closed": False, "active": False, "groupItemTitle": "Person A"},
+        {"closed": False, "active": False, "groupItemTitle": "Other"},
+    ]
+    assert skipped_inactive_ok(skipped) is False
+    assert skipped_inactive_ok([
+        {"closed": False, "active": False, "question": "Any other candidate?"}
+    ]) is False
+    assert skipped_inactive_ok([
+        {"closed": False, "active": False, "groupItemTitle": "Person K"}
+    ]) is False
+
+
+def test_residual_other_skip_rejects_entry_no_clob(monkeypatch, tmp_path):
+    """D+R plus Person A-J plus Other is NOT a clean complete set -- no CLOB, no entry."""
+    import paper_trader.struct_arb as sa
+
+    ledger = tmp_path / "struct_arb.jsonl"
+    monkeypatch.setattr(sa, "LEDGER_PATH", ledger)
+    monkeypatch.setattr(sa, "OUT_MD", tmp_path / "o.md")
+    monkeypatch.setattr(sa, "OUT_JSON", tmp_path / "o.json")
+    monkeypatch.setattr(sa, "NOTIONAL_EUR", 5.0)
+
+    live = [
+        {
+            "id": "dem",
+            "closed": False,
+            "active": True,
+            "liquidity": 5000,
+            "negRiskMarketID": "nr-sd",
+            "groupItemTitle": "Democrat",
+            "question": "Democrat?",
+            "outcomePrices": json.dumps([0.02, 0.98]),
+            "bestAsk": 0.018,
+            "bestBid": 0.015,
+            "clobTokenIds": json.dumps(["yes-dem", "no-dem"]),
+            "outcomes": json.dumps(["Yes", "No"]),
+        },
+        {
+            "id": "rep",
+            "closed": False,
+            "active": True,
+            "liquidity": 8000,
+            "negRiskMarketID": "nr-sd",
+            "groupItemTitle": "Republican",
+            "question": "Republican?",
+            "outcomePrices": json.dumps([0.96, 0.04]),
+            "bestAsk": 0.965,
+            "bestBid": 0.96,
+            "clobTokenIds": json.dumps(["yes-rep", "no-rep"]),
+            "outcomes": json.dumps(["Yes", "No"]),
+        },
+    ]
+    placeholders = [
+        {
+            "id": f"ph{i}",
+            "closed": False,
+            "active": False,
+            "liquidity": 0,
+            "liquidityNum": 0,
+            "negRiskMarketID": "nr-sd",
+            "groupItemTitle": f"Person {chr(65 + i)}",
+            "question": f"Person {chr(65 + i)}?",
+            "outcomePrices": None,
+            "bestAsk": None,
+            "bestBid": 0,
+            "clobTokenIds": json.dumps([f"yes-ph{i}", f"no-ph{i}"]),
+            "outcomes": json.dumps(["Yes", "No"]),
+        }
+        for i in range(10)
+    ]
+    other = {
+        "id": "other",
+        "closed": False,
+        "active": False,
+        "liquidity": 0,
+        "liquidityNum": 0,
+        "negRiskMarketID": "nr-sd",
+        "groupItemTitle": "Other",
+        "question": "Other candidate?",
+        "outcomePrices": None,
+        "bestAsk": None,
+        "bestBid": 0,
+        "clobTokenIds": json.dumps(["yes-other", "no-other"]),
+        "outcomes": json.dumps(["Yes", "No"]),
+    }
+    events = [
+        {
+            "id": "evt-sd",
+            "title": "South Dakota Senate Election Winner",
+            "closed": False,
+            "negRisk": True,
+            "markets": live + placeholders + [other],
+        }
+    ]
+
+    class FakeClient:
+        def fetch_events(self, **kwargs):
+            offset = kwargs.get("offset", 0)
+            return events if offset == 0 else []
+
+    def fake_token(token_id: str, budget):
+        raise AssertionError(f"CLOB must not be probed for residual Other ({token_id})")
+
+    monkeypatch.setattr(sa, "_make_client", lambda: FakeClient())
+    monkeypatch.setattr(sa, "_fetch_token", fake_token)
+
+    assert skipped_inactive_ok(placeholders + [other]) is False
+    entered = sa.record_entries()
+    assert entered == 0
+    assert not ledger.exists() or not ledger.read_text(encoding="utf-8").strip()
+    assert sa._LAST_SCAN["skip_counts"].get("residual_other", 0) >= 1
 
