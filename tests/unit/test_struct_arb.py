@@ -7,11 +7,14 @@ from typing import Any, Dict, List
 import pytest
 
 from paper_trader.struct_arb_math import (
+    MIN_ASK_COVERAGE,
     MIN_NET,
+    ask_coverage_ok,
     binary_lock_net,
     completeset_no_net,
     completeset_yes_net,
     gamma_prefilter_ok,
+    member_is_live,
     partition_is_complete,
     set_pnl_eur,
     taker_fee,
@@ -174,9 +177,10 @@ def test_record_entry_and_close(monkeypatch, tmp_path):
             return events if offset == 0 else []
 
     def fake_token(token_id: str, budget):
+        # 3 * 0.31 = 0.93 >= MIN_ASK_COVERAGE; net still clears MIN_NET after fees.
         return {
             "ok": True,
-            "best_ask": 0.20,
+            "best_ask": 0.31,
             "real_spread": 0.01,
             "ask_depth_shares": 50.0,
             "reason": "ok",
@@ -250,11 +254,12 @@ def test_depth_must_cover_sized_shares(monkeypatch, tmp_path):
             return events if offset == 0 else []
 
     def fake_token(token_id: str, budget):
-        # cost ~0.60 → need ~8.3 shares; depth 6 is too thin
+        # 3*0.31=0.93 clears coverage; cost~0.98 → need ~5.1 shares; depth 5.0 passes
+        # MIN_ASK_DEPTH but fails sized-share cover.
         return {
             "ok": True,
-            "best_ask": 0.20,
-            "ask_depth_shares": 6.0,
+            "best_ask": 0.31,
+            "ask_depth_shares": 5.0,
             "reason": "ok",
         }
 
@@ -370,3 +375,166 @@ def test_run_fail_open_and_writes_reports(monkeypatch, tmp_path):
     payload = json.loads(sa.OUT_JSON.read_text(encoding="utf-8"))
     assert "scanned" in payload
     assert "rejected_cost" in payload or "skip_counts" in payload
+
+
+def test_member_is_live_true_and_false_cases():
+    assert member_is_live({"closed": False, "active": True}) is True
+    assert member_is_live({"closed": False, "liquidity": 10.0}) is True
+    assert member_is_live({"closed": False, "liquidityNum": 1.5}) is True
+    assert member_is_live({"closed": False, "yes_price": 0.42}) is True
+    assert member_is_live({"closed": False, "bestBid": 0.01}) is True
+    # Inactive placeholders: no activity signals.
+    assert member_is_live({
+        "closed": False,
+        "active": False,
+        "liquidity": 0,
+        "yes_price": None,
+        "bestBid": 0,
+    }) is False
+    assert member_is_live({"closed": True, "active": True, "yes_price": 1.0}) is False
+    assert member_is_live({"closed": False, "yes_price": 0.0}) is False
+    assert member_is_live({"closed": False, "yes_price": 1.0}) is False
+
+
+def test_ask_coverage_ok_threshold():
+    assert MIN_ASK_COVERAGE == 0.92
+    assert ask_coverage_ok([0.018, 0.965]) is True  # 0.983
+    assert ask_coverage_ok([0.02] * 18) is False  # 0.36 Nobel-style fake incomplete
+    assert ask_coverage_ok([]) is False
+
+
+def test_us_election_placeholders_treated_as_n2_complete(monkeypatch, tmp_path):
+    """2 live D+R + 11 inactive placeholders → scan as n=2 complete set."""
+    import paper_trader.struct_arb as sa
+
+    ledger = tmp_path / "struct_arb.jsonl"
+    monkeypatch.setattr(sa, "LEDGER_PATH", ledger)
+    monkeypatch.setattr(sa, "OUT_MD", tmp_path / "u.md")
+    monkeypatch.setattr(sa, "OUT_JSON", tmp_path / "u.json")
+    monkeypatch.setattr(sa, "NOTIONAL_EUR", 5.0)
+
+    live = [
+        {
+            "id": "dem",
+            "closed": False,
+            "active": True,
+            "liquidity": 5000,
+            "negRiskMarketID": "nr-sd",
+            "question": "Democrat?",
+            "outcomePrices": json.dumps([0.02, 0.98]),
+            "bestAsk": 0.018,
+            "bestBid": 0.015,
+            "clobTokenIds": json.dumps(["yes-dem", "no-dem"]),
+            "outcomes": json.dumps(["Yes", "No"]),
+        },
+        {
+            "id": "rep",
+            "closed": False,
+            "active": True,
+            "liquidity": 8000,
+            "negRiskMarketID": "nr-sd",
+            "question": "Republican?",
+            "outcomePrices": json.dumps([0.96, 0.04]),
+            "bestAsk": 0.965,
+            "bestBid": 0.96,
+            "clobTokenIds": json.dumps(["yes-rep", "no-rep"]),
+            "outcomes": json.dumps(["Yes", "No"]),
+        },
+    ]
+    placeholders = [
+        {
+            "id": f"ph{i}",
+            "closed": False,
+            "active": False,
+            "liquidity": 0,
+            "liquidityNum": 0,
+            "negRiskMarketID": "nr-sd",
+            "question": f"Person {chr(65 + i)}?",
+            "outcomePrices": None,
+            "bestAsk": None,
+            "bestBid": 0,
+            "clobTokenIds": json.dumps([f"yes-ph{i}", f"no-ph{i}"]),
+            "outcomes": json.dumps(["Yes", "No"]),
+        }
+        for i in range(11)
+    ]
+    events = [
+        {
+            "id": "evt-sd",
+            "title": "South Dakota Senate Election Winner",
+            "closed": False,
+            "negRisk": True,
+            "markets": live + placeholders,
+        }
+    ]
+
+    class FakeClient:
+        def fetch_events(self, **kwargs):
+            offset = kwargs.get("offset", 0)
+            return events if offset == 0 else []
+
+    def fake_token(token_id: str, budget):
+        ask = 0.018 if token_id == "yes-dem" else 0.965
+        return {
+            "ok": True,
+            "best_ask": ask,
+            "ask_depth_shares": 5000.0,
+            "reason": "ok",
+        }
+
+    monkeypatch.setattr(sa, "_make_client", lambda: FakeClient())
+    monkeypatch.setattr(sa, "_fetch_token", fake_token)
+
+    # Math-level: placeholders not live; live+closed scan is complete n=2.
+    assert member_is_live(placeholders[0]) is False
+    assert member_is_live(live[0]) is True
+    scan = [{"closed": False, "yes_price": 0.02}, {"closed": False, "yes_price": 0.96}]
+    assert partition_is_complete(scan) is True
+    assert ask_coverage_ok([0.018, 0.965]) is True
+
+    from paper_trader.struct_arb_math import completeset_yes_net, tradeable_net
+
+    net = completeset_yes_net([0.018, 0.965])
+    assert tradeable_net(net) is True
+
+    entered = sa.record_entries()
+    assert entered == 1
+    rows = [json.loads(line) for line in ledger.read_text(encoding="utf-8").splitlines()]
+    assert rows[0]["n_legs"] == 2
+    assert rows[0]["skipped_inactive"] == 11
+    assert rows[0]["coverage"] == pytest.approx(0.983, abs=1e-6)
+    assert "South Dakota" in rows[0]["title"]
+
+
+def test_partition_probe_order_prefers_higher_gamma_net():
+    """Under tight budget, probe higher gamma-estimated YES-set net first (no network)."""
+    import paper_trader.struct_arb as sa
+    from paper_trader.struct_arb_math import completeset_yes_net
+
+    def legs(asks):
+        return [
+            {"closed": False, "active": True, "bestAsk": a, "yes_price": a}
+            for a in asks
+        ]
+
+    # Same n=2: cheap set (high est_net) must sort before expensive set.
+    high = {"members": legs([0.10, 0.20])}  # S=0.30 → strong yes net
+    low = {"members": legs([0.45, 0.45])}   # S=0.90 → weaker yes net
+    ordered = sorted([("low", low), ("high", high)], key=sa._partition_probe_sort_key)
+    assert ordered[0][0] == "high"
+    assert ordered[1][0] == "low"
+    assert completeset_yes_net([0.10, 0.20]) > completeset_yes_net([0.45, 0.45])
+
+    # 2-leg preference remains primary even if a 3-leg has higher est_net.
+    two = {"members": legs([0.48, 0.48])}          # weaker net
+    three = {"members": legs([0.05, 0.05, 0.05])}  # much stronger net
+    ordered2 = sorted([("three", three), ("two", two)], key=sa._partition_probe_sort_key)
+    assert ordered2[0][0] == "two"
+    assert ordered2[1][0] == "three"
+
+    # Binary: higher gamma est_net before lower (volume secondary).
+    good = {"yes_price": 0.40, "no_price": 0.40, "volume": 1.0}
+    bad = {"yes_price": 0.49, "no_price": 0.49, "volume": 9999.0}
+    bins = sorted([bad, good], key=sa._binary_probe_sort_key)
+    assert bins[0] is good
+
