@@ -1,6 +1,6 @@
 # Structural Arbitrage — Paper Trading
 
-**Generiert:** 2026-08-24T17:37:32.521444+00:00  
+**Generiert:** 2026-08-24T18:24:21.779158+00:00  
 
 > PAPER ONLY — model-free complete-set / binary-lock after real CLOB asks + taker fees. Cash if no net edge. Kein Live-Order. Active-leg filter + ask coverage >= 0.92.
 
@@ -8,10 +8,10 @@
 
 - Scanned partitions/markets: **107**
 - Complete partitions: **16**
-- Candidates (prefilter): **12**
-- Rejected (cost/net < MIN_NET): **11**
-- Book fetches: **45**
-- Skip counts: `budget=1, cost_negative=11, legs_out_of_range=1, no_real_book=1, prefilter=4, residual_other=90`
+- Candidates (prefilter): **11**
+- Rejected (cost/net < MIN_NET): **10**
+- Book fetches: **38**
+- Skip counts: `binary_cap=1, cost_negative=10, legs_out_of_range=1, no_real_book=1, prefilter=5, residual_other=90`
 - Legs out-of-range hist: `n=13:1`
 
 ## Near-miss nets (closest to MIN_NET)
@@ -22,8 +22,8 @@
   - BINARY_LOCK | net=-0.004637 gap=0.014637 | Putin and Zelenskyy shake hands by...?
   - BINARY_LOCK | net=-0.005716 gap=0.015716 | Will US withdraw from NATO by...?
   - BINARY_LOCK | net=-0.005874 gap=0.015874 | Which candidates will advance to Brazil's presidential runoff?
-  - BINARY_LOCK | net=-0.007111 gap=0.017111 | Who will Bernie endorse?
-  - BUY_NO_SET | net=-0.023492 gap=0.033492 | OpenAI IPO Closing Market Cap
+  - BINARY_LOCK | net=-0.005874 gap=0.015874 | Will Ukraine agree to cede territory to Russia by...?
+  - BUY_YES_SET | net=-0.055739 gap=0.065739 | How many Gold Cards will Trump sell in 2026?
 
 ## Ledger
 
