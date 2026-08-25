@@ -1,29 +1,29 @@
 # Structural Arbitrage — Paper Trading
 
-**Generiert:** 2026-08-25T07:33:38.474037+00:00  
+**Generiert:** 2026-08-25T08:35:59.907349+00:00  
 
 > PAPER ONLY — model-free complete-set / binary-lock after real CLOB asks + taker fees. Cash if no net edge. Kein Live-Order. Active-leg filter + ask coverage >= 0.92.
 
 ## Scan
 
-- Scanned partitions/markets: **107**
-- Complete partitions: **16**
-- Candidates (prefilter): **12**
-- Rejected (cost/net < MIN_NET): **11**
-- Book fetches: **43**
-- Skip counts: `binary_cap=1, cost_negative=11, legs_out_of_range=1, no_real_book=1, prefilter=4, residual_other=90`
+- Scanned partitions/markets: **104**
+- Complete partitions: **13**
+- Candidates (prefilter): **10**
+- Rejected (cost/net < MIN_NET): **9**
+- Book fetches: **45**
+- Skip counts: `budget=1, cost_negative=9, legs_out_of_range=1, no_real_book=1, prefilter=3, residual_other=90`
 - Legs out-of-range hist: `n=13:1`
 
 ## Near-miss nets (closest to MIN_NET)
 
   - BINARY_LOCK | net=-0.001399 gap=0.011399 | Lecornu out as French PM by...?
   - BINARY_LOCK | net=-0.001558 gap=0.011558 | Putin out as President of Russia by...?
-  - BINARY_LOCK | net=-0.002796 gap=0.012796 | Foreign intervention in Gaza by..?
   - BINARY_LOCK | net=-0.003716 gap=0.013716 | Who will Bernie endorse?
   - BINARY_LOCK | net=-0.004637 gap=0.014637 | Putin and Zelenskyy shake hands by...?
-  - BINARY_LOCK | net=-0.004795 gap=0.014795 | Will Ukraine agree to cede territory to Russia by...?
-  - BINARY_LOCK | net=-0.005874 gap=0.015874 | Which candidates will advance to Brazil's presidential runoff?
-  - BUY_NO_SET | net=-0.032194 gap=0.042194 | OpenAI IPO Closing Market Cap
+  - BUY_NO_SET | net=-0.031273 gap=0.041273 | OpenAI IPO Closing Market Cap
+  - BUY_YES_SET | net=-0.040346 gap=0.050346 | Where will 2026 rank among the hottest years on record?
+  - BUY_YES_SET | net=-0.055739 gap=0.065739 | How many Gold Cards will Trump sell in 2026?
+  - BUY_NO_SET | net=-0.088652 gap=0.098652 | GDP growth in 2026
 
 ## Ledger
 
