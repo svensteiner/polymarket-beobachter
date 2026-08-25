@@ -1,6 +1,6 @@
 # Structural Arbitrage — Paper Trading
 
-**Generiert:** 2026-08-25T00:35:43.023476+00:00  
+**Generiert:** 2026-08-25T01:37:26.265198+00:00  
 
 > PAPER ONLY — model-free complete-set / binary-lock after real CLOB asks + taker fees. Cash if no net edge. Kein Live-Order. Active-leg filter + ask coverage >= 0.92.
 
@@ -23,7 +23,7 @@
   - BINARY_LOCK | net=-0.005716 gap=0.015716 | Will US withdraw from NATO by...?
   - BINARY_LOCK | net=-0.005874 gap=0.015874 | Which candidates will advance to Brazil's presidential runoff?
   - BINARY_LOCK | net=-0.005874 gap=0.015874 | Will Ukraine agree to cede territory to Russia by...?
-  - BUY_YES_SET | net=-0.019578 gap=0.029578 | Where will 2026 rank among the hottest years on record?
+  - BUY_YES_SET | net=-0.029266 gap=0.039266 | Where will 2026 rank among the hottest years on record?
 
 ## Ledger
 
