@@ -1,6 +1,6 @@
 # Structural Arbitrage — Paper Trading
 
-**Generiert:** 2026-08-25T12:33:38.949088+00:00  
+**Generiert:** 2026-08-25T13:37:13.025330+00:00  
 
 > PAPER ONLY — model-free complete-set / binary-lock after real CLOB asks + taker fees. Cash if no net edge. Kein Live-Order. Active-leg filter + ask coverage >= 0.92.
 
@@ -8,10 +8,10 @@
 
 - Scanned partitions/markets: **107**
 - Complete partitions: **16**
-- Candidates (prefilter): **13**
-- Rejected (cost/net < MIN_NET): **11**
-- Book fetches: **45**
-- Skip counts: `budget=1, cost_negative=11, legs_out_of_range=1, no_real_book=1, prefilter=3, residual_other=90, thin_book=1`
+- Candidates (prefilter): **12**
+- Rejected (cost/net < MIN_NET): **10**
+- Book fetches: **40**
+- Skip counts: `binary_cap=1, cost_negative=10, legs_out_of_range=1, no_real_book=1, prefilter=4, residual_other=90, thin_book=1`
 - Legs out-of-range hist: `n=13:1`
 
 ## Near-miss nets (closest to MIN_NET)
@@ -23,7 +23,7 @@
   - BINARY_LOCK | net=-0.004795 gap=0.014795 | Will Ukraine agree to cede territory to Russia by...?
   - BINARY_LOCK | net=-0.004954 gap=0.014954 | Foreign intervention in Gaza by..?
   - BINARY_LOCK | net=-0.005874 gap=0.015874 | Which candidates will advance to Brazil's presidential runoff?
-  - BUY_NO_SET | net=-0.033115 gap=0.043115 | OpenAI IPO Closing Market Cap
+  - BUY_NO_SET | net=-0.031273 gap=0.041273 | OpenAI IPO Closing Market Cap
 
 ## Ledger
 
