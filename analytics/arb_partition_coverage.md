@@ -1,14 +1,14 @@
 # Cross-Market-Arbitrage — Partitions-Coverage (autoritativ via negRiskMarketID)
 
-**Generiert:** 2026-08-26T17:00:25.768678+00:00  
-**Roh-Snapshots ausgewertet:** 605 · Half-Spread 0.0052 · Lead 24.0h  
+**Generiert:** 2026-08-27T05:00:22.663463+00:00  
+**Roh-Snapshots ausgewertet:** 564 · Half-Spread 0.0052 · Lead 24.0h  
 
 > **Fortschritt gegenüber `arb_capturability.py`:** Dort wurden Buckets per Heuristik `(Stadt, Datum, Metrik)` gruppiert — eine Schätzung, die nie beweisen kann, dass man eine *vollständige* Partition sieht. Polymarket liefert die Partition aber autoritativ: alle Buckets eines Multi-Outcome-Events teilen dieselbe `negRiskMarketID` (`negRisk`-Märkte sind per Konstruktion disjunkt & vollständig, genau ein Bucket löst YES auf). Der Collector persistiert dieses Feld bereits in jedem Roh-Snapshot. **Partitions-Zugehörigkeit ist damit ex-ante bekannt — aus der Marktstruktur, ohne jede Outcome-Konditionierung.**
 
 ## Datenlage
 
-- negRisk-Partitionen gesamt (≥3 Buckets): **365**
-- davon in unserem beobachteten+aufgelösten Universum (tägliche Stadt-Temp): **40**
+- negRisk-Partitionen gesamt (≥3 Buckets): **339**
+- davon in unserem beobachteten+aufgelösten Universum (tägliche Stadt-Temp): **31**
 - **vollständig bepreist UND aufgelöst: 0**
 
 ## Der harte Blocker: Preis-Coverage
@@ -19,7 +19,7 @@ Um die Arbitrage-Summe S = Σ YES-Preise zu bilden, brauchen wir den Preis **jed
 |---|---:|
 | Preis-Coverage min | 9.1% |
 | Preis-Coverage **median** | **9.1%** |
-| Preis-Coverage mean | 16.1% |
+| Preis-Coverage mean | 15.8% |
 | Preis-Coverage max | 45.5% |
 | Partitionen mit Coverage ≥80% | 0 |
 
@@ -27,9 +27,7 @@ Um die Arbitrage-Summe S = Σ YES-Preise zu bilden, brauchen wir den Preis **jed
 
 | negRiskID | Event | Buckets | bepreist | aufgelöst | Coverage | komplett |
 |---|---|---:|---:|---:|---:|:---:|
-| `0xa7f3036f55` | Highest temperature in London on August 19? | 11 | 5 | 5 | 45.5% | — |
 | `0xfc39e2f76f` | Highest temperature in London on August 20? | 11 | 5 | 5 | 45.5% | — |
-| `0x0fbe14927f` | Highest temperature in Paris on August 19? | 11 | 4 | 4 | 36.4% | — |
 | `0x76f4e1657d` | Highest temperature in London on August 21? | 11 | 4 | 4 | 36.4% | — |
 | `0x7117cef7f3` | Highest temperature in Paris on August 21? | 11 | 3 | 3 | 27.3% | — |
 | `0x7cedfc4c3e` | Highest temperature in Seoul (Incheon) on August 21? | 11 | 3 | 3 | 27.3% | — |
@@ -37,16 +35,18 @@ Um die Arbitrage-Summe S = Σ YES-Preise zu bilden, brauchen wir den Preis **jed
 | `0x8aed5b4860` | Highest temperature in London on August 22? | 11 | 3 | 3 | 27.3% | — |
 | `0x381885cbdb` | Highest temperature in Paris on August 22? | 11 | 3 | 3 | 27.3% | — |
 | `0x12a2748bd4` | Highest temperature in Paris on August 20? | 11 | 2 | 2 | 18.2% | — |
-| `0xea8f166ee3` | Highest temperature in Ankara on August 20? | 11 | 2 | 2 | 18.2% | — |
 | `0xa7893c4818` | Highest temperature in Dallas on August 20? | 11 | 2 | 2 | 18.2% | — |
 | `0x72b25d878d` | Lowest temperature in Seoul (Incheon) on August 21? | 11 | 2 | 2 | 18.2% | — |
 | `0x2184dbf79e` | Highest temperature in Ankara on August 21? | 11 | 2 | 2 | 18.2% | — |
 | `0xb5b23b7f4e` | Highest temperature in Madrid on August 22? | 11 | 2 | 2 | 18.2% | — |
 | `0x23c23f6f8d` | Lowest temperature in London on August 25? | 11 | 2 | 2 | 18.2% | — |
-| `0xc0154a2270` | Lowest temperature in London on August 19? | 11 | 1 | 1 | 9.1% | — |
-| `0x4ea601def0` | Highest temperature in Madrid on August 19? | 11 | 1 | 1 | 9.1% | — |
-| `0x65a2b4a6e6` | Highest temperature in NYC on August 19? | 11 | 1 | 1 | 9.1% | — |
-| `0x0120b21bad` | Highest temperature in Denver on August 19? | 11 | 1 | 1 | 9.1% | — |
+| `0x1c7a34a744` | Lowest temperature in London on August 20? | 11 | 1 | 1 | 9.1% | — |
+| `0x28186bcd0e` | Highest temperature in Buenos Aires on August 20? | 11 | 1 | 1 | 9.1% | — |
+| `0x7d7925dd8e` | Highest temperature in Chicago on August 20? | 11 | 1 | 1 | 9.1% | — |
+| `0x2eb6b05b38` | Highest temperature in Houston on August 20? | 11 | 1 | 1 | 9.1% | — |
+| `0xfa696a46de` | Lowest temperature in London on August 21? | 11 | 1 | 1 | 9.1% | — |
+| `0xc469da01dc` | Lowest temperature in Paris on August 21? | 11 | 1 | 1 | 9.1% | — |
+| `0x3667b9f781` | Lowest temperature in Tokyo on August 21? | 11 | 1 | 1 | 9.1% | — |
 
 ## Verdikt
 
