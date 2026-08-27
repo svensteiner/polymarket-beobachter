@@ -1,6 +1,6 @@
 # Structural Arbitrage — Paper Trading
 
-**Generiert:** 2026-08-27T15:35:10.303357+00:00  
+**Generiert:** 2026-08-27T16:37:55.653936+00:00  
 
 > PAPER ONLY — model-free complete-set / binary-lock after real CLOB asks + taker fees. Cash if no net edge. Kein Live-Order. Active-leg filter + ask coverage >= 0.92.
 
@@ -10,7 +10,7 @@
 - Complete partitions: **16**
 - Candidates (prefilter): **11**
 - Rejected (cost/net < MIN_NET): **10**
-- Book fetches: **39**
+- Book fetches: **38**
 - Skip counts: `binary_cap=1, cost_negative=10, legs_out_of_range=1, no_real_book=1, prefilter=5, residual_other=90`
 - Legs out-of-range hist: `n=13:1`
 
@@ -20,10 +20,10 @@
   - BINARY_LOCK | net=-0.00124 gap=0.01124 | Will US withdraw from NATO by...?
   - BINARY_LOCK | net=-0.00124 gap=0.01124 | Ukraine election called by...?
   - BINARY_LOCK | net=-0.001399 gap=0.011399 | Lecornu out as French PM by...?
-  - BINARY_LOCK | net=-0.001558 gap=0.011558 | Will Ukraine agree to cede territory to Russia by...?
   - BINARY_LOCK | net=-0.003558 gap=0.013558 | Putin and Zelenskyy shake hands by...?
   - BINARY_LOCK | net=-0.003716 gap=0.013716 | Who will Bernie endorse?
-  - BUY_NO_SET | net=-0.033119 gap=0.043119 | OpenAI IPO Closing Market Cap
+  - BINARY_LOCK | net=-0.004954 gap=0.014954 | Which candidates will advance to Brazil's presidential runoff?
+  - BUY_YES_SET | net=-0.030903 gap=0.040903 | Balance of Power: 2026 Midterms
 
 ## Ledger
 
