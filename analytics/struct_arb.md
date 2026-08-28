@@ -1,17 +1,17 @@
 # Structural Arbitrage — Paper Trading
 
-**Generiert:** 2026-08-28T19:32:08.293368+00:00  
+**Generiert:** 2026-08-28T20:33:56.119417+00:00  
 
 > PAPER ONLY — model-free complete-set / binary-lock after real CLOB asks + taker fees. Cash if no net edge. Kein Live-Order. Active-leg filter + ask coverage >= 0.92.
 
 ## Scan
 
-- Scanned partitions/markets: **105**
-- Complete partitions: **14**
-- Candidates (prefilter): **11**
-- Rejected (cost/net < MIN_NET): **9**
+- Scanned partitions/markets: **104**
+- Complete partitions: **13**
+- Candidates (prefilter): **10**
+- Rejected (cost/net < MIN_NET): **8**
 - Book fetches: **45**
-- Skip counts: `budget=1, cost_negative=9, legs_out_of_range=1, no_real_book=2, prefilter=3, residual_other=90`
+- Skip counts: `budget=1, cost_negative=8, legs_out_of_range=1, no_real_book=2, prefilter=3, residual_other=90`
 - Legs out-of-range hist: `n=13:1`
 
 ## Near-miss nets (closest to MIN_NET)
@@ -19,10 +19,10 @@
   - BINARY_LOCK | net=-0.00124 gap=0.01124 | Putin out as President of Russia by...?
   - BINARY_LOCK | net=-0.00124 gap=0.01124 | Ukraine election called by...?
   - BINARY_LOCK | net=-0.00124 gap=0.01124 | Will US withdraw from NATO by...?
-  - BINARY_LOCK | net=-0.001399 gap=0.011399 | Lecornu out as French PM by...?
   - BUY_YES_SET | net=-0.026344 gap=0.036344 | Where will 2026 rank among the hottest years on record?
-  - BUY_NO_SET | net=-0.030356 gap=0.040356 | OpenAI IPO Closing Market Cap
+  - BUY_NO_SET | net=-0.031277 gap=0.041277 | OpenAI IPO Closing Market Cap
   - BUY_YES_SET | net=-0.040911 gap=0.050911 | Balance of Power: 2026 Midterms
+  - BUY_YES_SET | net=-0.080401 gap=0.090401 | How many different countries will the US conduct military action against in 2026
   - BUY_NO_SET | net=-0.091992 gap=0.101992 | How many people will Trump deport in 2026?
 
 ## Ledger
