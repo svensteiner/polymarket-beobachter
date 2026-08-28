@@ -1,6 +1,6 @@
 # Structural Arbitrage — Paper Trading
 
-**Generiert:** 2026-08-28T14:35:40.324042+00:00  
+**Generiert:** 2026-08-28T15:38:20.908621+00:00  
 
 > PAPER ONLY — model-free complete-set / binary-lock after real CLOB asks + taker fees. Cash if no net edge. Kein Live-Order. Active-leg filter + ask coverage >= 0.92.
 
@@ -8,10 +8,10 @@
 
 - Scanned partitions/markets: **107**
 - Complete partitions: **16**
-- Candidates (prefilter): **12**
-- Rejected (cost/net < MIN_NET): **11**
-- Book fetches: **40**
-- Skip counts: `binary_cap=1, cost_negative=11, legs_out_of_range=1, no_real_book=1, prefilter=4, residual_other=90`
+- Candidates (prefilter): **11**
+- Rejected (cost/net < MIN_NET): **10**
+- Book fetches: **35**
+- Skip counts: `binary_cap=1, cost_negative=10, legs_out_of_range=1, no_real_book=1, prefilter=5, residual_other=90`
 - Legs out-of-range hist: `n=13:1`
 
 ## Near-miss nets (closest to MIN_NET)
@@ -23,7 +23,7 @@
   - BINARY_LOCK | net=-0.003558 gap=0.013558 | Spain snap election called by...?
   - BINARY_LOCK | net=-0.003716 gap=0.013716 | Who will Bernie endorse?
   - BINARY_LOCK | net=-0.004637 gap=0.014637 | Putin and Zelenskyy shake hands by...?
-  - BUY_YES_SET | net=-0.025266 gap=0.035266 | Where will 2026 rank among the hottest years on record?
+  - BUY_YES_SET | net=-0.026344 gap=0.036344 | Where will 2026 rank among the hottest years on record?
 
 ## Ledger
 
