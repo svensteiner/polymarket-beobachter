@@ -43,6 +43,10 @@ logger = logging.getLogger(__name__)
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 OUT_JSON = PROJECT_ROOT / "analytics" / "basket_arbitrage.json"
 OUT_MD = PROJECT_ROOT / "analytics" / "basket_arbitrage.md"
+# Append-only time series: one compact record per scan. Answers the empirical
+# question that blocks the goal — does a FILLABLE risk-free basket ever appear? —
+# and provides the audit trail behind any auto-executed basket trade.
+OUT_HISTORY = PROJECT_ROOT / "analytics" / "basket_arb_history.jsonl"
 
 # Minimum mid-price deviation from 1.0 to bother probing the live book.
 MIN_DEVIATION = 0.04
@@ -367,6 +371,41 @@ def _atomic_write(path: Path, content: str) -> None:
     tmp.replace(path)
 
 
+def best_opportunity(opps: List[BasketArbOpportunity]) -> Optional[BasketArbOpportunity]:
+    """The most attractive fillable basket: highest real_net_profit among those
+    with a computed net (fully fillable). None if no basket is fillable. Pure.
+    """
+    priced = [o for o in opps if o.real_net_profit is not None]
+    if not priced:
+        return None
+    return max(priced, key=lambda o: o.real_net_profit)
+
+
+def build_history_record(opps: List[BasketArbOpportunity], families_scanned: int) -> Dict[str, Any]:
+    """Compact per-scan time-series record (pure)."""
+    actionable = [o for o in opps if o.actionable]
+    best = best_opportunity(opps)
+    return {
+        "ts": datetime.now(timezone.utc).isoformat(),
+        "families_scanned": families_scanned,
+        "overpriced_families": len(opps),
+        "actionable_families": len(actionable),
+        "best_fillable_net": round(best.real_net_profit, 4) if best else None,
+        "best_fillable_family": best.family_key if best else None,
+        "max_deviation": round(max((o.deviation for o in opps), default=0.0), 4),
+    }
+
+
+def _append_history(record: Dict[str, Any], path: Optional[Path] = None) -> None:
+    path = path or OUT_HISTORY
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with open(path, "a", encoding="utf-8") as f:
+            f.write(json.dumps(record, ensure_ascii=False) + "\n")
+    except Exception as e:  # fail-open: history is diagnostic only
+        logger.debug("basket_arb history append failed: %s", e)
+
+
 def _default_price_fn(c: Dict[str, Any]) -> Optional[float]:
     op = c.get("outcomePrices")
     if op:
@@ -410,6 +449,9 @@ def run(
         _atomic_write(OUT_MD, _render_md(opps, len(families)))
     except Exception as e:
         logger.debug("basket_arb report write failed: %s", e)
+
+    # Append the compact time-series record (empirical evidence over time).
+    _append_history(build_history_record(opps, len(families)))
 
     if actionable:
         logger.info("BASKET-ARB: %d ACTIONABLE risk-free basket(s) found!", len(actionable))

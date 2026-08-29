@@ -162,3 +162,46 @@ def test_scan_ignores_dead_family():
     markets = [_mk("1", 10, 0.001), _mk("2", 11, 0.001), _mk("3", 12, 0.001)]
     opps = ba.scan(markets, price_fn=lambda c: c["p"], book_fn=None, fee_fn=lambda p: 0.0)
     assert opps == []
+
+
+# --------------------------- history / best-opportunity --------------------------- #
+def test_best_opportunity_picks_highest_net():
+    markets = [_mk("1", 10, 0.40), _mk("2", 11, 0.40), _mk("3", 12, 0.40)]
+    books = {"1": _Book(0.60), "2": _Book(0.60), "3": _Book(0.60)}
+    opps = ba.scan(markets, price_fn=lambda c: c["p"],
+                   book_fn=lambda mid: books[mid], fee_fn=lambda p: 0.0)
+    best = ba.best_opportunity(opps)
+    assert best is not None and best.real_net_profit is not None
+
+
+def test_best_opportunity_none_when_nothing_fillable():
+    class _Empty:
+        no_best_ask = None
+        ask_depth_shares = None
+    markets = [_mk("1", 10, 0.40), _mk("2", 11, 0.40), _mk("3", 12, 0.40)]
+    opps = ba.scan(markets, price_fn=lambda c: c["p"],
+                   book_fn=lambda mid: _Empty(), fee_fn=lambda p: 0.0)
+    assert ba.best_opportunity(opps) is None
+
+
+def test_build_history_record_shape():
+    markets = [_mk("1", 10, 0.40), _mk("2", 11, 0.40), _mk("3", 12, 0.40)]
+    books = {"1": _Book(0.60), "2": _Book(0.60), "3": _Book(0.60)}
+    opps = ba.scan(markets, price_fn=lambda c: c["p"],
+                   book_fn=lambda mid: books[mid], fee_fn=lambda p: 0.0)
+    rec = ba.build_history_record(opps, families_scanned=1)
+    for k in ("ts", "families_scanned", "overpriced_families", "actionable_families",
+              "best_fillable_net", "best_fillable_family", "max_deviation"):
+        assert k in rec
+    assert rec["overpriced_families"] == 1
+
+
+def test_append_history_writes_line(tmp_path, monkeypatch):
+    hist = tmp_path / "basket_arb_history.jsonl"
+    monkeypatch.setattr(ba, "OUT_HISTORY", hist)
+    ba._append_history({"ts": "t", "overpriced_families": 0})
+    ba._append_history({"ts": "t2", "overpriced_families": 1})
+    lines = [l for l in hist.read_text().splitlines() if l.strip()]
+    assert len(lines) == 2
+    import json as _j
+    assert _j.loads(lines[1])["overpriced_families"] == 1
