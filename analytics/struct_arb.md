@@ -1,27 +1,28 @@
 # Structural Arbitrage — Paper Trading
 
-**Generiert:** 2026-08-29T03:30:33.627594+00:00  
+**Generiert:** 2026-08-29T04:32:19.797136+00:00  
 
 > PAPER ONLY — model-free complete-set / binary-lock after real CLOB asks + taker fees. Cash if no net edge. Kein Live-Order. Active-leg filter + ask coverage >= 0.92.
 
 ## Scan
 
-- Scanned partitions/markets: **100**
-- Complete partitions: **9**
-- Candidates (prefilter): **7**
-- Rejected (cost/net < MIN_NET): **6**
+- Scanned partitions/markets: **104**
+- Complete partitions: **13**
+- Candidates (prefilter): **10**
+- Rejected (cost/net < MIN_NET): **7**
 - Book fetches: **45**
-- Skip counts: `budget=1, cost_negative=6, legs_out_of_range=1, no_real_book=1, prefilter=2, residual_other=90`
+- Skip counts: `budget=1, cost_negative=7, legs_out_of_range=1, no_real_book=3, prefilter=3, residual_other=90`
 - Legs out-of-range hist: `n=13:1`
 
 ## Near-miss nets (closest to MIN_NET)
 
-  - BUY_NO_SET | net=-0.028516 gap=0.038516 | OpenAI IPO Closing Market Cap
+  - BINARY_LOCK | net=-0.00124 gap=0.01124 | Putin and Zelenskyy shake hands by...?
+  - BINARY_LOCK | net=-0.00124 gap=0.01124 | Ukraine election called by...?
+  - BUY_NO_SET | net=-0.029428 gap=0.039428 | OpenAI IPO Closing Market Cap
   - BUY_YES_SET | net=-0.030679 gap=0.040679 | Balance of Power: 2026 Midterms
-  - BUY_YES_SET | net=-0.080401 gap=0.090401 | How many different countries will the US conduct military action against in 2026
   - BUY_YES_SET | net=-0.085819 gap=0.095819 | How many Gold Cards will Trump sell in 2026?
-  - BUY_NO_SET | net=-0.089226 gap=0.099226 | How many people will Trump deport in 2026?
-  - BUY_NO_SET | net=-0.129166 gap=0.139166 | GDP growth in 2026
+  - BUY_NO_SET | net=-0.091963 gap=0.101963 | How many people will Trump deport in 2026?
+  - BUY_NO_SET | net=-0.130096 gap=0.140096 | GDP growth in 2026
 
 ## Ledger
 
