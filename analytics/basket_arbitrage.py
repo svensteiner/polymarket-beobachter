@@ -68,6 +68,20 @@ _RANKING_RE = re.compile(
     r"\b(\d{4})\b.*\b(hottest|warmest|coldest|coolest)\b.*\byear\b.*\brecord\b",
     re.I,
 )
+# Numeric-range families ("... between X and Y ...", "X-Y hurricanes"): each
+# range is one mutually-exclusive bucket of a partition (arctic sea ice extent,
+# monthly temperature increase, precipitation totals, hurricane/earthquake
+# counts). These carry moderate liquidity — the most plausible place a fillable
+# dutch book could appear. Grouped by the question text with the range removed.
+_RANGE_BETWEEN_RE = re.compile(
+    r"between\s+[\d.]+\s*(?:m|million|mm|inches|inch|°?[cf])?\s*(?:&|and|-|to)\s*[\d.]+",
+    re.I,
+)
+_RANGE_COUNT_RE = re.compile(
+    r"\b\d+\s*[-\u2013]\s*\d+\s+(?:hurricanes?|named\s+storms?|tornadoes?|earthquakes?)\b",
+    re.I,
+)
+_NUM_UNIT_RE = re.compile(r"[\d.]+\s*(?:m|million|mm|inches|inch|°?[cf])\b", re.I)
 
 
 @dataclass
@@ -153,7 +167,25 @@ def parse_family_key(question: str) -> Optional[Tuple[str, str, str]]:
         year = rm.group(1)
         direction = rm.group(2).lower()
         return year, f"yearrank_{direction}", "on record"
+    rk = _range_family_subject(question)
+    if rk is not None:
+        return rk, "range", ""
     return None
+
+
+def _range_family_subject(question: str) -> Optional[str]:
+    """For a numeric-range bucket, return the family subject (question text with
+    the range/number removed, normalized), else None. Two range markets belong to
+    the same family iff this residual subject is identical.
+    """
+    if not (_RANGE_BETWEEN_RE.search(question) or _RANGE_COUNT_RE.search(question)):
+        return None
+    s = question.lower()
+    s = _RANGE_BETWEEN_RE.sub("<range>", s)
+    s = _RANGE_COUNT_RE.sub("<count>", s)
+    s = _NUM_UNIT_RE.sub("<num>", s)
+    s = re.sub(r"\s+", " ", s).strip(" ?")
+    return s or None
 
 
 def group_families(

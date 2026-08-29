@@ -33,6 +33,31 @@ def test_parse_family_key_rejects_unrelated():
     assert ba.parse_family_key("Will a hurricane make landfall in Florida?") is None
 
 
+def test_parse_family_key_range_between():
+    q1 = "Will the minimum Arctic sea ice extent this summer be between 4.2m & 4.4m?"
+    q2 = "Will the minimum Arctic sea ice extent this summer be between 4.4m & 4.6m?"
+    k1 = ba.parse_family_key(q1)
+    k2 = ba.parse_family_key(q2)
+    assert k1 is not None and k1[1] == "range"
+    assert k1 == k2                      # same subject, different range -> same family
+
+
+def test_parse_family_key_range_count():
+    q1 = "Will there be 1-3 hurricanes during the Atlantic Hurricane Season in 2026?"
+    q2 = "Will there be 4-6 hurricanes during the Atlantic Hurricane Season in 2026?"
+    k1 = ba.parse_family_key(q1)
+    k2 = ba.parse_family_key(q2)
+    assert k1 is not None and k1[1] == "range"
+    assert k1 == k2
+
+
+def test_range_family_distinct_subjects_dont_merge():
+    arctic = ba.parse_family_key("Will the minimum Arctic sea ice extent this summer be between 4.2m & 4.4m?")
+    precip = ba.parse_family_key("Will Seattle have between 1 and 1.5 inches of precipitation in August?")
+    assert arctic is not None and precip is not None
+    assert arctic != precip
+
+
 # --------------------------- grouping --------------------------- #
 def test_group_families_groups_same_city_metric_date():
     markets = [
