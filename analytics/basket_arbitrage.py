@@ -60,6 +60,14 @@ _FAMILY_RE = re.compile(
 # so it does not belong to the exclusive point-partition.
 _BOUNDARY_RE = re.compile(r"be\s+\d+(?:\.\d+)?\s*°?\s*[cf]\s*or\s+(?:below|above|higher|lower)", re.I)
 _DATE_RE = re.compile(r"on\s+([A-Za-z]+\s+\d{1,2})", re.I)
+# "Nth hottest year on record" ranking families: exactly one rank can be true,
+# so all ranks for a given (year, direction) form an exclusive partition too.
+# These climate-ranking markets are the liquid part of the universe (deep books),
+# i.e. the only place a fillable dutch book could realistically appear.
+_RANKING_RE = re.compile(
+    r"\b(\d{4})\b.*\b(hottest|warmest|coldest|coolest)\b.*\byear\b.*\brecord\b",
+    re.I,
+)
 
 
 @dataclass
@@ -119,21 +127,33 @@ class BasketArbOpportunity:
 # Pure parsing / grouping (unit-testable, no network)
 # --------------------------------------------------------------------------- #
 def parse_family_key(question: str) -> Optional[Tuple[str, str, str]]:
-    """Return (city, metric, date) for an exact point-bucket question, else None.
+    """Return a family key (subject, metric, date) for a market that belongs to
+    an exclusive partition, else None.
 
-    Boundary buckets ("... or below/above") are excluded because they are not a
-    single point in the exclusive partition.
+    Two family shapes are recognized:
+      1. City temperature point buckets: "lowest temperature in Ankara be 12°C
+         on August 29" -> (city, metric, date). Boundary buckets ("... or
+         below/above") are excluded (not a single point).
+      2. Climate year-rank families: "Will 2026 be the [Nth] hottest year on
+         record" -> (year, "yearrank_<direction>", "on record"). Exactly one
+         rank can resolve YES, so all ranks form an exclusive partition.
     """
-    if not question or _BOUNDARY_RE.search(question):
+    if not question:
         return None
-    m = _FAMILY_RE.search(question)
-    if not m:
-        return None
-    metric = m.group(1).lower()
-    city = m.group(2).strip().lower()
-    dm = _DATE_RE.search(question)
-    date = dm.group(1).lower() if dm else "?"
-    return city, metric, date
+    if not _BOUNDARY_RE.search(question):
+        m = _FAMILY_RE.search(question)
+        if m:
+            metric = m.group(1).lower()
+            city = m.group(2).strip().lower()
+            dm = _DATE_RE.search(question)
+            date = dm.group(1).lower() if dm else "?"
+            return city, metric, date
+    rm = _RANKING_RE.search(question)
+    if rm:
+        year = rm.group(1)
+        direction = rm.group(2).lower()
+        return year, f"yearrank_{direction}", "on record"
+    return None
 
 
 def group_families(

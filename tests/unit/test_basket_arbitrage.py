@@ -18,8 +18,19 @@ def test_parse_family_key_excludes_boundary_buckets():
     assert ba.parse_family_key("Will the lowest temperature in Ankara be 18°C or below on August 29?") is None
 
 
-def test_parse_family_key_rejects_non_family():
-    assert ba.parse_family_key("Will 2026 be the hottest year on record?") is None
+def test_parse_family_key_ranking_family():
+    k1 = ba.parse_family_key("Will 2026 be the hottest year on record?")
+    k2 = ba.parse_family_key("Will 2026 be the second-hottest year on record?")
+    k3 = ba.parse_family_key("Will 2026 rank as the sixth-hottest year on record?")
+    assert k1 == ("2026", "yearrank_hottest", "on record")
+    assert k1 == k2 == k3          # all ranks of 2026 group into one family
+    # different year is a different family
+    assert ba.parse_family_key("Will 2027 be the hottest year on record?") != k1
+
+
+def test_parse_family_key_rejects_unrelated():
+    assert ba.parse_family_key("Will the Republican Party control the Senate?") is None
+    assert ba.parse_family_key("Will a hurricane make landfall in Florida?") is None
 
 
 # --------------------------- grouping --------------------------- #
