@@ -507,6 +507,14 @@ class Orchestrator:
                 except Exception as _ba_err:
                     logger.debug("Basket-Arbitrage Scan fehlgeschlagen (unkritisch): %s", _ba_err)
 
+            # Refresh the multi-day edge monitor (rolling opportunity/lane summary)
+            # so a continuous scheduler run keeps analytics/edge_monitor.md current.
+            try:
+                from analytics.edge_monitor import run as run_edge_monitor
+                run_edge_monitor()
+            except Exception as _em_err:
+                logger.debug("Edge-Monitor fehlgeschlagen (unkritisch): %s", _em_err)
+
             if candidates:
                 output_file = str(self.output_dir / "arbitrage_opportunities.json")
                 opportunities = run_arbitrage_scan(candidates, output_file=output_file)
