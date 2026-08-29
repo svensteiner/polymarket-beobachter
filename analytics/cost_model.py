@@ -176,10 +176,6 @@ def realistic_half_spread() -> float:
     return float(levels().get("realistic", FALLBACK_HALF_SPREAD))
 
 
-def stress_half_spread() -> float:
-    return float(levels().get("stress", 0.03))
-
-
 def cost_floor(half_spread: Optional[float] = None, ref_price: float = 0.14) -> float:
     """Break-even cost per share at a reference longshot price.
 
