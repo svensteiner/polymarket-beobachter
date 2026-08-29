@@ -401,59 +401,6 @@ class WeatherMarketFilter:
 
         return "UNKNOWN"
 
-    def _check_ranking_explicit(self, market: WeatherMarket) -> Dict[str, Any]:
-        """
-        Check if global ranking criteria are explicit.
-        """
-        text = f"{market.question} {market.description}".lower()
-
-        # Check for explicit ranking position
-        ranking_patterns = [
-            r"(1st|first|2nd|second|3rd|third|4th|fourth|5th|fifth|6th|sixth)",
-            r"(hottest|coldest|warmest|coolest)\s+(year|month|day)",
-            r"on record",
-        ]
-
-        for pattern in ranking_patterns:
-            if re.search(pattern, text, re.I):
-                return {
-                    "is_explicit": True,
-                    "metric": "global_ranking",
-                }
-
-        return {
-            "is_explicit": False,
-            "reason": "No explicit ranking criteria found",
-        }
-
-    def _check_metric_explicit(self, market: WeatherMarket) -> Dict[str, Any]:
-        """
-        Check if climate metric criteria are explicit.
-        """
-        text = f"{market.question} {market.description}".lower()
-
-        # Check for explicit measurement criteria
-        metric_patterns = [
-            (r"(\d+\.?\d*)\s*(million|m)\s*(square\s*)?(kilo)?", "ice_extent"),
-            (r"(hurricane|tropical storm).*(landfall|form)", "hurricane"),
-            (r"(category\s*\d|cat\s*\d)", "hurricane_category"),
-            (r"(\d+)\s*(tornado|tornadoes)", "tornado_count"),
-            (r"(\d+\.?\d*)\s*°?\s*[FC]", "temperature_increase"),
-            (r"(magnitude|richter)\s*(\d+\.?\d*)", "earthquake"),
-        ]
-
-        for pattern, metric_type in metric_patterns:
-            if re.search(pattern, text, re.I):
-                return {
-                    "is_explicit": True,
-                    "metric": metric_type,
-                }
-
-        return {
-            "is_explicit": False,
-            "reason": "No explicit metric criteria found",
-        }
-
     def filter_markets(
         self, markets: List[WeatherMarket]
     ) -> Tuple[List[WeatherMarket], List[FilterResult]]:

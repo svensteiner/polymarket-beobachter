@@ -62,7 +62,7 @@ from .ensemble_builder import EnsembleBuilder, degrade_confidence
 
 # Performance monitoring
 try:
-    from .performance_monitor import performance_monitor, performance_context
+    from .performance_monitor import performance_monitor
     PERFORMANCE_MONITORING_AVAILABLE = True
 except ImportError:
     PERFORMANCE_MONITORING_AVAILABLE = False
@@ -71,15 +71,6 @@ except ImportError:
         def decorator(func):
             return func
         return decorator
-
-    class DummyContext:
-        def __enter__(self):
-            return self
-        def __exit__(self, *args):
-            pass
-
-    def performance_context(name, metadata=None):
-        return DummyContext()
 
 logger = logging.getLogger(__name__)
 
