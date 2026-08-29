@@ -460,6 +460,30 @@ class Orchestrator:
                             except Exception:
                                 pass
 
+            # Fill-aware basket (dutch-book) arbitrage on exact-bucket families.
+            # Model-free & risk-free, so it does NOT conflict with the forward
+            # gate. READ-ONLY, fail-open. Probes real CLOB books only for the
+            # few overpriced families it finds.
+            # Prefer the freshly-priced candidate set from the weather observer
+            # (live YES prices already fetched this cycle) over stale stored ones.
+            basket_candidates = getattr(self, "_priced_candidates", None) or candidates
+            if basket_candidates:
+                try:
+                    from analytics.basket_arbitrage import run as run_basket_arb
+                    basket = run_basket_arb(basket_candidates, probe_books=True)
+                    if basket.get("actionable_families"):
+                        logger.info(
+                            "BASKET-ARB: %d ACTIONABLE risk-free basket(s)!",
+                            basket["actionable_families"],
+                        )
+                    elif basket.get("overpriced_families"):
+                        logger.info(
+                            "BASKET-ARB: %d overpriced families, 0 fillable (illiquidity mirage)",
+                            basket["overpriced_families"],
+                        )
+                except Exception as _ba_err:
+                    logger.debug("Basket-Arbitrage Scan fehlgeschlagen (unkritisch): %s", _ba_err)
+
             if candidates:
                 output_file = str(self.output_dir / "arbitrage_opportunities.json")
                 opportunities = run_arbitrage_scan(candidates, output_file=output_file)
@@ -759,6 +783,23 @@ class Orchestrator:
                     logger.info(f"Fetched real odds for {len(real_prices)}/{len(market_ids)} markets")
                 except Exception as e:
                     logger.warning(f"Failed to fetch real market prices: {e}")
+
+            # Stash freshly-priced candidates so downstream read-only scans
+            # (basket arbitrage) can reuse the live prices we already fetched
+            # instead of paying for another round of network calls.
+            try:
+                _priced = []
+                for _c in pre_filtered:
+                    _mid = _c.get("market_id", "")
+                    _op = None
+                    if _mid in real_prices:
+                        _op = real_prices[_mid].get("outcomePrices")
+                    if _op is None:
+                        _op = _c.get("outcomePrices")
+                    _priced.append({**_c, "outcomePrices": _op})
+                self._priced_candidates = _priced
+            except Exception:
+                self._priced_candidates = None
 
             # Step 3: Convert to WeatherMarket with real odds
             weather_markets = []
