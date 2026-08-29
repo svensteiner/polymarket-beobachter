@@ -211,8 +211,20 @@ def _auto_paused() -> bool:
     return False
 
 
+# Only open a shadow position when the NO side is REALLY fillable on the live
+# CLOB (a genuine best ask exists). A position that cannot be filled is not a
+# real forward test of harvestable edge — recording it pollutes the ledger with
+# fantasy trades that never "survive real CLOB fill costs". Unfillable in-band
+# candidates are logged and skipped instead.
+REQUIRE_FILLABLE_ENTRY = True
+
+
 def record_entries() -> int:
-    """Record qualifying current-cycle markets as NO-fade shadow positions."""
+    """Record qualifying current-cycle markets as NO-fade shadow positions.
+
+    Fill-aware: with REQUIRE_FILLABLE_ENTRY, only markets whose NO side is
+    actually fillable on the live CLOB (real best ask present) are opened.
+    """
     if _auto_paused():
         logger.info("NOFADE_PAUSE: gap-monitor regime guard active — keine neuen Entries.")
         return 0
@@ -220,6 +232,7 @@ def record_entries() -> int:
     candidates = _latest_in_band_candidates()
     fetches = 0
     entered = 0
+    skipped_unfillable = 0
     t0 = time.monotonic()
     for o in candidates:
         mid = str(o.get("market_id"))
@@ -239,6 +252,17 @@ def record_entries() -> int:
             fetches += 1
         elif not within_budget:
             real_book = {"ok": False, "reason": "cycle_deadline"}
+
+        # Gate 2: skip candidates whose NO side cannot actually be filled.
+        if REQUIRE_FILLABLE_ENTRY and real_book.get("no_best_ask") is None:
+            skipped_unfillable += 1
+            logger.info(
+                "NOFADE_SKIP_UNFILLABLE: %s %s kp=%.3f reason=%s — kein realer NO-Ask, "
+                "nicht fill-ueberlebend",
+                o.get("city") or "UNKNOWN", _event_type(o.get("event_description")),
+                kp, real_book.get("reason"),
+            )
+            continue
 
         now_iso = datetime.now(timezone.utc).isoformat()
         record = {
@@ -271,6 +295,11 @@ def record_entries() -> int:
             "NOFADE_ENTER: %s | %s %s kp=%.3f modeled_no=%.3f real_no=%s depth=%s",
             record["shadow_id"], record["city"], record["market_type"], kp,
             modeled_cost, real_book.get("no_best_ask"), real_book.get("ask_depth_shares"),
+        )
+    if skipped_unfillable:
+        logger.info(
+            "NOFADE: %d in-band Kandidaten uebersprungen (kein realer NO-Ask), %d eroeffnet",
+            skipped_unfillable, entered,
         )
     return entered
 
