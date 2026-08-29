@@ -460,6 +460,72 @@ class Orchestrator:
                             except Exception:
                                 pass
 
+            # Fill-aware basket (dutch-book) arbitrage on exact-bucket families.
+            # Model-free & risk-free, so it does NOT conflict with the forward
+            # gate. READ-ONLY, fail-open. Probes real CLOB books only for the
+            # few overpriced families it finds.
+            # Prefer the freshly-priced candidate set from the weather observer
+            # (live YES prices already fetched this cycle) over stale stored ones.
+            basket_candidates = getattr(self, "_priced_candidates", None) or candidates
+            if basket_candidates:
+                try:
+                    from analytics.basket_arbitrage import run as run_basket_arb
+                    basket = run_basket_arb(basket_candidates, probe_books=True)
+                    actionable_opps = [
+                        o for o in basket.get("opportunities", []) if o.get("actionable")
+                    ]
+                    if actionable_opps:
+                        logger.info(
+                            "BASKET-ARB: %d ACTIONABLE risk-free basket(s)!", len(actionable_opps)
+                        )
+                        # Execute the risk-free baskets in the self-contained paper
+                        # lane (multi-leg NO basket, held to resolution). Model-free
+                        # & risk-free -> does not touch the YES-only simulator or
+                        # conflict with the forward gate.
+                        try:
+                            from paper_trader.basket_arb_lane import run as run_basket_lane
+                            lane_s = run_basket_lane(actionable_opps)
+                            if lane_s.get("entered_this_cycle"):
+                                logger.info(
+                                    "BASKET-ARB LANE: %d basket(s) entered (paper), realized_pnl=%.3f",
+                                    lane_s["entered_this_cycle"], lane_s.get("total_realized_pnl", 0.0),
+                                )
+                        except Exception as _lane_err:
+                            logger.debug("Basket-Arb Lane fehlgeschlagen (unkritisch): %s", _lane_err)
+                    elif basket.get("overpriced_families"):
+                        logger.info(
+                            "BASKET-ARB: %d overpriced families, 0 fillable (illiquidity mirage)",
+                            basket["overpriced_families"],
+                        )
+                    # Always run the lane's close-out pass so held baskets resolve
+                    # even on cycles with no new actionable entries.
+                    try:
+                        from paper_trader.basket_arb_lane import run as run_basket_lane
+                        run_basket_lane(None)
+                    except Exception:
+                        pass
+                except Exception as _ba_err:
+                    logger.debug("Basket-Arbitrage Scan fehlgeschlagen (unkritisch): %s", _ba_err)
+
+            # Refresh the multi-day edge monitor (rolling opportunity/lane summary)
+            # so a continuous scheduler run keeps analytics/edge_monitor.md current.
+            try:
+                from analytics.edge_monitor import run as run_edge_monitor
+                run_edge_monitor()
+            except Exception as _em_err:
+                logger.debug("Edge-Monitor fehlgeschlagen (unkritisch): %s", _em_err)
+
+            # Per-city forward-skill tracker (model vs MARKET, with significance).
+            # READ-ONLY: surfaces whether any single city develops genuine,
+            # statistically real edge that the aggregate/per-type gates miss.
+            try:
+                from analytics.city_skill import run as run_city_skill
+                _cs = run_city_skill()
+                if _cs.get("eligible_cities"):
+                    logger.info("[CITY-SKILL] forward-eligible Staedte: %s", _cs["eligible_cities"])
+            except Exception as _cs_err:
+                logger.debug("City-Skill Tracker fehlgeschlagen (unkritisch): %s", _cs_err)
+
             if candidates:
                 output_file = str(self.output_dir / "arbitrage_opportunities.json")
                 opportunities = run_arbitrage_scan(candidates, output_file=output_file)
@@ -759,6 +825,23 @@ class Orchestrator:
                     logger.info(f"Fetched real odds for {len(real_prices)}/{len(market_ids)} markets")
                 except Exception as e:
                     logger.warning(f"Failed to fetch real market prices: {e}")
+
+            # Stash freshly-priced candidates so downstream read-only scans
+            # (basket arbitrage) can reuse the live prices we already fetched
+            # instead of paying for another round of network calls.
+            try:
+                _priced = []
+                for _c in pre_filtered:
+                    _mid = _c.get("market_id", "")
+                    _op = None
+                    if _mid in real_prices:
+                        _op = real_prices[_mid].get("outcomePrices")
+                    if _op is None:
+                        _op = _c.get("outcomePrices")
+                    _priced.append({**_c, "outcomePrices": _op})
+                self._priced_candidates = _priced
+            except Exception:
+                self._priced_candidates = None
 
             # Step 3: Convert to WeatherMarket with real odds
             weather_markets = []

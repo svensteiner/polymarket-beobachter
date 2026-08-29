@@ -131,9 +131,49 @@ def _extract_city(question: str) -> Optional[str]:
 # BLOCKED_MARKET_TYPES (set to [] to disable once forward edge is proven).
 DEFAULT_BLOCKED_MARKET_TYPES = ("exact", "at_or_above", "between")
 
+# Evidence-gated auto-unblock: a statically-blocked market type may be traded
+# again ONLY when forward_validation.py proves — on a large, per-type sample —
+# that the model's Brier actually beats the MARKET's Brier for that type. This
+# removes the manual "edit weather.yaml once live_eligible" step (a structural
+# blocker: genuine edge could never become an actionable trade without a human).
+# Fail-closed: any missing/unreadable evidence keeps the type blocked.
+FORWARD_VALIDATION_JSON = PROJECT_ROOT / "analytics" / "forward_validation.json"
+MIN_TYPE_RESOLVED_FOR_UNBLOCK = 100     # per-type resolved markets required
+MIN_TYPE_SKILL_FOR_UNBLOCK = 0.02       # model must beat market Brier by >=2%
+
 _MT_BELOW_RE = re.compile(r"or\s+below|or\s+less|or\s+under|or\s+lower|\bbelow\b", re.I)
 _MT_ABOVE_RE = re.compile(r"above|or\s+above|exceed|or\s+higher|or\s+more|or\s+over", re.I)
 _MT_BETWEEN_RE = re.compile(r"\bbetween\b", re.I)
+
+
+def _type_forward_eligible(market_type: str) -> bool:
+    """Return True only when forward_validation proves the model beats the MARKET
+    on this market type over a large per-type sample. Fail-closed on any error.
+
+    This is the evidence gate that lets a blocked type auto-unblock — strictly
+    driven by out-of-sample model-vs-market skill, never by a manual override.
+    """
+    try:
+        if not FORWARD_VALIDATION_JSON.exists():
+            return False
+        data = json.loads(FORWARD_VALIDATION_JSON.read_text(encoding="utf-8"))
+        by_type = (data.get("observation_test") or {}).get("by_market_type") or {}
+        stats = by_type.get(str(market_type).lower())
+        if not stats:
+            return False
+        n = int(stats.get("n") or 0)
+        if n < MIN_TYPE_RESOLVED_FOR_UNBLOCK:
+            return False
+        if not stats.get("model_beats_market"):
+            return False
+        model_brier = stats.get("model_brier")
+        market_brier = stats.get("market_brier")
+        if model_brier is None or market_brier in (None, 0):
+            return False
+        skill = 1.0 - (float(model_brier) / float(market_brier))
+        return skill >= MIN_TYPE_SKILL_FOR_UNBLOCK
+    except Exception:
+        return False  # fail-closed: never unblock on uncertain evidence
 
 
 def _detect_market_type(proposal) -> str:
@@ -214,11 +254,19 @@ def evaluate_entry_guardrails(
     if blocked_types:
         mtype = _detect_market_type(proposal)
         if mtype in {str(t).lower() for t in blocked_types}:
-            return (
-                False,
-                f"market_type_blocked|Market type '{mtype}' blocked — no proven "
-                "forward edge vs market (forward_validation n=2496)",
-            )
+            if _type_forward_eligible(mtype):
+                # Genuine, forward-proven edge on this type: let it trade.
+                logger.info(
+                    "market_type '%s' auto-unblocked — forward_validation proves "
+                    "model beats market (skill>=%.0f%%, n>=%d)",
+                    mtype, MIN_TYPE_SKILL_FOR_UNBLOCK * 100, MIN_TYPE_RESOLVED_FOR_UNBLOCK,
+                )
+            else:
+                return (
+                    False,
+                    f"market_type_blocked|Market type '{mtype}' blocked — no proven "
+                    "forward edge vs market (forward_validation)",
+                )
 
     # Check 1: Position count limit
     if not ignore_inventory_limit:
