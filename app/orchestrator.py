@@ -515,6 +515,17 @@ class Orchestrator:
             except Exception as _em_err:
                 logger.debug("Edge-Monitor fehlgeschlagen (unkritisch): %s", _em_err)
 
+            # Per-city forward-skill tracker (model vs MARKET, with significance).
+            # READ-ONLY: surfaces whether any single city develops genuine,
+            # statistically real edge that the aggregate/per-type gates miss.
+            try:
+                from analytics.city_skill import run as run_city_skill
+                _cs = run_city_skill()
+                if _cs.get("eligible_cities"):
+                    logger.info("[CITY-SKILL] forward-eligible Staedte: %s", _cs["eligible_cities"])
+            except Exception as _cs_err:
+                logger.debug("City-Skill Tracker fehlgeschlagen (unkritisch): %s", _cs_err)
+
             if candidates:
                 output_file = str(self.output_dir / "arbitrage_opportunities.json")
                 opportunities = run_arbitrage_scan(candidates, output_file=output_file)
