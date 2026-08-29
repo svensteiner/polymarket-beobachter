@@ -471,16 +471,39 @@ class Orchestrator:
                 try:
                     from analytics.basket_arbitrage import run as run_basket_arb
                     basket = run_basket_arb(basket_candidates, probe_books=True)
-                    if basket.get("actionable_families"):
+                    actionable_opps = [
+                        o for o in basket.get("opportunities", []) if o.get("actionable")
+                    ]
+                    if actionable_opps:
                         logger.info(
-                            "BASKET-ARB: %d ACTIONABLE risk-free basket(s)!",
-                            basket["actionable_families"],
+                            "BASKET-ARB: %d ACTIONABLE risk-free basket(s)!", len(actionable_opps)
                         )
+                        # Execute the risk-free baskets in the self-contained paper
+                        # lane (multi-leg NO basket, held to resolution). Model-free
+                        # & risk-free -> does not touch the YES-only simulator or
+                        # conflict with the forward gate.
+                        try:
+                            from paper_trader.basket_arb_lane import run as run_basket_lane
+                            lane_s = run_basket_lane(actionable_opps)
+                            if lane_s.get("entered_this_cycle"):
+                                logger.info(
+                                    "BASKET-ARB LANE: %d basket(s) entered (paper), realized_pnl=%.3f",
+                                    lane_s["entered_this_cycle"], lane_s.get("total_realized_pnl", 0.0),
+                                )
+                        except Exception as _lane_err:
+                            logger.debug("Basket-Arb Lane fehlgeschlagen (unkritisch): %s", _lane_err)
                     elif basket.get("overpriced_families"):
                         logger.info(
                             "BASKET-ARB: %d overpriced families, 0 fillable (illiquidity mirage)",
                             basket["overpriced_families"],
                         )
+                    # Always run the lane's close-out pass so held baskets resolve
+                    # even on cycles with no new actionable entries.
+                    try:
+                        from paper_trader.basket_arb_lane import run as run_basket_lane
+                        run_basket_lane(None)
+                    except Exception:
+                        pass
                 except Exception as _ba_err:
                     logger.debug("Basket-Arbitrage Scan fehlgeschlagen (unkritisch): %s", _ba_err)
 

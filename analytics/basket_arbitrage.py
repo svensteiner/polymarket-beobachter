@@ -88,6 +88,7 @@ class BasketArbOpportunity:
     real_net_profit: Optional[float]         # payoff - cost - fees
     actionable: bool
     reason: str
+    legs: List[Dict[str, Any]] = field(default_factory=list)
     detected_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
     def to_dict(self) -> Dict[str, Any]:
@@ -107,6 +108,9 @@ class BasketArbOpportunity:
             "real_net_profit": round(self.real_net_profit, 4) if self.real_net_profit is not None else None,
             "actionable": self.actionable,
             "reason": self.reason,
+            # Per-leg execution detail is only needed for actionable baskets (the
+            # ones the paper lane will actually enter); keep the report lean otherwise.
+            "legs": self.legs if self.actionable else [],
             "detected_at": self.detected_at,
         }
 
@@ -239,12 +243,24 @@ def scan(
             fillable = 0
 
         actionable = bool(fully and real_net is not None and real_net >= MIN_NET_PROFIT)
+        leg_details = [
+            {
+                "market_id": l.market_id,
+                "question": l.question[:120],
+                "yes_price": round(l.yes_price, 4),
+                "no_ask": round(l.real_no_ask, 4) if l.real_no_ask is not None else None,
+                "fee": round(l.fee, 4) if l.fee is not None else None,
+                "depth": l.real_depth,
+            }
+            for l in legs
+        ] if actionable else []
         opps.append(BasketArbOpportunity(
             family_key=fkey, city=city, metric=metric, date=date,
             n_buckets=n, yes_sum=yes_sum, deviation=deviation,
             legs_fillable=fillable, fully_fillable=fully,
             real_basket_cost=real_cost, worst_case_payoff=payoff,
             real_net_profit=real_net, actionable=actionable, reason=reason,
+            legs=leg_details,
         ))
         logger.info(
             "BASKET-ARB %s | n=%d sum(YES)=%.3f dev=%+.3f | fillable=%d/%d net=%s actionable=%s",
