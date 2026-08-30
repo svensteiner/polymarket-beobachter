@@ -1,6 +1,6 @@
 # Structural Arbitrage — Paper Trading
 
-**Generiert:** 2026-08-30T21:36:54.164277+00:00  
+**Generiert:** 2026-08-30T22:38:34.596559+00:00  
 
 > PAPER ONLY — model-free complete-set / binary-lock after real CLOB asks + taker fees. Cash if no net edge. Kein Live-Order. Active-leg filter + ask coverage >= 0.92.
 
@@ -8,18 +8,17 @@
 
 - Scanned partitions/markets: **107**
 - Complete partitions: **16**
-- Candidates (prefilter): **11**
-- Rejected (cost/net < MIN_NET): **4**
-- Book fetches: **37**
-- Skip counts: `binary_cap=1, cost_negative=4, legs_out_of_range=1, no_real_book=7, prefilter=5, residual_other=90`
+- Candidates (prefilter): **10**
+- Rejected (cost/net < MIN_NET): **3**
+- Book fetches: **30**
+- Skip counts: `binary_cap=1, cost_negative=3, legs_out_of_range=1, no_real_book=7, prefilter=6, residual_other=90`
 - Legs out-of-range hist: `n=13:1`
 
 ## Near-miss nets (closest to MIN_NET)
 
   - BINARY_LOCK | net=-0.00124 gap=0.01124 | IPOs before 2027?
-  - BUY_NO_SET | net=-0.0326 gap=0.0426 | OpenAI IPO Closing Market Cap
-  - BUY_NO_SET | net=-0.045863 gap=0.055863 | Where will 2026 rank among the hottest years on record?
-  - BUY_YES_SET | net=-0.075554 gap=0.085554 | How many Gold Cards will Trump sell in 2026?
+  - BUY_YES_SET | net=-0.074608 gap=0.084608 | How many Gold Cards will Trump sell in 2026?
+  - BUY_NO_SET | net=-0.075099 gap=0.085099 | GDP growth in 2026
 
 ## Ledger
 
