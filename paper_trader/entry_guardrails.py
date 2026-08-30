@@ -138,6 +138,26 @@ _MT_ABOVE_RE = re.compile(r"above|or\s+above|exceed|or\s+higher|or\s+more|or\s+o
 _MT_BETWEEN_RE = re.compile(r"\bbetween\b", re.I)
 
 
+def _cities_losing_to_market(min_n: int = 5) -> list:
+    """Load cities that lose to market from model_city_skill.json (fail-open)."""
+    path = PROJECT_ROOT / "analytics" / "model_city_skill.json"
+    if not path.exists():
+        return []
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        return []
+    losers = data.get("cities_losing_to_market") or []
+    out = []
+    for row in losers:
+        try:
+            if int(row.get("n") or 0) >= int(min_n):
+                out.append(row)
+        except (TypeError, ValueError):
+            continue
+    return out
+
+
 def _detect_market_type(proposal) -> str:
     """Resolve a proposal's market type, falling back to question-text parsing.
 
@@ -300,6 +320,26 @@ def evaluate_entry_guardrails(
                 )
         except Exception:
             pass  # fail-open: never block a trade because of tracker plumbing
+
+    # Check 3c: City skill soft-block (model loses to market on unique at_or_below
+    # samples). Fail-open if report missing / city n below threshold.
+    if city and weather_config.get("CITY_SKILL_SOFT_BLOCK", True):
+        try:
+            losing = _cities_losing_to_market(
+                min_n=int(weather_config.get("CITY_SKILL_MIN_N", 5))
+            )
+            city_l = city.lower()
+            hit = next((c for c in losing if str(c.get("city", "")).lower() == city_l), None)
+            if hit:
+                return (
+                    False,
+                    f"city_skill_soft_block|City {city} loses to market on "
+                    f"at_or_below forward skill (n={hit.get('n')}, "
+                    f"model_brier={hit.get('model_brier')}, "
+                    f"market_brier={hit.get('market_brier')})",
+                )
+        except Exception:
+            pass  # fail-open
 
     # Check 4: Policy mode restrictions
     if policy_mode == "HALT":

@@ -7,6 +7,9 @@
 #   analytics/at_or_below_skill.json
 #   analytics/at_or_below_skill.md
 #
+# 2026-08-30: dedupe by market_id + city fallback from question so n is honest
+# and gate progress is trackable (target = MIN_N_FOR_CALL unique markets).
+#
 # READ-ONLY regarding trading. Fail-open.
 # =============================================================================
 
@@ -15,7 +18,14 @@ from __future__ import annotations
 import json
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
+
+from analytics.skill_common import (
+    dedupe_by_market_id,
+    gate_progress,
+    load_jsonl,
+    resolve_city,
+)
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 POSITIONS_PATH = PROJECT_ROOT / "paper_trader" / "logs" / "paper_positions.jsonl"
@@ -31,24 +41,9 @@ def _brier(p: float, y: int) -> float:
     return (p - float(y)) ** 2
 
 
-def _load_jsonl(path: Path) -> List[Dict[str, Any]]:
-    if not path.exists():
-        return []
-    rows: List[Dict[str, Any]] = []
-    for line in path.read_text(encoding="utf-8").splitlines():
-        line = line.strip()
-        if not line:
-            continue
-        try:
-            rows.append(json.loads(line))
-        except json.JSONDecodeError:
-            continue
-    return rows
-
-
 def _load_resolutions() -> Dict[str, str]:
     out: Dict[str, str] = {}
-    for row in _load_jsonl(RESOLUTIONS_PATH):
+    for row in load_jsonl(RESOLUTIONS_PATH):
         if not row.get("resolved"):
             continue
         res = row.get("resolution")
@@ -60,9 +55,9 @@ def _load_resolutions() -> Dict[str, str]:
 
 def analyse() -> Dict[str, Any]:
     resolutions = _load_resolutions()
-    positions = _load_jsonl(POSITIONS_PATH)
+    positions = load_jsonl(POSITIONS_PATH)
 
-    clean: List[Dict[str, Any]] = []
+    candidates: List[Dict[str, Any]] = []
     for pos in positions:
         if (pos.get("market_type") or "") != "at_or_below":
             continue
@@ -80,10 +75,11 @@ def analyse() -> Dict[str, Any]:
         side = (pos.get("side") or "YES").upper()
         market_p_yes = entry if side == "YES" else (1.0 - entry)
         y_yes = 1 if res == "YES" else 0
-        clean.append(
+        candidates.append(
             {
+                **pos,
                 "market_id": mid,
-                "city": pos.get("city"),
+                "city": resolve_city(pos),
                 "side": side,
                 "model_p_yes": model_p_yes,
                 "market_p_yes": market_p_yes,
@@ -94,47 +90,73 @@ def analyse() -> Dict[str, Any]:
             }
         )
 
-    n = len(clean)
+    n_raw = len(candidates)
+    clean = dedupe_by_market_id(candidates)
+    samples = [
+        {
+            "market_id": r["market_id"],
+            "city": r.get("city"),
+            "side": r.get("side"),
+            "model_p_yes": r.get("model_p_yes"),
+            "market_p_yes": r.get("market_p_yes"),
+            "y_yes": r.get("y_yes"),
+            "model_brier": r.get("model_brier"),
+            "market_brier": r.get("market_brier"),
+            "pnl_eur": r.get("pnl_eur"),
+        }
+        for r in clean
+    ]
+    n = len(samples)
+    progress = gate_progress(n, MIN_N_FOR_CALL)
     generated = datetime.now(timezone.utc).isoformat()
+
     if n == 0:
         report: Dict[str, Any] = {
             "generated_at": generated,
             "market_type": "at_or_below",
             "n": 0,
+            "n_raw_rows": n_raw,
+            "n_unique_markets": 0,
             "status": "NO_DATA",
             "message": (
                 "Keine resolved at_or_below Positionen mit "
                 "model_probability + Resolution."
             ),
-            "live_gate_hint": f"Gate braucht >= {MIN_N_FOR_CALL} Samples",
+            "live_gate_hint": f"Gate braucht >= {MIN_N_FOR_CALL} unique Markets",
+            "gate_progress": progress,
         }
     else:
-        model_brier = sum(r["model_brier"] for r in clean) / n
-        market_brier = sum(r["market_brier"] for r in clean) / n
+        model_brier = sum(float(r["model_brier"]) for r in samples) / n
+        market_brier = sum(float(r["market_brier"]) for r in samples) / n
         beats_market = model_brier < market_brier
         delta = market_brier - model_brier
         hits = sum(
             1
-            for r in clean
-            if (r["model_p_yes"] >= 0.5 and r["y_yes"] == 1)
-            or (r["model_p_yes"] < 0.5 and r["y_yes"] == 0)
+            for r in samples
+            if (float(r["model_p_yes"]) >= 0.5 and r["y_yes"] == 1)
+            or (float(r["model_p_yes"]) < 0.5 and r["y_yes"] == 0)
         )
         mkt_hits = sum(
             1
-            for r in clean
-            if (r["market_p_yes"] >= 0.5 and r["y_yes"] == 1)
-            or (r["market_p_yes"] < 0.5 and r["y_yes"] == 0)
+            for r in samples
+            if (float(r["market_p_yes"]) >= 0.5 and r["y_yes"] == 1)
+            or (float(r["market_p_yes"]) < 0.5 and r["y_yes"] == 0)
         )
         if beats_market and n >= MIN_N_FOR_CALL:
-            hint = "PASS-Kandidat (at_or_below)"
+            hint = "PASS-Kandidat (at_or_below, unique markets)"
         elif n < MIN_N_FOR_CALL:
-            hint = "Noch zu wenig Samples"
+            hint = (
+                f"Noch zu wenig unique Markets ({n}/{MIN_N_FOR_CALL}, "
+                f"raw_rows={n_raw})"
+            )
         else:
             hint = "Model schlaegt Markt NICHT — kein Forward-Edge"
         report = {
             "generated_at": generated,
             "market_type": "at_or_below",
             "n": n,
+            "n_raw_rows": n_raw,
+            "n_unique_markets": n,
             "status": "OK" if n >= MIN_N_FOR_CALL else "INSUFFICIENT_N",
             "model_brier": round(model_brier, 6),
             "market_brier": round(market_brier, 6),
@@ -143,7 +165,8 @@ def analyse() -> Dict[str, Any]:
             "model_directional_hit_rate": round(hits / n, 4),
             "market_directional_hit_rate": round(mkt_hits / n, 4),
             "live_gate_hint": hint,
-            "samples": clean[:50],
+            "gate_progress": progress,
+            "samples": samples[:50],
         }
 
     OUT_JSON.parent.mkdir(parents=True, exist_ok=True)
@@ -155,13 +178,20 @@ def analyse() -> Dict[str, Any]:
 
 
 def _render_md(r: Dict[str, Any]) -> str:
+    gp = r.get("gate_progress") or {}
     lines = [
         "# at_or_below Forward Skill",
         "",
         f"Generated: `{r.get('generated_at')}`",
         "",
-        f"- n = **{r.get('n')}**",
+        f"- n (unique markets) = **{r.get('n')}**",
+        f"- n_raw_rows = **{r.get('n_raw_rows')}**",
         f"- Status: **{r.get('status')}**",
+        (
+            f"- Gate progress: **{gp.get('n_unique')}/{gp.get('target')}** "
+            f"({float(gp.get('progress_pct') or 0) * 100:.1f}%, "
+            f"remaining={gp.get('remaining')})"
+        ),
     ]
     if r.get("n"):
         better = "Model besser" if r.get("model_beats_market") else "Markt besser"

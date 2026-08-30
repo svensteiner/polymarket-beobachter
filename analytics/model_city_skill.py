@@ -2,12 +2,12 @@
 # MODEL / CITY FORWARD SKILL
 # =============================================================================
 #
-# Breaks at_or_below (and optionally other types) skill down by:
-#   - city
+# Breaks at_or_below skill down by:
+#   - city (from position.city or question parse)
 #   - forecast source (when per_source_probabilities were logged)
 #
-# Uses paper positions + official resolutions. When observations carry
-# per_source_probabilities, also scores each source vs the YES outcome.
+# Uses paper positions + official resolutions, deduped by market_id.
+# Also emits cities_losing_to_market for soft entry blocks.
 #
 # READ-ONLY for trading. Writes:
 #   analytics/model_city_skill.json
@@ -20,7 +20,14 @@ import json
 from collections import defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Tuple
+
+from analytics.skill_common import (
+    dedupe_by_market_id,
+    gate_progress,
+    load_jsonl,
+    resolve_city,
+)
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 POSITIONS_PATH = PROJECT_ROOT / "paper_trader" / "logs" / "paper_positions.jsonl"
@@ -32,6 +39,7 @@ OUT_JSON = PROJECT_ROOT / "analytics" / "model_city_skill.json"
 OUT_MD = PROJECT_ROOT / "analytics" / "model_city_skill.md"
 
 MIN_N = 5
+GATE_TARGET = 20
 
 
 def _brier(p: float, y: int) -> float:
@@ -39,24 +47,9 @@ def _brier(p: float, y: int) -> float:
     return (p - float(y)) ** 2
 
 
-def _load_jsonl(path: Path) -> List[Dict[str, Any]]:
-    if not path.exists():
-        return []
-    rows: List[Dict[str, Any]] = []
-    for line in path.read_text(encoding="utf-8").splitlines():
-        line = line.strip()
-        if not line:
-            continue
-        try:
-            rows.append(json.loads(line))
-        except json.JSONDecodeError:
-            continue
-    return rows
-
-
 def _load_resolutions() -> Dict[str, str]:
     out: Dict[str, str] = {}
-    for row in _load_jsonl(RESOLUTIONS_PATH):
+    for row in load_jsonl(RESOLUTIONS_PATH):
         if not row.get("resolved"):
             continue
         res = row.get("resolution")
@@ -72,12 +65,12 @@ def _load_observations() -> List[Dict[str, Any]]:
         if not d.exists():
             continue
         for path in sorted(d.glob("weather_observations*.jsonl")):
-            rows.extend(_load_jsonl(path))
+            rows.extend(load_jsonl(path))
     return rows
 
 
 def _agg(scores: List[Tuple[float, float, int]]) -> Dict[str, Any]:
-    """scores: list of (model_brier, market_brier, y_yes) — market optional as -1."""
+    """scores: (model_brier, market_brier, y_yes); market_brier may be -1."""
     n = len(scores)
     if n == 0:
         return {"n": 0}
@@ -97,12 +90,10 @@ def _agg(scores: List[Tuple[float, float, int]]) -> Dict[str, Any]:
 
 def analyse(market_type: str = "at_or_below") -> Dict[str, Any]:
     resolutions = _load_resolutions()
-    positions = _load_jsonl(POSITIONS_PATH)
+    positions = load_jsonl(POSITIONS_PATH)
     observations = _load_observations()
 
-    by_city: Dict[str, List[Tuple[float, float, int]]] = defaultdict(list)
-    overall: List[Tuple[float, float, int]] = []
-
+    candidates: List[Dict[str, Any]] = []
     for pos in positions:
         if (pos.get("market_type") or "") != market_type:
             continue
@@ -120,18 +111,36 @@ def analyse(market_type: str = "at_or_below") -> Dict[str, Any]:
         side = (pos.get("side") or "YES").upper()
         market_p_yes = entry if side == "YES" else (1.0 - entry)
         y_yes = 1 if res == "YES" else 0
+        candidates.append(
+            {
+                **pos,
+                "market_id": mid,
+                "city": resolve_city(pos),
+                "_model_p": model_p,
+                "_market_p_yes": market_p_yes,
+                "_y_yes": y_yes,
+                "_mb": _brier(model_p, y_yes),
+                "_kb": _brier(market_p_yes, y_yes),
+            }
+        )
+
+    n_raw = len(candidates)
+    unique_pos = dedupe_by_market_id(candidates)
+
+    by_city: Dict[str, List[Tuple[float, float, int]]] = defaultdict(list)
+    overall: List[Tuple[float, float, int]] = []
+    for pos in unique_pos:
         city = str(pos.get("city") or "UNKNOWN")
-        mb = _brier(model_p, y_yes)
-        kb = _brier(market_p_yes, y_yes)
+        mb = float(pos["_mb"])
+        kb = float(pos["_kb"])
+        y_yes = int(pos["_y_yes"])
         by_city[city].append((mb, kb, y_yes))
         overall.append((mb, kb, y_yes))
 
-    # Per-source from observations that carry per_source_probabilities
     by_source: Dict[str, List[Tuple[float, float, int]]] = defaultdict(list)
     by_source_city: Dict[str, Dict[str, List[Tuple[float, float, int]]]] = defaultdict(
         lambda: defaultdict(list)
     )
-    # Prefer latest observation per market_id
     latest_obs: Dict[str, Dict[str, Any]] = {}
     for obs in observations:
         mid = str(obs.get("market_id") or "")
@@ -150,10 +159,12 @@ def analyse(market_type: str = "at_or_below") -> Dict[str, Any]:
         if res not in ("YES", "NO"):
             continue
         y_yes = 1 if res == "YES" else 0
-        city = str(obs.get("city") or "UNKNOWN")
+        city = resolve_city(obs)
         market_p = obs.get("market_probability")
         try:
-            market_brier = _brier(float(market_p), y_yes) if market_p is not None else -1.0
+            market_brier = (
+                _brier(float(market_p), y_yes) if market_p is not None else -1.0
+            )
         except (TypeError, ValueError):
             market_brier = -1.0
         for source, prob in (obs.get("per_source_probabilities") or {}).items():
@@ -181,11 +192,15 @@ def analyse(market_type: str = "at_or_below") -> Dict[str, Any]:
             if len(scores) >= 1
         }
 
-    # Rank cities / sources that beat market with enough n
     city_winners = [
         {"city": c, **v}
         for c, v in city_table.items()
         if v.get("n", 0) >= MIN_N and v.get("model_beats_market") is True
+    ]
+    city_losers = [
+        {"city": c, **v}
+        for c, v in city_table.items()
+        if v.get("n", 0) >= MIN_N and v.get("model_beats_market") is False
     ]
     source_winners = [
         {"source": s, **v}
@@ -193,41 +208,59 @@ def analyse(market_type: str = "at_or_below") -> Dict[str, Any]:
         if v.get("n", 0) >= MIN_N and v.get("model_beats_market") is True
     ]
 
+    n_unique = len(unique_pos)
     report = {
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "market_type": market_type,
+        "n_raw_rows": n_raw,
+        "n_unique_markets": n_unique,
         "overall": _agg(overall),
         "by_city": city_table,
         "by_source": source_table,
         "by_source_city": source_city_table,
         "city_winners_min_n": MIN_N,
         "cities_beating_market": city_winners,
+        "cities_losing_to_market": city_losers,
         "sources_beating_market": source_winners,
+        "gate_progress": gate_progress(n_unique, GATE_TARGET),
         "notes": [
-            "Position-based city skill uses model_probability as P(YES).",
+            "Rows are deduped by market_id (latest entry wins).",
+            "City falls back to parsing market_question when city field is empty.",
             "Source skill requires observations with per_source_probabilities "
             "(logged from 2026-08-30 onward) joined to resolutions.",
+            "cities_losing_to_market feeds soft entry blocks when enabled.",
         ],
     }
 
     OUT_JSON.parent.mkdir(parents=True, exist_ok=True)
-    OUT_JSON.write_text(json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8")
+    OUT_JSON.write_text(
+        json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8"
+    )
     OUT_MD.write_text(_render_md(report), encoding="utf-8")
     return report
 
 
 def _render_md(r: Dict[str, Any]) -> str:
+    gp = r.get("gate_progress") or {}
     lines = [
         "# Model / City Forward Skill",
         "",
         f"Generated: `{r.get('generated_at')}`",
         f"Market type: **{r.get('market_type')}**",
+        (
+            f"Unique markets: **{r.get('n_unique_markets')}** "
+            f"(raw rows: {r.get('n_raw_rows')})"
+        ),
+        (
+            f"Gate progress: **{gp.get('n_unique')}/{gp.get('target')}** "
+            f"({float(gp.get('progress_pct') or 0) * 100:.1f}%)"
+        ),
         "",
         "## Overall",
         "",
         f"```json\n{json.dumps(r.get('overall'), indent=2)}\n```",
         "",
-        "## By city (position-based)",
+        "## By city (position-based, deduped)",
         "",
     ]
     for city, stats in (r.get("by_city") or {}).items():
@@ -241,7 +274,9 @@ def _render_md(r: Dict[str, Any]) -> str:
     lines += ["", "## By forecast source (observation-based)", ""]
     sources = r.get("by_source") or {}
     if not sources:
-        lines.append("_Noch keine Observations mit `per_source_probabilities` + Resolution._")
+        lines.append(
+            "_Noch keine Observations mit `per_source_probabilities` + Resolution._"
+        )
     else:
         for src, stats in sources.items():
             flag = ""
@@ -251,10 +286,14 @@ def _render_md(r: Dict[str, Any]) -> str:
                 f"- **{src}**: n={stats.get('n')} model={stats.get('model_brier')} "
                 f"market={stats.get('market_brier')}{flag}"
             )
-    lines += ["", "## Winners", ""]
+    lines += ["", "## Winners / Losers", ""]
     lines.append(
         f"- Cities beating market (n≥{MIN_N}): "
         + (", ".join(c["city"] for c in r.get("cities_beating_market") or []) or "—")
+    )
+    lines.append(
+        f"- Cities losing to market (n≥{MIN_N}): "
+        + (", ".join(c["city"] for c in r.get("cities_losing_to_market") or []) or "—")
     )
     lines.append(
         f"- Sources beating market (n≥{MIN_N}): "

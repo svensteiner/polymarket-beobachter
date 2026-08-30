@@ -170,3 +170,143 @@ class TestModelCitySkill:
         assert mcs.OUT_JSON.exists()
         assert mcs.OUT_MD.exists()
         assert "overall" in report or "n" in report or isinstance(report, dict)
+
+
+class TestSkillCommon:
+    def test_extract_city_from_question(self):
+        from analytics.skill_common import extract_city_from_question
+
+        q = "Will the highest temperature in Toronto be 21°C or below on April 14?"
+        assert extract_city_from_question(q) == "Toronto"
+        q2 = "Will the highest temperature in New York City be 77°F or below on April 17?"
+        assert extract_city_from_question(q2) == "New York"
+
+    def test_dedupe_by_market_id_keeps_latest(self):
+        from analytics.skill_common import dedupe_by_market_id
+
+        rows = [
+            {"market_id": "1", "entry_time": "2026-01-01", "v": 1},
+            {"market_id": "1", "entry_time": "2026-02-01", "v": 2},
+            {"market_id": "2", "entry_time": "2026-01-01", "v": 3},
+        ]
+        out = dedupe_by_market_id(rows)
+        by = {r["market_id"]: r["v"] for r in out}
+        assert by == {"1": 2, "2": 3}
+
+    def test_gate_progress(self):
+        from analytics.skill_common import gate_progress
+
+        gp = gate_progress(7, 20)
+        assert gp["n_unique"] == 7
+        assert gp["target"] == 20
+        assert gp["remaining"] == 13
+        assert gp["ready_for_gate_eval"] is False
+
+
+class TestAtOrBelowDedupe:
+    def test_analyse_dedupes_and_parses_city(self, tmp_path, monkeypatch):
+        from analytics import at_or_below_skill as aob
+
+        positions = tmp_path / "positions.jsonl"
+        resolutions = tmp_path / "resolutions.jsonl"
+        # Same market twice → should count as n=1 unique
+        rows = [
+            {
+                "market_id": "m1",
+                "market_type": "at_or_below",
+                "market_question": "Will the highest temperature in Dallas be 71°F or below on April 20?",
+                "side": "YES",
+                "model_probability": 0.6,
+                "entry_price": 0.4,
+                "entry_time": "2026-04-18T00:00:00",
+                "realized_pnl_eur": 0.0,
+            },
+            {
+                "market_id": "m1",
+                "market_type": "at_or_below",
+                "market_question": "Will the highest temperature in Dallas be 71°F or below on April 20?",
+                "side": "YES",
+                "model_probability": 0.6,
+                "entry_price": 0.4,
+                "entry_time": "2026-04-19T00:00:00",
+                "realized_pnl_eur": 0.0,
+            },
+        ]
+        positions.write_text(
+            "\n".join(json.dumps(r) for r in rows) + "\n", encoding="utf-8"
+        )
+        resolutions.write_text(
+            json.dumps(
+                {"market_id": "m1", "resolved": True, "resolution": "YES"}
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        monkeypatch.setattr(aob, "POSITIONS_PATH", positions)
+        monkeypatch.setattr(aob, "RESOLUTIONS_PATH", resolutions)
+        monkeypatch.setattr(aob, "OUT_JSON", tmp_path / "aob.json")
+        monkeypatch.setattr(aob, "OUT_MD", tmp_path / "aob.md")
+
+        report = aob.analyse()
+        assert report["n"] == 1
+        assert report["n_raw_rows"] == 2
+        assert report["samples"][0]["city"] == "Dallas"
+        assert report["gate_progress"]["n_unique"] == 1
+        assert report["model_beats_market"] is True
+
+
+class TestCitySkillSoftBlock:
+    def test_soft_block_rejects_losing_city(self, tmp_path, monkeypatch):
+        from paper_trader import entry_guardrails as eg
+
+        skill = {
+            "cities_losing_to_market": [
+                {
+                    "city": "Chicago",
+                    "n": 6,
+                    "model_brier": 0.4,
+                    "market_brier": 0.2,
+                }
+            ]
+        }
+        skill_path = tmp_path / "model_city_skill.json"
+        skill_path.write_text(json.dumps(skill), encoding="utf-8")
+        monkeypatch.setattr(eg, "PROJECT_ROOT", tmp_path)
+
+        # Ensure helper reads from tmp analytics path — recreate expected layout
+        (tmp_path / "analytics").mkdir(exist_ok=True)
+        (tmp_path / "analytics" / "model_city_skill.json").write_text(
+            json.dumps(skill), encoding="utf-8"
+        )
+
+        proposal = MagicMock()
+        proposal.implied_probability = 0.25
+        proposal.market_question = (
+            "Will the highest temperature in Chicago be 89°F or below on July 16?"
+        )
+        proposal.market_type = "at_or_below"
+        proposal.edge = 0.20
+        proposal.model_probability = 0.45
+        proposal.confidence_level = "HIGH"
+
+        with patch.object(
+            eg,
+            "_load_weather_config",
+            return_value={
+                "ALLOWED_MARKET_TYPES": ["at_or_below"],
+                "BLOCKED_MARKET_TYPES": ["exact", "at_or_above", "between"],
+                "MAX_ODDS": 0.35,
+                "MIN_ENTRY_PRICE": 0.15,
+                "CITY_SKILL_SOFT_BLOCK": True,
+                "CITY_SKILL_MIN_N": 5,
+            },
+        ), patch.object(
+            eg, "_load_capital_config", return_value={"max_open_positions": 10}
+        ), patch.object(eg, "_load_agent_policy", return_value={}):
+            # Also patch city extract to Chicago if needed
+            with patch.object(eg, "_extract_city", return_value="Chicago"):
+                allowed, reason = eg.evaluate_entry_guardrails(
+                    proposal, open_positions_count=0, ignore_inventory_limit=True
+                )
+        assert allowed is False
+        assert "city_skill_soft_block" in reason

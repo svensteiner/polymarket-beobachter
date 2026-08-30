@@ -1,33 +1,37 @@
 # Model / City Forward Skill
 
-Generated: `2026-08-30T07:09:51.311542+00:00`
+Generated: `2026-08-30T07:33:20.030129+00:00`
 Market type: **at_or_below**
+Unique markets: **7** (raw rows: 15)
+Gate progress: **7/20** (35.0%)
 
 ## Overall
 
 ```json
 {
-  "n": 15,
-  "model_brier": 0.336527,
-  "market_brier": 0.326462,
-  "model_beats_market": false,
-  "delta_market_minus_model": -0.010065
+  "n": 7,
+  "model_brier": 0.304736,
+  "market_brier": 0.329274,
+  "model_beats_market": true,
+  "delta_market_minus_model": 0.024538
 }
 ```
 
-## By city (position-based)
+## By city (position-based, deduped)
 
-- **UNKNOWN**: n=8 model=0.396649 market=0.341927 ❌
-- **Tokyo**: n=2 model=0.004184 market=0.0001
-- **Ankara**: n=2 model=0.460771 market=0.651491
-- **Chicago**: n=2 model=0.430715 market=0.204631
-- **Dallas**: n=1 model=0.083362 market=0.449068
+- **Dallas**: n=2 model=0.186263 market=0.481399
+- **Toronto**: n=1 model=0.16188 market=0.242556
+- **New York**: n=1 model=0.703076 market=0.252431
+- **Tokyo**: n=1 model=0.004184 market=0.0001
+- **Ankara**: n=1 model=0.460771 market=0.651491
+- **Chicago**: n=1 model=0.430715 market=0.195541
 
 ## By forecast source (observation-based)
 
 _Noch keine Observations mit `per_source_probabilities` + Resolution._
 
-## Winners
+## Winners / Losers
 
 - Cities beating market (n≥5): —
+- Cities losing to market (n≥5): —
 - Sources beating market (n≥5): —
