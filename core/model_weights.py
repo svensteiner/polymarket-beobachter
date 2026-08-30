@@ -52,9 +52,51 @@ MIN_WEIGHT: float = 0.1
 MAX_WEIGHT: float = 5.0
 
 
+# Skill-Priors bevor genug Forward-Resolutions vorliegen.
+# ECMWF/ICON/GEM starten ueber GFS-Clones; Bayesian Update bleibt dominant.
+PRIOR_WEIGHTS: Dict[str, float] = {
+    "ecmwf_ifs": 1.35,
+    "ecmwf_ifs025": 1.35,
+    "icon_global": 1.20,
+    "gem_global": 1.15,
+    "met_norway": 1.10,
+    "open_meteo_ensemble": 1.25,
+    "gfs_ensemble": 1.25,
+    "open_meteo": 1.0,
+    "open_meteo_gfs": 1.0,
+    "openweather": 0.85,
+    "openweather_gfs": 0.85,
+    "tomorrow_io": 0.85,
+    "noaa": 0.95,
+    "noaa_gfs": 0.95,
+}
+
+
 def _default_weights() -> Dict[str, float]:
-    """Erstelle initiale Gleichgewichte fuer alle Modelle."""
-    return {model: 1.0 for model in KNOWN_MODELS}
+    """Initiale Gewichte = Skill-Priors (nicht blind 1.0)."""
+    return {model: float(PRIOR_WEIGHTS.get(model, 1.0)) for model in KNOWN_MODELS}
+
+
+def resolve_learned_weight(learned: Dict[str, float], source_name: str, model_name: str) -> float:
+    """Lookup by source_name OR model_name (Open-Meteo models use both keys)."""
+    if source_name in learned:
+        return float(learned[source_name])
+    if model_name in learned:
+        return float(learned[model_name])
+    # Alias: ecmwf_ifs025 <-> ecmwf_ifs
+    aliases = {
+        "ecmwf_ifs025": "ecmwf_ifs",
+        "ecmwf_ifs": "ecmwf_ifs025",
+        "gfs_ensemble": "open_meteo_ensemble",
+        "open_meteo_ensemble": "gfs_ensemble",
+        "open_meteo_gfs": "open_meteo",
+        "openweather_gfs": "openweather",
+        "noaa_gfs": "noaa",
+    }
+    alt = aliases.get(source_name) or aliases.get(model_name)
+    if alt and alt in learned:
+        return float(learned[alt])
+    return float(PRIOR_WEIGHTS.get(source_name, PRIOR_WEIGHTS.get(model_name, 1.0)))
 
 
 def load_weights() -> Dict[str, float]:
@@ -76,9 +118,16 @@ def load_weights() -> Dict[str, float]:
         weights = data.get("weights", {})
         # Fehlende Modelle mit 1.0 initialisieren
         defaults = _default_weights()
+        changed = False
         for model in defaults:
             if model not in weights:
-                weights[model] = 1.0
+                weights[model] = defaults[model]
+                changed = True
+        if changed:
+            save_weights(weights, metadata={
+                "init": "prior_migration",
+                "reason": "added_ecmwf_icon_gem_priors",
+            })
         return weights
     except (json.JSONDecodeError, OSError) as e:
         logger.warning(f"Gewichte konnten nicht geladen werden: {e}")
