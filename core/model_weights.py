@@ -30,6 +30,12 @@ WEIGHTS_FILE = PROJECT_ROOT / "data" / "model_weights.json"
 KNOWN_MODELS = [
     "open_meteo",
     "open_meteo_gfs",
+    "open_meteo_ensemble",
+    "gfs_ensemble",
+    "ecmwf_ifs",
+    "ecmwf_ifs025",
+    "icon_global",
+    "gem_global",
     "met_norway",
     "openweather",
     "openweather_gfs",

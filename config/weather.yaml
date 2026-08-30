@@ -119,11 +119,42 @@ ENSEMBLE:
     - open_meteo_gfs
     - openweather_gfs
     - noaa_gfs
+    - gfs_ensemble
+    # Commercial vendors largely remix GFS — keep them in the GFS cluster
+    - tomorrow_io_proprietary
+    - openweather_proprietary
+  ECMWF:
+    - ecmwf_ifs025
+  ICON:
+    - icon_global
+  GEM:
+    - gem_global
+  MET_NORWAY:
+    - met_norway
   ENABLED: true
-  MIN_INDEPENDENT_SOURCES: 1
+  # After adding ECMWF/ICON/GEM we can require real diversity
+  MIN_INDEPENDENT_SOURCES: 2
   SOURCE_TIMEOUT_SECONDS: 12
   VARIANCE_THRESHOLD: 0.06
 FORECAST_SOURCES:
+# Independent NWP models via Open-Meteo (no API key) — primary skill stack
+- name: ecmwf_ifs
+  base_url: https://api.open-meteo.com/v1
+  timeout_seconds: 12
+  notes: ECMWF IFS 0.25 via Open-Meteo (independent of GFS)
+- name: icon_global
+  base_url: https://api.open-meteo.com/v1
+  timeout_seconds: 12
+  notes: DWD ICON Global via Open-Meteo
+- name: gem_global
+  base_url: https://api.open-meteo.com/v1
+  timeout_seconds: 12
+  notes: CMC GEM Global via Open-Meteo
+- name: open_meteo
+  base_url: https://api.open-meteo.com/v1
+  timeout_seconds: 12
+  notes: Open-Meteo default GFS
+# Commercial / optional (API keys) — treated as GFS-correlated
 - api_key_env: TOMORROW_IO_API_KEY
   base_url: https://api.tomorrow.io/v4
   name: tomorrow_io

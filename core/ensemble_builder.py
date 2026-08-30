@@ -25,6 +25,11 @@ from .forecast_sources.open_meteo_ensemble import (
     OpenMeteoEnsembleSource,
     compute_ensemble_probability,
 )
+from .forecast_sources.open_meteo_models import (
+    EcmwfIfsSource,
+    IconGlobalSource,
+    GemGlobalSource,
+)
 from .forecast_sources.met_norway_client import MetNorwaySource
 from .forecast_sources.openweather_client import OpenWeatherSource
 from .forecast_sources.tomorrow_client import TomorrowIoSource
@@ -134,11 +139,15 @@ class EnsembleBuilder:
             for m in models:
                 self._model_to_group[m] = group
 
-        # Register all available sources
-        # GFS Ensemble first (primary - 31 members for counting-based probability)
+        # Register all available sources.
+        # Order: GFS ensemble (member-counting) + independent globals (ECMWF/ICON/GEM)
+        # BEFORE commercial GFS clones, so diversity is real rather than GFS-echo.
         self._sources: List[ForecastSourceBase] = [
             OpenMeteoEnsembleSource(),
             OpenMeteoSource(),
+            EcmwfIfsSource(),
+            IconGlobalSource(),
+            GemGlobalSource(),
             MetNorwaySource(),
             OpenWeatherSource(),
             TomorrowIoSource(),

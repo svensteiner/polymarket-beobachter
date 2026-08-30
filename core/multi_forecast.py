@@ -472,8 +472,17 @@ def fetch_all_forecasts(city: str, target_time: datetime):
         )
         return []
 
+    from .forecast_sources.open_meteo_models import (
+        EcmwfIfsSource,
+        IconGlobalSource,
+        GemGlobalSource,
+    )
+
     sources = [
         OpenMeteoSource(),
+        EcmwfIfsSource(),
+        IconGlobalSource(),
+        GemGlobalSource(),
         MetNorwaySource(),
         OpenWeatherSource(),
         TomorrowIoSource(),
