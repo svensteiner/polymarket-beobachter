@@ -1,6 +1,6 @@
 # Structural Arbitrage — Paper Trading
 
-**Generiert:** 2026-08-30T13:36:51.233276+00:00  
+**Generiert:** 2026-08-30T14:38:50.530059+00:00  
 
 > PAPER ONLY — model-free complete-set / binary-lock after real CLOB asks + taker fees. Cash if no net edge. Kein Live-Order. Active-leg filter + ask coverage >= 0.92.
 
@@ -22,8 +22,8 @@
   - BINARY_LOCK | net=-0.001399 gap=0.011399 | Lecornu out as French PM by...?
   - BUY_NO_SET | net=-0.029826 gap=0.039826 | OpenAI IPO Closing Market Cap
   - BUY_YES_SET | net=-0.040911 gap=0.050911 | Balance of Power: 2026 Midterms
-  - BUY_YES_SET | net=-0.082044 gap=0.092044 | How many Gold Cards will Trump sell in 2026?
-  - BUY_NO_SET | net=-0.140264 gap=0.150264 | GDP growth in 2026
+  - BUY_YES_SET | net=-0.081099 gap=0.091099 | How many Gold Cards will Trump sell in 2026?
+  - BUY_NO_SET | net=-0.139356 gap=0.149356 | GDP growth in 2026
 
 ## Ledger
 
