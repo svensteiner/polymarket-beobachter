@@ -1,6 +1,6 @@
 # Structural Arbitrage — Paper Trading
 
-**Generiert:** 2026-08-30T14:38:50.530059+00:00  
+**Generiert:** 2026-08-30T15:25:18.841388+00:00  
 
 > PAPER ONLY — model-free complete-set / binary-lock after real CLOB asks + taker fees. Cash if no net edge. Kein Live-Order. Active-leg filter + ask coverage >= 0.92.
 
@@ -8,22 +8,20 @@
 
 - Scanned partitions/markets: **107**
 - Complete partitions: **16**
-- Candidates (prefilter): **12**
-- Rejected (cost/net < MIN_NET): **8**
-- Book fetches: **42**
-- Skip counts: `binary_cap=1, cost_negative=8, legs_out_of_range=1, no_real_book=4, prefilter=4, residual_other=90`
+- Candidates (prefilter): **11**
+- Rejected (cost/net < MIN_NET): **6**
+- Book fetches: **35**
+- Skip counts: `binary_cap=1, cost_negative=6, legs_out_of_range=1, no_real_book=5, prefilter=5, residual_other=90`
 - Legs out-of-range hist: `n=13:1`
 
 ## Near-miss nets (closest to MIN_NET)
 
   - BINARY_LOCK | net=-0.00124 gap=0.01124 | Ukraine election called by...?
   - BINARY_LOCK | net=-0.00124 gap=0.01124 | IPOs before 2027?
-  - BINARY_LOCK | net=-0.00124 gap=0.01124 | Spain snap election called by...?
   - BINARY_LOCK | net=-0.001399 gap=0.011399 | Lecornu out as French PM by...?
-  - BUY_NO_SET | net=-0.029826 gap=0.039826 | OpenAI IPO Closing Market Cap
   - BUY_YES_SET | net=-0.040911 gap=0.050911 | Balance of Power: 2026 Midterms
   - BUY_YES_SET | net=-0.081099 gap=0.091099 | How many Gold Cards will Trump sell in 2026?
-  - BUY_NO_SET | net=-0.139356 gap=0.149356 | GDP growth in 2026
+  - BUY_NO_SET | net=-0.143968 gap=0.153968 | GDP growth in 2026
 
 ## Ledger
 
