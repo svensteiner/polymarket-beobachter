@@ -1,6 +1,6 @@
 # Structural Arbitrage — Paper Trading
 
-**Generiert:** 2026-08-30T19:33:28.034819+00:00  
+**Generiert:** 2026-08-30T20:35:09.895375+00:00  
 
 > PAPER ONLY — model-free complete-set / binary-lock after real CLOB asks + taker fees. Cash if no net edge. Kein Live-Order. Active-leg filter + ask coverage >= 0.92.
 
@@ -8,19 +8,20 @@
 
 - Scanned partitions/markets: **107**
 - Complete partitions: **16**
-- Candidates (prefilter): **11**
-- Rejected (cost/net < MIN_NET): **5**
-- Book fetches: **35**
-- Skip counts: `binary_cap=1, cost_negative=5, legs_out_of_range=1, no_real_book=6, prefilter=5, residual_other=90`
+- Candidates (prefilter): **12**
+- Rejected (cost/net < MIN_NET): **6**
+- Book fetches: **41**
+- Skip counts: `binary_cap=1, cost_negative=6, legs_out_of_range=1, no_real_book=6, prefilter=4, residual_other=90`
 - Legs out-of-range hist: `n=13:1`
 
 ## Near-miss nets (closest to MIN_NET)
 
   - BINARY_LOCK | net=-0.00124 gap=0.01124 | IPOs before 2027?
   - BINARY_LOCK | net=-0.00124 gap=0.01124 | Ukraine election called by...?
+  - BUY_NO_SET | net=-0.026855 gap=0.036855 | Where will 2026 rank among the hottest years on record?
   - BUY_YES_SET | net=-0.040911 gap=0.050911 | Balance of Power: 2026 Midterms
-  - BUY_YES_SET | net=-0.077444 gap=0.087444 | How many Gold Cards will Trump sell in 2026?
-  - BUY_NO_SET | net=-0.116539 gap=0.126539 | GDP growth in 2026
+  - BUY_YES_SET | net=-0.074351 gap=0.084351 | How many Gold Cards will Trump sell in 2026?
+  - BUY_NO_SET | net=-0.097563 gap=0.107563 | GDP growth in 2026
 
 ## Ledger
 
