@@ -1633,6 +1633,21 @@ class Orchestrator:
                 f"Shadow Eligible:      {result.summary.get('shadow_eligible_without_inventory', 0)} "
                 f"without inventory ({result.summary.get('shadow_eligible_ratio_without_inventory', 0.0):.0%})",
                 f"Paper P&L (EUR):      {result.summary.get('paper_pnl_eur', 0):+.2f}",
+            ]
+            # Inject AOB gate progress (unique markets toward live-eval).
+            try:
+                from analytics.skill_common import load_gate_progress
+                _gp = load_gate_progress()
+                entry_lines.append(
+                    f"AOB-Gate:              {_gp.get('n_unique', 0)}/"
+                    f"{_gp.get('target', 20)} unique "
+                    f"({float(_gp.get('progress_pct') or 0)*100:.0f}%) | "
+                    f"beats_market={_gp.get('model_beats_market')} | "
+                    f"{_gp.get('live_gate_hint') or _gp.get('status')}"
+                )
+            except Exception:
+                entry_lines.append("AOB-Gate:              n/a")
+            entry_lines += [
                 f"Resolutions updated:  {result.summary.get('resolutions_updated', 0)}",
                 f"Drawdown:             {result.summary.get('drawdown_pct', 0.0):.1f}% "
                 f"{'[RECOVERY MODE]' if result.summary.get('drawdown_recovery_mode') else '[OK]'}",

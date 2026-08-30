@@ -111,3 +111,36 @@ def gate_progress(n_unique: int, target: int) -> Dict[str, Any]:
         "progress_pct": pct,
         "ready_for_gate_eval": int(n_unique) >= int(target),
     }
+
+def load_gate_progress(
+    skill_json: Path | None = None,
+) -> Dict[str, Any]:
+    """Read gate_progress (+ hint) from at_or_below_skill.json. Fail-open."""
+    path = skill_json or (
+        Path(__file__).resolve().parent / "at_or_below_skill.json"
+    )
+    if not path.exists():
+        return {
+            "n_unique": 0,
+            "target": 20,
+            "remaining": 20,
+            "progress_pct": 0.0,
+            "ready_for_gate_eval": False,
+            "live_gate_hint": "no skill report yet",
+            "model_beats_market": None,
+            "status": "NO_DATA",
+        }
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        return {"status": "ERROR", "live_gate_hint": "skill report unreadable"}
+    gp = dict(data.get("gate_progress") or {})
+    gp.setdefault("n_unique", data.get("n_unique_markets", data.get("n", 0)))
+    gp.setdefault("target", 20)
+    gp["live_gate_hint"] = data.get("live_gate_hint") or data.get("status")
+    gp["model_beats_market"] = data.get("model_beats_market")
+    gp["status"] = data.get("status")
+    gp["model_brier"] = data.get("model_brier")
+    gp["market_brier"] = data.get("market_brier")
+    return gp
+

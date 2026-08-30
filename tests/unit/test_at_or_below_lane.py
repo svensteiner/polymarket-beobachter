@@ -310,3 +310,92 @@ class TestCitySkillSoftBlock:
                 )
         assert allowed is False
         assert "city_skill_soft_block" in reason
+
+class TestPaperLaneEarlyFilter:
+    def test_exact_rejected_in_at_or_below_only_mode(self):
+        from datetime import datetime, timedelta, timezone
+        from core.weather_market_filter import WeatherMarket, WeatherMarketFilter
+
+        filt = WeatherMarketFilter(
+            {
+                "PAPER_LANE_MODE": "at_or_below_only",
+                "MIN_LIQUIDITY": 0,
+                "MIN_ODDS": 0.01,
+                "MAX_ODDS": 0.99,
+                "MIN_TIME_TO_RESOLUTION_HOURS": 0,
+                "ALLOWED_CITIES": ["Chicago"],
+            }
+        )
+        now = datetime.now(timezone.utc)
+        market = WeatherMarket(
+            market_id="x1",
+            question="Will the highest temperature in Chicago be 89°F on July 16?",
+            resolution_text="temp",
+            description="weather",
+            category="Weather",
+            is_binary=True,
+            liquidity_usd=1000.0,
+            odds_yes=0.30,
+            resolution_time=now + timedelta(hours=48),
+        )
+        result = filt.filter_market(market)
+        assert result.passed is False
+        assert any("PAPER_LANE" in r for r in result.rejection_reasons)
+
+    def test_at_or_below_passes_lane_gate(self):
+        from datetime import datetime, timedelta, timezone
+        from core.weather_market_filter import WeatherMarket, WeatherMarketFilter
+
+        filt = WeatherMarketFilter(
+            {
+                "PAPER_LANE_MODE": "at_or_below_only",
+                "MIN_LIQUIDITY": 0,
+                "MIN_ODDS": 0.01,
+                "MAX_ODDS": 0.99,
+                "MIN_TIME_TO_RESOLUTION_HOURS": 0,
+                "ALLOWED_CITIES": ["Chicago"],
+            }
+        )
+        now = datetime.now(timezone.utc)
+        market = WeatherMarket(
+            market_id="x2",
+            question="Will the highest temperature in Chicago be 89°F or below on July 16?",
+            resolution_text="temp",
+            description="weather",
+            category="Weather",
+            is_binary=True,
+            liquidity_usd=1000.0,
+            odds_yes=0.30,
+            resolution_time=now + timedelta(hours=48),
+        )
+        result = filt.filter_market(market)
+        assert result.passed is True
+
+
+class TestGateProgressVisibility:
+    def test_load_gate_progress_has_required_keys(self):
+        from analytics.skill_common import load_gate_progress
+
+        gp = load_gate_progress()
+        assert "n_unique" in gp
+        assert "target" in gp
+        assert "progress_pct" in gp
+
+
+class TestProposalCityPersistence:
+    def test_adapter_sets_city_and_market_type(self):
+        from proposals.signal_adapter import _detect_market_type_from_question
+
+        assert (
+            _detect_market_type_from_question(
+                "Will the highest temperature in Dallas be 71°F or below on April 20?"
+            )
+            == "at_or_below"
+        )
+        assert (
+            _detect_market_type_from_question(
+                "Will the highest temperature in Dallas be 71°F or above on April 20?"
+            )
+            == "at_or_above"
+        )
+

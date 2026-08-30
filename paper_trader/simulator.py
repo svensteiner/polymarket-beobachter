@@ -557,6 +557,10 @@ class ExecutionSimulator:
 
         # Check diversification: max positions per city+date (exclusive markets)
         new_city, new_date = _extract_city_date(proposal.market_question)
+        # Prefer city persisted on the proposal (from observation / adapter).
+        prop_city = getattr(proposal, "city", None)
+        if prop_city and str(prop_city).strip():
+            new_city = str(prop_city).strip()
         if new_city:
             city_date_count = 0
             city_count = 0
