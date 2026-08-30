@@ -362,6 +362,12 @@ def run_arbitrage_scan(
                 "markets_scanned": len(market_infos),
                 "opportunities_found": len(opportunities),
                 "opportunities": [o.to_dict() for o in opportunities],
+                # 2026-08-30: detector is informational only — never allocates capital.
+                "shadow_only": True,
+                "capital_allocation": "NONE",
+                "governance_notice": (
+                    "ARBITRAGE_SHADOW_ONLY — detect & alert, no paper/live orders."
+                ),
             }
             with open(out_path, "w", encoding="utf-8") as f:
                 json.dump(result, f, indent=2, ensure_ascii=False)

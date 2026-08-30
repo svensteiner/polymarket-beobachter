@@ -44,6 +44,15 @@ BLOCKED_MARKET_TYPES:
 - exact
 - at_or_above
 - between
+# 2026-08-30: explicit allowlist — paper lane concentrates on the only type
+# with historical forward skill. Guardrails reject anything outside this list
+# even if BLOCKED_MARKET_TYPES is emptied by mistake.
+ALLOWED_MARKET_TYPES:
+- at_or_below
+# Paper trading focus mode (orchestrator / simulator / guardrails).
+PAPER_LANE_MODE: at_or_below_only
+# Arbitrage detector stays informative only — never allocates capital.
+ARBITRAGE_SHADOW_ONLY: true
 CITY_CONFIG:
   Berlin:
     primary_station: EDDB

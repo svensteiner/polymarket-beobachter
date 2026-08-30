@@ -130,6 +130,8 @@ def _extract_city(question: str) -> Optional[str]:
 # for near-binary exact-bucket resolution. Override via weather.yaml
 # BLOCKED_MARKET_TYPES (set to [] to disable once forward edge is proven).
 DEFAULT_BLOCKED_MARKET_TYPES = ("exact", "at_or_above", "between")
+# Explicit allowlist (2026-08-30): only at_or_below may enter paper trades.
+DEFAULT_ALLOWED_MARKET_TYPES = ("at_or_below",)
 
 _MT_BELOW_RE = re.compile(r"or\s+below|or\s+less|or\s+under|or\s+lower|\bbelow\b", re.I)
 _MT_ABOVE_RE = re.compile(r"above|or\s+above|exceed|or\s+higher|or\s+more|or\s+over", re.I)
@@ -204,15 +206,26 @@ def evaluate_entry_guardrails(
     entry_price = getattr(proposal, "implied_probability", 0)
     city = _extract_city(getattr(proposal, "market_question", ""))
 
-    # Check 0: Blocked market types (2026-06-10/11 no-forward-edge decision).
-    # forward_validation.py (n=2496 resolved markets) shows exact, at_or_above and
-    # between all have WORSE Brier than the market; only at_or_below beats it.
-    # Configurable via weather.yaml (BLOCKED_MARKET_TYPES).
+    # Check 0: Market-type gate (2026-06-10/11 + 2026-08-30 lane focus).
+    # forward_validation.py (n=2496): only at_or_below beats market Brier.
+    # ALLOWED_MARKET_TYPES is an explicit allowlist (fail-closed if set).
+    # BLOCKED_MARKET_TYPES remains as defense-in-depth denylist.
+    mtype = _detect_market_type(proposal)
+    allowed_types = weather_config.get(
+        "ALLOWED_MARKET_TYPES", list(DEFAULT_ALLOWED_MARKET_TYPES)
+    )
+    if allowed_types:
+        allowed_set = {str(t).lower() for t in allowed_types}
+        if mtype not in allowed_set:
+            return (
+                False,
+                f"market_type_not_allowed|Market type '{mtype}' outside paper "
+                f"allowlist {sorted(allowed_set)} (at_or_below_only lane)",
+            )
     blocked_types = weather_config.get(
         "BLOCKED_MARKET_TYPES", list(DEFAULT_BLOCKED_MARKET_TYPES)
     )
     if blocked_types:
-        mtype = _detect_market_type(proposal)
         if mtype in {str(t).lower() for t in blocked_types}:
             return (
                 False,
@@ -259,14 +272,14 @@ def evaluate_entry_guardrails(
                 market_type_str = "at_or_below"
             elif re.search(r"above|or\s+above|exceed|or\s+higher|or\s+more|or\s+over", _q):
                 market_type_str = "at_or_above"
-        is_boundary_market = market_type_str in ("at_or_above", "at_or_below")
+        # 2026-08-30: only at_or_below remains tradeable — relax min entry for that
+        # type alone (at_or_above stays blocked by allowlist).
+        is_at_or_below = market_type_str == "at_or_below"
         # YES bets: use YES_MIN_ENTRY_PRICE (0.22) instead of min_entry_price (0.30).
-        # Boundary markets (at_or_above / at_or_below): use 0.15 as before.
-        # Near-zero lotteries (<0.22) still blocked here; further protection comes
-        # from the LOW-liq check and SQS ep_score in simulator.py.
-        effective_min_entry = 0.15 if is_boundary_market else YES_MIN_ENTRY_PRICE
+        # at_or_below: use 0.15 (directional threshold edge can sit in 0.15–0.29).
+        effective_min_entry = 0.15 if is_at_or_below else YES_MIN_ENTRY_PRICE
         if effective_min_entry > 0 and entry_price < effective_min_entry:
-            boundary_note = " — boundary market relaxed to 0.15" if is_boundary_market else ""
+            boundary_note = " — at_or_below relaxed to 0.15" if is_at_or_below else ""
             return (False, f"price_too_low|Entry price {entry_price:.2f} < min {effective_min_entry:.2f} (low-prob trap{boundary_note})")
 
     # Check 3: City cooldown — policy-managed list

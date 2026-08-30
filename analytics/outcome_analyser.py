@@ -626,6 +626,11 @@ def run_analysis() -> dict[str, Any]:
         report["at_or_below_skill"] = _run_aob_skill()
     except Exception as _aob_err:
         logger.debug("at_or_below_skill skipped: %s", _aob_err)
+    try:
+        from analytics.model_city_skill import run as _run_mcs
+        report["model_city_skill"] = _run_mcs()
+    except Exception as _mcs_err:
+        logger.debug("model_city_skill skipped: %s", _mcs_err)
 
     return report
 

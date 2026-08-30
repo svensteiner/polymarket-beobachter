@@ -409,7 +409,11 @@ class Orchestrator:
         return result
 
     def _run_arbitrage_scan(self, weather_data: dict) -> None:
-        """Scanne Wetter-Maerkte auf Arbitrage-Moeglichkeiten (non-blocking)."""
+        """Scan weather markets for arbitrage (SHADOW ONLY — never allocates capital).
+
+        Controlled by config ARBITRAGE_SHADOW_ONLY (default true). This path must
+        never call the paper simulator or live execution.
+        """
         try:
             from analytics.arbitrage_detector import run_arbitrage_scan
             import json
@@ -464,7 +468,11 @@ class Orchestrator:
                 output_file = str(self.output_dir / "arbitrage_opportunities.json")
                 opportunities = run_arbitrage_scan(candidates, output_file=output_file)
                 if opportunities:
-                    logger.info(f"Arbitrage: {len(opportunities)} Moeglichkeiten gefunden")
+                    logger.info(
+                        f"Arbitrage SHADOW: {len(opportunities)} Moeglichkeiten gefunden (kein Kapital, ARBITRAGE_SHADOW_ONLY)"
+                    )
+                    # Hard rule: never route arb into simulator / live.
+                    # Capital path intentionally absent.
                     # Telegram Alert fuer grosse Arbitrage-Chancen
                     try:
                         from notifications.telegram import send_message

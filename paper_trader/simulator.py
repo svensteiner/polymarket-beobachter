@@ -407,6 +407,24 @@ def _extract_city_date(market_question: str) -> tuple:
 # =============================================================================
 
 
+
+def _is_market_type_allowed(market_type: str, weather_config: dict | None = None) -> tuple[bool, str]:
+    """Hard allowlist for paper lane (at_or_below_only)."""
+    cfg = weather_config
+    if cfg is None:
+        try:
+            from paper_trader.entry_guardrails import _load_weather_config
+            cfg = _load_weather_config()
+        except Exception:
+            cfg = {}
+    allowed = (cfg or {}).get("ALLOWED_MARKET_TYPES", ["at_or_below"])
+    allowed_set = {str(t).lower() for t in (allowed or ["at_or_below"])}
+    mt = (market_type or "unknown").lower()
+    if mt not in allowed_set:
+        return False, f"market_type_not_allowed|{mt} not in {sorted(allowed_set)}"
+    return True, "ok"
+
+
 class ExecutionSimulator:
     """
     Simulates trade entry and exit for paper trading.
@@ -819,6 +837,30 @@ class ExecutionSimulator:
         # Negative edge (model < implied) = buy NO
         side = "YES" if proposal.edge > 0 else "NO"
         market_type = _detect_market_type(proposal.market_question)
+        type_ok, type_reason = _is_market_type_allowed(market_type)
+        if not type_ok:
+            record = PaperTradeRecord(
+                record_id=generate_record_id(),
+                timestamp=now,
+                proposal_id=proposal.proposal_id,
+                market_id=proposal.market_id,
+                action=TradeAction.SKIP.value,
+                reason=f"Market type blocked by ALLOWED_MARKET_TYPES: {type_reason}",
+                position_id=None,
+                snapshot_time=snapshot.snapshot_time,
+                entry_price=None,
+                exit_price=None,
+                slippage_applied=None,
+                pnl_eur=None,
+            )
+            log_trade(record)
+            logger.warning(
+                "SKIP (MarketTypeAllow): %s for %s",
+                type_reason,
+                proposal.market_id,
+            )
+            return (None, record)
+
         edge_verdict = assess_proposal_edge(proposal, market_type=market_type)
         if not edge_verdict["allowed"]:
             record = PaperTradeRecord(
