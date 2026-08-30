@@ -142,6 +142,8 @@ class WeatherObservation:
     probability_method: Optional[str] = None      # ensemble_member_counting | gaussian_cdf
     raw_member_probability: Optional[float] = None  # pre-shrinkage 31-member count probability
     ensemble_member_temps_f: Optional[list] = None  # raw per-member daily-high temps (°F)
+    # Per-source model probabilities for Bayesian weight updates after resolution
+    per_source_probabilities: Optional[dict] = None
 
     def __post_init__(self):
         """Validate observation fields."""
@@ -189,6 +191,7 @@ class WeatherObservation:
             "probability_method": self.probability_method,
             "raw_member_probability": self.raw_member_probability,
             "ensemble_member_temps_f": self.ensemble_member_temps_f,
+            "per_source_probabilities": self.per_source_probabilities,
         }
 
     def to_json(self) -> str:
@@ -227,6 +230,7 @@ def create_observation(
     probability_method: Optional[str] = None,
     raw_member_probability: Optional[float] = None,
     ensemble_member_temps_f: Optional[list] = None,
+    per_source_probabilities: Optional[dict] = None,
 ) -> WeatherObservation:
     """
     Factory function to create a WeatherObservation with computed fields.
@@ -284,6 +288,7 @@ def create_observation(
         probability_method=probability_method,
         raw_member_probability=raw_member_probability,
         ensemble_member_temps_f=ensemble_member_temps_f,
+        per_source_probabilities=per_source_probabilities,
     )
 
 

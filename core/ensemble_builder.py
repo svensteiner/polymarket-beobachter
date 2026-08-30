@@ -25,6 +25,11 @@ from .forecast_sources.open_meteo_ensemble import (
     OpenMeteoEnsembleSource,
     compute_ensemble_probability,
 )
+from .forecast_sources.open_meteo_models import (
+    EcmwfIfsSource,
+    IconGlobalSource,
+    GemGlobalSource,
+)
 from .forecast_sources.met_norway_client import MetNorwaySource
 from .forecast_sources.openweather_client import OpenWeatherSource
 from .forecast_sources.tomorrow_client import TomorrowIoSource
@@ -134,11 +139,15 @@ class EnsembleBuilder:
             for m in models:
                 self._model_to_group[m] = group
 
-        # Register all available sources
-        # GFS Ensemble first (primary - 31 members for counting-based probability)
+        # Register all available sources.
+        # Order: GFS ensemble (member-counting) + independent globals (ECMWF/ICON/GEM)
+        # BEFORE commercial GFS clones, so diversity is real rather than GFS-echo.
         self._sources: List[ForecastSourceBase] = [
             OpenMeteoEnsembleSource(),
             OpenMeteoSource(),
+            EcmwfIfsSource(),
+            IconGlobalSource(),
+            GemGlobalSource(),
             MetNorwaySource(),
             OpenWeatherSource(),
             TomorrowIoSource(),
@@ -229,14 +238,26 @@ class EnsembleBuilder:
         # while Normal-CDF computes probability at a single hour (= wrong question)
         if ensemble_member_prob is not None:
             ens_source = "open_meteo_ensemble"
-            # Give ensemble 85% weight, other sources 15% (slight hedge)
+            # Independent NWP models must keep real voice. Hard 85% GFS-ens monopoly
+            # drowned ECMWF/ICON/GEM after we added them. Soften with diversity.
+            independent_names = {
+                "ecmwf_ifs", "icon_global", "gem_global", "met_norway",
+            }
+            n_indep = sum(1 for sf in forecasts if sf.source_name in independent_names)
+            if n_indep >= 2:
+                ens_share = 0.45  # diversity mode
+            elif n_indep == 1:
+                ens_share = 0.65
+            else:
+                ens_share = 0.85  # legacy: only GFS family present
+            other_share = 1.0 - ens_share
             other_weight_sum = sum(
                 weights[sf.source_name] for sf in forecasts
                 if sf.source_name != ens_source and sf.source_name in weights
             )
             if other_weight_sum > 0:
-                weights[ens_source] = 0.85
-                scale_factor = 0.15 / other_weight_sum
+                weights[ens_source] = ens_share
+                scale_factor = other_share / other_weight_sum
                 for sf in forecasts:
                     if sf.source_name != ens_source and sf.source_name in weights:
                         weights[sf.source_name] *= scale_factor
@@ -396,7 +417,10 @@ class EnsembleBuilder:
         source_group: Dict[str, Optional[str]] = {}
 
         for sf in forecasts:
-            group = self._model_to_group.get(sf.model_name)
+            group = (
+                self._model_to_group.get(sf.model_name)
+                or self._model_to_group.get(sf.source_name)
+            )
             source_group[sf.source_name] = group
             if group:
                 group_counts[group] = group_counts.get(group, 0) + 1
@@ -409,8 +433,11 @@ class EnsembleBuilder:
             else:
                 base_weight = 1.0
 
-            # Multipliziere mit gelerntem Gewicht (default 1.0)
-            learned = learned_weights.get(sf.model_name, 1.0)
+            # Multipliziere mit gelerntem Gewicht (source_name ODER model_name)
+            from .model_weights import resolve_learned_weight
+            learned = resolve_learned_weight(
+                learned_weights, sf.source_name, sf.model_name
+            )
             weights[sf.source_name] = base_weight * learned
 
         return weights

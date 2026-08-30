@@ -75,6 +75,42 @@ class ArbitrageOpportunity:
         )
 
 
+def _classify_direction(question: str) -> str:
+    """
+    Klassifiziere Markt-Richtung.
+
+    - above/below: kumulative Schwellen (Monotonie-Arbitrage moeglich)
+    - exact: exakte Temperatur-Buckets ("be 31°C") — KEINE Monotonie-Arbitrage
+    - between: Band-Maerkte — keine Monotonie-Arbitrage
+    """
+    q = question.lower()
+    if "between" in q or re.search(r"\d+\s*[-–]\s*\d+", q):
+        return "between"
+    if any(kw in q for kw in ["below", "under", "less than", "not exceed", "cooler", "or below", "or less"]):
+        return "below"
+    if any(
+        kw in q
+        for kw in [
+            "above",
+            "exceed",
+            "at least",
+            "or above",
+            "or higher",
+            "or more",
+            "higher than",
+            "at or above",
+        ]
+    ):
+        return "above"
+    # Exakte Buckets: "be 31°C", "be 89°F", ohne above/below-Keywords
+    if re.search(
+        r"\bbe\s+\d+(?:\.\d+)?\s*(?:\u00b0?\s*[cf]|degrees?|fahrenheit|celsius)?\b",
+        q,
+    ):
+        return "exact"
+    return "above"
+
+
 def _extract_temperature_threshold(question: str) -> Tuple[Optional[float], str]:
     """
     Extrahiere Temperatur-Schwellenwert aus einer Market-Frage.
@@ -84,14 +120,14 @@ def _extract_temperature_threshold(question: str) -> Tuple[Optional[float], str]
     - "above 95 Fahrenheit"
     - "be at least 30 Celsius"
     - "below 32F"
+    - "be 31°C" (exact bucket)
 
     Returns:
-        (threshold_in_fahrenheit, direction "above"/"below") oder (None, "")
+        (threshold_in_fahrenheit, direction "above"/"below"/"exact"/"between")
+        oder (None, "")
     """
     q = question.lower()
-    direction = "above"
-    if any(kw in q for kw in ["below", "under", "less than", "not exceed", "cooler"]):
-        direction = "below"
+    direction = _classify_direction(question)
 
     patterns = [
         r"(\d+(?:\.\d+)?)\s*\u00b0?\s*fahrenheit",
@@ -106,6 +142,7 @@ def _extract_temperature_threshold(question: str) -> Tuple[Optional[float], str]
         r"below\s+(\d+(?:\.\d+)?)",
         r"reach\s+(\d+(?:\.\d+)?)",
         r"at\s+least\s+(\d+(?:\.\d+)?)",
+        r"\bbe\s+(\d+(?:\.\d+)?)",
     ]
 
     celsius_indices = {3, 4, 5}  # patterns for celsius, [cC]\b, degrees [cC]
@@ -325,6 +362,12 @@ def run_arbitrage_scan(
                 "markets_scanned": len(market_infos),
                 "opportunities_found": len(opportunities),
                 "opportunities": [o.to_dict() for o in opportunities],
+                # 2026-08-30: detector is informational only — never allocates capital.
+                "shadow_only": True,
+                "capital_allocation": "NONE",
+                "governance_notice": (
+                    "ARBITRAGE_SHADOW_ONLY — detect & alert, no paper/live orders."
+                ),
             }
             with open(out_path, "w", encoding="utf-8") as f:
                 json.dump(result, f, indent=2, ensure_ascii=False)

@@ -44,6 +44,23 @@ BLOCKED_MARKET_TYPES:
 - exact
 - at_or_above
 - between
+# 2026-08-30: explicit allowlist — paper lane concentrates on the only type
+# with historical forward skill. Guardrails reject anything outside this list
+# even if BLOCKED_MARKET_TYPES is emptied by mistake.
+ALLOWED_MARKET_TYPES:
+- at_or_below
+# Paper trading focus mode (orchestrator / simulator / guardrails).
+PAPER_LANE_MODE: at_or_below_only
+# Extra Gamma pages (offset*500) scanning only at_or_below phrases.
+GAMMA_BELOW_PAGES: 3
+# Liquidity floor for the below-prefer discovery pass.
+GAMMA_BELOW_MIN_LIQUIDITY: 50
+# Arbitrage detector stays informative only — never allocates capital.
+ARBITRAGE_SHADOW_ONLY: true
+# Soft-block cities where model loses to market on at_or_below forward skill
+# (unique markets, n >= CITY_SKILL_MIN_N). Fail-open if report missing.
+CITY_SKILL_SOFT_BLOCK: true
+CITY_SKILL_MIN_N: 5
 CITY_CONFIG:
   Berlin:
     primary_station: EDDB
@@ -119,11 +136,42 @@ ENSEMBLE:
     - open_meteo_gfs
     - openweather_gfs
     - noaa_gfs
+    - gfs_ensemble
+    # Commercial vendors largely remix GFS — keep them in the GFS cluster
+    - tomorrow_io_proprietary
+    - openweather_proprietary
+  ECMWF:
+    - ecmwf_ifs025
+  ICON:
+    - icon_global
+  GEM:
+    - gem_global
+  MET_NORWAY:
+    - met_norway
   ENABLED: true
-  MIN_INDEPENDENT_SOURCES: 1
+  # After adding ECMWF/ICON/GEM we can require real diversity
+  MIN_INDEPENDENT_SOURCES: 2
   SOURCE_TIMEOUT_SECONDS: 12
   VARIANCE_THRESHOLD: 0.06
 FORECAST_SOURCES:
+# Independent NWP models via Open-Meteo (no API key) — primary skill stack
+- name: ecmwf_ifs
+  base_url: https://api.open-meteo.com/v1
+  timeout_seconds: 12
+  notes: ECMWF IFS 0.25 via Open-Meteo (independent of GFS)
+- name: icon_global
+  base_url: https://api.open-meteo.com/v1
+  timeout_seconds: 12
+  notes: DWD ICON Global via Open-Meteo
+- name: gem_global
+  base_url: https://api.open-meteo.com/v1
+  timeout_seconds: 12
+  notes: CMC GEM Global via Open-Meteo
+- name: open_meteo
+  base_url: https://api.open-meteo.com/v1
+  timeout_seconds: 12
+  notes: Open-Meteo default GFS
+# Commercial / optional (API keys) — treated as GFS-correlated
 - api_key_env: TOMORROW_IO_API_KEY
   base_url: https://api.tomorrow.io/v4
   name: tomorrow_io
@@ -142,12 +190,18 @@ LOG_ALL_OBSERVATIONS: true
 MAX_FORECAST_HORIZON_DAYS: 10
 MAX_ODDS: 0.85
 MAX_TIME_TO_RESOLUTION_HOURS: 168
-MEDIUM_CONFIDENCE_EDGE_MULTIPLIER: 3.25
+MEDIUM_CONFIDENCE_EDGE_MULTIPLIER: 1.5
 MIN_CONFIDENCE: HIGH
-MIN_EDGE: 0.3
-MIN_EDGE_ABSOLUTE: 0.03
-MIN_ENTRY_PRICE: 0.3
-MIN_LIQUIDITY: 150.0
+# 2026-08-30 paper-lane recalibration (at_or_below_only): restore actionable
+# throughput while unique AOB samples accumulate toward the live gate (7/20).
+MIN_EDGE: 0.18
+MIN_EDGE_ABSOLUTE: 0.04
+YES_MIN_EDGE: 0.15
+YES_MIN_EDGE_ABSOLUTE: 0.04
+AT_OR_BELOW_MIN_EDGE: 0.15
+AT_OR_BELOW_MIN_EDGE_ABSOLUTE: 0.04
+MIN_ENTRY_PRICE: 0.15
+MIN_LIQUIDITY: 100.0
 MIN_ODDS: 0.1
 MIN_TIME_TO_RESOLUTION_HOURS: 6
 OBSERVATION_LOG_PATH: logs/weather_observations.jsonl

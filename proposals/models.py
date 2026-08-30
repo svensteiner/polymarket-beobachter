@@ -126,6 +126,8 @@ class Proposal:
     # Optional enrichment fields (populated by signal_adapter, None for legacy proposals)
     hours_to_resolution: Optional[float] = None   # Hours until market resolves
     ensemble_variance: Optional[float] = None      # Ensemble model variance (0 = perfect agreement)
+    city: Optional[str] = None                     # City from observation / question
+    market_type: Optional[str] = None              # exact|between|at_or_above|at_or_below
 
     # HARDCODED governance notice - cannot be modified
     governance_notice: str = field(
@@ -172,6 +174,8 @@ class Proposal:
             "justification_summary": self.justification_summary,
             "hours_to_resolution": self.hours_to_resolution,
             "ensemble_variance": self.ensemble_variance,
+            "city": self.city,
+            "market_type": self.market_type,
             "governance_notice": self.governance_notice
         }
 
@@ -206,6 +210,8 @@ class Proposal:
             justification_summary=data["justification_summary"],
             hours_to_resolution=data.get("hours_to_resolution"),
             ensemble_variance=data.get("ensemble_variance"),
+            city=data.get("city"),
+            market_type=data.get("market_type"),
         )
 
 

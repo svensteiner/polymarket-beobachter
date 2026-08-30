@@ -291,6 +291,14 @@ def write_bot_status(
         if result is not None and hasattr(result, 'summary'):
             run_id = result.summary.get("run_id")
 
+        # Gate progress for at_or_below paper lane (fail-open).
+        at_or_below_gate = None
+        try:
+            from analytics.skill_common import load_gate_progress
+            at_or_below_gate = load_gate_progress()
+        except Exception:
+            at_or_below_gate = None
+
         status = {
             "schema_version": 1,
             "timestamp": now.isoformat(),
@@ -302,6 +310,7 @@ def write_bot_status(
             "run_id": run_id,
             "last_run": last_run,
             "last_crash": _parse_last_crash(),
+            "at_or_below_gate": at_or_below_gate,
         }
 
         # Atomic write via .tmp + rename

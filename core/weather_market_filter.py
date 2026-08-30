@@ -242,6 +242,44 @@ class WeatherMarketFilter:
         filter_details["market_type"] = market_type
 
         # =====================================================================
+        # PAPER LANE (early): at_or_below_only drops exact/above/between ASAP
+        # so ensemble/proposal compute is not wasted on types the allowlist
+        # will reject later. Fail-open if PAPER_LANE_MODE is unset.
+        # =====================================================================
+        paper_lane = str(self.config.get("PAPER_LANE_MODE", "") or "").lower()
+        filter_details["paper_lane_mode"] = paper_lane or None
+        if paper_lane in ("at_or_below_only", "at_or_below"):
+            q_lane = (market.question or "").lower()
+            is_below = any(
+                kw in q_lane
+                for kw in (
+                    "or below",
+                    "or lower",
+                    "or under",
+                    "or less",
+                    " be below ",
+                    "below on",
+                )
+            )
+            is_above = any(
+                kw in q_lane
+                for kw in ("or above", "or higher", "or more", "or over", "exceed")
+            )
+            is_between = "between" in q_lane
+            filter_details["paper_lane_is_below"] = is_below
+            if (not is_below) or is_above or is_between:
+                rejection_reasons.append(
+                    "PAPER_LANE: only at_or_below markets allowed "
+                    f"(mode={paper_lane})"
+                )
+                return FilterResult(
+                    passed=False,
+                    market=None,
+                    rejection_reasons=rejection_reasons,
+                    filter_details=filter_details,
+                )
+
+        # =====================================================================
         # CHECK 1: Category is WEATHER
         # =====================================================================
         is_weather = self._check_weather_category(market)
@@ -362,10 +400,18 @@ class WeatherMarketFilter:
                 market.detected_threshold = resolution_check.get("threshold_f")
                 market.detected_threshold_high = resolution_check.get("threshold_f_high")
                 market.detected_event_type = resolution_check.get("event_type", "exceeds")
+                # Defense-in-depth: parsed event_type must match paper lane.
+                if paper_lane in ("at_or_below_only", "at_or_below"):
+                    if market.detected_event_type != "below":
+                        rejection_reasons.append(
+                            "PAPER_LANE: parsed event_type="
+                            f"{market.detected_event_type} not below"
+                        )
+                        passed = False
 
         return FilterResult(
-            passed=passed,
-            market=market if passed else None,
+            passed=passed and len(rejection_reasons) == 0,
+            market=market if (passed and len(rejection_reasons) == 0) else None,
             rejection_reasons=rejection_reasons,
             filter_details=filter_details,
         )

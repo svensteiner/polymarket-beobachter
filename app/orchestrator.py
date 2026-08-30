@@ -409,7 +409,11 @@ class Orchestrator:
         return result
 
     def _run_arbitrage_scan(self, weather_data: dict) -> None:
-        """Scanne Wetter-Maerkte auf Arbitrage-Moeglichkeiten (non-blocking)."""
+        """Scan weather markets for arbitrage (SHADOW ONLY — never allocates capital).
+
+        Controlled by config ARBITRAGE_SHADOW_ONLY (default true). This path must
+        never call the paper simulator or live execution.
+        """
         try:
             from analytics.arbitrage_detector import run_arbitrage_scan
             import json
@@ -464,7 +468,11 @@ class Orchestrator:
                 output_file = str(self.output_dir / "arbitrage_opportunities.json")
                 opportunities = run_arbitrage_scan(candidates, output_file=output_file)
                 if opportunities:
-                    logger.info(f"Arbitrage: {len(opportunities)} Moeglichkeiten gefunden")
+                    logger.info(
+                        f"Arbitrage SHADOW: {len(opportunities)} Moeglichkeiten gefunden (kein Kapital, ARBITRAGE_SHADOW_ONLY)"
+                    )
+                    # Hard rule: never route arb into simulator / live.
+                    # Capital path intentionally absent.
                     # Telegram Alert fuer grosse Arbitrage-Chancen
                     try:
                         from notifications.telegram import send_message
@@ -533,7 +541,28 @@ class Orchestrator:
 
             from collector.gamma_discovery import run_discovery_and_save
             output_dir = str(self.data_dir / "collector" / "gamma")
-            count = run_discovery_and_save(output_dir=output_dir, limit=300, min_liquidity=50.0)
+            prefer_aob = False
+            below_pages = 3
+            below_liq = 50.0
+            try:
+                import yaml
+                cfg_path = self.data_dir.parent / "config" / "weather.yaml"
+                if cfg_path.exists():
+                    _cfg = yaml.safe_load(cfg_path.read_text(encoding="utf-8")) or {}
+                    lane = str(_cfg.get("PAPER_LANE_MODE", "") or "").lower()
+                    prefer_aob = lane in ("at_or_below_only", "at_or_below")
+                    below_pages = int(_cfg.get("GAMMA_BELOW_PAGES", 3) or 3)
+                    below_liq = float(_cfg.get("GAMMA_BELOW_MIN_LIQUIDITY", 50) or 50)
+            except Exception:
+                prefer_aob = False
+            count = run_discovery_and_save(
+                output_dir=output_dir,
+                limit=300,
+                min_liquidity=50.0,
+                prefer_at_or_below=prefer_aob,
+                below_min_liquidity=below_liq,
+                below_pages=below_pages,
+            )
 
             if count > 0:
                 logger.info(f"Gamma Discovery: {count} neue Wetter-Maerkte gefunden")
@@ -1192,7 +1221,23 @@ class Orchestrator:
                         our_estimate_yes=obs.model_probability,
                         estimate_confidence=obs.confidence.value if hasattr(obs.confidence, 'value') else None,
                         decision="TRADE" if obs.edge and abs(obs.edge) >= 0.12 else "NO_TRADE",
-                        decision_reasons=[f"Edge: {obs.edge:+.2%}" if obs.edge else "No edge"],
+                        decision_reasons=(
+                            [f"Edge: {obs.edge:+.2%}" if obs.edge else "No edge"]
+                            + (
+                                [
+                                    "PER_SOURCE_PROBS:"
+                                    + __import__("json").dumps(
+                                        {
+                                            str(k): round(float(v), 6)
+                                            for k, v in (obs.per_source_probabilities or {}).items()
+                                        },
+                                        separators=(",", ":"),
+                                    )
+                                ]
+                                if getattr(obs, "per_source_probabilities", None)
+                                else []
+                            )
+                        ),
                         engine_context=EngineContext(
                             engine="weather_observer",
                             mode="PAPER",
@@ -1609,6 +1654,21 @@ class Orchestrator:
                 f"Shadow Eligible:      {result.summary.get('shadow_eligible_without_inventory', 0)} "
                 f"without inventory ({result.summary.get('shadow_eligible_ratio_without_inventory', 0.0):.0%})",
                 f"Paper P&L (EUR):      {result.summary.get('paper_pnl_eur', 0):+.2f}",
+            ]
+            # Inject AOB gate progress (unique markets toward live-eval).
+            try:
+                from analytics.skill_common import load_gate_progress
+                _gp = load_gate_progress()
+                entry_lines.append(
+                    f"AOB-Gate:              {_gp.get('n_unique', 0)}/"
+                    f"{_gp.get('target', 20)} unique "
+                    f"({float(_gp.get('progress_pct') or 0)*100:.0f}%) | "
+                    f"beats_market={_gp.get('model_beats_market')} | "
+                    f"{_gp.get('live_gate_hint') or _gp.get('status')}"
+                )
+            except Exception:
+                entry_lines.append("AOB-Gate:              n/a")
+            entry_lines += [
                 f"Resolutions updated:  {result.summary.get('resolutions_updated', 0)}",
                 f"Drawdown:             {result.summary.get('drawdown_pct', 0.0):.1f}% "
                 f"{'[RECOVERY MODE]' if result.summary.get('drawdown_recovery_mode') else '[OK]'}",

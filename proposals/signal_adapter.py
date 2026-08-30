@@ -21,6 +21,19 @@ from typing import Optional
 logger = logging.getLogger(__name__)
 
 
+def _detect_market_type_from_question(question: str) -> str:
+    """Map question text to paper market_type label."""
+    q = (question or "").lower()
+    if any(k in q for k in ("or below", "or lower", "or under", "or less", " be below ")):
+        return "at_or_below"
+    if any(k in q for k in ("or above", "or higher", "or more", "or over", "exceed")):
+        return "at_or_above"
+    if "between" in q:
+        return "between"
+    return "exact"
+
+
+
 # =============================================================================
 # WEATHER SIGNAL ADAPTER
 # =============================================================================
@@ -105,11 +118,13 @@ def weather_observation_to_proposal(observation) -> Optional["Proposal"]:
     ens_variance = getattr(observation, "ensemble_variance", None)
 
     # Create proposal
+    market_question = observation.event_description or f"Weather: {city}"
+    market_type = _detect_market_type_from_question(market_question)
     proposal = Proposal(
         proposal_id=generate_proposal_id(),
         timestamp=datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S") + "Z",
         market_id=market_id,
-        market_question=observation.event_description or f"Weather: {city}",
+        market_question=market_question,
         decision="TRADE",
         implied_probability=market_prob,
         model_probability=model_prob,
@@ -120,6 +135,8 @@ def weather_observation_to_proposal(observation) -> Optional["Proposal"]:
         justification_summary=justification,
         hours_to_resolution=hours_to_res,
         ensemble_variance=ens_variance,
+        city=city if city and city != "Unknown" else None,
+        market_type=market_type,
     )
 
     return proposal
