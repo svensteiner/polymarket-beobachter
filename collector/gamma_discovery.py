@@ -50,8 +50,9 @@ WEATHER_KEYWORDS = [
 # Used to score city-temperature near-expiry markets higher.
 SUPPORTED_CITIES = [
     "London", "New York", "Los Angeles", "Chicago", "Miami", "Denver",
-    "Phoenix", "Seattle", "Boston", "Tokyo", "Paris", "Berlin", "Sydney",
-    "Toronto", "Houston", "Atlanta", "Dallas", "San Francisco", "Washington",
+    "Phoenix", "Seattle", "Boston", "Seoul", "Tokyo", "Paris", "Berlin",
+    "Sydney", "Toronto", "Austin", "Madrid", "Karachi", "Chengdu", "Qingdao",
+    "Helsinki", "Houston", "Atlanta", "Dallas", "San Francisco", "Washington",
     "Philadelphia", "Buenos Aires", "Ankara",
 ]
 
@@ -59,25 +60,45 @@ SUPPORTED_CITIES = [
 # opportunities we want to find (at_or_above / at_or_below).
 BOUNDARY_KEYWORDS = ["or above", "or below", "or higher", "or lower", "at least", "at most"]
 
+# at_or_below-only paper lane: phrases that mark the only tradeable type.
+BELOW_KEYWORDS = [
+    "or below",
+    "or lower",
+    "or under",
+    "or less",
+    "at most",
+    " be below ",
+    "below on",
+]
+
 
 def discover_weather_markets(
     limit: int = 500,
     active_only: bool = True,
     min_liquidity: float = 50.0,
     timeout: int = DEFAULT_TIMEOUT,
+    prefer_at_or_below: bool = False,
+    below_min_liquidity: float | None = None,
+    below_pages: int = 3,
 ) -> List[Dict[str, Any]]:
     """
     Entdecke Wetter-Maerkte via Gamma API.
 
-    Fuehrt zwei Suchlaeufe durch:
+    Suchlaeufe:
     1. Top-N nach Volume (allgemeine Wetter-Maerkte)
-    2. Naechste-5-Tage nach end_date (city-temperature Maerkte im 24-96h Fenster)
+    2. Near-expiry nach end_date (city-temperature im ~20-120h Fenster)
+    3. Optional (prefer_at_or_below): paginierte end_date-Suche nur fuer
+       at_or_below-Phrasen — fuellt den Paper-Lane-Funnel wenn exact/between
+       die Volume-Tops dominieren.
 
     Args:
-        limit: Max Anzahl Maerkte die geprueft werden
+        limit: Max Anzahl Maerkte die geprueft werden (Pass 1)
         active_only: Nur aktive (nicht abgeschlossene) Maerkte
         min_liquidity: Minimale Liquidity in USD
         timeout: HTTP Timeout in Sekunden
+        prefer_at_or_below: Extra Pass nur fuer below-Maerkte
+        below_min_liquidity: Liquidity-Floor fuer Pass 3 (default: min_liquidity)
+        below_pages: Anzahl Gamma-Pages (offset) fuer Pass 3
 
     Returns:
         Liste von Wetter-Markt-Dicts (raw Gamma API Format, dedupliziert)
@@ -181,12 +202,87 @@ def discover_weather_markets(
     except Exception as e:
         logger.warning(f"Gamma API Pass-2 fehlgeschlagen (non-critical): {e}")
 
+
+    # --- Pass 3: prefer at_or_below (paginated near-expiry) ---
+    # Volume-Tops sind exact/between-lastig. Fuer PAPER_LANE_MODE=at_or_below_only
+    # scannen wir zusaetzlich mehrere end_date-Pages und behalten nur Below-Phrasen.
+    if prefer_at_or_below:
+        below_floor = float(
+            below_min_liquidity if below_min_liquidity is not None else min_liquidity
+        )
+        below_added = 0
+        pages = max(1, int(below_pages or 1))
+        try:
+            now = datetime.now(timezone.utc)
+            window_start = now + timedelta(hours=6)
+            window_end = now + timedelta(hours=168)
+            for page in range(pages):
+                params3: Dict[str, Any] = {
+                    "limit": 500,
+                    "offset": page * 500,
+                    "active": "true" if active_only else "false",
+                    "closed": "false",
+                    "order": "end_date_iso",
+                    "ascending": "true",
+                }
+                resp3 = requests.get(
+                    f"{GAMMA_API_BASE}/markets",
+                    params=params3,
+                    timeout=timeout,
+                    headers={"User-Agent": "PolymarketWeatherBot/1.0"},
+                )
+                resp3.raise_for_status()
+                markets3 = resp3.json()
+                if not isinstance(markets3, list) or not markets3:
+                    break
+                for m in markets3:
+                    mid = str(m.get("id") or m.get("conditionId") or "")
+                    if not mid or mid in seen_ids:
+                        continue
+                    end_dt = _parse_end_date(m)
+                    if end_dt is None or not (window_start <= end_dt <= window_end):
+                        continue
+                    liq = _get_liquidity(m)
+                    if liq < below_floor:
+                        continue
+                    if not _is_weather_market(m):
+                        continue
+                    q_lower = (m.get("question") or "").lower()
+                    if not _is_at_or_below_question(q_lower):
+                        continue
+                    seen_ids.add(mid)
+                    all_weather.append(m)
+                    below_added += 1
+            logger.info(
+                "Gamma API Pass-3 (prefer at_or_below): +%d Maerkte "
+                "(pages=%d, below_liq>=%.0f) | gesamt=%d",
+                below_added,
+                pages,
+                below_floor,
+                len(all_weather),
+            )
+        except requests.exceptions.Timeout:
+            logger.warning("Gamma API Pass-3: Timeout nach %ds (non-critical)", timeout)
+        except Exception as e:
+            logger.warning(f"Gamma API Pass-3 fehlgeschlagen (non-critical): {e}")
+
     logger.info(
         "Gamma API: %d Wetter-Maerkte gefunden (min_liq=%.0f)",
         len(all_weather),
         min_liquidity,
     )
     return all_weather
+
+
+
+def _is_at_or_below_question(question_lower: str) -> bool:
+    """True if question looks like an at_or_below temperature market."""
+    q = question_lower or ""
+    if any(kw in q for kw in ("or above", "or higher", "or more", "or over", "exceed")):
+        return False
+    if "between" in q:
+        return False
+    return any(kw in q for kw in BELOW_KEYWORDS)
 
 
 def _parse_end_date(market: Dict[str, Any]) -> Optional[datetime]:
@@ -319,6 +415,9 @@ def run_discovery_and_save(
     output_dir: str = "data/collector/gamma",
     limit: int = 500,
     min_liquidity: float = 50.0,
+    prefer_at_or_below: bool = False,
+    below_min_liquidity: float | None = None,
+    below_pages: int = 3,
 ) -> int:
     """
     Fuehre Discovery aus und speichere neue Wetter-Maerkte.
@@ -327,6 +426,9 @@ def run_discovery_and_save(
         output_dir: Ausgabe-Verzeichnis
         limit: Max Maerkte zu pruefen
         min_liquidity: Min Liquiditaet
+        prefer_at_or_below: Extra Pass fuer at_or_below Paper-Lane
+        below_min_liquidity: Liquidity-Floor fuer Below-Pass
+        below_pages: Pagination-Pages fuer Below-Pass
 
     Returns:
         Anzahl gespeicherter Maerkte
@@ -335,7 +437,13 @@ def run_discovery_and_save(
     from pathlib import Path
     from datetime import date
 
-    markets = discover_weather_markets(limit=limit, min_liquidity=min_liquidity)
+    markets = discover_weather_markets(
+        limit=limit,
+        min_liquidity=min_liquidity,
+        prefer_at_or_below=prefer_at_or_below,
+        below_min_liquidity=below_min_liquidity,
+        below_pages=below_pages,
+    )
     if not markets:
         logger.info("Gamma Discovery: Keine Maerkte gefunden")
         return 0

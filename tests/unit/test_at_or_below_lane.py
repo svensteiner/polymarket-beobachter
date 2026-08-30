@@ -399,3 +399,58 @@ class TestProposalCityPersistence:
             == "at_or_above"
         )
 
+class TestGammaBelowPrefer:
+    def test_is_at_or_below_question(self):
+        from collector.gamma_discovery import _is_at_or_below_question
+
+        assert _is_at_or_below_question(
+            "will the highest temperature in chicago be 89°f or below on july 16?"
+        )
+        assert not _is_at_or_below_question(
+            "will the highest temperature in chicago be 89°f or above on july 16?"
+        )
+        assert not _is_at_or_below_question(
+            "will the highest temperature in chicago be between 88-89°f on july 16?"
+        )
+
+    def test_discover_prefer_flag_calls_extra_pages(self, monkeypatch):
+        from collector import gamma_discovery as gd
+        from datetime import datetime, timedelta, timezone
+
+        calls = []
+
+        def fake_get(url, params=None, timeout=None, headers=None):
+            calls.append(dict(params or {}))
+            class R:
+                def raise_for_status(self):
+                    return None
+                def json(self):
+                    # Only return a below market on offset pages
+                    offset = int((params or {}).get("offset") or 0)
+                    if offset == 0 and (params or {}).get("order") == "end_date_iso":
+                        end = (datetime.now(timezone.utc) + timedelta(hours=48)).isoformat()
+                        return [
+                            {
+                                "id": f"below-{offset}",
+                                "question": "Will the highest temperature in Dallas be 71°F or below on April 20?",
+                                "description": "temperature",
+                                "liquidity": 100,
+                                "endDateIso": end,
+                                "active": True,
+                                "closed": False,
+                            }
+                        ]
+                    return []
+            return R()
+
+        monkeypatch.setattr(gd.requests, "get", fake_get)
+        out = gd.discover_weather_markets(
+            limit=50,
+            min_liquidity=10,
+            prefer_at_or_below=True,
+            below_pages=2,
+            below_min_liquidity=10,
+        )
+        assert any(c.get("offset") == 500 for c in calls), calls
+        assert any("or below" in (m.get("question") or "").lower() for m in out)
+

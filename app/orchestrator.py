@@ -541,7 +541,28 @@ class Orchestrator:
 
             from collector.gamma_discovery import run_discovery_and_save
             output_dir = str(self.data_dir / "collector" / "gamma")
-            count = run_discovery_and_save(output_dir=output_dir, limit=300, min_liquidity=50.0)
+            prefer_aob = False
+            below_pages = 3
+            below_liq = 50.0
+            try:
+                import yaml
+                cfg_path = self.data_dir.parent / "config" / "weather.yaml"
+                if cfg_path.exists():
+                    _cfg = yaml.safe_load(cfg_path.read_text(encoding="utf-8")) or {}
+                    lane = str(_cfg.get("PAPER_LANE_MODE", "") or "").lower()
+                    prefer_aob = lane in ("at_or_below_only", "at_or_below")
+                    below_pages = int(_cfg.get("GAMMA_BELOW_PAGES", 3) or 3)
+                    below_liq = float(_cfg.get("GAMMA_BELOW_MIN_LIQUIDITY", 50) or 50)
+            except Exception:
+                prefer_aob = False
+            count = run_discovery_and_save(
+                output_dir=output_dir,
+                limit=300,
+                min_liquidity=50.0,
+                prefer_at_or_below=prefer_aob,
+                below_min_liquidity=below_liq,
+                below_pages=below_pages,
+            )
 
             if count > 0:
                 logger.info(f"Gamma Discovery: {count} neue Wetter-Maerkte gefunden")
