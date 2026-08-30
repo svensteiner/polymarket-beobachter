@@ -19449,3 +19449,316 @@
 2026-08-30 03:30:34 | WARNING  | analytics.self_diagnostic_loop | Self-Diag BRIER_REGRESSION [warn]: Brier Skill Score -1.04 — Forecast schlechter als naive Baseline. Calibration-Shrinkage erhoehen oder Model-Weights neu schaetzen. -> core/weather_engine Shrinkage-Floor +0.05 erhoehen; core/model_weights neu trainieren.
 2026-08-30 03:30:34 | INFO     | app.orchestrator | Status-Summary gekuerzt: status_summary.txt auf die letzten 120 Runs
 2026-08-30 03:30:34 | INFO     | app.orchestrator | === Pipeline END === run_id=RUN-20260830-033006-1e5adf state=OK
+2026-08-30 03:45:34 | INFO     | app.orchestrator | === Pipeline START === run_id=RUN-20260830-034534-c8db58
+2026-08-30 03:45:35 | INFO     | core.weather_market_classifier | WeatherMarketClassifier initialized
+2026-08-30 03:45:35 | INFO     | collector.collector | ============================================================
+2026-08-30 03:45:35 | INFO     | collector.collector | WEATHER OBSERVER COLLECTOR - Starting run
+2026-08-30 03:45:35 | INFO     | collector.collector | Max markets: 500
+2026-08-30 03:45:35 | INFO     | collector.collector | Output dir: C:\Users\botrunner\projects\polymarket-beobachter\data\collector
+2026-08-30 03:45:35 | INFO     | collector.collector | Dry run: False
+2026-08-30 03:45:35 | INFO     | collector.collector | ============================================================
+2026-08-30 03:45:35 | INFO     | collector.collector | Step 1: Fetching weather markets from Polymarket API...
+2026-08-30 03:45:35 | INFO     | collector.collector |   (Using /events?tag_slug=weather and /events?tag_slug=climate)
+2026-08-30 03:45:35 | INFO     | collector.client | Fetching weather events: offset=0
+2026-08-30 03:45:35 | INFO     | collector.client | Fetching weather events: offset=100
+2026-08-30 03:45:35 | INFO     | collector.client | Total weather markets fetched: 500
+2026-08-30 03:45:35 | INFO     | collector.collector | Fetched 500 weather-tagged markets
+2026-08-30 03:45:35 | INFO     | collector.collector | Step 2: Sanitizing (removing forbidden fields)...
+2026-08-30 03:45:36 | INFO     | collector.collector | Sanitized 500 markets
+2026-08-30 03:45:36 | INFO     | collector.collector | Removed 14811 forbidden field occurrences
+2026-08-30 03:45:36 | INFO     | collector.storage | Saved raw response: C:\Users\botrunner\projects\polymarket-beobachter\data\collector\raw\2026-08-30\markets_20260830_014536.json (500 markets)
+2026-08-30 03:45:36 | INFO     | collector.collector | Step 3: Filtering for weather relevance...
+2026-08-30 03:45:38 | INFO     | collector.filter | Filter results: 500 total | 266 CONFIRMED | 173 POSSIBLE | 61 NOT_WEATHER | 0 errors
+2026-08-30 03:45:38 | INFO     | collector.collector | Filter results: {'included_weather': 266, 'possible_weather': 173, 'excluded_not_weather': 61, 'excluded_incomplete': 0, 'total': 500}
+2026-08-30 03:45:38 | INFO     | collector.collector | Step 4: Normalizing market data...
+2026-08-30 03:45:38 | INFO     | collector.collector | Normalized 500 markets
+2026-08-30 03:45:38 | INFO     | collector.collector | Found 266 weather candidates
+2026-08-30 03:45:38 | INFO     | collector.collector | Step 5: Saving outputs...
+2026-08-30 03:45:38 | INFO     | collector.storage | Saved normalized markets: C:\Users\botrunner\projects\polymarket-beobachter\data\collector\normalized\2026-08-30\markets.jsonl (500 records)
+2026-08-30 03:45:38 | INFO     | collector.storage | Saved candidates: C:\Users\botrunner\projects\polymarket-beobachter\data\collector\candidates\2026-08-30\candidates.jsonl (266 records)
+2026-08-30 03:45:38 | INFO     | collector.storage | Saved report: C:\Users\botrunner\projects\polymarket-beobachter\data\collector\reports\2026-08-30\report.md
+2026-08-30 03:45:38 | INFO     | collector.collector | ============================================================
+2026-08-30 03:45:38 | INFO     | collector.collector | COLLECTION COMPLETE
+2026-08-30 03:45:38 | INFO     | collector.collector | Duration: 3.6s
+2026-08-30 03:45:38 | INFO     | collector.collector | Fetched: 500
+2026-08-30 03:45:38 | INFO     | collector.collector | Weather Candidates: 266
+2026-08-30 03:45:38 | INFO     | collector.collector | ============================================================
+2026-08-30 03:45:38 | INFO     | core.weather_market_filter | WeatherMarketFilter initialized | min_liquidity=150.0 | odds_range=[0.1, 0.85] | min_hours=6.0 | cities=29
+2026-08-30 03:45:38 | INFO     | app.orchestrator | Merged 15 gamma candidates into observation pipeline
+2026-08-30 03:45:38 | INFO     | app.orchestrator | Pre-filtered 118 stale + 146 non-city-temp candidates, 17 remain
+2026-08-30 03:45:40 | INFO     | collector.client | Fetched prices for 14/14 markets
+2026-08-30 03:45:40 | INFO     | app.orchestrator | Fetched real odds for 14/14 markets
+2026-08-30 03:45:40 | INFO     | app.orchestrator | Loaded 0 weather candidates for observation (skipped: 1 no-price, 29 filter [CITY:8, ODDS:7, TYPE:7, LIQUIDITY:7])
+2026-08-30 03:45:40 | INFO     | core.weather_market_filter | WeatherMarketFilter initialized | min_liquidity=150.0 | odds_range=[0.1, 0.85] | min_hours=6.0 | cities=29
+2026-08-30 03:45:40 | INFO     | core.weather_probability_model | WeatherProbabilityModel initialized | base_sigma=6.5°F | max_horizon=10 days
+2026-08-30 03:45:40 | INFO     | core.weather_engine | WeatherEngine initialized | version=1.0.0 | config_hash=46dc28bed5043e52
+2026-08-30 03:45:40 | INFO     | core.weather_engine | WeatherObserver run started | timestamp=2026-08-30T01:45:40Z
+2026-08-30 03:45:40 | INFO     | core.weather_engine | Fetched 0 weather markets
+2026-08-30 03:45:40 | INFO     | core.weather_market_filter | Filtered 0 markets: 0 passed, 0 rejected
+2026-08-30 03:45:40 | INFO     | core.weather_engine | Filtered markets: 0/0 passed
+2026-08-30 03:45:40 | INFO     | core.weather_engine | WeatherObserver run complete | duration=0.00s | observations=0 | with_edge=0
+2026-08-30 03:45:40 | INFO     | app.orchestrator | Market Condition: FAVORABLE (0 edge obs)
+2026-08-30 03:45:40 | INFO     | paper_trader.intake | Loaded 2000 total proposals
+2026-08-30 03:45:40 | INFO     | paper_trader.intake | Using 0 recent unique proposals (<= 4h, YES-first sort)
+2026-08-30 03:45:40 | INFO     | paper_trader.intake | Found 99 already paper-executed proposals
+2026-08-30 03:45:40 | INFO     | paper_trader.intake | Found 0 eligible proposals for paper trading
+2026-08-30 03:45:42 | INFO     | app.orchestrator | Found 0 eligible proposals for paper trading
+2026-08-30 03:45:42 | INFO     | paper_trader.position_manager | Checking 0 open positions for resolution
+2026-08-30 03:45:44 | INFO     | analytics.outcome_analyser | Starte Outcome-Analyse...
+2026-08-30 03:45:44 | INFO     | analytics.outcome_analyser | Positions geladen: 198 Eintraege, 99 eindeutige, 59 geschlossen mit P&L
+2026-08-30 03:45:44 | INFO     | analytics.outcome_analyser | Performance-Report gespeichert: C:\Users\botrunner\projects\polymarket-beobachter\analytics\performance_report.json
+2026-08-30 03:45:44 | INFO     | app.orchestrator | Outcome-Analyser: Performance-Report aktualisiert
+2026-08-30 03:45:44 | INFO     | app.orchestrator | [SEGMENTS] 99 closed positions | risky cities: none
+2026-08-30 03:45:44 | INFO     | analytics.strategy_advisor | Strategy-Advisor: mode=balance recommendations=6
+2026-08-30 03:45:44 | INFO     | app.orchestrator | [ADVISOR] BALANCE | BALANCE: Win-Rate 32.2% | P&L -86.96 EUR | Attack 0.00 | 0 offene Positionen | 6 Empfehlung(en)
+2026-08-30 03:45:44 | INFO     | paper_trader.bot_health_monitor | BotHealthMonitor: status=ELEVATED triggers=edge_drought_8
+2026-08-30 03:45:44 | INFO     | app.orchestrator | [BOT-HEALTH] ELEVATED | ELEVATED: DD 0.0% | WR 32.2%(all-time) | Loss-Streak 0 | Guardrails block_averaging_down, max_entry_price, blocked_cities, blocked_market_types, blocked_price_bands, allowed_trades_per_cycle, max_entry_price<=0.85
+2026-08-30 03:45:45 | INFO     | app.orchestrator | [AGENT-POLICY] DEFENSIVE | max_entry=0.750 | city_cooldowns=0
+2026-08-30 03:45:45 | INFO     | agentic.action_executor | tighten_risk: Proposal nach C:\Users\botrunner\projects\polymarket-beobachter\output\agent_proposals.json geschrieben
+2026-08-30 03:45:45 | INFO     | agentic.action_executor | ActionExecutor: ausgefuehrt=['tighten_risk']
+2026-08-30 03:45:45 | INFO     | app.orchestrator | [AGENT-EXEC] ausgefuehrt: ['tighten_risk']
+2026-08-30 03:45:45 | INFO     | app.orchestrator | [AGENT] DEFENSIVE | DEFENSIVE: 1 active action(s) | 2 read-only | Open=0 | DD=0.0% | BotHealth=ELEVATED
+2026-08-30 03:45:45 | INFO     | app.orchestrator | [EDGE-HUNTER] CAMP | PAPER_ONLY | score=4
+2026-08-30 03:45:59 | INFO     | paper_trader.struct_arb | STRUCT_ARB_SKIP_COUNTS: {'residual_other': 90, 'cost_negative': 11, 'prefilter': 4, 'legs_out_of_range': 1, 'no_real_book': 1, 'budget': 1} | scanned=107 complete=16 rejected_cost=11 entered=0 fetches=45
+2026-08-30 03:46:00 | INFO     | analytics.live_readiness_tracker | Live-Readiness: 44.4% | 2/6 Meilensteine | ETA GESPERRT — Forward-Edge unbewiesen
+2026-08-30 03:46:00 | INFO     | analytics.auto_parameter_tuner | Auto-Param: direction=brier_pause WR=35% trades=20 idle=44.31578635945602 | overrides={'MIN_EDGE': 0.2, 'YES_MIN_EDGE': 0.24, 'MIN_EDGE_ABSOLUTE': 0.03}
+2026-08-30 03:46:00 | WARNING  | analytics.self_diagnostic_loop | Self-Diag NO_EDGE_DROUGHT [warn]: 0 Edge ueber 6 Runs — Forecast/Modell sieht nichts Tradeables im Markt. -> Pruefe Forecast-API-Verfuegbarkeit + MIN_EDGE Schwelle. Evtl. lockern oder Provider-Failover triggern.
+2026-08-30 03:46:00 | WARNING  | analytics.self_diagnostic_loop | Self-Diag BRIER_REGRESSION [warn]: Brier Skill Score -1.04 — Forecast schlechter als naive Baseline. Calibration-Shrinkage erhoehen oder Model-Weights neu schaetzen. -> core/weather_engine Shrinkage-Floor +0.05 erhoehen; core/model_weights neu trainieren.
+2026-08-30 03:46:00 | INFO     | app.orchestrator | Status-Summary gekuerzt: status_summary.txt auf die letzten 120 Runs
+2026-08-30 03:46:00 | INFO     | app.orchestrator | === Pipeline END === run_id=RUN-20260830-034534-c8db58 state=OK
+2026-08-30 04:01:00 | INFO     | app.orchestrator | === Pipeline START === run_id=RUN-20260830-040100-a016c8
+2026-08-30 04:01:00 | INFO     | core.weather_market_classifier | WeatherMarketClassifier initialized
+2026-08-30 04:01:00 | INFO     | collector.collector | ============================================================
+2026-08-30 04:01:00 | INFO     | collector.collector | WEATHER OBSERVER COLLECTOR - Starting run
+2026-08-30 04:01:00 | INFO     | collector.collector | Max markets: 500
+2026-08-30 04:01:00 | INFO     | collector.collector | Output dir: C:\Users\botrunner\projects\polymarket-beobachter\data\collector
+2026-08-30 04:01:00 | INFO     | collector.collector | Dry run: False
+2026-08-30 04:01:00 | INFO     | collector.collector | ============================================================
+2026-08-30 04:01:00 | INFO     | collector.collector | Step 1: Fetching weather markets from Polymarket API...
+2026-08-30 04:01:00 | INFO     | collector.collector |   (Using /events?tag_slug=weather and /events?tag_slug=climate)
+2026-08-30 04:01:00 | INFO     | collector.client | Fetching weather events: offset=0
+2026-08-30 04:01:01 | INFO     | collector.client | Fetching weather events: offset=100
+2026-08-30 04:01:01 | INFO     | collector.client | Total weather markets fetched: 500
+2026-08-30 04:01:01 | INFO     | collector.collector | Fetched 500 weather-tagged markets
+2026-08-30 04:01:01 | INFO     | collector.collector | Step 2: Sanitizing (removing forbidden fields)...
+2026-08-30 04:01:01 | INFO     | collector.collector | Sanitized 500 markets
+2026-08-30 04:01:01 | INFO     | collector.collector | Removed 14815 forbidden field occurrences
+2026-08-30 04:01:01 | INFO     | collector.storage | Saved raw response: C:\Users\botrunner\projects\polymarket-beobachter\data\collector\raw\2026-08-30\markets_20260830_020101.json (500 markets)
+2026-08-30 04:01:01 | INFO     | collector.collector | Step 3: Filtering for weather relevance...
+2026-08-30 04:01:04 | INFO     | collector.filter | Filter results: 500 total | 266 CONFIRMED | 173 POSSIBLE | 61 NOT_WEATHER | 0 errors
+2026-08-30 04:01:04 | INFO     | collector.collector | Filter results: {'included_weather': 266, 'possible_weather': 173, 'excluded_not_weather': 61, 'excluded_incomplete': 0, 'total': 500}
+2026-08-30 04:01:04 | INFO     | collector.collector | Step 4: Normalizing market data...
+2026-08-30 04:01:04 | INFO     | collector.collector | Normalized 500 markets
+2026-08-30 04:01:04 | INFO     | collector.collector | Found 266 weather candidates
+2026-08-30 04:01:04 | INFO     | collector.collector | Step 5: Saving outputs...
+2026-08-30 04:01:04 | INFO     | collector.storage | Saved normalized markets: C:\Users\botrunner\projects\polymarket-beobachter\data\collector\normalized\2026-08-30\markets.jsonl (500 records)
+2026-08-30 04:01:04 | INFO     | collector.storage | Saved candidates: C:\Users\botrunner\projects\polymarket-beobachter\data\collector\candidates\2026-08-30\candidates.jsonl (266 records)
+2026-08-30 04:01:04 | INFO     | collector.storage | Saved report: C:\Users\botrunner\projects\polymarket-beobachter\data\collector\reports\2026-08-30\report.md
+2026-08-30 04:01:04 | INFO     | collector.collector | ============================================================
+2026-08-30 04:01:04 | INFO     | collector.collector | COLLECTION COMPLETE
+2026-08-30 04:01:04 | INFO     | collector.collector | Duration: 4.1s
+2026-08-30 04:01:04 | INFO     | collector.collector | Fetched: 500
+2026-08-30 04:01:04 | INFO     | collector.collector | Weather Candidates: 266
+2026-08-30 04:01:04 | INFO     | collector.collector | ============================================================
+2026-08-30 04:01:04 | INFO     | core.weather_market_filter | WeatherMarketFilter initialized | min_liquidity=150.0 | odds_range=[0.1, 0.85] | min_hours=6.0 | cities=29
+2026-08-30 04:01:04 | INFO     | app.orchestrator | Merged 15 gamma candidates into observation pipeline
+2026-08-30 04:01:04 | INFO     | app.orchestrator | Pre-filtered 118 stale + 146 non-city-temp candidates, 17 remain
+2026-08-30 04:01:06 | INFO     | collector.client | Fetched prices for 14/14 markets
+2026-08-30 04:01:06 | INFO     | app.orchestrator | Fetched real odds for 14/14 markets
+2026-08-30 04:01:06 | INFO     | app.orchestrator | Loaded 0 weather candidates for observation (skipped: 1 no-price, 28 filter [CITY:8, ODDS:7, TYPE:7, LIQUIDITY:6])
+2026-08-30 04:01:06 | INFO     | core.weather_market_filter | WeatherMarketFilter initialized | min_liquidity=150.0 | odds_range=[0.1, 0.85] | min_hours=6.0 | cities=29
+2026-08-30 04:01:06 | INFO     | core.weather_probability_model | WeatherProbabilityModel initialized | base_sigma=6.5°F | max_horizon=10 days
+2026-08-30 04:01:06 | INFO     | core.weather_engine | WeatherEngine initialized | version=1.0.0 | config_hash=46dc28bed5043e52
+2026-08-30 04:01:06 | INFO     | core.weather_engine | WeatherObserver run started | timestamp=2026-08-30T02:01:06Z
+2026-08-30 04:01:06 | INFO     | core.weather_engine | Fetched 0 weather markets
+2026-08-30 04:01:06 | INFO     | core.weather_market_filter | Filtered 0 markets: 0 passed, 0 rejected
+2026-08-30 04:01:06 | INFO     | core.weather_engine | Filtered markets: 0/0 passed
+2026-08-30 04:01:06 | INFO     | core.weather_engine | WeatherObserver run complete | duration=0.00s | observations=0 | with_edge=0
+2026-08-30 04:01:07 | INFO     | app.orchestrator | Market Condition: FAVORABLE (0 edge obs)
+2026-08-30 04:01:07 | INFO     | paper_trader.intake | Loaded 2000 total proposals
+2026-08-30 04:01:07 | INFO     | paper_trader.intake | Using 0 recent unique proposals (<= 4h, YES-first sort)
+2026-08-30 04:01:07 | INFO     | paper_trader.intake | Found 99 already paper-executed proposals
+2026-08-30 04:01:07 | INFO     | paper_trader.intake | Found 0 eligible proposals for paper trading
+2026-08-30 04:01:09 | INFO     | app.orchestrator | Found 0 eligible proposals for paper trading
+2026-08-30 04:01:09 | INFO     | paper_trader.position_manager | Checking 0 open positions for resolution
+2026-08-30 04:01:10 | INFO     | analytics.outcome_analyser | Starte Outcome-Analyse...
+2026-08-30 04:01:10 | INFO     | analytics.outcome_analyser | Positions geladen: 198 Eintraege, 99 eindeutige, 59 geschlossen mit P&L
+2026-08-30 04:01:10 | INFO     | analytics.outcome_analyser | Performance-Report gespeichert: C:\Users\botrunner\projects\polymarket-beobachter\analytics\performance_report.json
+2026-08-30 04:01:10 | INFO     | app.orchestrator | Outcome-Analyser: Performance-Report aktualisiert
+2026-08-30 04:01:10 | INFO     | app.orchestrator | [SEGMENTS] 99 closed positions | risky cities: none
+2026-08-30 04:01:10 | INFO     | analytics.strategy_advisor | Strategy-Advisor: mode=balance recommendations=6
+2026-08-30 04:01:10 | INFO     | app.orchestrator | [ADVISOR] BALANCE | BALANCE: Win-Rate 32.2% | P&L -86.96 EUR | Attack 0.00 | 0 offene Positionen | 6 Empfehlung(en)
+2026-08-30 04:01:11 | INFO     | collector.gamma_discovery | Gamma API Pass-1 (volume): 100 Maerkte abgerufen
+2026-08-30 04:01:11 | WARNING  | collector.gamma_discovery | Gamma API Pass-2 fehlgeschlagen (non-critical): 422 Client Error: Unprocessable Entity for url: https://gamma-api.polymarket.com/markets?limit=500&active=true&closed=false&order=end_date_iso&ascending=true
+2026-08-30 04:01:11 | INFO     | collector.gamma_discovery | Gamma API: 18 Wetter-Maerkte gefunden (min_liq=50)
+2026-08-30 04:01:11 | INFO     | collector.gamma_discovery | Gamma Discovery: 18 Maerkte gespeichert -> C:\Users\botrunner\projects\polymarket-beobachter\data\collector\gamma\2026-08-30\gamma_candidates.jsonl
+2026-08-30 04:01:11 | INFO     | app.orchestrator | Gamma Discovery: 18 neue Wetter-Maerkte gefunden
+2026-08-30 04:01:11 | INFO     | paper_trader.bot_health_monitor | BotHealthMonitor: status=ELEVATED triggers=edge_drought_8
+2026-08-30 04:01:11 | INFO     | app.orchestrator | [BOT-HEALTH] ELEVATED | ELEVATED: DD 0.0% | WR 32.2%(all-time) | Loss-Streak 0 | Guardrails block_averaging_down, max_entry_price, blocked_cities, blocked_market_types, blocked_price_bands, allowed_trades_per_cycle, max_entry_price<=0.85
+2026-08-30 04:01:12 | INFO     | app.orchestrator | [AGENT-POLICY] DEFENSIVE | max_entry=0.750 | city_cooldowns=0
+2026-08-30 04:01:12 | INFO     | agentic.action_executor | tighten_risk: Proposal nach C:\Users\botrunner\projects\polymarket-beobachter\output\agent_proposals.json geschrieben
+2026-08-30 04:01:12 | INFO     | agentic.action_executor | ActionExecutor: ausgefuehrt=['tighten_risk']
+2026-08-30 04:01:12 | INFO     | app.orchestrator | [AGENT-EXEC] ausgefuehrt: ['tighten_risk']
+2026-08-30 04:01:12 | INFO     | app.orchestrator | [AGENT] DEFENSIVE | DEFENSIVE: 1 active action(s) | 2 read-only | Open=0 | DD=0.0% | BotHealth=ELEVATED
+2026-08-30 04:01:12 | INFO     | app.orchestrator | [EDGE-HUNTER] CAMP | PAPER_ONLY | score=4
+2026-08-30 04:01:26 | INFO     | paper_trader.struct_arb | STRUCT_ARB_SKIP_COUNTS: {'residual_other': 90, 'cost_negative': 11, 'prefilter': 4, 'legs_out_of_range': 1, 'no_real_book': 1, 'budget': 1} | scanned=107 complete=16 rejected_cost=11 entered=0 fetches=45
+2026-08-30 04:01:26 | INFO     | analytics.live_readiness_tracker | Live-Readiness: 44.4% | 2/6 Meilensteine | ETA GESPERRT — Forward-Edge unbewiesen
+2026-08-30 04:01:26 | INFO     | analytics.auto_parameter_tuner | Auto-Param: direction=brier_pause WR=35% trades=20 idle=44.326510011076394 | overrides={'MIN_EDGE': 0.2, 'YES_MIN_EDGE': 0.24, 'MIN_EDGE_ABSOLUTE': 0.03}
+2026-08-30 04:01:26 | WARNING  | analytics.self_diagnostic_loop | Self-Diag NO_EDGE_DROUGHT [warn]: 0 Edge ueber 6 Runs — Forecast/Modell sieht nichts Tradeables im Markt. -> Pruefe Forecast-API-Verfuegbarkeit + MIN_EDGE Schwelle. Evtl. lockern oder Provider-Failover triggern.
+2026-08-30 04:01:26 | WARNING  | analytics.self_diagnostic_loop | Self-Diag BRIER_REGRESSION [warn]: Brier Skill Score -1.04 — Forecast schlechter als naive Baseline. Calibration-Shrinkage erhoehen oder Model-Weights neu schaetzen. -> core/weather_engine Shrinkage-Floor +0.05 erhoehen; core/model_weights neu trainieren.
+2026-08-30 04:01:27 | INFO     | app.orchestrator | Status-Summary gekuerzt: status_summary.txt auf die letzten 120 Runs
+2026-08-30 04:01:27 | INFO     | app.orchestrator | === Pipeline END === run_id=RUN-20260830-040100-a016c8 state=OK
+2026-08-30 04:16:27 | INFO     | app.orchestrator | === Pipeline START === run_id=RUN-20260830-041627-618a3b
+2026-08-30 04:16:27 | INFO     | core.weather_market_classifier | WeatherMarketClassifier initialized
+2026-08-30 04:16:27 | INFO     | collector.collector | ============================================================
+2026-08-30 04:16:27 | INFO     | collector.collector | WEATHER OBSERVER COLLECTOR - Starting run
+2026-08-30 04:16:27 | INFO     | collector.collector | Max markets: 500
+2026-08-30 04:16:27 | INFO     | collector.collector | Output dir: C:\Users\botrunner\projects\polymarket-beobachter\data\collector
+2026-08-30 04:16:27 | INFO     | collector.collector | Dry run: False
+2026-08-30 04:16:27 | INFO     | collector.collector | ============================================================
+2026-08-30 04:16:27 | INFO     | collector.collector | Step 1: Fetching weather markets from Polymarket API...
+2026-08-30 04:16:27 | INFO     | collector.collector |   (Using /events?tag_slug=weather and /events?tag_slug=climate)
+2026-08-30 04:16:27 | INFO     | collector.client | Fetching weather events: offset=0
+2026-08-30 04:16:27 | INFO     | collector.client | Fetching weather events: offset=100
+2026-08-30 04:16:28 | INFO     | collector.client | Total weather markets fetched: 500
+2026-08-30 04:16:28 | INFO     | collector.collector | Fetched 500 weather-tagged markets
+2026-08-30 04:16:28 | INFO     | collector.collector | Step 2: Sanitizing (removing forbidden fields)...
+2026-08-30 04:16:28 | INFO     | collector.collector | Sanitized 500 markets
+2026-08-30 04:16:28 | INFO     | collector.collector | Removed 14775 forbidden field occurrences
+2026-08-30 04:16:28 | INFO     | collector.storage | Saved raw response: C:\Users\botrunner\projects\polymarket-beobachter\data\collector\raw\2026-08-30\markets_20260830_021628.json (500 markets)
+2026-08-30 04:16:28 | INFO     | collector.collector | Step 3: Filtering for weather relevance...
+2026-08-30 04:16:30 | INFO     | collector.filter | Filter results: 500 total | 266 CONFIRMED | 173 POSSIBLE | 61 NOT_WEATHER | 0 errors
+2026-08-30 04:16:30 | INFO     | collector.collector | Filter results: {'included_weather': 266, 'possible_weather': 173, 'excluded_not_weather': 61, 'excluded_incomplete': 0, 'total': 500}
+2026-08-30 04:16:30 | INFO     | collector.collector | Step 4: Normalizing market data...
+2026-08-30 04:16:30 | INFO     | collector.collector | Normalized 500 markets
+2026-08-30 04:16:30 | INFO     | collector.collector | Found 266 weather candidates
+2026-08-30 04:16:30 | INFO     | collector.collector | Step 5: Saving outputs...
+2026-08-30 04:16:30 | INFO     | collector.storage | Saved normalized markets: C:\Users\botrunner\projects\polymarket-beobachter\data\collector\normalized\2026-08-30\markets.jsonl (500 records)
+2026-08-30 04:16:30 | INFO     | collector.storage | Saved candidates: C:\Users\botrunner\projects\polymarket-beobachter\data\collector\candidates\2026-08-30\candidates.jsonl (266 records)
+2026-08-30 04:16:30 | INFO     | collector.storage | Saved report: C:\Users\botrunner\projects\polymarket-beobachter\data\collector\reports\2026-08-30\report.md
+2026-08-30 04:16:30 | INFO     | collector.collector | ============================================================
+2026-08-30 04:16:30 | INFO     | collector.collector | COLLECTION COMPLETE
+2026-08-30 04:16:30 | INFO     | collector.collector | Duration: 3.6s
+2026-08-30 04:16:30 | INFO     | collector.collector | Fetched: 500
+2026-08-30 04:16:30 | INFO     | collector.collector | Weather Candidates: 266
+2026-08-30 04:16:30 | INFO     | collector.collector | ============================================================
+2026-08-30 04:16:30 | INFO     | core.weather_market_filter | WeatherMarketFilter initialized | min_liquidity=150.0 | odds_range=[0.1, 0.85] | min_hours=6.0 | cities=29
+2026-08-30 04:16:30 | INFO     | app.orchestrator | Merged 13 gamma candidates into observation pipeline
+2026-08-30 04:16:30 | INFO     | app.orchestrator | Pre-filtered 118 stale + 144 non-city-temp candidates, 17 remain
+2026-08-30 04:16:32 | INFO     | collector.client | Fetched prices for 14/14 markets
+2026-08-30 04:16:32 | INFO     | app.orchestrator | Fetched real odds for 14/14 markets
+2026-08-30 04:16:32 | INFO     | app.orchestrator | Loaded 1 weather candidates for observation (skipped: 1 no-price, 26 filter [TYPE:7, CITY:7, ODDS:6, LIQUIDITY:6])
+2026-08-30 04:16:32 | INFO     | core.weather_market_filter | WeatherMarketFilter initialized | min_liquidity=150.0 | odds_range=[0.1, 0.85] | min_hours=6.0 | cities=29
+2026-08-30 04:16:32 | INFO     | core.weather_probability_model | WeatherProbabilityModel initialized | base_sigma=6.5°F | max_horizon=10 days
+2026-08-30 04:16:32 | INFO     | core.weather_engine | WeatherEngine initialized | version=1.0.0 | config_hash=46dc28bed5043e52
+2026-08-30 04:16:32 | INFO     | core.weather_engine | WeatherObserver run started | timestamp=2026-08-30T02:16:32Z
+2026-08-30 04:16:32 | INFO     | core.weather_engine | Fetched 1 weather markets
+2026-08-30 04:16:32 | INFO     | core.weather_market_filter | Filtered 1 markets: 1 passed, 0 rejected
+2026-08-30 04:16:32 | INFO     | core.weather_engine | Filtered markets: 1/1 passed
+2026-08-30 04:16:32 | INFO     | core.weather_engine | WeatherObserver run complete | duration=0.00s | observations=1 | with_edge=0
+2026-08-30 04:16:32 | INFO     | app.orchestrator | Market Condition: FAVORABLE (0 edge obs)
+2026-08-30 04:16:32 | INFO     | paper_trader.intake | Loaded 2000 total proposals
+2026-08-30 04:16:32 | INFO     | paper_trader.intake | Using 0 recent unique proposals (<= 4h, YES-first sort)
+2026-08-30 04:16:33 | INFO     | paper_trader.intake | Found 99 already paper-executed proposals
+2026-08-30 04:16:33 | INFO     | paper_trader.intake | Found 0 eligible proposals for paper trading
+2026-08-30 04:16:34 | INFO     | app.orchestrator | Found 0 eligible proposals for paper trading
+2026-08-30 04:16:34 | INFO     | paper_trader.position_manager | Checking 0 open positions for resolution
+2026-08-30 04:16:36 | INFO     | analytics.outcome_analyser | Starte Outcome-Analyse...
+2026-08-30 04:16:36 | INFO     | analytics.outcome_analyser | Positions geladen: 198 Eintraege, 99 eindeutige, 59 geschlossen mit P&L
+2026-08-30 04:16:36 | INFO     | analytics.outcome_analyser | Performance-Report gespeichert: C:\Users\botrunner\projects\polymarket-beobachter\analytics\performance_report.json
+2026-08-30 04:16:36 | INFO     | app.orchestrator | Outcome-Analyser: Performance-Report aktualisiert
+2026-08-30 04:16:36 | INFO     | app.orchestrator | [SEGMENTS] 99 closed positions | risky cities: none
+2026-08-30 04:16:36 | INFO     | analytics.strategy_advisor | Strategy-Advisor: mode=balance recommendations=6
+2026-08-30 04:16:36 | INFO     | app.orchestrator | [ADVISOR] BALANCE | BALANCE: Win-Rate 32.2% | P&L -86.96 EUR | Attack 0.00 | 0 offene Positionen | 6 Empfehlung(en)
+2026-08-30 04:16:36 | INFO     | paper_trader.bot_health_monitor | BotHealthMonitor: status=ELEVATED triggers=edge_drought_8
+2026-08-30 04:16:36 | INFO     | app.orchestrator | [BOT-HEALTH] ELEVATED | ELEVATED: DD 0.0% | WR 32.2%(all-time) | Loss-Streak 0 | Guardrails block_averaging_down, max_entry_price, blocked_cities, blocked_market_types, blocked_price_bands, allowed_trades_per_cycle, max_entry_price<=0.85
+2026-08-30 04:16:37 | INFO     | app.orchestrator | [AGENT-POLICY] DEFENSIVE | max_entry=0.750 | city_cooldowns=0
+2026-08-30 04:16:37 | INFO     | agentic.action_executor | tighten_risk: Proposal nach C:\Users\botrunner\projects\polymarket-beobachter\output\agent_proposals.json geschrieben
+2026-08-30 04:16:37 | INFO     | agentic.action_executor | ActionExecutor: ausgefuehrt=['tighten_risk']
+2026-08-30 04:16:37 | INFO     | app.orchestrator | [AGENT-EXEC] ausgefuehrt: ['tighten_risk']
+2026-08-30 04:16:37 | INFO     | app.orchestrator | [AGENT] DEFENSIVE | DEFENSIVE: 1 active action(s) | 2 read-only | Open=0 | DD=0.0% | BotHealth=ELEVATED
+2026-08-30 04:16:37 | INFO     | app.orchestrator | [EDGE-HUNTER] CAMP | PAPER_ONLY | score=4
+2026-08-30 04:16:51 | INFO     | paper_trader.struct_arb | STRUCT_ARB_SKIP_COUNTS: {'residual_other': 90, 'cost_negative': 11, 'prefilter': 4, 'legs_out_of_range': 1, 'no_real_book': 1, 'budget': 1} | scanned=107 complete=16 rejected_cost=11 entered=0 fetches=45
+2026-08-30 04:16:52 | INFO     | analytics.live_readiness_tracker | Live-Readiness: 44.4% | 2/6 Meilensteine | ETA GESPERRT — Forward-Edge unbewiesen
+2026-08-30 04:16:52 | INFO     | analytics.auto_parameter_tuner | Auto-Param: direction=brier_pause WR=35% trades=20 idle=44.337219501446754 | overrides={'MIN_EDGE': 0.2, 'YES_MIN_EDGE': 0.24, 'MIN_EDGE_ABSOLUTE': 0.03}
+2026-08-30 04:16:52 | WARNING  | analytics.self_diagnostic_loop | Self-Diag NO_EDGE_DROUGHT [warn]: 0 Edge ueber 6 Runs — Forecast/Modell sieht nichts Tradeables im Markt. -> Pruefe Forecast-API-Verfuegbarkeit + MIN_EDGE Schwelle. Evtl. lockern oder Provider-Failover triggern.
+2026-08-30 04:16:52 | WARNING  | analytics.self_diagnostic_loop | Self-Diag BRIER_REGRESSION [warn]: Brier Skill Score -1.04 — Forecast schlechter als naive Baseline. Calibration-Shrinkage erhoehen oder Model-Weights neu schaetzen. -> core/weather_engine Shrinkage-Floor +0.05 erhoehen; core/model_weights neu trainieren.
+2026-08-30 04:16:52 | INFO     | app.orchestrator | Status-Summary gekuerzt: status_summary.txt auf die letzten 120 Runs
+2026-08-30 04:16:52 | INFO     | app.orchestrator | === Pipeline END === run_id=RUN-20260830-041627-618a3b state=OK
+2026-08-30 04:31:52 | INFO     | app.orchestrator | === Pipeline START === run_id=RUN-20260830-043152-33a71b
+2026-08-30 04:31:52 | INFO     | core.weather_market_classifier | WeatherMarketClassifier initialized
+2026-08-30 04:31:52 | INFO     | collector.collector | ============================================================
+2026-08-30 04:31:52 | INFO     | collector.collector | WEATHER OBSERVER COLLECTOR - Starting run
+2026-08-30 04:31:52 | INFO     | collector.collector | Max markets: 500
+2026-08-30 04:31:52 | INFO     | collector.collector | Output dir: C:\Users\botrunner\projects\polymarket-beobachter\data\collector
+2026-08-30 04:31:52 | INFO     | collector.collector | Dry run: False
+2026-08-30 04:31:52 | INFO     | collector.collector | ============================================================
+2026-08-30 04:31:52 | INFO     | collector.collector | Step 1: Fetching weather markets from Polymarket API...
+2026-08-30 04:31:52 | INFO     | collector.collector |   (Using /events?tag_slug=weather and /events?tag_slug=climate)
+2026-08-30 04:31:52 | INFO     | collector.client | Fetching weather events: offset=0
+2026-08-30 04:31:53 | INFO     | collector.client | Fetching weather events: offset=100
+2026-08-30 04:31:53 | INFO     | collector.client | Total weather markets fetched: 500
+2026-08-30 04:31:53 | INFO     | collector.collector | Fetched 500 weather-tagged markets
+2026-08-30 04:31:53 | INFO     | collector.collector | Step 2: Sanitizing (removing forbidden fields)...
+2026-08-30 04:31:53 | INFO     | collector.collector | Sanitized 500 markets
+2026-08-30 04:31:53 | INFO     | collector.collector | Removed 14772 forbidden field occurrences
+2026-08-30 04:31:53 | INFO     | collector.storage | Saved raw response: C:\Users\botrunner\projects\polymarket-beobachter\data\collector\raw\2026-08-30\markets_20260830_023153.json (500 markets)
+2026-08-30 04:31:53 | INFO     | collector.collector | Step 3: Filtering for weather relevance...
+2026-08-30 04:31:56 | INFO     | collector.filter | Filter results: 500 total | 266 CONFIRMED | 173 POSSIBLE | 61 NOT_WEATHER | 0 errors
+2026-08-30 04:31:56 | INFO     | collector.collector | Filter results: {'included_weather': 266, 'possible_weather': 173, 'excluded_not_weather': 61, 'excluded_incomplete': 0, 'total': 500}
+2026-08-30 04:31:56 | INFO     | collector.collector | Step 4: Normalizing market data...
+2026-08-30 04:31:56 | INFO     | collector.collector | Normalized 500 markets
+2026-08-30 04:31:56 | INFO     | collector.collector | Found 266 weather candidates
+2026-08-30 04:31:56 | INFO     | collector.collector | Step 5: Saving outputs...
+2026-08-30 04:31:56 | INFO     | collector.storage | Saved normalized markets: C:\Users\botrunner\projects\polymarket-beobachter\data\collector\normalized\2026-08-30\markets.jsonl (500 records)
+2026-08-30 04:31:56 | INFO     | collector.storage | Saved candidates: C:\Users\botrunner\projects\polymarket-beobachter\data\collector\candidates\2026-08-30\candidates.jsonl (266 records)
+2026-08-30 04:31:56 | INFO     | collector.storage | Saved report: C:\Users\botrunner\projects\polymarket-beobachter\data\collector\reports\2026-08-30\report.md
+2026-08-30 04:31:56 | INFO     | collector.collector | ============================================================
+2026-08-30 04:31:56 | INFO     | collector.collector | COLLECTION COMPLETE
+2026-08-30 04:31:56 | INFO     | collector.collector | Duration: 3.7s
+2026-08-30 04:31:56 | INFO     | collector.collector | Fetched: 500
+2026-08-30 04:31:56 | INFO     | collector.collector | Weather Candidates: 266
+2026-08-30 04:31:56 | INFO     | collector.collector | ============================================================
+2026-08-30 04:31:56 | INFO     | core.weather_market_filter | WeatherMarketFilter initialized | min_liquidity=150.0 | odds_range=[0.1, 0.85] | min_hours=6.0 | cities=29
+2026-08-30 04:31:56 | INFO     | app.orchestrator | Merged 13 gamma candidates into observation pipeline
+2026-08-30 04:31:56 | INFO     | app.orchestrator | Pre-filtered 118 stale + 144 non-city-temp candidates, 17 remain
+2026-08-30 04:31:58 | INFO     | collector.client | Fetched prices for 14/14 markets
+2026-08-30 04:31:58 | INFO     | app.orchestrator | Fetched real odds for 14/14 markets
+2026-08-30 04:31:58 | INFO     | app.orchestrator | Loaded 1 weather candidates for observation (skipped: 1 no-price, 27 filter [ODDS:7, TYPE:7, CITY:7, LIQUIDITY:6])
+2026-08-30 04:31:58 | INFO     | core.weather_market_filter | WeatherMarketFilter initialized | min_liquidity=150.0 | odds_range=[0.1, 0.85] | min_hours=6.0 | cities=29
+2026-08-30 04:31:58 | INFO     | core.weather_probability_model | WeatherProbabilityModel initialized | base_sigma=6.5°F | max_horizon=10 days
+2026-08-30 04:31:58 | INFO     | core.weather_engine | WeatherEngine initialized | version=1.0.0 | config_hash=46dc28bed5043e52
+2026-08-30 04:31:58 | INFO     | core.weather_engine | WeatherObserver run started | timestamp=2026-08-30T02:31:58Z
+2026-08-30 04:31:58 | INFO     | core.weather_engine | Fetched 1 weather markets
+2026-08-30 04:31:58 | INFO     | core.weather_market_filter | Filtered 1 markets: 1 passed, 0 rejected
+2026-08-30 04:31:58 | INFO     | core.weather_engine | Filtered markets: 1/1 passed
+2026-08-30 04:31:58 | INFO     | core.weather_engine | WeatherObserver run complete | duration=0.00s | observations=1 | with_edge=0
+2026-08-30 04:31:58 | INFO     | app.orchestrator | Market Condition: FAVORABLE (0 edge obs)
+2026-08-30 04:31:58 | INFO     | paper_trader.intake | Loaded 2000 total proposals
+2026-08-30 04:31:58 | INFO     | paper_trader.intake | Using 0 recent unique proposals (<= 4h, YES-first sort)
+2026-08-30 04:31:58 | INFO     | paper_trader.intake | Found 99 already paper-executed proposals
+2026-08-30 04:31:58 | INFO     | paper_trader.intake | Found 0 eligible proposals for paper trading
+2026-08-30 04:32:00 | INFO     | app.orchestrator | Found 0 eligible proposals for paper trading
+2026-08-30 04:32:00 | INFO     | paper_trader.position_manager | Checking 0 open positions for resolution
+2026-08-30 04:32:02 | INFO     | analytics.outcome_analyser | Starte Outcome-Analyse...
+2026-08-30 04:32:02 | INFO     | analytics.outcome_analyser | Positions geladen: 198 Eintraege, 99 eindeutige, 59 geschlossen mit P&L
+2026-08-30 04:32:02 | INFO     | analytics.outcome_analyser | Performance-Report gespeichert: C:\Users\botrunner\projects\polymarket-beobachter\analytics\performance_report.json
+2026-08-30 04:32:02 | INFO     | app.orchestrator | Outcome-Analyser: Performance-Report aktualisiert
+2026-08-30 04:32:02 | INFO     | app.orchestrator | [SEGMENTS] 99 closed positions | risky cities: none
+2026-08-30 04:32:02 | INFO     | analytics.strategy_advisor | Strategy-Advisor: mode=balance recommendations=6
+2026-08-30 04:32:02 | INFO     | app.orchestrator | [ADVISOR] BALANCE | BALANCE: Win-Rate 32.2% | P&L -86.96 EUR | Attack 0.00 | 0 offene Positionen | 6 Empfehlung(en)
+2026-08-30 04:32:02 | INFO     | paper_trader.bot_health_monitor | BotHealthMonitor: status=ELEVATED triggers=edge_drought_8
+2026-08-30 04:32:02 | INFO     | app.orchestrator | [BOT-HEALTH] ELEVATED | ELEVATED: DD 0.0% | WR 32.2%(all-time) | Loss-Streak 0 | Guardrails block_averaging_down, max_entry_price, blocked_cities, blocked_market_types, blocked_price_bands, allowed_trades_per_cycle, max_entry_price<=0.85
+2026-08-30 04:32:03 | INFO     | app.orchestrator | [AGENT-POLICY] DEFENSIVE | max_entry=0.750 | city_cooldowns=0
+2026-08-30 04:32:03 | INFO     | agentic.action_executor | tighten_risk: Proposal nach C:\Users\botrunner\projects\polymarket-beobachter\output\agent_proposals.json geschrieben
+2026-08-30 04:32:03 | INFO     | agentic.action_executor | ActionExecutor: ausgefuehrt=['tighten_risk']
+2026-08-30 04:32:03 | INFO     | app.orchestrator | [AGENT-EXEC] ausgefuehrt: ['tighten_risk']
+2026-08-30 04:32:03 | INFO     | app.orchestrator | [AGENT] DEFENSIVE | DEFENSIVE: 1 active action(s) | 2 read-only | Open=0 | DD=0.0% | BotHealth=ELEVATED
+2026-08-30 04:32:03 | INFO     | app.orchestrator | [EDGE-HUNTER] CAMP | PAPER_ONLY | score=4
+2026-08-30 04:32:19 | INFO     | paper_trader.struct_arb | STRUCT_ARB_SKIP_COUNTS: {'residual_other': 90, 'cost_negative': 11, 'prefilter': 4, 'legs_out_of_range': 1, 'no_real_book': 1, 'budget': 1} | scanned=107 complete=16 rejected_cost=11 entered=0 fetches=45
+2026-08-30 04:32:19 | INFO     | analytics.live_readiness_tracker | Live-Readiness: 44.4% | 2/6 Meilensteine | ETA GESPERRT — Forward-Edge unbewiesen
+2026-08-30 04:32:19 | INFO     | analytics.auto_parameter_tuner | Auto-Param: direction=brier_pause WR=35% trades=20 idle=44.34795333321759 | overrides={'MIN_EDGE': 0.2, 'YES_MIN_EDGE': 0.24, 'MIN_EDGE_ABSOLUTE': 0.03}
+2026-08-30 04:32:19 | WARNING  | analytics.self_diagnostic_loop | Self-Diag NO_EDGE_DROUGHT [warn]: 0 Edge ueber 6 Runs — Forecast/Modell sieht nichts Tradeables im Markt. -> Pruefe Forecast-API-Verfuegbarkeit + MIN_EDGE Schwelle. Evtl. lockern oder Provider-Failover triggern.
+2026-08-30 04:32:19 | WARNING  | analytics.self_diagnostic_loop | Self-Diag BRIER_REGRESSION [warn]: Brier Skill Score -1.04 — Forecast schlechter als naive Baseline. Calibration-Shrinkage erhoehen oder Model-Weights neu schaetzen. -> core/weather_engine Shrinkage-Floor +0.05 erhoehen; core/model_weights neu trainieren.
+2026-08-30 04:32:19 | INFO     | app.orchestrator | Status-Summary gekuerzt: status_summary.txt auf die letzten 120 Runs
+2026-08-30 04:32:19 | INFO     | app.orchestrator | === Pipeline END === run_id=RUN-20260830-043152-33a71b state=OK
