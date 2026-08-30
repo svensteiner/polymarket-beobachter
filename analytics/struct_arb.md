@@ -1,6 +1,6 @@
 # Structural Arbitrage — Paper Trading
 
-**Generiert:** 2026-08-30T18:31:26.879366+00:00  
+**Generiert:** 2026-08-30T19:33:28.034819+00:00  
 
 > PAPER ONLY — model-free complete-set / binary-lock after real CLOB asks + taker fees. Cash if no net edge. Kein Live-Order. Active-leg filter + ask coverage >= 0.92.
 
@@ -19,8 +19,8 @@
   - BINARY_LOCK | net=-0.00124 gap=0.01124 | IPOs before 2027?
   - BINARY_LOCK | net=-0.00124 gap=0.01124 | Ukraine election called by...?
   - BUY_YES_SET | net=-0.040911 gap=0.050911 | Balance of Power: 2026 Midterms
-  - BUY_YES_SET | net=-0.078266 gap=0.088266 | How many Gold Cards will Trump sell in 2026?
-  - BUY_NO_SET | net=-0.142093 gap=0.152093 | GDP growth in 2026
+  - BUY_YES_SET | net=-0.077444 gap=0.087444 | How many Gold Cards will Trump sell in 2026?
+  - BUY_NO_SET | net=-0.116539 gap=0.126539 | GDP growth in 2026
 
 ## Ledger
 
