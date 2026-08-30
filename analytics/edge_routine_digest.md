@@ -1,6 +1,6 @@
 # Edge-Routine — Digest
 
-**Lauf:** 2026-08-29T17:00:24.018928+00:00  
+**Lauf:** 2026-08-30T05:00:28.574291+00:00  
 **Status:** OK
 
 ## Was hat sich geändert
@@ -19,7 +19,7 @@
 | Kandidaten-Kohorte (exact+eng) | n=83 · net real +1.35% |
 | Modell-Skill-Nische (B4) | KEINE (getestet 2 Zellen · Δ OOS -1.66%) |
 | Arbitrage erntbar | nein (-4.22%/Set) |
-| Arb-Partitionen (negRisk) | 0/12 vollständig · Preis-Coverage median 9.1% / max 27.3% |
+| Arb-Partitionen (negRisk) | 0/7 vollständig · Preis-Coverage median 9.1% / max 18.2% |
 | Half-Spread (kalibriert) | 0.00517 |
 
 ## Nächste Arbeit
