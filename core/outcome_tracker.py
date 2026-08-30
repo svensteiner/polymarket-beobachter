@@ -901,6 +901,94 @@ def create_resolution_record(
 # =============================================================================
 
 
+
+def _parse_per_source_from_reasons(reasons: List[str]) -> Dict[str, float]:
+    """Extract per-source probs encoded as PER_SOURCE_PROBS:{json} in decision_reasons."""
+    import json as _json
+    out: Dict[str, float] = {}
+    for reason in reasons or []:
+        if not isinstance(reason, str):
+            continue
+        if reason.startswith("PER_SOURCE_PROBS:"):
+            raw = reason[len("PER_SOURCE_PROBS:"):]
+            try:
+                data = _json.loads(raw)
+            except Exception:
+                continue
+            if isinstance(data, dict):
+                for k, v in data.items():
+                    try:
+                        out[str(k)] = float(v)
+                    except (TypeError, ValueError):
+                        continue
+    return out
+
+
+def apply_bayesian_weight_update(
+    storage: "OutcomeStorage",
+    market_id: str,
+    resolution: str,
+) -> bool:
+    """
+    Update data/model_weights.json from the latest prediction for this market.
+
+    Uses per-source probabilities when present; otherwise falls back to the
+    ensemble estimate under key "ensemble". Fail-open: never raises.
+    """
+    try:
+        from core.model_weights import record_resolution
+    except Exception as e:
+        logger.debug("model_weights import failed: %s", e)
+        return False
+
+    if resolution not in ("YES", "NO"):
+        return False
+    outcome = 1 if resolution == "YES" else 0
+
+    preds = []
+    try:
+        for pred in storage.read_predictions():
+            if getattr(pred, "market_id", None) == market_id:
+                preds.append(pred)
+    except Exception as e:
+        logger.debug("Could not load predictions for %s: %s", market_id, e)
+        return False
+
+    if not preds:
+        return False
+
+    preds_sorted = sorted(
+        preds,
+        key=lambda pr: getattr(pr, "timestamp_utc", "") or "",
+        reverse=True,
+    )
+    chosen = None
+    for pred in preds_sorted:
+        if getattr(pred, "our_estimate_yes", None) is not None:
+            chosen = pred
+            break
+    if chosen is None:
+        return False
+
+    reasons = getattr(chosen, "decision_reasons", None) or []
+    model_forecasts = _parse_per_source_from_reasons(reasons)
+    if not model_forecasts:
+        model_forecasts = {"ensemble": float(chosen.our_estimate_yes)}
+
+    try:
+        record_resolution(model_forecasts, outcome, market_id=market_id)
+        logger.info(
+            "Bayesian weight update for %s resolution=%s models=%s",
+            market_id,
+            resolution,
+            list(model_forecasts.keys()),
+        )
+        return True
+    except Exception as e:
+        logger.debug("record_resolution failed for %s: %s", market_id, e)
+        return False
+
+
 class ResolutionChecker:
     """
     Checks for market resolutions via API.
@@ -1029,6 +1117,16 @@ class ResolutionChecker:
                     success, _ = self.storage.write_resolution(resolution)
                     if success:
                         new_resolutions += 1
+                        try:
+                            apply_bayesian_weight_update(
+                                self.storage,
+                                market_id,
+                                resolution.resolution,
+                            )
+                        except Exception as _werr:
+                            logger.debug(
+                                "Weight update skipped for %s: %s", market_id, _werr
+                            )
             except Exception as e:
                 logger.warning(f"Error checking {market_id}: {e}")
                 errors += 1

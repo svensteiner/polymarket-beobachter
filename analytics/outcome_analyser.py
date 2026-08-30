@@ -619,6 +619,14 @@ def run_analysis() -> dict[str, Any]:
     except OSError as e:
         logger.error(f"Report konnte nicht gespeichert werden: {e}")
 
+    
+    # Forward skill for the only historically-viable market type
+    try:
+        from analytics.at_or_below_skill import run as _run_aob_skill
+        report["at_or_below_skill"] = _run_aob_skill()
+    except Exception as _aob_err:
+        logger.debug("at_or_below_skill skipped: %s", _aob_err)
+
     return report
 
 

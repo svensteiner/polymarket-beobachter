@@ -657,6 +657,7 @@ class WeatherEngine:
             probability_method=getattr(ensemble, "probability_method", None),
             raw_member_probability=getattr(ensemble, "raw_member_probability", None),
             ensemble_member_temps_f=getattr(ensemble, "member_daily_highs_f", None),
+            per_source_probabilities=getattr(ensemble, "per_source_probabilities", None),
         )
 
     def _process_market_single_source(self, market: WeatherMarket, city: str, event_type: str = "exceeds") -> WeatherObservation:

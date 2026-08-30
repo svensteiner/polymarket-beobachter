@@ -1192,7 +1192,23 @@ class Orchestrator:
                         our_estimate_yes=obs.model_probability,
                         estimate_confidence=obs.confidence.value if hasattr(obs.confidence, 'value') else None,
                         decision="TRADE" if obs.edge and abs(obs.edge) >= 0.12 else "NO_TRADE",
-                        decision_reasons=[f"Edge: {obs.edge:+.2%}" if obs.edge else "No edge"],
+                        decision_reasons=(
+                            [f"Edge: {obs.edge:+.2%}" if obs.edge else "No edge"]
+                            + (
+                                [
+                                    "PER_SOURCE_PROBS:"
+                                    + __import__("json").dumps(
+                                        {
+                                            str(k): round(float(v), 6)
+                                            for k, v in (obs.per_source_probabilities or {}).items()
+                                        },
+                                        separators=(",", ":"),
+                                    )
+                                ]
+                                if getattr(obs, "per_source_probabilities", None)
+                                else []
+                            )
+                        ),
                         engine_context=EngineContext(
                             engine="weather_observer",
                             mode="PAPER",
