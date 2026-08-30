@@ -454,3 +454,57 @@ class TestGammaBelowPrefer:
         assert any(c.get("offset") == 500 for c in calls), calls
         assert any("or below" in (m.get("question") or "").lower() for m in out)
 
+class TestAobEdgeFloors:
+    def test_engine_uses_lower_floor_for_below_events(self):
+        from core.weather_engine import WeatherEngine
+
+        eng = WeatherEngine(
+            {
+                "MIN_EDGE": 0.30,
+                "MIN_EDGE_ABSOLUTE": 0.10,
+                "AT_OR_BELOW_MIN_EDGE": 0.15,
+                "AT_OR_BELOW_MIN_EDGE_ABSOLUTE": 0.04,
+                "YES_MIN_EDGE": 0.15,
+                "ENSEMBLE": {"ENABLED": False},
+            }
+        )
+        e, a = eng._edge_floors_for_event("below")
+        assert e == 0.15 and a == 0.04
+        e2, a2 = eng._edge_floors_for_event("exceeds")
+        assert e2 == 0.30 and a2 == 0.10
+
+    def test_guardrails_pass_aob_at_15pct_edge(self):
+        from unittest.mock import MagicMock, patch
+        from paper_trader import entry_guardrails as eg
+
+        proposal = MagicMock()
+        proposal.implied_probability = 0.22
+        proposal.market_question = (
+            "Will the highest temperature in Dallas be 71°F or below on April 20?"
+        )
+        proposal.market_type = "at_or_below"
+        proposal.edge = 0.16
+        proposal.model_probability = 0.38
+        proposal.confidence_level = "HIGH"
+
+        with patch.object(
+            eg,
+            "_load_weather_config",
+            return_value={
+                "ALLOWED_MARKET_TYPES": ["at_or_below"],
+                "BLOCKED_MARKET_TYPES": ["exact", "at_or_above", "between"],
+                "MAX_ODDS": 0.85,
+                "MIN_ENTRY_PRICE": 0.15,
+                "MIN_EDGE": 0.18,
+                "MIN_EDGE_ABSOLUTE": 0.04,
+                "AT_OR_BELOW_MIN_EDGE": 0.15,
+                "AT_OR_BELOW_MIN_EDGE_ABSOLUTE": 0.04,
+            },
+        ), patch.object(
+            eg, "_load_capital_config", return_value={"max_open_positions": 12}
+        ), patch.object(eg, "_load_agent_policy", return_value={}):
+            ok, reason = eg.evaluate_entry_guardrails(
+                proposal, open_positions_count=0, ignore_inventory_limit=True
+            )
+        assert ok is True, reason
+

@@ -256,6 +256,16 @@ class WeatherEngine:
         # YES near-miss bets use 0.065 (6.5%) — Ankara absolute_edge=7.24%
         # was blocked at 10% despite a meaningful 2.5°F forecast divergence.
         self.yes_min_edge_absolute = float(config.get("YES_MIN_EDGE_ABSOLUTE", 0.065))
+        # Paper-lane AOB floors (fail back to MIN_EDGE*). Used when event is below.
+        self.at_or_below_min_edge = float(
+            config.get("AT_OR_BELOW_MIN_EDGE", config.get("MIN_EDGE", self.min_edge))
+        )
+        self.at_or_below_min_edge_absolute = float(
+            config.get(
+                "AT_OR_BELOW_MIN_EDGE_ABSOLUTE",
+                config.get("MIN_EDGE_ABSOLUTE", self.min_edge_absolute),
+            )
+        )
         self.medium_confidence_multiplier = float(config.get(
             "MEDIUM_CONFIDENCE_EDGE_MULTIPLIER", 1.5
         ))
@@ -274,6 +284,14 @@ class WeatherEngine:
             f"WeatherEngine initialized | version={self.VERSION} | "
             f"config_hash={self._config_hash}"
         )
+
+
+    def _edge_floors_for_event(self, event_type: str) -> tuple[float, float]:
+        """Return (min_edge, min_edge_absolute) for this market event type."""
+        et = (event_type or "").lower()
+        if et in ("below", "at_or_below"):
+            return self.at_or_below_min_edge, self.at_or_below_min_edge_absolute
+        return self.min_edge, self.min_edge_absolute
 
     @performance_monitor("weather_engine.run")
     def run(self) -> EngineRunResult:
@@ -558,8 +576,9 @@ class WeatherEngine:
         except Exception:
             net_edge = edge  # Fallback ohne Fee
 
+        min_edge_eff, min_abs_eff = self._edge_floors_for_event(event_type)
         edge_ok = meets_edge_threshold(
-            edge=net_edge, min_edge=self.min_edge,
+            edge=net_edge, min_edge=min_edge_eff,
             confidence=confidence,
             medium_confidence_multiplier=self.medium_confidence_multiplier,
         )
@@ -572,7 +591,7 @@ class WeatherEngine:
             if net_edge > 0:
                 logger.info(
                     f"NEAR-MISS YES | {city} | P_model={fair_prob:.4f} P_market={market.odds_yes:.4f} "
-                    f"edge={net_edge:.2%} (below min={self.min_edge:.0%}) | {event_type} | {market.question[:60]}"
+                    f"edge={net_edge:.2%} (below min={min_edge_eff:.0%}) | {event_type} | {market.question[:60]}"
                 )
             return create_no_signal(
                 market_id=market.market_id, city=city,
@@ -590,7 +609,7 @@ class WeatherEngine:
         absolute_edge = abs(fair_prob - market.odds_yes)
         # YES near-miss bets use the lower yes_min_edge_absolute floor (0.065)
         # instead of the standard min_edge_absolute (0.10).
-        _abs_floor = self.yes_min_edge_absolute if is_yes_near_miss else self.min_edge_absolute
+        _abs_floor = self.yes_min_edge_absolute if is_yes_near_miss else min_abs_eff
         if absolute_edge < _abs_floor:
             if is_yes_near_miss:
                 logger.info(
@@ -730,8 +749,9 @@ class WeatherEngine:
         except Exception:
             net_edge = edge
 
+        min_edge_eff, min_abs_eff = self._edge_floors_for_event(event_type)
         edge_ok = meets_edge_threshold(
-            edge=net_edge, min_edge=self.min_edge,
+            edge=net_edge, min_edge=min_edge_eff,
             confidence=prob_result.confidence,
             medium_confidence_multiplier=self.medium_confidence_multiplier,
         )
@@ -752,7 +772,7 @@ class WeatherEngine:
             )
 
         absolute_edge = abs(prob_result.fair_probability - market.odds_yes)
-        _abs_floor = self.yes_min_edge_absolute if is_yes_near_miss else self.min_edge_absolute
+        _abs_floor = self.yes_min_edge_absolute if is_yes_near_miss else min_abs_eff
         if absolute_edge < _abs_floor:
             if is_yes_near_miss:
                 logger.info(

@@ -372,12 +372,21 @@ def evaluate_entry_guardrails(
             _yes_min_edge_effective = float(_ov["YES_MIN_EDGE"])
     except Exception:
         pass
-    effective_min_edge = _yes_min_edge_effective if is_yes_bet else min_edge
+    # Paper lane: at_or_below uses dedicated floors when configured.
+    aob_min = float(weather_config.get("AT_OR_BELOW_MIN_EDGE", min_edge))
+    aob_abs = float(weather_config.get("AT_OR_BELOW_MIN_EDGE_ABSOLUTE", min_edge_absolute))
+    if mtype == "at_or_below":
+        effective_min_edge = min(aob_min, _yes_min_edge_effective if is_yes_bet else aob_min)
+    else:
+        effective_min_edge = _yes_min_edge_effective if is_yes_bet else min_edge
     if relative_edge < effective_min_edge:
         return (False, f"min_edge|Edge {relative_edge:.2%} below minimum {effective_min_edge:.0%} ({'YES' if is_yes_bet else 'NO'} threshold)")
 
     # YES bets use the relaxed YES_MIN_EDGE_ABSOLUTE floor (6.5% vs 10% standard).
-    _abs_min = YES_MIN_EDGE_ABSOLUTE if is_yes_bet else min_edge_absolute
+    if mtype == "at_or_below":
+        _abs_min = min(aob_abs, YES_MIN_EDGE_ABSOLUTE if is_yes_bet else aob_abs)
+    else:
+        _abs_min = YES_MIN_EDGE_ABSOLUTE if is_yes_bet else min_edge_absolute
     if absolute_edge < _abs_min:
         return (
             False,
