@@ -1,6 +1,6 @@
 # Structural Arbitrage — Paper Trading
 
-**Generiert:** 2026-08-31T22:23:59.810770+00:00  
+**Generiert:** 2026-08-31T23:25:41.116435+00:00  
 
 > PAPER ONLY — model-free complete-set / binary-lock after real CLOB asks + taker fees. Cash if no net edge. Kein Live-Order. Active-leg filter + ask coverage >= 0.92.
 
@@ -8,15 +8,15 @@
 
 - Scanned partitions/markets: **107**
 - Complete partitions: **16**
-- Candidates (prefilter): **8**
-- Rejected (cost/net < MIN_NET): **0**
-- Book fetches: **16**
-- Skip counts: `binary_cap=1, legs_out_of_range=1, no_real_book=8, prefilter=8, residual_other=90`
+- Candidates (prefilter): **9**
+- Rejected (cost/net < MIN_NET): **1**
+- Book fetches: **24**
+- Skip counts: `binary_cap=1, cost_negative=1, legs_out_of_range=1, no_real_book=8, prefilter=7, residual_other=90`
 - Legs out-of-range hist: `n=13:1`
 
 ## Near-miss nets (closest to MIN_NET)
 
-  - none
+  - BUY_NO_SET | net=-0.075823 gap=0.085823 | How many different countries will the US conduct military action against in 2026
 
 ## Ledger
 
