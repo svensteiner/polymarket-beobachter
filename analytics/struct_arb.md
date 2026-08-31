@@ -1,6 +1,6 @@
 # Structural Arbitrage — Paper Trading
 
-**Generiert:** 2026-08-31T16:27:38.543974+00:00  
+**Generiert:** 2026-08-31T17:30:15.174584+00:00  
 
 > PAPER ONLY — model-free complete-set / binary-lock after real CLOB asks + taker fees. Cash if no net edge. Kein Live-Order. Active-leg filter + ask coverage >= 0.92.
 
@@ -10,14 +10,14 @@
 - Complete partitions: **16**
 - Candidates (prefilter): **9**
 - Rejected (cost/net < MIN_NET): **2**
-- Book fetches: **23**
+- Book fetches: **24**
 - Skip counts: `binary_cap=1, cost_negative=2, legs_out_of_range=1, no_real_book=7, prefilter=7, residual_other=90`
 - Legs out-of-range hist: `n=13:1`
 
 ## Near-miss nets (closest to MIN_NET)
 
-  - BINARY_LOCK | net=-0.00124 gap=0.01124 | Lecornu out as French PM by...?
-  - BUY_NO_SET | net=-0.068034 gap=0.078034 | OpenAI IPO Closing Market Cap
+  - BINARY_LOCK | net=-0.00124 gap=0.01124 | Foreign intervention in Gaza by..?
+  - BUY_YES_SET | net=-0.131585 gap=0.141585 | How many Gold Cards will Trump sell in 2026?
 
 ## Ledger
 
