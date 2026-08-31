@@ -1,6 +1,6 @@
 # Structural Arbitrage — Paper Trading
 
-**Generiert:** 2026-08-31T13:36:18.299392+00:00  
+**Generiert:** 2026-08-31T14:38:41.051906+00:00  
 
 > PAPER ONLY — model-free complete-set / binary-lock after real CLOB asks + taker fees. Cash if no net edge. Kein Live-Order. Active-leg filter + ask coverage >= 0.92.
 
@@ -16,7 +16,7 @@
 
 ## Near-miss nets (closest to MIN_NET)
 
-  - BINARY_LOCK | net=-0.002319 gap=0.012319 | Lecornu out as French PM by...?
+  - BINARY_LOCK | net=-0.00124 gap=0.01124 | Lecornu out as French PM by...?
 
 ## Ledger
 
