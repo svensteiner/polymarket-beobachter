@@ -1,6 +1,6 @@
 # Structural Arbitrage — Paper Trading
 
-**Generiert:** 2026-08-31T21:37:47.262719+00:00  
+**Generiert:** 2026-08-31T22:23:59.810770+00:00  
 
 > PAPER ONLY — model-free complete-set / binary-lock after real CLOB asks + taker fees. Cash if no net edge. Kein Live-Order. Active-leg filter + ask coverage >= 0.92.
 
