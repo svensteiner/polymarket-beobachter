@@ -1,6 +1,6 @@
 # Structural Arbitrage — Paper Trading
 
-**Generiert:** 2026-09-01T13:25:34.740384+00:00  
+**Generiert:** 2026-09-01T14:28:42.617148+00:00  
 
 > PAPER ONLY — model-free complete-set / binary-lock after real CLOB asks + taker fees. Cash if no net edge. Kein Live-Order. Active-leg filter + ask coverage >= 0.92.
 
@@ -22,7 +22,7 @@
   - BINARY_LOCK | net=-0.003875 gap=0.013875 | Which candidates will advance to Brazil's presidential runoff?
   - BINARY_LOCK | net=-0.00619 gap=0.01619 | Who will Bernie endorse?
   - BINARY_LOCK | net=-0.007111 gap=0.017111 | Consensys IPO by ___ ?
-  - BINARY_LOCK | net=-0.012344 gap=0.022344 | How low will 10-year Treasury yield get before 2027?
+  - BINARY_LOCK | net=-0.008504 gap=0.018504 | Lecornu out as French PM by...?
   - BUY_YES_SET | net=-0.039833 gap=0.049833 | Balance of Power: 2026 Midterms
 
 ## Ledger
