@@ -1,6 +1,6 @@
 # Structural Arbitrage — Paper Trading
 
-**Generiert:** 2026-09-01T10:31:58.484954+00:00  
+**Generiert:** 2026-09-01T11:35:03.063577+00:00  
 
 > PAPER ONLY — model-free complete-set / binary-lock after real CLOB asks + taker fees. Cash if no net edge. Kein Live-Order. Active-leg filter + ask coverage >= 0.92.
 
@@ -8,10 +8,10 @@
 
 - Scanned partitions/markets: **107**
 - Complete partitions: **16**
-- Candidates (prefilter): **10**
-- Rejected (cost/net < MIN_NET): **10**
-- Book fetches: **30**
-- Skip counts: `binary_cap=1, cost_negative=10, legs_out_of_range=1, prefilter=6, residual_other=90`
+- Candidates (prefilter): **11**
+- Rejected (cost/net < MIN_NET): **11**
+- Book fetches: **42**
+- Skip counts: `binary_cap=1, cost_negative=11, legs_out_of_range=1, prefilter=5, residual_other=90`
 - Legs out-of-range hist: `n=13:1`
 
 ## Near-miss nets (closest to MIN_NET)
