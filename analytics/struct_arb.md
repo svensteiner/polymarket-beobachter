@@ -1,6 +1,6 @@
 # Structural Arbitrage — Paper Trading
 
-**Generiert:** 2026-09-02T09:31:16.485660+00:00  
+**Generiert:** 2026-09-02T10:34:35.405907+00:00  
 
 > PAPER ONLY — model-free complete-set / binary-lock after real CLOB asks + taker fees. Cash if no net edge. Kein Live-Order. Active-leg filter + ask coverage >= 0.92.
 
@@ -20,9 +20,9 @@
   - BINARY_LOCK | net=-0.003716 gap=0.013716 | Who will Bernie endorse?
   - BUY_YES_SET | net=-0.039209 gap=0.049209 | Balance of Power: 2026 Midterms
   - BUY_YES_SET | net=-0.061345 gap=0.071345 | How many different countries will Israel strike in 2026?
-  - BUY_NO_SET | net=-0.068257 gap=0.078257 | GDP growth in 2026
+  - BUY_NO_SET | net=-0.070522 gap=0.080522 | GDP growth in 2026
   - BUY_NO_SET | net=-0.080429 gap=0.090429 | How many different countries will the US conduct military action against in 2026
-  - BUY_YES_SET | net=-0.263061 gap=0.273061 | How many people will Trump deport in 2026?
+  - BUY_YES_SET | net=-0.250149 gap=0.260149 | How many people will Trump deport in 2026?
 
 ## Ledger
 
