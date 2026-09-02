@@ -1,29 +1,28 @@
 # Structural Arbitrage — Paper Trading
 
-**Generiert:** 2026-09-02T04:35:01.152004+00:00  
+**Generiert:** 2026-09-02T05:36:43.261365+00:00  
 
 > PAPER ONLY — model-free complete-set / binary-lock after real CLOB asks + taker fees. Cash if no net edge. Kein Live-Order. Active-leg filter + ask coverage >= 0.92.
 
 ## Scan
 
-- Scanned partitions/markets: **106**
-- Complete partitions: **15**
-- Candidates (prefilter): **11**
-- Rejected (cost/net < MIN_NET): **11**
+- Scanned partitions/markets: **101**
+- Complete partitions: **10**
+- Candidates (prefilter): **7**
+- Rejected (cost/net < MIN_NET): **7**
 - Book fetches: **45**
-- Skip counts: `budget=1, cost_negative=11, legs_out_of_range=1, prefilter=4, residual_other=90`
+- Skip counts: `budget=1, cost_negative=7, legs_out_of_range=1, prefilter=3, residual_other=90`
 - Legs out-of-range hist: `n=13:1`
 
 ## Near-miss nets (closest to MIN_NET)
 
   - BINARY_LOCK | net=-0.001717 gap=0.011717 | Mike Johnson out as Speaker by...?
-  - BINARY_LOCK | net=-0.002348 gap=0.012348 | OpenAI IPO by...?
   - BINARY_LOCK | net=-0.003716 gap=0.013716 | Who will Bernie endorse?
-  - BINARY_LOCK | net=-0.003875 gap=0.013875 | Which candidates will advance to Brazil's presidential runoff?
-  - BINARY_LOCK | net=-0.00619 gap=0.01619 | Who will Bernie endorse?
-  - BINARY_LOCK | net=-0.007111 gap=0.017111 | Consensys IPO by ___ ?
-  - BINARY_LOCK | net=-0.008504 gap=0.018504 | Lecornu out as French PM by...?
   - BUY_YES_SET | net=-0.039209 gap=0.049209 | Balance of Power: 2026 Midterms
+  - BUY_YES_SET | net=-0.074065 gap=0.084065 | How many different countries will Israel strike in 2026?
+  - BUY_NO_SET | net=-0.078531 gap=0.088531 | GDP growth in 2026
+  - BUY_NO_SET | net=-0.080429 gap=0.090429 | How many different countries will the US conduct military action against in 2026
+  - BUY_YES_SET | net=-0.251226 gap=0.261226 | How many people will Trump deport in 2026?
 
 ## Ledger
 
