@@ -1,29 +1,26 @@
 # Structural Arbitrage — Paper Trading
 
-**Generiert:** 2026-09-03T13:36:02.325081+00:00  
+**Generiert:** 2026-09-03T14:38:41.543140+00:00  
 
 > PAPER ONLY — model-free complete-set / binary-lock after real CLOB asks + taker fees. Cash if no net edge. Kein Live-Order. Active-leg filter + ask coverage >= 0.92.
 
 ## Scan
 
-- Scanned partitions/markets: **107**
-- Complete partitions: **16**
-- Candidates (prefilter): **12**
-- Rejected (cost/net < MIN_NET): **12**
+- Scanned partitions/markets: **99**
+- Complete partitions: **8**
+- Candidates (prefilter): **6**
+- Rejected (cost/net < MIN_NET): **5**
 - Book fetches: **45**
-- Skip counts: `budget=1, cost_negative=12, legs_out_of_range=1, prefilter=4, residual_other=90`
+- Skip counts: `budget=1, cost_negative=5, legs_out_of_range=1, no_real_book=1, prefilter=2, residual_other=90`
 - Legs out-of-range hist: `n=13:1`
 
 ## Near-miss nets (closest to MIN_NET)
 
-  - BINARY_LOCK | net=-0.001717 gap=0.011717 | Will Base launch a token by ___ ?
-  - BINARY_LOCK | net=-0.001717 gap=0.011717 | Mike Johnson out as Speaker by...?
-  - BINARY_LOCK | net=-0.002348 gap=0.012348 | OpenAI IPO by...?
-  - BINARY_LOCK | net=-0.003716 gap=0.013716 | Who will Bernie endorse?
-  - BINARY_LOCK | net=-0.003875 gap=0.013875 | Which candidates will advance to Brazil's presidential runoff?
-  - BINARY_LOCK | net=-0.007111 gap=0.017111 | Consensys IPO by ___ ?
-  - BINARY_LOCK | net=-0.007268 gap=0.017268 | Who will Bernie endorse?
-  - BINARY_LOCK | net=-0.008189 gap=0.018189 | Zohran Mamdani citizenship revoked before 2027?
+  - BUY_NO_SET | net=-0.03053 gap=0.04053 | Where will 2026 rank among the hottest years on record?
+  - BUY_YES_SET | net=-0.040287 gap=0.050287 | Balance of Power: 2026 Midterms
+  - BUY_NO_SET | net=-0.062137 gap=0.072137 | GDP growth in 2026
+  - BUY_NO_SET | net=-0.117569 gap=0.127569 | How many different countries will the US conduct military action against in 2026
+  - BUY_YES_SET | net=-0.238438 gap=0.248438 | How many people will Trump deport in 2026?
 
 ## Ledger
 
