@@ -45,6 +45,9 @@ def test_setup_script_uses_official_update_api():
     assert "win32-" in text
     assert "/sand/" in text
     assert "x.ai/bot" in text
+    assert "Invoke-RestMethod -Uri $updateUrl" in text
+    assert "Invoke-RestMethod -Uri $updateUrl -UseBasicParsing" not in text
+    assert "Invoke-WebRequest" in text
     assert "mcp.json" in text
 
 

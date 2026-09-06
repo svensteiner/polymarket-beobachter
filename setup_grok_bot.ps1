@@ -87,7 +87,7 @@ function Find-GrokBotExe {
 function Get-InstallerUrl($arch) {
     $updateUrl = "https://api2.cursor.sh/updates/api/update/win32-$arch/sand/0.0.0/stable"
     Write-Host "  Update-API: $updateUrl"
-    $response = Invoke-RestMethod -Uri $updateUrl -UseBasicParsing
+    $response = Invoke-RestMethod -Uri $updateUrl
     if (-not $response.url) {
         throw "Update-API lieferte keine Installer-URL."
     }
