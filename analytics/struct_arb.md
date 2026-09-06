@@ -1,6 +1,6 @@
 # Structural Arbitrage — Paper Trading
 
-**Generiert:** 2026-09-06T21:35:59.937594+00:00  
+**Generiert:** 2026-09-06T22:38:59.550595+00:00  
 
 > PAPER ONLY — model-free complete-set / binary-lock after real CLOB asks + taker fees. Cash if no net edge. Kein Live-Order. Active-leg filter + ask coverage >= 0.92.
 
@@ -19,10 +19,10 @@
   - BINARY_LOCK | net=-0.001558 gap=0.011558 | Zohran Mamdani citizenship revoked before 2027?
   - BINARY_LOCK | net=-0.001875 gap=0.011875 | Mike Johnson out as Speaker by...?
   - BINARY_LOCK | net=-0.003875 gap=0.013875 | Which candidates will advance to Brazil's presidential runoff?
-  - BUY_YES_SET | net=-0.038738 gap=0.048738 | Where will 2026 rank among the hottest years on record?
+  - BUY_YES_SET | net=-0.049178 gap=0.059178 | Where will 2026 rank among the hottest years on record?
   - BUY_NO_SET | net=-0.086211 gap=0.096211 | How many Gold Cards will Trump sell in 2026?
-  - BUY_NO_SET | net=-0.112953 gap=0.122953 | How many different countries will the US conduct military action against in 2026
-  - BUY_YES_SET | net=-0.22344 gap=0.23344 | How many people will Trump deport in 2026?
+  - BUY_NO_SET | net=-0.119026 gap=0.129026 | How many different countries will the US conduct military action against in 2026
+  - BUY_YES_SET | net=-0.20314 gap=0.21314 | How many people will Trump deport in 2026?
 
 ## Ledger
 
