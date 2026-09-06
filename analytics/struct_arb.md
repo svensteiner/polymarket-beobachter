@@ -1,29 +1,29 @@
 # Structural Arbitrage — Paper Trading
 
-**Generiert:** 2026-09-06T03:33:16.826756+00:00  
+**Generiert:** 2026-09-06T04:35:18.001247+00:00  
 
 > PAPER ONLY — model-free complete-set / binary-lock after real CLOB asks + taker fees. Cash if no net edge. Kein Live-Order. Active-leg filter + ask coverage >= 0.92.
 
 ## Scan
 
-- Scanned partitions/markets: **107**
-- Complete partitions: **16**
-- Candidates (prefilter): **12**
-- Rejected (cost/net < MIN_NET): **12**
-- Book fetches: **43**
-- Skip counts: `binary_cap=1, cost_negative=12, legs_out_of_range=1, prefilter=4, residual_other=90`
+- Scanned partitions/markets: **103**
+- Complete partitions: **12**
+- Candidates (prefilter): **9**
+- Rejected (cost/net < MIN_NET): **9**
+- Book fetches: **45**
+- Skip counts: `budget=1, cost_negative=9, legs_out_of_range=1, prefilter=3, residual_other=90`
 - Legs out-of-range hist: `n=13:1`
 
 ## Near-miss nets (closest to MIN_NET)
 
   - BINARY_LOCK | net=-0.001558 gap=0.011558 | Zohran Mamdani citizenship revoked before 2027?
   - BINARY_LOCK | net=-0.001875 gap=0.011875 | Mike Johnson out as Speaker by...?
-  - BINARY_LOCK | net=-0.002191 gap=0.012191 | Lecornu out as French PM by...?
-  - BINARY_LOCK | net=-0.003112 gap=0.013112 | OpenAI IPO by...?
-  - BINARY_LOCK | net=-0.003112 gap=0.013112 | Will Extended launch a token by ___ ?
   - BINARY_LOCK | net=-0.003875 gap=0.013875 | Which candidates will advance to Brazil's presidential runoff?
-  - BINARY_LOCK | net=-0.004191 gap=0.014191 | Will MetaMask launch a token by ___ ?
   - BINARY_LOCK | net=-0.007111 gap=0.017111 | Consensys IPO by ___ ?
+  - BUY_YES_SET | net=-0.041991 gap=0.051991 | Balance of Power: 2026 Midterms
+  - BUY_NO_SET | net=-0.11968 gap=0.12968 | How many Gold Cards will Trump sell in 2026?
+  - BUY_NO_SET | net=-0.122723 gap=0.132723 | How many different countries will the US conduct military action against in 2026
+  - BUY_NO_SET | net=-0.130099 gap=0.140099 | GDP growth in 2026
 
 ## Ledger
 
