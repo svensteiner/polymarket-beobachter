@@ -101,6 +101,14 @@ Erklaere die Pipeline und schlage strukturelle Verbesserungen vor:
 | Max pro Stadt | 3 | paper_trader/simulator.py |
 | Edge-Reversal Exit | Edge<=0 oder <MIN_EDGE@HIGH | paper_trader/edge_reversal.py |
 
+## Grok Bot Desktop
+
+Windows-Installation im Projektordner: `install_grok_bot.bat`
+(oder `powershell -ExecutionPolicy Bypass -File setup_grok_bot.ps1`).
+
+Danach Grok Bot mit Cursor anmelden und den Bot **Weather Observer** anlegen.
+Anleitung: `docs/GROK_BOT_DESKTOP.md`. MCP-Server: `python -m mcp_server`.
+
 ## Regeln
 
 - Antworte auf Deutsch

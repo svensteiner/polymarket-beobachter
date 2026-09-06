@@ -1,7 +1,9 @@
-# MCP Server - Claude als Bot-Führungskraft
+# MCP Server - Grok Bot / Claude als Bot-Führungskraft
 
-Dieser MCP (Model Context Protocol) Server ermöglicht es Claude, als "Führungskraft"
-des Polymarket Weather Betting Bots zu agieren.
+Dieser MCP (Model Context Protocol) Server ermöglicht es Grok Bot (Desktop)
+und Claude, als "Führungskraft" des Polymarket Weather Betting Bots zu agieren.
+
+Windows-Desktop: `install_grok_bot.bat` ausfuehren. Details: `docs/GROK_BOT_DESKTOP.md`.
 
 ## Features
 
@@ -51,6 +53,17 @@ python -m mcp_server
 # Oder mit uvicorn für HTTP-Transport
 uvicorn mcp_server.server:mcp.app --host 0.0.0.0 --port 8000
 ```
+
+## Grok Bot / Cursor Desktop
+
+Projekt-Configs liegen bereits im Repo:
+
+- `.cursor/mcp.json` (Cursor Desktop + Grok Bot)
+- `.grok/config.toml` (Grok CLI / Grok Bot)
+- `.mcp.json` (zusaetzliche Grok-Kompatibilitaet)
+
+Windows-Installer schreibt zusaetzlich User-Configs nach `%USERPROFILE%\.cursor\mcp.json`
+und `%USERPROFILE%\.grok\config.toml`.
 
 ## Claude Desktop Integration
 

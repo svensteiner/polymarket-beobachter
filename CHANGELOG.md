@@ -4,6 +4,15 @@ All notable changes to polymarket-beobachter are documented here.
 
 ## [Unreleased]
 
+### 2026-09-06
+
+#### Added
+- **Grok Bot Desktop-Installation** — `install_grok_bot.bat` / `setup_grok_bot.ps1`
+  laden den aktuellen Windows-Installer, binden den lokalen MCP-Server an
+  Cursor/Grok Bot und legen eine Desktop-Verknuepfung an. Projekt-Configs:
+  `.cursor/mcp.json`, `.grok/config.toml`, `.mcp.json`. Anleitung:
+  `docs/GROK_BOT_DESKTOP.md`.
+
 ### 2026-04-08
 
 #### Fixed
