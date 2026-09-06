@@ -3,8 +3,9 @@
 # =============================================================================
 #
 # GOVERNANCE INTENT:
-# Dieser MCP-Server gibt Claude die Rolle der "Führungskraft" des Trading-Bots.
-# Claude kann:
+# Dieser MCP-Server gibt Grok Bot / Claude die Rolle der "Führungskraft"
+# des Trading-Bots. Die Desktop-App kann:
+
 # - Bot-Status und Performance einsehen
 # - Konfiguration ändern (mit Governance-Regeln)
 # - Proposals genehmigen/ablehnen
@@ -66,7 +67,7 @@ CONTROL_FILE = PROJECT_ROOT / "bot_control.json"
 
 mcp = FastMCP(
     "polymarket-beobachter",
-    instructions="MCP Server für Polymarket Weather Bot - Claude als Führungskraft"
+    instructions="MCP Server für Polymarket Weather Bot - Grok Bot / Claude als Führungskraft"
 )
 
 # =============================================================================
