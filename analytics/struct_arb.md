@@ -1,6 +1,6 @@
 # Structural Arbitrage — Paper Trading
 
-**Generiert:** 2026-09-06T06:39:00.605500+00:00  
+**Generiert:** 2026-09-06T07:25:45.815080+00:00  
 
 > PAPER ONLY — model-free complete-set / binary-lock after real CLOB asks + taker fees. Cash if no net edge. Kein Live-Order. Active-leg filter + ask coverage >= 0.92.
 
@@ -19,10 +19,10 @@
   - BINARY_LOCK | net=-0.001558 gap=0.011558 | Zohran Mamdani citizenship revoked before 2027?
   - BINARY_LOCK | net=-0.001875 gap=0.011875 | Mike Johnson out as Speaker by...?
   - BINARY_LOCK | net=-0.002191 gap=0.012191 | Lecornu out as French PM by...?
-  - BINARY_LOCK | net=-0.003112 gap=0.013112 | OpenAI IPO by...?
+  - BINARY_LOCK | net=-0.002954 gap=0.012954 | OpenAI IPO by...?
   - BINARY_LOCK | net=-0.003112 gap=0.013112 | Will Extended launch a token by ___ ?
   - BINARY_LOCK | net=-0.003875 gap=0.013875 | Which candidates will advance to Brazil's presidential runoff?
-  - BINARY_LOCK | net=-0.004191 gap=0.014191 | Will MetaMask launch a token by ___ ?
+  - BINARY_LOCK | net=-0.005112 gap=0.015112 | Will MetaMask launch a token by ___ ?
   - BINARY_LOCK | net=-0.007111 gap=0.017111 | Consensys IPO by ___ ?
 
 ## Ledger
