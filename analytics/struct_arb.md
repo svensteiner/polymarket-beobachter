@@ -1,6 +1,6 @@
 # Structural Arbitrage — Paper Trading
 
-**Generiert:** 2026-09-07T09:27:03.027787+00:00  
+**Generiert:** 2026-09-07T10:30:05.508587+00:00  
 
 > PAPER ONLY — model-free complete-set / binary-lock after real CLOB asks + taker fees. Cash if no net edge. Kein Live-Order. Active-leg filter + ask coverage >= 0.92.
 
@@ -8,10 +8,10 @@
 
 - Scanned partitions/markets: **107**
 - Complete partitions: **16**
-- Candidates (prefilter): **12**
-- Rejected (cost/net < MIN_NET): **10**
-- Book fetches: **45**
-- Skip counts: `budget=1, cost_negative=10, legs_out_of_range=1, no_real_book=1, prefilter=4, residual_other=90, thin_book=1`
+- Candidates (prefilter): **11**
+- Rejected (cost/net < MIN_NET): **11**
+- Book fetches: **38**
+- Skip counts: `binary_cap=1, cost_negative=11, legs_out_of_range=1, prefilter=5, residual_other=90`
 - Legs out-of-range hist: `n=13:1`
 
 ## Near-miss nets (closest to MIN_NET)
@@ -20,10 +20,10 @@
   - BINARY_LOCK | net=-0.001875 gap=0.011875 | Mike Johnson out as Speaker by...?
   - BINARY_LOCK | net=-0.002191 gap=0.012191 | Lecornu out as French PM by...?
   - BINARY_LOCK | net=-0.003112 gap=0.013112 | OpenAI IPO by...?
+  - BINARY_LOCK | net=-0.004191 gap=0.014191 | Will MetaMask launch a token by ___ ?
   - BINARY_LOCK | net=-0.004637 gap=0.014637 | Which candidates will advance to Brazil's presidential runoff?
   - BINARY_LOCK | net=-0.007111 gap=0.017111 | Consensys IPO by ___ ?
   - BINARY_LOCK | net=-0.009872 gap=0.019872 | Will Republicans lose a seat in the US Senate for any state Trump won in 2024?
-  - BUY_YES_SET | net=-0.03818 gap=0.04818 | Where will 2026 rank among the hottest years on record?
 
 ## Ledger
 
