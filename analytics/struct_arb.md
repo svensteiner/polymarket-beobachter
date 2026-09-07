@@ -1,6 +1,6 @@
 # Structural Arbitrage — Paper Trading
 
-**Generiert:** 2026-09-07T05:29:13.761735+00:00  
+**Generiert:** 2026-09-07T06:32:17.697176+00:00  
 
 > PAPER ONLY — model-free complete-set / binary-lock after real CLOB asks + taker fees. Cash if no net edge. Kein Live-Order. Active-leg filter + ask coverage >= 0.92.
 
@@ -22,7 +22,7 @@
   - BUY_YES_SET | net=-0.029914 gap=0.039914 | Where will 2026 rank among the hottest years on record?
   - BUY_NO_SET | net=-0.092665 gap=0.102665 | How many Gold Cards will Trump sell in 2026?
   - BUY_NO_SET | net=-0.118014 gap=0.128014 | How many different countries will the US conduct military action against in 2026
-  - BUY_YES_SET | net=-0.248496 gap=0.258496 | How many people will Trump deport in 2026?
+  - BUY_YES_SET | net=-0.219288 gap=0.229288 | How many people will Trump deport in 2026?
 
 ## Ledger
 
