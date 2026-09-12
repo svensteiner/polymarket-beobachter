@@ -89,3 +89,26 @@ def test_evaluation_timestamp_is_captured_per_pair(monkeypatch, tmp_path):
     assert result["evaluated"] == 2
     assert [row["evaluation_now_ms"] for row in result["results"]] == [1000000, 1001000]
     assert seen == [1000000, 1001000]
+
+
+def test_balanced_sources_rotate_without_starving_other_sources(monkeypatch, tmp_path):
+    items = []
+    for source in scan.SOURCE_ORDER[:-1]:
+        for i in range(10):
+            value=item(f'{source}-{i}')
+            value['market']['_research_sources']=[source]
+            items.append(value)
+    setup(monkeypatch,tmp_path,items)
+    selected,cursors,counts=scan._source_selection(items,20)
+    assert counts == {source:5 for source in scan.SOURCE_ORDER[:-1]}
+    scan.STATUS_PATH.write_text(json.dumps({'execution_scan':{'next_source_cursors':cursors}}))
+    selected2,_,_=scan._source_selection(items,20)
+    assert len({i['market_id'] for i in selected+selected2}) == 40
+
+
+def test_unsupported_labels_rejected_before_book_requests(monkeypatch,tmp_path):
+    value=item();value['market']['outcomes']='["Up","Down"]'
+    setup(monkeypatch,tmp_path,[value])
+    def no_requests(url): raise AssertionError('unsupported market must not fetch books')
+    result=scan.scan(events=[],get=no_requests)
+    assert result['rejected_mapping']==1 and result['book_requests']==0

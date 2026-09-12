@@ -5,9 +5,11 @@ def test_run_once_writes_research_status_without_trading(monkeypatch, tmp_path):
     monkeypatch.setattr(rr, "STATUS_PATH", tmp_path / "status.json")
     monkeypatch.setattr(rr, "HEARTBEAT_PATH", tmp_path / "heartbeat.json")
     monkeypatch.setattr(rr, "LOG_PATH", tmp_path / "runner.log")
-    monkeypatch.setattr("analytics.execution_scan.scan", lambda: {"status": "ok", "results": []})
-    monkeypatch.setattr("analytics.implication_scan.scan", lambda: {"status": "ok", "results": []})
-    monkeypatch.setattr(rr, "discover", lambda: {"partitions": 3, "candidates": 1})
+    events = [{"id": "e1", "markets": []}]
+    monkeypatch.setattr(rr, "fetch_universe", lambda: {"events": events, "report": {"errors": []}})
+    monkeypatch.setattr("analytics.execution_scan.scan", lambda *, events: {"status": "ok", "results": []})
+    monkeypatch.setattr("analytics.implication_scan.scan", lambda *, events: {"status": "ok", "results": []})
+    monkeypatch.setattr(rr, "discover", lambda *, events: {"partitions": 3, "candidates": 1})
     status = rr.run_once()
     assert status["status"] == "ok" and status["research_only"] and not status["profit_proven"] and not status["live_orders"] and not status["ledger_mutations"]
     assert json.loads((tmp_path / "status.json").read_text())["scan"]["candidates"] == 1
@@ -17,9 +19,10 @@ def test_run_once_reports_scan_failure(monkeypatch, tmp_path):
     monkeypatch.setattr(rr, "STATUS_PATH", tmp_path / "status.json")
     monkeypatch.setattr(rr, "HEARTBEAT_PATH", tmp_path / "heartbeat.json")
     monkeypatch.setattr(rr, "LOG_PATH", tmp_path / "runner.log")
-    monkeypatch.setattr("analytics.execution_scan.scan", lambda: {"status": "ok", "results": []})
-    monkeypatch.setattr("analytics.implication_scan.scan", lambda: {"status": "ok", "results": []})
-    monkeypatch.setattr(rr, "discover", lambda: (_ for _ in ()).throw(RuntimeError("offline")))
+    monkeypatch.setattr(rr, "fetch_universe", lambda: {"events": [], "report": {"errors": []}})
+    monkeypatch.setattr("analytics.execution_scan.scan", lambda *, events: {"status": "ok", "results": []})
+    monkeypatch.setattr("analytics.implication_scan.scan", lambda *, events: {"status": "ok", "results": []})
+    monkeypatch.setattr(rr, "discover", lambda *, events: (_ for _ in ()).throw(RuntimeError("offline")))
     status = rr.run_once()
     assert status["status"] == "scan_failed" and "offline" in status["error"]
     assert json.loads((tmp_path / "heartbeat.json").read_text())["status"] == "scan_failed"
@@ -71,3 +74,19 @@ def test_single_instance_rejects_contention(tmp_path):
                 raise AssertionError("second instance acquired lock")
         except rr.AlreadyRunningError:
             pass
+
+
+def test_run_once_passes_one_shared_universe_to_all_lanes(monkeypatch, tmp_path):
+    monkeypatch.setattr(rr, "STATUS_PATH", tmp_path / "status.json")
+    monkeypatch.setattr(rr, "HEARTBEAT_PATH", tmp_path / "heartbeat.json")
+    monkeypatch.setattr(rr, "LOG_PATH", tmp_path / "runner.log")
+    events = [{"id": "e1", "markets": []}]
+    seen = []
+    monkeypatch.setattr(rr, "fetch_universe", lambda: {"events": events, "report": {"errors": [{"source": "volume"}]}})
+    monkeypatch.setattr(rr, "discover", lambda *, events: seen.append(events) or {"partitions": 0})
+    monkeypatch.setattr("analytics.execution_scan.scan", lambda *, events: seen.append(events) or {"status": "ok", "results": []})
+    monkeypatch.setattr("analytics.implication_scan.scan", lambda *, events: seen.append(events) or {"status": "ok", "results": []})
+    status = rr.run_once()
+    assert seen == [events, events, events]
+    assert status["status"] == "scan_partial"
+    assert status["universe"]["errors"]

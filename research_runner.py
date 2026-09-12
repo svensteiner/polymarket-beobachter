@@ -11,6 +11,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterator
 
+from analytics.market_universe import fetch_universe
+
 ROOT = Path(__file__).resolve().parent
 STATUS_PATH = ROOT / "output" / "research_status.json"
 HEARTBEAT_PATH = ROOT / "output" / "research_runner.heartbeat.json"
@@ -97,7 +99,7 @@ def single_instance(path: Path = LOCK_PATH) -> Iterator[None]:
                     fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
             finally: handle.close()
 
-def discover() -> dict[str, Any]:
+def discover(events: list[dict[str, Any]] | None = None) -> dict[str, Any]:
     """Inspect struct-arb discovery only; never evaluate or execute a trade."""
     import paper_trader.struct_arb as struct_arb
 
@@ -116,10 +118,11 @@ def discover() -> dict[str, Any]:
                 self.errors.append(f"{type(exc).__name__}: {exc}")
                 raise
 
-    client = RecordingClient(struct_arb._make_client())
-    events = struct_arb.fetch_open_events(client=client)
-    if client.errors:
-        raise RuntimeError(f"event discovery failed: {client.errors[-1]}")
+    if events is None:
+        client = RecordingClient(struct_arb._make_client())
+        events = struct_arb.fetch_open_events(client=client)
+        if client.errors:
+            raise RuntimeError(f"event discovery failed: {client.errors[-1]}")
     partitions = struct_arb._build_partitions(events)
     binaries = list(struct_arb._iter_binary_markets(events))
     return {
@@ -137,15 +140,20 @@ def run_once() -> dict[str, Any]:
     logger = _logger()
     status: dict[str, Any] = {"status": "ok", "research_scope": "DISCOVERY INVENTORY", "scan_validity": "discovery_only", "started_at": _utc_now(), "finished_at": None, "research_only": True, "profit_proven": False, "live_orders": False, "ledger_mutations": False}
     try:
-        status["scan"] = discover()
+        universe = fetch_universe()
+        events = universe["events"]
+        status["universe"] = universe["report"]
+        status["scan"] = discover(events=events)
         from analytics.execution_scan import scan as scan_execution
 
-        status["execution_scan"] = scan_execution()
+        status["execution_scan"] = scan_execution(events=events)
         from analytics.implication_scan import scan as scan_implication
 
         # Both lanes are read-only research; implication health is propagated
         # while preserving the existing binary execution snapshot.
-        status["implication_scan"] = scan_implication()
+        status["implication_scan"] = scan_implication(events=events)
+        if status["universe"].get("errors"):
+            status["status"] = "scan_partial"
         status["research_scope"] = "BINARY EXECUTION + CONDITIONAL FDV IMPLICATION SNAPSHOT"
         status["scan_validity"] = status["execution_scan"].get("status", "ok")
         if status["scan_validity"] != "ok" or status["implication_scan"].get("status") != "ok":
