@@ -1,6 +1,6 @@
 # Structural Arbitrage — Paper Trading
 
-**Generiert:** 2026-09-07T10:30:05.508587+00:00  
+**Generiert:** 2026-09-12T11:02:55.049273+00:00  
 
 > PAPER ONLY — model-free complete-set / binary-lock after real CLOB asks + taker fees. Cash if no net edge. Kein Live-Order. Active-leg filter + ask coverage >= 0.92.
 
@@ -10,7 +10,7 @@
 - Complete partitions: **16**
 - Candidates (prefilter): **11**
 - Rejected (cost/net < MIN_NET): **11**
-- Book fetches: **38**
+- Book fetches: **40**
 - Skip counts: `binary_cap=1, cost_negative=11, legs_out_of_range=1, prefilter=5, residual_other=90`
 - Legs out-of-range hist: `n=13:1`
 
@@ -18,12 +18,12 @@
 
   - BINARY_LOCK | net=-0.001558 gap=0.011558 | Zohran Mamdani citizenship revoked before 2027?
   - BINARY_LOCK | net=-0.001875 gap=0.011875 | Mike Johnson out as Speaker by...?
-  - BINARY_LOCK | net=-0.002191 gap=0.012191 | Lecornu out as French PM by...?
-  - BINARY_LOCK | net=-0.003112 gap=0.013112 | OpenAI IPO by...?
-  - BINARY_LOCK | net=-0.004191 gap=0.014191 | Will MetaMask launch a token by ___ ?
-  - BINARY_LOCK | net=-0.004637 gap=0.014637 | Which candidates will advance to Brazil's presidential runoff?
-  - BINARY_LOCK | net=-0.007111 gap=0.017111 | Consensys IPO by ___ ?
-  - BINARY_LOCK | net=-0.009872 gap=0.019872 | Will Republicans lose a seat in the US Senate for any state Trump won in 2024?
+  - BINARY_LOCK | net=-0.002033 gap=0.012033 | Lecornu out as French PM by...?
+  - BINARY_LOCK | net=-0.002033 gap=0.012033 | OpenAI IPO by...?
+  - BINARY_LOCK | net=-0.002796 gap=0.012796 | Will Base launch a token by ___ ?
+  - BINARY_LOCK | net=-0.003716 gap=0.013716 | Which candidates will advance to Brazil's presidential runoff?
+  - BINARY_LOCK | net=-0.003716 gap=0.013716 | Will Variational launch a token by ___ ?
+  - BINARY_LOCK | net=-0.007873 gap=0.017873 | Will Republicans lose a seat in the US Senate for any state Trump won in 2024?
 
 ## Ledger
 
