@@ -171,7 +171,7 @@ def run_supervisor(*, interval: float = DEFAULT_INTERVAL, cycle_timeout: float =
                 else:
                     result_status = "degraded"; failures += 1
             next_due = clock() + min(interval * (2 ** min(failures, 4)), MAX_BACKOFF) if failures else clock() + interval
-            state.update(status=result_status, child_pid=None, consecutive_failures=failures,
+            state.update(status=result_status, child_pid=getattr(child, "pid", None) if child.poll() is None else None, consecutive_failures=failures,
                          next_due=next_due)
             if result_status == "healthy": last_success = wall_clock()
             state["last_success"] = last_success

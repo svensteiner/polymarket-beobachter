@@ -156,3 +156,21 @@ def test_targeted_stop_during_active_child(tmp_path: Path, monkeypatch):
         clock=lambda: 1.0, wall_clock=lambda: 2.0, sleep_fn=lambda _: None)
     assert result["status"] == "stopped"
     assert proc.terminated
+
+
+def test_unreaped_timeout_is_failed_and_not_restarted(tmp_path: Path):
+    class Unreaped:
+        pid = 4242
+        returncode = None
+        def poll(self): return None
+        def terminate(self): pass
+        def kill(self): pass
+        def wait(self, timeout=None): pass
+    calls = []
+    ticks = iter([0.0, 0.0, 0.0, 2.0, 2.0, 2.0])
+    result = sup.run_supervisor(interval=1, cycle_timeout=1, status_path=tmp_path / "s.json",
+        lock_path=tmp_path / "l", process_factory=lambda *a, **k: calls.append(1) or Unreaped(),
+        clock=lambda: next(ticks, 2.0), wall_clock=lambda: 3.0, sleep_fn=lambda _: None)
+    assert result["status"] == "failed"
+    assert result["child_pid"] == 4242
+    assert calls == [1]
