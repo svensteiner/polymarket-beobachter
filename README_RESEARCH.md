@@ -78,3 +78,41 @@ nicht mit ihnen verglichen.
 Die Identitätsprüfung verwendet PID und Skriptnamen in der Kommandozeile;
 sie ist keine Absicherung gegen manipulierte Statusdateien oder gleichnamige
 Skripte. Ein bestätigter Stop beendet auch den Windows-Starter ohne Neustart.
+
+## Offline-Agent-Lebenszyklus
+
+Vorbereitung persistiert einen unveränderlichen Entwurf lokal; sie erzeugt
+keinen Client und keine Session:
+
+```powershell
+.\.venv-research\Scripts\python.exe research_agent.py --store output\agent_runs.json prepare --model gpt-5.6-luna
+.\.venv-research\Scripts\python.exe research_agent.py --store output\agent_runs.json show --run-key <run-key>
+```
+
+Nur eine bereits gespeicherte Session darf abgeglichen werden. Dafür ist die
+optionale OpenAI-Python-SDK-Umgebung nötig:
+
+```powershell
+.\.venv-agentic\Scripts\python.exe research_agent.py --store output\agent_runs.json reconcile --run-key <run-key> --timeout 30
+```
+
+Es gibt keinen `dispatch`- oder `create`-Befehl. Vorbereitung und Anzeige
+bleiben offline; `reconcile` liest nur eine bekannte Session. Exitcode 0 steht
+für erfolgreiche Vorbereitung/Anzeige oder einen abgeschlossenen Abgleich,
+1 für einen fehlgeschlagenen Vorgang und 3 für einen noch laufenden Abgleich.
+Fehlender Lauf bei `show`, lokale Eingabefehler und Aufruffehler liefern 2.
+Vorgangsfehler erscheinen als JSON; argparse-Aufruffehler auf stderr.
+`--timeout` begrenzt jeden SDK-Request (höchstens 60 Sekunden), nicht den
+gesamten Abgleich. Es gibt keine automatischen Wiederholungen.
+
+Standardpfade werden aus dem Skriptverzeichnis abgeleitet; explizite relative
+Pfade beziehen sich auf das Arbeitsverzeichnis. Der lokale Entwurf erteilt
+keine Freigabe für bezahlte Sessions und reserviert kein Budget. Die SDK-Sitzung
+hat kein garantiertes hartes Kostenlimit.
+
+Der Integrationstest verwendet das installierte SDK und einen lokalen HTTP-Server
+mit Testdaten. Er prüft genau drei GET-Requests und keine Session-Erstellung:
+
+```powershell
+.\.venv-agentic\Scripts\python.exe -m unittest discover -s tests/integration -p test_research_agent_sdk.py
+```

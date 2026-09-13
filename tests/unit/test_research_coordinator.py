@@ -157,3 +157,29 @@ def test_reconcile_rejects_extra_turn(tmp_path: Path):
         def retrieve(*a, **kw): return Obj(status="idle", model_dump=lambda: {"error": None, "usage": {"input_tokens": 1, "output_tokens": 1, "total_tokens": 2}})
     out = reconcile(store, lambda **kw: Obj(beta=Obj(agents=Obj(sessions=Sessions()))), key)
     assert out["state"] == "failed"
+
+
+@pytest.mark.parametrize("text", ["x", "x" * 4096, "\u20ac" * 2000],
+                         ids=["block_limit", "total_byte_limit", "utf8_block_limit"])
+def test_oversized_output_is_bounded_and_durably_incomplete(tmp_path: Path, text):
+    from types import SimpleNamespace as Obj
+    from analytics.research_coordinator import MAX_OUTPUT_BLOCKS, MAX_OUTPUT_TEXT_BYTES
+
+    store = RunStore(tmp_path / "runs.json")
+    key = "e" * 64
+    store.save(key, {"state": "session_created", "session_id": "s1"})
+    usage = {"input_tokens": 1, "output_tokens": 1, "total_tokens": 2}
+    message = {"id": "m1", "turn_id": "t1", "role": "assistant",
+               "content": [{"type": "output_text", "text": text}] * 10}
+    sessions = Obj(
+        retrieve=lambda *a, **kw: Obj(status="idle", model_dump=lambda: {"usage": usage}),
+        items=Obj(list=lambda *a, **kw: Obj(data=[Obj(model_dump=lambda: message)] * 20)),
+        turns=Obj(list=lambda *a, **kw: Obj(data=[Obj(id="t1", status="completed",
+            usage=usage, model_dump=lambda: {"error": None})])),
+    )
+    result = reconcile(store, lambda **kw: Obj(beta=Obj(agents=Obj(sessions=sessions))), key)
+    assert result["state"] == "failed"
+    assert result["output_incomplete"] is True
+    assert len(result["messages"]) <= MAX_OUTPUT_BLOCKS
+    assert sum(len(m["text"].encode("utf-8")) for m in result["messages"]) <= MAX_OUTPUT_TEXT_BYTES
+    assert store.load(key) == result
