@@ -57,3 +57,24 @@ py -3.12 -m venv .venv-agentic
 ```
 
 Die Installation startet keine Calls oder Scheduler. SDK-Sessions besitzen kein garantiertes hartes Kostenlimit, etwa 5 EUR; eine lokale Reservierung ist kein Kostenplafond. Die Agents-API ist kein integrierter Produktionsscheduler, und es gibt daraus keinen Nachweis für Edge oder Live-Handel.
+
+## Read-only-Gesundheitsprüfung
+
+Die Prüfung liest den Supervisorstatus und prüft die Prozesskennung des
+Supervisors sowie eines laufenden Kindprozesses:
+
+```powershell
+.\.venv-research\Scripts\python.exe research_health.py
+```
+
+Die Ausgabe ist JSON. Exitcode `0` bedeutet `healthy` oder `running` innerhalb
+der Frist, Exitcode `1` bedeutet `stale`, `failed`, `degraded` oder `stopped`,
+Exitcode `2` bedeutet `unknown` (zum Beispiel fehlender Status, falsche PID
+oder nicht prüfbare Identität). Ein gesunder Supervisor darf bis `next_due`
+warten; die Toleranz beträgt 30 Sekunden. Ein laufendes Kind darf 300 Sekunden
+laufen. Zeitstempel sind Unix-Wall-Clock-Werte; monotone Laufzeitmessung wird
+nicht mit ihnen verglichen.
+
+Die Identitätsprüfung verwendet PID und Skriptnamen in der Kommandozeile;
+sie ist keine Absicherung gegen manipulierte Statusdateien oder gleichnamige
+Skripte. Ein bestätigter Stop beendet auch den Windows-Starter ohne Neustart.

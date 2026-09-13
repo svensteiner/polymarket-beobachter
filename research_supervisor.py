@@ -205,7 +205,7 @@ def main(argv: list[str] | None = None) -> int:
             return 1
     try:
         result = run_supervisor(once=args.once)
-        return 0 if result.get("status") == "healthy" else 1
+        return 0 if result.get("status") in {"healthy", "stopped"} else 1
     except KeyboardInterrupt:
         return 130
     except AlreadyRunningError:

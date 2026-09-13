@@ -174,3 +174,8 @@ def test_unreaped_timeout_is_failed_and_not_restarted(tmp_path: Path):
     assert result["status"] == "failed"
     assert result["child_pid"] == 4242
     assert calls == [1]
+
+
+def test_requested_stop_exits_successfully_for_launcher(monkeypatch):
+    monkeypatch.setattr(sup, "run_supervisor", lambda **kwargs: {"status": "stopped"})
+    assert sup.main([]) == 0
