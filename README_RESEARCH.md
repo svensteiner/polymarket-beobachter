@@ -116,3 +116,18 @@ mit Testdaten. Er prüft genau drei GET-Requests und keine Session-Erstellung:
 ```powershell
 .\.venv-agentic\Scripts\python.exe -m unittest discover -s tests/integration -p test_research_agent_sdk.py
 ```
+
+## Kostenübersicht (offline)
+
+```powershell
+.\.venv-research\Scripts\python.exe research_agent.py --store output\agent_runs.json costs
+```
+
+Die Übersicht liest den Store schreibgeschützt und erstellt weder SDK-Clients
+noch Netzwerkaufrufe. Sie summiert ausschließlich gespeicherte, endliche
+`estimated_cost_usd`-Schätzwerte abgeschlossener Läufe mit gültiger
+Tokenbilanz, bekannter Modellkennung und eindeutiger Session-ID. Die Ausgabe
+trägt `estimates_not_invoice: true` und `authorization: false`; sie behauptet
+kein Budgetlimit und aktiviert keine Aufrufe. Exitcode 0 bedeutet einen
+vollständig gültigen oder verifiziert leeren Store, 3 unvollständige Records,
+2 einen fehlenden, beschädigten, übergroßen oder strukturell ungültigen Store.

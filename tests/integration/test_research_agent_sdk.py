@@ -75,7 +75,8 @@ class AgentSDKAcceptance(unittest.TestCase):
             with tempfile.TemporaryDirectory() as directory:
                 store = Path(directory) / "runs.json"
                 store.write_text(json.dumps({KEY: {"state": "session_created",
-                    "session_id": SESSION, "agent_id": "agent_local"}}), encoding="utf-8")
+                    "session_id": SESSION, "agent_id": "agent_local",
+                    "model": "gpt-5.6-luna"}}), encoding="utf-8")
                 environment = os.environ.copy()
                 environment.update(OPENAI_API_KEY="local-fixture-only",
                     OPENAI_BASE_URL=f"http://127.0.0.1:{server.server_port}/v1",
@@ -92,6 +93,16 @@ class AgentSDKAcceptance(unittest.TestCase):
                 self.assertEqual(saved["state"], "completed")
                 self.assertEqual(saved["usage"], USAGE)
                 self.assertEqual(saved["messages"][0]["text"], "OK")
+                before_costs = store.read_bytes()
+                costs = subprocess.run([sys.executable, str(ROOT / "research_agent.py"),
+                    "--store", str(store), "costs"], cwd=directory, env=environment,
+                    capture_output=True, text=True, timeout=10)
+                self.assertEqual(costs.returncode, 0, costs.stdout + costs.stderr)
+                report = json.loads(costs.stdout)
+                self.assertEqual(report["total_estimated_cost_usd"], "0.0000044")
+                self.assertTrue(report["estimates_not_invoice"])
+                self.assertFalse(report["authorization"])
+                self.assertEqual(store.read_bytes(), before_costs)
                 self.assertEqual(calls, [("GET", path) for path in fixtures])
         finally:
             server.shutdown()

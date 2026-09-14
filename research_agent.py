@@ -89,10 +89,14 @@ def main(argv: list[str] | None = None) -> int:
     p = sub.add_parser("prepare"); p.add_argument("--model", required=True)
     s = sub.add_parser("show"); s.add_argument("--run-key", required=True)
     r = sub.add_parser("reconcile"); r.add_argument("--run-key", required=True); r.add_argument("--timeout", type=float, default=30.0)
+    sub.add_parser("costs")
     args = parser.parse_args(argv)
     try:
         if args.command == "prepare": result = prepare(args.model, args.status, args.store)
         elif args.command == "show": result = show(args.run_key, args.store)
+        elif args.command == "costs":
+            from analytics.agent_cost_report import report
+            result = report(args.store)
         else: result = reconcile_known(args.run_key, args.store, args.timeout)
         print(json.dumps(result, indent=2, ensure_ascii=False)); return int(result.get("exit_code", 0))
     except CoordinatorError as exc:
