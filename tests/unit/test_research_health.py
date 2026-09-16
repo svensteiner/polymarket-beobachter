@@ -5,6 +5,22 @@ from pathlib import Path
 import research_health as health
 
 
+def test_inaccessible_process_identity_remains_unknown(tmp_path):
+    path = tmp_path / "status.json"
+    write_status(path)
+    result = health.evaluate(path, now=1100.0,
+        process_probe=lambda _: {"alive": True, "commandline": None})
+    assert result == {"state": "unknown", "reason": "supervisor_probe_failed", "exit_code": 2}
+
+
+def test_failed_windows_probe_does_not_claim_process_dead(monkeypatch):
+    from types import SimpleNamespace
+    monkeypatch.setattr(health.os, "name", "nt")
+    monkeypatch.setattr(health.subprocess, "run", lambda *a, **kw:
+        SimpleNamespace(returncode=1, stdout="", stderr="access denied"))
+    assert health._probe(123) is None
+
+
 def write_status(path: Path, **overrides):
     data = {"status": "healthy", "updated_at": 1000.0, "next_due": 1900.0,
             "started_at": 1000.0, "run_id": "run-1", "supervisor_pid": 10,

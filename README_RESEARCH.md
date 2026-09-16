@@ -117,6 +117,25 @@ mit Testdaten. Er prüft genau drei GET-Requests und keine Session-Erstellung:
 .\.venv-agentic\Scripts\python.exe -m unittest discover -s tests/integration -p test_research_agent_sdk.py
 ```
 
+## Status und begrenzter Start
+
+Die schreibgeschützte Statusprüfung und ein einzelner, kontrollierter Start
+können aus jedem Arbeitsverzeichnis ausgeführt werden:
+
+```powershell
+.\.venv-research\Scripts\python.exe research_control.py status
+.\.venv-research\Scripts\python.exe research_control.py start
+```
+
+`start` prüft zuerst den bestehenden Supervisor-Lock und startet bei belegtem
+Lock keinen Prozess. Bei freiem Lock wird ausschließlich die projektbezogene
+`research_supervisor.py` mit absolutem `sys.executable`, festem Arbeitsordner
+und ohne Shell gestartet. Die Rückkehr `starting_unknown` bedeutet, dass die
+Statusbestätigung innerhalb des begrenzten Wartefensters ausblieb; es erfolgt
+kein zweiter Start und keine automatische Reparatur. Es gibt keine
+Stop-/Kill-Funktion in diesem CLI. Alle Aktionen bleiben read-only bezüglich
+Markt- und Handelsdaten und lösen keine bezahlten Agentenaufrufe aus.
+
 ## Kostenübersicht (offline)
 
 ```powershell

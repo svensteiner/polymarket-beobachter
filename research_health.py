@@ -39,7 +39,9 @@ def _probe(pid: int) -> dict[str, Any] | None:
         try:
             completed = subprocess.run(["powershell", "-NoProfile", "-NonInteractive", "-Command", command],
                 capture_output=True, text=True, timeout=3, check=False)
-            if completed.returncode or not completed.stdout.strip():
+            if completed.returncode:
+                return None
+            if not completed.stdout.strip():
                 return {"alive": False}
             value = json.loads(completed.stdout)
             if not isinstance(value, dict):
@@ -60,7 +62,10 @@ def _identity_ok(info: dict[str, Any] | None, script: str) -> bool | None:
         return None
     if info.get("alive") is not True:
         return False
-    command = str(info.get("commandline") or "").lower()
+    commandline = info.get("commandline")
+    if not isinstance(commandline, str) or not commandline.strip():
+        return None
+    command = commandline.lower()
     if script.lower() not in command:
         return False
     if script == "research_runner.py" and "--once" not in command:
