@@ -1,7 +1,47 @@
 import json
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import pytest
+
+
+def test_extreme_aware_clock_has_structured_stale_error():
+    from datetime import datetime, timezone
+    with pytest.raises(CoordinatorError, match="stale"):
+        compact_status(good_status(), now=datetime.max.replace(tzinfo=timezone.utc))
+
+
+def test_duplicate_snapshot_fields_are_rejected(tmp_path):
+    path = tmp_path / "status.json"
+    raw = json.dumps(good_status())
+    path.write_text(raw[:-1] + ', "live_orders": true}', encoding="utf-8")
+    with pytest.raises(CoordinatorError, match="duplicate"):
+        request_plan("gpt-5.6-luna", path)
+
+
+@pytest.mark.parametrize("mutation", ["extra", "missing", "boolean", "oversized", "duplicate"])
+def test_rehashed_invalid_canonical_plan_never_creates_client(tmp_path, mutation):
+    import hashlib
+    from analytics.research_coordinator import PROMPT
+    path = tmp_path / "status.json"
+    path.write_text(json.dumps(good_status()), encoding="utf-8")
+    plan = prepare("gpt-5.6-luna", path, live_enabled=True,
+        acknowledge_no_hard_session_cost_cap=True, admission_budget=1)
+    payload = json.loads(plan["input"])
+    if mutation == "extra": payload["raw_text"] = "untrusted"
+    elif mutation == "missing": del payload["finished_at"]
+    elif mutation == "boolean": payload["events"] = True
+    elif mutation == "oversized": payload["finished_at"] = "x" * 4097
+    text = json.dumps(payload)
+    if mutation == "duplicate": text = text[:-1] + ', "events": 2}'
+    plan["input"] = text
+    plan["session"]["input"] = text
+    plan["run_key"] = hashlib.sha256(json.dumps({"model": plan["model"],
+        "input": text, "prompt": PROMPT}, sort_keys=True).encode()).hexdigest()
+    store = RunStore(tmp_path / "runs.json")
+    with pytest.raises(CoordinatorError):
+        dispatch_once(store, lambda **kw: pytest.fail("client created"), plan)
+    assert not store.path.exists()
 
 from analytics.agent_run_store import RunStore
 from analytics.research_coordinator import (CoordinatorError, compact_status, dispatch, dispatch_once,
@@ -9,7 +49,10 @@ from analytics.research_coordinator import (CoordinatorError, compact_status, di
 
 
 def good_status():
-    return {"status": "ok", "scan": {"events": 2, "partitions": 1, "binary_markets": 3},
+    finished = datetime.now(timezone.utc)
+    return {"status": "ok", "started_at": (finished - timedelta(seconds=30)).isoformat(),
+            "finished_at": finished.isoformat(), "research_only": True, "live_orders": False,
+            "ledger_mutations": False, "scan": {"events": 2, "partitions": 1, "binary_markets": 3},
             "execution_scan": {"candidate_count": 0, "valid_evaluations": 1}, "secret": "omit"}
 
 
@@ -43,6 +86,51 @@ def test_oversized_status_fails_closed(tmp_path: Path):
     p = tmp_path / "status.json"
     p.write_bytes(b"{" + b"x" * (2 * 1024 * 1024) + b"}")
     with pytest.raises(CoordinatorError): request_plan("m", p)
+
+
+@pytest.mark.parametrize("change", [
+    {"research_only": False}, {"live_orders": True}, {"ledger_mutations": True},
+    {"started_at": "2026-01-01T00:00:00"},
+])
+def test_snapshot_provenance_and_freshness_fail_closed(change):
+    payload = good_status(); payload.update(change)
+    with pytest.raises(CoordinatorError): compact_status(payload)
+
+
+def test_snapshot_stale_future_and_inverted_fail_closed():
+    now = datetime.now(timezone.utc)
+    for started, finished in (
+        (now - timedelta(hours=1, seconds=1), now - timedelta(hours=1)),
+        (now, now + timedelta(seconds=6)),
+        (now + timedelta(seconds=1), now),
+    ):
+        payload = good_status(); payload["started_at"] = started.isoformat(); payload["finished_at"] = finished.isoformat()
+        with pytest.raises(CoordinatorError): compact_status(payload)
+
+
+def test_same_counters_different_snapshot_cycles_have_different_keys(tmp_path: Path):
+    first = good_status(); second = good_status()
+    second["finished_at"] = (datetime.now(timezone.utc) - timedelta(seconds=2)).isoformat()
+    second["started_at"] = (datetime.now(timezone.utc) - timedelta(seconds=32)).isoformat()
+    p1, p2 = tmp_path / "one.json", tmp_path / "two.json"
+    p1.write_text(json.dumps(first), encoding="utf-8"); p2.write_text(json.dumps(second), encoding="utf-8")
+    a = request_plan("gpt-5.6-luna", p1); b = request_plan("gpt-5.6-luna", p2)
+    assert a["session"]["input"] != b["session"]["input"]
+
+
+def test_stale_prepared_plan_rejected_before_factory_and_mutation(tmp_path: Path, monkeypatch):
+    p = tmp_path / "status.json"; p.write_text(json.dumps(good_status()), encoding="utf-8")
+    plan = prepare("gpt-5.6-luna", p, live_enabled=True,
+                   acknowledge_no_hard_session_cost_cap=True, admission_budget=1)
+    old = datetime.now(timezone.utc) - timedelta(hours=1)
+    payload = json.loads(plan["input"]); payload["finished_at"] = old.isoformat().replace("+00:00", "Z")
+    plan["input"] = json.dumps(payload, separators=(",", ":"))
+    material = json.dumps({"model": plan["model"], "input": plan["input"], "prompt": "Review this compact research status for falsifiable net-edge follow-up. Read-only; no orders, keys, or live calls."}, sort_keys=True)
+    import hashlib
+    plan["run_key"] = hashlib.sha256(material.encode()).hexdigest()
+    store_path = tmp_path / "runs.json"; before = store_path.read_bytes() if store_path.exists() else None
+    with pytest.raises(CoordinatorError): dispatch_once(RunStore(store_path), lambda **kw: pytest.fail("factory called"), plan)
+    assert (store_path.read_bytes() if store_path.exists() else None) == before
 
 
 def test_live_gates_reject_before_factory(tmp_path: Path):

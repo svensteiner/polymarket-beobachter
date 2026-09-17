@@ -89,6 +89,21 @@ keinen Client und keine Session:
 .\.venv-research\Scripts\python.exe research_agent.py --store output\agent_runs.json show --run-key <run-key>
 ```
 
+Der Entwurf akzeptiert nur einen vollständigen, read-only Snapshot: `status` muss
+`ok` sein, die drei Schutzflags müssen exakt `research_only=true`,
+`live_orders=false` und `ledger_mutations=false` lauten. `started_at` und
+`finished_at` brauchen eine Zeitzone; der Scan darf höchstens 30 Minuten alt
+sein und höchstens fünf Sekunden in der Zukunft liegen. Nur erlaubte Zähler und
+der normalisierte UTC-Wert von `finished_at` werden in den kanonischen Input
+übernommen. Ein älter gewordener Entwurf wird bei jeder späteren Dispatch-
+Validierung verworfen. Derselbe Snapshot behält seine Kennung; ein neuer
+Scannerlauf erhält auch bei identischen Zählern eine andere Kennung. Alte
+gespeicherte Läufe bleiben für Anzeige und Abgleich erhalten, müssen bei Bedarf
+aber mit einem aktuellen Snapshot neu vorbereitet werden.
+
+Diese Frist betrifft den Forschungsbericht. Sie bestätigt weder aktuelle
+Orderbücher noch Ausführbarkeit oder einen nachgewiesenen Handelsvorteil.
+
 Nur eine bereits gespeicherte Session darf abgeglichen werden. Dafür ist die
 optionale OpenAI-Python-SDK-Umgebung nötig:
 

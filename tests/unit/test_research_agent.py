@@ -2,6 +2,7 @@ import json
 import subprocess
 import sys
 import types
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import research_agent as agent
@@ -9,7 +10,11 @@ from analytics.agent_run_store import RunStore
 
 
 def status(path: Path):
-    path.write_text(json.dumps({"status":"ok","scan":{"events":1,"partitions":1,"binary_markets":1},"execution_scan":{"candidate_count":0,"valid_evaluations":1}}))
+    finished = datetime.now(timezone.utc)
+    path.write_text(json.dumps({"status":"ok", "started_at": (finished - timedelta(seconds=30)).isoformat(),
+        "finished_at": finished.isoformat(), "research_only": True, "live_orders": False,
+        "ledger_mutations": False, "scan":{"events":1,"partitions":1,"binary_markets":1},
+        "execution_scan":{"candidate_count":0,"valid_evaluations":1}}))
 
 
 def test_prepare_is_offline_and_derives_key(tmp_path: Path):
