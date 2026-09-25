@@ -676,6 +676,7 @@ class Orchestrator:
 
             pre_filtered = []
             skipped_stale = 0
+            stale_weatherish = 0
             for c in raw_candidates:
                 res_dt = _parse_end_date(c.get("end_date", ""))
                 if res_dt is None:
@@ -686,8 +687,29 @@ class Orchestrator:
                     pre_filtered.append(c)
                 else:
                     skipped_stale += 1
+                    # Track stale weather-like candidates to detect "stale cache" cases
+                    cat = str(c.get("category", "")).upper()
+                    title = (c.get("title") or c.get("question") or "") if isinstance(c, dict) else ""
+                    if "WEATHER" in cat or "TEMPERATURE" in title.upper():
+                        stale_weatherish += 1
             if skipped_stale:
                 logger.info(f"Pre-filtered {skipped_stale} stale candidates (resolution < {_min_hours}h away), {len(pre_filtered)} remain")
+
+            # Fail-closed: if we have candidates but all are stale, the observation
+            # step is not meaningful. Mark as degraded to kill "no edge" illusions.
+            if raw_candidates and not pre_filtered:
+                return StepResult(
+                    name="weather_observer",
+                    success=False,
+                    message=f"0 eligible markets (all {skipped_stale} stale; min_resolve={_min_hours}h)",
+                    data={
+                        "raw_candidates": len(raw_candidates),
+                        "eligible_candidates": 0,
+                        "skipped_stale": skipped_stale,
+                        "stale_weatherish": stale_weatherish,
+                        "min_time_to_resolution_hours": _min_hours,
+                    },
+                )
 
             # Step 2: Fetch real market odds from Polymarket API
             market_ids = [c.get("market_id", "") for c in pre_filtered if c.get("market_id")]
@@ -794,6 +816,25 @@ class Orchestrator:
                 f"(skipped: {_skip_no_price} no-price, {sum(_skip_filter.values())} filter "
                 f"[{', '.join(f'{k}:{v}' for k,v in sorted(_skip_filter.items(), key=lambda x:-x[1])[:5])}])"
             )
+
+            # Fail-closed: collector/caches can be stale (e.g. Gamma snapshot in the past).
+            # If we saw stale weather-like candidates but end up with zero observable markets,
+            # degrade the run explicitly instead of emitting "0 observed" as if it was clean.
+            if len(weather_markets) == 0 and stale_weatherish > 0:
+                return StepResult(
+                    name="weather_observer",
+                    success=False,
+                    message=f"0 observable weather markets (stale input detected; stale_weatherish={stale_weatherish})",
+                    data={
+                        "raw_candidates": len(raw_candidates),
+                        "eligible_candidates": len(pre_filtered),
+                        "stale_weatherish": stale_weatherish,
+                        "skipped_stale": skipped_stale,
+                        "min_time_to_resolution_hours": _min_hours,
+                        "skip_no_price": _skip_no_price,
+                        "skip_filter": _skip_filter,
+                    },
+                )
 
             # Create market fetcher from loaded candidates
             def market_fetcher():

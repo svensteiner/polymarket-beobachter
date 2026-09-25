@@ -37,6 +37,8 @@ class CollectorStats:
     filter_results: Dict[str, int]
     fields_removed: Dict[str, int]
     run_duration_seconds: float
+    data_source: str = "api"  # "api" | "cache_raw" | "cache_gamma"
+    source_path: str = ""
 
 
 class Collector:
@@ -98,11 +100,35 @@ class Collector:
         # Step 1: Fetch weather markets from events with weather/climate tags
         logger.info("Step 1: Fetching weather markets from Polymarket API...")
         logger.info("  (Using /events?tag_slug=weather and /events?tag_slug=climate)")
-        raw_markets = self.client.fetch_weather_markets(
-            max_markets=self.max_markets,
-            include_closed=False,  # Only fetch active/open markets
-        )
-        logger.info(f"Fetched {len(raw_markets)} weather-tagged markets")
+        raw_markets: List[Dict] = []
+        data_source = "api"
+        source_path = ""
+
+        try:
+            raw_markets = self.client.fetch_weather_markets(
+                max_markets=self.max_markets,
+                include_closed=False,  # Only fetch active/open markets
+            )
+            logger.info(f"Fetched {len(raw_markets)} weather-tagged markets")
+        except Exception as e:
+            logger.warning(f"API fetch failed: {e}")
+            logger.warning("Attempting offline fallback (cached raw response, then Gamma candidates)...")
+
+            raw_cache = self.storage.load_latest_raw_response()
+            if raw_cache and raw_cache.get("markets"):
+                raw_markets = raw_cache["markets"]
+                data_source = "cache_raw"
+                source_path = raw_cache.get("path", "")
+                logger.info(f"Offline fallback OK: loaded {len(raw_markets)} markets from raw cache: {source_path}")
+            else:
+                gamma_cache = self.storage.load_latest_gamma_candidates()
+                if gamma_cache and gamma_cache.get("markets"):
+                    raw_markets = [self._coerce_gamma_candidate(m) for m in gamma_cache["markets"]]
+                    data_source = "cache_gamma"
+                    source_path = gamma_cache.get("path", "")
+                    logger.info(f"Offline fallback OK: loaded {len(raw_markets)} markets from gamma cache: {source_path}")
+                else:
+                    raise
 
         # Step 2: Sanitize
         logger.info("Step 2: Sanitizing (removing forbidden fields)...")
@@ -172,6 +198,8 @@ class Collector:
             filter_results=filter_stats,
             fields_removed=fields_removed,
             run_duration_seconds=duration,
+            data_source=data_source,
+            source_path=source_path,
         )
 
         report = self._generate_report(stats, candidates, filtered_markets)
@@ -188,6 +216,35 @@ class Collector:
         logger.info("=" * 60)
 
         return stats
+
+    def _coerce_gamma_candidate(self, market: Dict) -> Dict:
+        """
+        Normalize Gamma discovery candidate shape into a "raw market" dict.
+
+        Goal: make downstream sanitizer/classifier/normalizer deterministic
+        even when the network/API is unavailable.
+        """
+        if not isinstance(market, dict):
+            return {}
+
+        out = dict(market)
+
+        # Align common Gamma fields to expected API-ish keys
+        market_id = out.get("id") or out.get("market_id") or out.get("conditionId")
+        if market_id is not None:
+            out["id"] = str(market_id)
+
+        title = out.get("question") or out.get("title")
+        if title:
+            out["question"] = title
+
+        # Ensure description-like field exists
+        if "description" not in out and out.get("resolution_text"):
+            out["description"] = out.get("resolution_text")
+
+        # Provide minimal event metadata (helps explainability / filtering)
+        out.setdefault("_source_tag", "gamma_discovery")
+        return out
 
     def _generate_report(
         self,
@@ -212,6 +269,8 @@ class Collector:
             f"**Run Date:** {date.today().isoformat()}",
             f"**Run Time:** {datetime.now(timezone.utc).isoformat()}",
             f"**Duration:** {stats.run_duration_seconds:.1f} seconds",
+            f"**Data Source:** {stats.data_source}",
+            (f"**Source Path:** {stats.source_path}" if stats.source_path else ""),
             "",
             "## Summary",
             "",

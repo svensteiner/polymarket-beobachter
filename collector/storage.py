@@ -58,6 +58,8 @@ class StorageManager:
         self.normalized_dir = self.base_dir / "normalized" / self.date_str
         self.candidates_dir = self.base_dir / "candidates" / self.date_str
         self.reports_dir = self.base_dir / "reports" / self.date_str
+        # Not written by Collector directly, but used as an offline input fallback
+        self.gamma_dir = self.base_dir / "gamma"
 
     def ensure_directories(self) -> None:
         """Create all required directories if they don't exist."""
@@ -184,6 +186,71 @@ class StorageManager:
 
         with open(filepath, "r", encoding="utf-8") as f:
             return json.load(f)
+
+    def _find_latest_file(self, directory: Path, pattern: str) -> Optional[Path]:
+        """
+        Find the newest file matching a glob pattern under a directory tree.
+
+        Newest is determined by last write time (mtime).
+        """
+        if not directory.exists():
+            return None
+
+        candidates = list(directory.rglob(pattern))
+        if not candidates:
+            return None
+
+        candidates.sort(key=lambda p: p.stat().st_mtime, reverse=True)
+        return candidates[0]
+
+    def load_latest_raw_response(self) -> Optional[Dict[str, Any]]:
+        """
+        Load the most recent raw response from any date folder.
+
+        Returns:
+            dict with keys: path (str), markets (list) or None if not found
+        """
+        latest = self._find_latest_file(self.base_dir / "raw", "markets_*.json")
+        if latest is None:
+            return None
+
+        try:
+            with open(latest, "r", encoding="utf-8") as f:
+                data = json.load(f)
+        except Exception as e:
+            logger.warning(f"Failed to load latest raw response {latest}: {e}")
+            return None
+
+        if not isinstance(data, list):
+            logger.warning(f"Latest raw response is not a list: {latest}")
+            return None
+
+        return {"path": str(latest), "markets": data}
+
+    def load_latest_gamma_candidates(self) -> Optional[Dict[str, Any]]:
+        """
+        Load the most recent Gamma discovery candidate file as offline market input.
+
+        Returns:
+            dict with keys: path (str), markets (list) or None if not found
+        """
+        latest = self._find_latest_file(self.gamma_dir, "gamma_candidates.jsonl")
+        if latest is None:
+            return None
+
+        markets: List[Dict[str, Any]] = []
+        try:
+            with open(latest, "r", encoding="utf-8") as f:
+                for line in f:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    markets.append(json.loads(line))
+        except Exception as e:
+            logger.warning(f"Failed to load latest gamma candidates {latest}: {e}")
+            return None
+
+        return {"path": str(latest), "markets": markets}
 
     def load_candidates(self, filename: str = "candidates.jsonl") -> List[Dict[str, Any]]:
         """
