@@ -88,6 +88,7 @@ class Orchestrator:
         self.output_dir = self.base_dir / "output"
         self.logs_dir = self.base_dir / "logs"
         self.data_dir = self.base_dir / "data"
+        self._process_started_at = datetime.now()
 
         # Ensure directories exist
         self.output_dir.mkdir(parents=True, exist_ok=True)
@@ -303,6 +304,33 @@ class Orchestrator:
 
         # Log to audit (includes run_id via summary)
         self._log_to_audit(result)
+
+        # Always update bot health artifacts, even when orchestrator is run directly
+        try:
+            from shared.bot_status import write_bot_status_from_pipeline_result
+
+            write_bot_status_from_pipeline_result(
+                bot_status_file=self.logs_dir / "bot_status.json",
+                process_started_at=self._process_started_at,
+                run_result=result,
+            )
+        except Exception:
+            pass  # Fail-closed: never crash pipeline due to status writing
+
+        # Heartbeat for watchdog compatibility (plain ISO timestamp)
+        try:
+            (self.logs_dir / "heartbeat.txt").write_text(datetime.now().isoformat(), encoding="utf-8")
+        except Exception:
+            pass
+
+        # Backwards-compat artifact: edge_hunter.json -> alias of strategy_advice.json
+        try:
+            strategy_advice = self.output_dir / "strategy_advice.json"
+            edge_hunter = self.output_dir / "edge_hunter.json"
+            if strategy_advice.exists():
+                edge_hunter.write_text(strategy_advice.read_text(encoding="utf-8"), encoding="utf-8")
+        except Exception:
+            pass
 
         # Telegram Pipeline Summary (nur bei interessanten Events)
         try:
