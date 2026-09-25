@@ -66,6 +66,20 @@ def test_discover_reports_real_event_fetch_failure(monkeypatch):
         raise AssertionError("discovery failure was swallowed")
 
 
+def test_supplied_event_client_does_not_import_legacy_collector(monkeypatch):
+    import sys
+    from paper_trader.struct_arb import fetch_open_events
+
+    monkeypatch.setitem(sys.modules, "collector.client", None)
+    calls = []
+    class Client:
+        def fetch_events(self, **kwargs):
+            calls.append(kwargs)
+            return []
+    assert fetch_open_events(client=Client()) == []
+    assert calls == [{"limit": 100, "offset": 0, "closed": False}]
+
+
 def test_single_instance_rejects_contention(tmp_path):
     lock = tmp_path / "runner.lock"
     with rr.single_instance(lock):

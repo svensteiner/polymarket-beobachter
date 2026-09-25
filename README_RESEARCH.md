@@ -177,3 +177,22 @@ trägt `estimates_not_invoice: true` und `authorization: false`; sie behauptet
 kein Budgetlimit und aktiviert keine Aufrufe. Exitcode 0 bedeutet einen
 vollständig gültigen oder verifiziert leeren Store, 3 unvollständige Records,
 2 einen fehlenden, beschädigten, übergroßen oder strukturell ungültigen Store.
+
+## Reproduzierbare Offline-Prüfung
+
+```powershell
+py -3.12 -m venv .venv-research-test
+.\.venv-research-test\Scripts\python.exe -m pip install -r requirements-research-test.txt
+.\.venv-research-test\Scripts\python.exe verify_research.py --agent-python C:\Users\botrunner\projects\polymarket-beobachter\.venv-agentic\Scripts\python.exe
+```
+
+Der Prüfer verwendet eine feste Research-Testliste, erzwingt Python 3.12 und
+`pytest==9.0.2`, deaktiviert externe Pytest-Plugins, begrenzt Subprozesse und
+schreibt `output/research_verification.json` atomar. Er installiert nichts,
+startet keinen Bot und nutzt keine externen Netzwerk- oder API-Aufrufe. Ohne
+`--agent-python` bleibt der optionale SDK-Teil ausdrücklich `not_checked`; das
+Ergebnis gilt ausschließlich für `research_only` und setzt
+`production_ready` nie auf `true`. Mit `--agent-python` wird exakt
+`openai==3.13.0` vorausgesetzt und der lokale SDK-Loopbacktest ausgeführt.
+Für eine saubere Testumgebung kann `requirements-research-test.txt` in `.venv-research-test`
+installiert werden; die Datei pinnt Pytest und seine Testlaufzeit-Abhängigkeiten.

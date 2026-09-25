@@ -190,9 +190,9 @@ def _atomic_write(path: Path, content: str) -> None:
 def fetch_open_events(client: Any = None, max_events: int = MAX_EVENTS) -> List[Dict[str, Any]]:
     """Paginate Gamma /events?closed=false. No weather tag filter. Fail-open."""
     client = client or _make_client()
-    from collector.client import PolymarketClient
-
-    max_offset = getattr(client, "MAX_EVENT_OFFSET", PolymarketClient.MAX_EVENT_OFFSET)
+    # Supplied clients need not load the legacy collector package just for a
+    # pagination default. The standard client exposes its own limit.
+    max_offset = getattr(client, "MAX_EVENT_OFFSET", 2000)
     page_size = 100
     offset = 0
     out: List[Dict[str, Any]] = []
