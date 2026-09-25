@@ -295,6 +295,22 @@ class Orchestrator:
         result.summary["agent_hypothesis"] = agent_result.get("hypothesis", "")
         result.summary["agent_proposed_actions"] = len(agent_result.get("proposed_actions", []))
 
+        # Optional: Edge-Hunter + Shadow-Trade Export (read-only diagnostics).
+        # These artifacts are used by production-readiness automations and do not
+        # affect trading behavior.
+        try:
+            from analytics.edge_hunter import write_edge_hunter
+            from paper_trader.guardrail_audit import export_shadow_trades_jsonl
+
+            write_edge_hunter(run_id=run_id, output_dir=self.output_dir)
+            export_shadow_trades_jsonl(
+                run_id=run_id,
+                out_file=self.data_dir / "shadow_trades.jsonl",
+                limit=500,
+            )
+        except Exception as e:
+            logger.debug(f"Edge-Hunter/Shadow-Export uebersprungen (unkritisch): {e}")
+
         # Step 6: Write status
         print("[6/6] Status schreiben ...", end="", flush=True)
         status_result = self._write_status_summary(result)
