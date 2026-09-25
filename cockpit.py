@@ -54,6 +54,7 @@ except ImportError:
     def shutdown_log_manager(): pass
 
 LOCKFILE = BASE_DIR / "cockpit.lock"
+HEARTBEAT_FILE = BASE_DIR / "heartbeat.txt"
 CRASH_LOG = BASE_DIR / "logs" / "crash.log"
 BOT_STATUS_FILE = BASE_DIR / "logs" / "bot_status.json"
 BOT_CONTROL_FILE = BASE_DIR / "logs" / "bot_control.json"
@@ -188,6 +189,50 @@ def release_lock():
     except Exception as e:
         logger.warning("Fehler beim Lockfile entfernen: %s", e)
         LOCKFILE.unlink(missing_ok=True)
+
+
+def cleanup_stale_runtime_markers(stale_hours: float = 2.0) -> None:
+    """
+    Best-effort cleanup for stale runtime markers (lock + heartbeat).
+
+    Purpose:
+    - Prevent a dead/stale `cockpit.lock` from misleading ops/automation.
+    - Surface "bot hasn't run recently" as an explicit log signal.
+
+    SAFETY:
+    - Only removes lockfile when the stored PID is confirmed dead.
+    - Never starts/stops processes; purely housekeeping.
+    """
+    # 1) Stale lock cleanup (even for --run-once / --status)
+    try:
+        if LOCKFILE.exists():
+            try:
+                old_pid = int(LOCKFILE.read_text().strip())
+                if not _pid_alive(old_pid):
+                    LOCKFILE.unlink(missing_ok=True)
+                    logger.warning("Stale cockpit.lock entfernt (PID %s nicht aktiv)", old_pid)
+            except Exception as e:
+                logger.warning("Fehler beim Pruefen von cockpit.lock: %s", e)
+    except Exception:
+        pass
+
+    # 2) Heartbeat freshness warning (no deletion)
+    try:
+        if HEARTBEAT_FILE.exists():
+            raw = HEARTBEAT_FILE.read_text(encoding="utf-8").strip()
+            if raw:
+                try:
+                    cleaned = raw.replace("Z", "+00:00")
+                    hb = datetime.fromisoformat(cleaned)
+                    if hb.tzinfo is None:
+                        hb = hb.replace(tzinfo=timezone.utc)
+                    age_hours = (datetime.now(timezone.utc) - hb.astimezone(timezone.utc)).total_seconds() / 3600.0
+                    if age_hours >= stale_hours:
+                        logger.warning("Heartbeat ist stale: %s (%.1fh alt)", raw, age_hours)
+                except Exception:
+                    pass
+    except Exception:
+        pass
 
 
 def _rotate_crash_log():
@@ -839,6 +884,9 @@ Examples:
 
     # Install crash logger for all modes
     setup_crash_logger()
+
+    # Housekeeping: stale lock/heartbeat can stall ops and confuse automation
+    cleanup_stale_runtime_markers(stale_hours=2.0)
 
     # Start Bot Monitor (System Tray) falls nicht bereits aktiv
     try:

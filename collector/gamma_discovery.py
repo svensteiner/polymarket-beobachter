@@ -41,9 +41,11 @@ WEATHER_KEYWORDS = [
     "drought",
     "high temperature",
     "low temperature",
-    "exceed",      # z.B. "Will temperature exceed 100F"
-    "above",       # z.B. "Will it be above 30C"
-    "below",       # z.B. "Will temperature be below 0C"
+    # NOTE: "exceed/above/below" are intentionally NOT treated as sufficient
+    # signals on their own. They are too generic (e.g. "Bitcoin above ...").
+    "exceed",      # only counts together with temperature/weather context
+    "above",       # only counts together with temperature/weather context
+    "below",       # only counts together with temperature/weather context
 ]
 
 # Supported cities — mirrors ALLOWED_CITIES in weather.yaml.
@@ -224,7 +226,34 @@ def _is_weather_market(market: Dict[str, Any]) -> bool:
         str(market.get("groupItemTitle", "")),
     ]).lower()
 
-    return any(kw.lower() in searchable for kw in WEATHER_KEYWORDS)
+    # Strong weather terms (must be present OR fall back to boundary+city+temp check)
+    strong_keywords = [
+        "temperature",
+        "celsius",
+        "fahrenheit",
+        "degrees",
+        "weather",
+        "rain",
+        "snow",
+        "precipitation",
+        "storm",
+        "hurricane",
+        "typhoon",
+        "tornado",
+        "blizzard",
+        "flood",
+        "drought",
+    ]
+    if any(kw in searchable for kw in strong_keywords):
+        return True
+
+    # City-temperature boundary markets are valid even if descriptions are sparse.
+    q = str(market.get("question", "")).lower()
+    if _is_city_temperature_boundary(q):
+        return True
+
+    # Generic keywords alone are too noisy (e.g. "Bitcoin above ...")
+    return False
 
 
 def _get_liquidity(market: Dict[str, Any]) -> float:

@@ -20,6 +20,8 @@
 
 import sys
 import logging
+import json
+from collections import Counter
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from typing import Dict, List, Optional
@@ -39,6 +41,9 @@ from analytics.edge_memory import assess_proposal_edge, detect_market_type
 logger = logging.getLogger(__name__)
 
 MAX_PROPOSAL_AGE_HOURS = 12  # Extended from 6h: YES proposals generated at midnight UTC stay valid through noon UTC dead zone
+OUTPUT_DIR = Path(__file__).parent.parent / "output"
+EDGE_HUNTER_FILE = OUTPUT_DIR / "edge_hunter.json"
+SHADOW_ELIGIBILITY_FILE = OUTPUT_DIR / "shadow_eligibility.json"
 
 
 # =============================================================================
@@ -95,6 +100,8 @@ class ProposalIntake:
 
         # Filter
         eligible = []
+        shadow_candidates: List[Dict[str, object]] = []
+        blocked_reason_counts: Counter[str] = Counter()
         open_positions = self._paper_logger.get_open_positions()
         for proposal in all_proposals:
             # Check 1: Decision is TRADE
@@ -144,6 +151,24 @@ class ProposalIntake:
                 }
             )
             if not allowed:
+                blocked_reason_counts[reason_code or "unknown"] += 1
+                if shadow_allowed:
+                    shadow_candidates.append(
+                        {
+                            "timestamp": datetime.now(timezone.utc).isoformat(),
+                            "run_id": run_id,
+                            "proposal_id": proposal.proposal_id,
+                            "market_id": proposal.market_id,
+                            "allowed": False,
+                            "reason_code": reason_code,
+                            "reason_detail": reason_detail,
+                            "policy_open_positions_count": len(open_positions) + len(eligible),
+                            "shadow_allowed_without_inventory": shadow_allowed,
+                            "shadow_reason_code": shadow_reason_code,
+                            "shadow_reason_detail": shadow_reason_detail,
+                            **proposal_meta,
+                        }
+                    )
                 _side = getattr(proposal, "token", None) or getattr(proposal, "side", "?")
                 _ep = getattr(proposal, "implied_probability", None)
                 _edge = getattr(proposal, "edge", None)
@@ -179,6 +204,7 @@ class ProposalIntake:
                         **proposal_meta,
                     }
                 )
+                blocked_reason_counts["edge_memory"] += 1
                 continue
 
             # Check 4: Adversarial Check nur fuer NEUE Proposals (<2h alt, max 5 pro Run)
@@ -239,8 +265,81 @@ class ProposalIntake:
 
             eligible.append(proposal)
 
+        # Monitoring artifacts (non-blocking): keep automation-visible edge & shadow summaries
+        try:
+            self._write_shadow_eligibility(run_id=run_id, shadow_candidates=shadow_candidates)
+            self._write_edge_hunter(
+                run_id=run_id,
+                eligible=eligible,
+                shadow_candidates=shadow_candidates,
+                blocked_reason_counts=blocked_reason_counts,
+            )
+        except Exception as e:
+            logger.debug("Failed to write monitoring artifacts (edge_hunter/shadow_eligibility): %s", e)
+
         logger.info(f"Found {len(eligible)} eligible proposals for paper trading")
         return eligible
+
+    @staticmethod
+    def _proposal_to_compact_dict(proposal: Proposal) -> Dict[str, object]:
+        return {
+            "proposal_id": getattr(proposal, "proposal_id", None),
+            "timestamp": getattr(proposal, "timestamp", None),
+            "market_id": getattr(proposal, "market_id", None),
+            "market_question": getattr(proposal, "market_question", None),
+            "decision": getattr(proposal, "decision", None),
+            "implied_probability": getattr(proposal, "implied_probability", None),
+            "model_probability": getattr(proposal, "model_probability", None),
+            "edge": getattr(proposal, "edge", None),
+            "confidence_level": getattr(proposal, "confidence_level", None),
+            "hours_to_resolution": getattr(proposal, "hours_to_resolution", None),
+            "ensemble_variance": getattr(proposal, "ensemble_variance", None),
+            "core_criteria": getattr(proposal, "core_criteria", None),
+        }
+
+    def _write_shadow_eligibility(self, run_id: str | None, shadow_candidates: List[Dict[str, object]]) -> None:
+        OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+        payload = {
+            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "run_id": run_id,
+            "shadow_allowed_without_inventory": len(shadow_candidates),
+            "top_candidates": sorted(
+                shadow_candidates,
+                key=lambda x: float(x.get("edge") or 0.0),
+                reverse=True,
+            )[:50],
+        }
+        SHADOW_ELIGIBILITY_FILE.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+
+    def _write_edge_hunter(
+        self,
+        run_id: str | None,
+        eligible: List[Proposal],
+        shadow_candidates: List[Dict[str, object]],
+        blocked_reason_counts: Counter[str],
+    ) -> None:
+        OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+        eligible_compact = [self._proposal_to_compact_dict(p) for p in eligible]
+        eligible_sorted = sorted(
+            eligible_compact,
+            key=lambda x: float(x.get("edge") or 0.0),
+            reverse=True,
+        )
+        payload = {
+            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "run_id": run_id,
+            "eligible_count": len(eligible),
+            "shadow_candidate_count": len(shadow_candidates),
+            "blocked_reason_counts": dict(blocked_reason_counts),
+            "top_eligible": eligible_sorted[:50],
+            "top_shadow_candidates": sorted(
+                shadow_candidates,
+                key=lambda x: float(x.get("edge") or 0.0),
+                reverse=True,
+            )[:50],
+            "governance_notice": "Informational monitoring output only. No real trade was executed.",
+        }
+        EDGE_HUNTER_FILE.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
 
     def _filter_recent_unique_proposals(self, proposals: List[Proposal]) -> List[Proposal]:
         cutoff = datetime.now(timezone.utc) - timedelta(hours=MAX_PROPOSAL_AGE_HOURS)
