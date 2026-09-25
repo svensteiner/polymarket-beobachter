@@ -24,6 +24,7 @@ import json
 import logging
 import time
 import traceback
+import subprocess
 from pathlib import Path
 from datetime import datetime, timedelta
 
@@ -139,6 +140,51 @@ def _pid_alive(pid: int) -> bool:
             return False
 
 
+def _pid_looks_like_our_bot(pid: int) -> bool:
+    """Best-effort check whether PID belongs to our cockpit scheduler process.
+
+    Motivation: Windows can reuse PIDs quickly. A stale cockpit.lock might point
+    to an unrelated (but alive) process, causing the scheduler to refuse start.
+    We therefore verify name/command line where possible.
+    """
+    try:
+        # Prefer psutil when available (more reliable than WMI/CIM output parsing)
+        import psutil  # type: ignore[import-not-found]
+
+        proc = psutil.Process(pid)
+        name = (proc.name() or "").lower()
+        cmdline = " ".join(proc.cmdline() or []).lower()
+        if "python" not in name:
+            return False
+        return "cockpit.py" in cmdline and "--scheduler" in cmdline
+    except Exception:
+        pass
+
+    try:
+        # Fallback: query Win32_Process via PowerShell CIM
+        ps_cmd = (
+            f"$p=Get-CimInstance Win32_Process -Filter \"ProcessId={pid}\";"
+            f"if ($null -eq $p) {{ exit 2 }};"
+            f"$name=$p.Name; $cmd=$p.CommandLine;"
+            f"Write-Output ($name + \"\\n\" + $cmd)"
+        )
+        out = subprocess.check_output(
+            ["powershell", "-NoProfile", "-Command", ps_cmd],
+            stderr=subprocess.DEVNULL,
+            text=True,
+            timeout=2,
+        )
+        lines = [l.strip() for l in out.splitlines() if l.strip()]
+        name = (lines[0] if lines else "").lower()
+        cmdline = ("\n".join(lines[1:]) if len(lines) > 1 else "").lower()
+        if "python" not in name:
+            return False
+        return "cockpit.py" in cmdline and "--scheduler" in cmdline
+    except Exception:
+        # If we cannot verify, be conservative and assume it *might* be our bot.
+        return True
+
+
 def acquire_lock():
     """Prevent duplicate bot instances via atomic PID lockfile.
 
@@ -154,10 +200,13 @@ def acquire_lock():
                 if old_pid == os.getpid():
                     return True  # Same process, re-entry is fine
                 if _pid_alive(old_pid):
-                    print(f"Bot laeuft bereits! (PID {old_pid})")
-                    sys.exit(1)
+                    if _pid_looks_like_our_bot(old_pid):
+                        print(f"Bot laeuft bereits! (PID {old_pid})")
+                        sys.exit(1)
+                    # PID is alive but does not look like our bot (PID reuse) -> stale lockfile
+                    LOCKFILE.unlink(missing_ok=True)
                 # Stale lockfile from dead process - remove it
-                LOCKFILE.unlink()
+                LOCKFILE.unlink(missing_ok=True)
             except (ValueError, OSError) as e:
                 logger.warning("Fehler beim Lesen des Lockfile: %s", e)
                 LOCKFILE.unlink(missing_ok=True)
