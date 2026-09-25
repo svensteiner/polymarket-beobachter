@@ -19,6 +19,49 @@ logger = logging.getLogger(__name__)
 PROJECT_ROOT = Path(__file__).parent.parent
 LOGS_DIR = PROJECT_ROOT / "logs"
 AUDIT_FILE = LOGS_DIR / "guardrail_audit.jsonl"
+DATA_DIR = PROJECT_ROOT / "data"
+SHADOW_TRADES_FILE = DATA_DIR / "shadow_trades.jsonl"
+
+
+def _record_shadow_trade_candidate(entry: Dict[str, Any]) -> None:
+    """
+    Persist a "shadow trade" candidate.
+
+    Shadow trades are counterfactual entries that would have been allowed
+    without inventory constraints. They are used for auditability and to
+    detect whether inventory limits are hiding (or fabricating) edge.
+
+    Fail-closed for trading logic: write failures must never crash the run.
+    """
+    try:
+        DATA_DIR.mkdir(parents=True, exist_ok=True)
+
+        record = {
+            "timestamp": entry.get("timestamp"),
+            "run_id": entry.get("run_id"),
+            "proposal_id": entry.get("proposal_id"),
+            "market_id": entry.get("market_id"),
+            "reason_code": entry.get("reason_code"),
+            "reason_detail": entry.get("reason_detail"),
+            # Optional metadata (best-effort)
+            "market_question": entry.get("market_question"),
+            "city": entry.get("city"),
+            "confidence_level": entry.get("confidence_level"),
+            "market_type": entry.get("market_type"),
+            "side": entry.get("side"),
+            "edge": entry.get("edge"),
+            "implied_probability": entry.get("implied_probability"),
+            "model_probability": entry.get("model_probability"),
+            "entry_price": entry.get("entry_price"),
+            "shadow_reason_code": entry.get("shadow_reason_code"),
+            "shadow_reason_detail": entry.get("shadow_reason_detail"),
+            "governance_notice": "Shadow trade candidate only. No trade executed.",
+        }
+
+        with open(SHADOW_TRADES_FILE, "a", encoding="utf-8") as handle:
+            handle.write(json.dumps(record, ensure_ascii=False) + "\n")
+    except Exception as e:
+        logger.warning("Failed to record shadow trade candidate: %s", e)
 
 
 def record_guardrail_decision(decision: Dict[str, Any]) -> None:
@@ -45,6 +88,11 @@ def record_guardrail_decision(decision: Dict[str, Any]) -> None:
 
         with open(AUDIT_FILE, "a", encoding="utf-8") as f:
             f.write(json.dumps(entry, ensure_ascii=False) + "\n")
+
+        # Shadow-trade telemetry: record only when the entry would have been
+        # allowed absent inventory constraints (counterfactual audit).
+        if entry.get("shadow_allowed_without_inventory"):
+            _record_shadow_trade_candidate(entry)
 
     except Exception as e:
         logger.warning(f"Failed to record guardrail decision: {e}")

@@ -29,6 +29,7 @@ CAPITAL_FILE = PROJECT_ROOT / "data" / "capital_config.json"
 CONFIG_FILE = PROJECT_ROOT / "config" / "weather.yaml"
 ADVICE_JSON_FILE = PROJECT_ROOT / "output" / "strategy_advice.json"
 ADVICE_TEXT_FILE = PROJECT_ROOT / "output" / "strategy_advice.txt"
+EDGE_HUNTER_FILE = PROJECT_ROOT / "output" / "edge_hunter.json"
 SEGMENT_ANALYSIS_FILE = PROJECT_ROOT / "output" / "segment_analysis.json"
 ARBITRAGE_FILE = PROJECT_ROOT / "output" / "arbitrage_opportunities.json"
 SMART_MONEY_FILE = PROJECT_ROOT / "data" / "smart_money.json"
@@ -731,6 +732,19 @@ def _atomic_write(path: Path, content: str) -> None:
 def write_strategy_advice(advice: dict[str, Any]) -> None:
     _atomic_write(ADVICE_JSON_FILE, json.dumps(advice, indent=2, ensure_ascii=False))
     _atomic_write(ADVICE_TEXT_FILE, _format_text(advice))
+
+    # Backward-compatible artifact for automation/audits.
+    # Keep schema minimal and derived only from persisted advice.
+    edge_hunter = {
+        "generated_at": advice.get("generated_at"),
+        "mode": advice.get("mode"),
+        "summary": advice.get("summary"),
+        "edge_summary": advice.get("edge_summary", {}),
+        "weak_cities": advice.get("weak_cities", []),
+        "segment_risk_flags": advice.get("segment_risk_flags", []),
+        "arbitrage_opportunities": advice.get("arbitrage_opportunities", []),
+    }
+    _atomic_write(EDGE_HUNTER_FILE, json.dumps(edge_hunter, indent=2, ensure_ascii=False))
 
 
 def load_latest_advice() -> dict[str, Any]:
