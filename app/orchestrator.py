@@ -301,6 +301,12 @@ class Orchestrator:
         result.add_step(status_result)
         print(f" {'OK' if status_result.success else 'FAIL'}")
 
+        # Non-blocking: standardized edge/blocker snapshot for monitoring
+        try:
+            self._write_edge_hunter(result)
+        except Exception as e:
+            logger.debug(f"Edge Hunter write failed (unkritisch): {e}")
+
         # Log to audit (includes run_id via summary)
         self._log_to_audit(result)
 
@@ -812,6 +818,13 @@ class Orchestrator:
                     "edge_observations_list": result.edge_observations,
                     "markets_processed": result.markets_processed,
                     "markets_filtered": result.markets_filtered,
+                    "candidates_raw_total": len(raw_candidates),
+                    "candidates_prefiltered_total": len(pre_filtered),
+                    "candidates_skipped_stale": skipped_stale,
+                    "candidates_skipped_no_price": _skip_no_price,
+                    "candidates_filtered_out_reasons": _skip_filter,
+                    "candidates_source_file": str(candidates_file),
+                    "gamma_candidate_file": str(gamma_candidate_file) if gamma_candidate_file else None,
                 }
             )
         except Exception as e:
@@ -1440,6 +1453,78 @@ class Orchestrator:
                 message="Failed to write status",
                 error=str(e)
             )
+
+    def _write_edge_hunter(self, result: PipelineResult) -> None:
+        """
+        Write a standardized snapshot of top edges + blockers for monitoring.
+
+        Output: output/edge_hunter.json
+        Governance: OBSERVE-ONLY (no trading side effects).
+        """
+        out_file = self.output_dir / "edge_hunter.json"
+
+        weather_step = next((s for s in result.steps if s.name == "weather_observer"), None)
+        paper_step = next((s for s in result.steps if s.name == "paper_trader"), None)
+
+        weather_data: Dict[str, Any] = weather_step.data if (weather_step and isinstance(weather_step.data, dict)) else {}
+        paper_data: Dict[str, Any] = paper_step.data if (paper_step and isinstance(paper_step.data, dict)) else {}
+
+        edge_obs = weather_data.get("edge_observations_list") or []
+        edges_serialized: List[Dict[str, Any]] = []
+        for o in edge_obs:
+            try:
+                if hasattr(o, "to_dict"):
+                    edges_serialized.append(o.to_dict())
+                elif isinstance(o, dict):
+                    edges_serialized.append(dict(o))
+            except Exception:
+                continue
+
+        def _edge_key(d: Dict[str, Any]) -> float:
+            try:
+                return abs(float(d.get("edge", 0.0)))
+            except Exception:
+                return 0.0
+
+        edges_serialized.sort(key=_edge_key, reverse=True)
+        top_edges = edges_serialized[:25]
+
+        snapshot = {
+            "schema_version": 1,
+            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "run_id": result.summary.get("run_id"),
+            "pipeline_timestamp": result.timestamp,
+            "pipeline_state": result.state.value,
+            "counts": {
+                "markets_fetched": result.summary.get("markets_fetched", 0),
+                "weather_candidates": result.summary.get("weather_candidates", 0),
+                "observations_total": weather_data.get("observations_total", 0),
+                "edge_observations": weather_data.get("edge_observations", 0),
+                "proposals_generated": result.summary.get("proposals_generated", 0),
+                "paper_positions_entered": result.summary.get("paper_positions_entered", 0),
+                "guardrail_allowed": paper_data.get("guardrail_allowed_count", 0),
+                "guardrail_blocked": paper_data.get("guardrail_blocked_count", 0),
+                "shadow_eligible_without_inventory": paper_data.get("shadow_eligible_without_inventory", 0),
+            },
+            "candidate_intake": {
+                "source_file": weather_data.get("candidates_source_file"),
+                "gamma_candidate_file": weather_data.get("gamma_candidate_file"),
+                "raw_total": weather_data.get("candidates_raw_total", 0),
+                "prefiltered_total": weather_data.get("candidates_prefiltered_total", 0),
+                "skipped_stale": weather_data.get("candidates_skipped_stale", 0),
+                "skipped_no_price": weather_data.get("candidates_skipped_no_price", 0),
+                "filtered_out_reasons": weather_data.get("candidates_filtered_out_reasons", {}),
+            },
+            "top_edges": top_edges,
+            "notes": [
+                "OBSERVE-ONLY artifact. Keine Orders, keine Wallet-Aktionen.",
+                "Top-Edges sind nach |edge| sortiert (groesste Fehlbepreisungen).",
+            ],
+        }
+
+        tmp = out_file.with_suffix(".tmp")
+        tmp.write_text(json.dumps(snapshot, indent=2, ensure_ascii=False), encoding="utf-8")
+        tmp.replace(out_file)
 
     def _log_to_audit(self, result: PipelineResult):
         """Log pipeline run to audit."""

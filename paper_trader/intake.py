@@ -33,6 +33,7 @@ from proposals.review_gate import ReviewGate
 
 from paper_trader.entry_guardrails import describe_proposal, evaluate_entry_guardrails
 from paper_trader.guardrail_audit import record_guardrail_decision
+from paper_trader.shadow_trades import record_shadow_trade_candidate
 from paper_trader.logger import get_paper_logger
 from analytics.edge_memory import assess_proposal_edge, detect_market_type
 
@@ -143,6 +144,29 @@ class ProposalIntake:
                     **proposal_meta,
                 }
             )
+
+            # Shadow-Trade Logging: blocked in real paper mode, but would pass without inventory limit.
+            # This is OBSERVE-ONLY telemetry used for later resolution/backtesting.
+            if shadow_allowed and not allowed:
+                try:
+                    record_shadow_trade_candidate(
+                        run_id=run_id,
+                        proposal_id=proposal.proposal_id,
+                        market_id=proposal.market_id,
+                        market_question=proposal.market_question,
+                        implied_probability=float(proposal.implied_probability),
+                        model_probability=float(proposal.model_probability),
+                        edge=float(proposal.edge),
+                        confidence_level=str(proposal.confidence_level),
+                        blocked_reason_code=reason_code,
+                        blocked_reason_detail=reason_detail,
+                        extra={
+                            "shadow_reason_code": shadow_reason_code,
+                            "shadow_reason_detail": shadow_reason_detail,
+                        },
+                    )
+                except Exception:
+                    pass
             if not allowed:
                 _side = getattr(proposal, "token", None) or getattr(proposal, "side", "?")
                 _ep = getattr(proposal, "implied_probability", None)
