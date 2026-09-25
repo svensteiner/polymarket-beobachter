@@ -139,6 +139,60 @@ def _pid_alive(pid: int) -> bool:
             return False
 
 
+def _get_process_create_time_100ns(pid: int) -> int | None:
+    """Return process creation time (Windows FILETIME in 100ns units) or None.
+
+    This is used to prevent PID-reuse false positives for the lockfile.
+    """
+    try:
+        import ctypes
+        kernel32 = ctypes.windll.kernel32
+        PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
+        handle = kernel32.OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, False, pid)
+        if not handle:
+            return None
+        try:
+            creation = ctypes.c_ulonglong(0)
+            exit_time = ctypes.c_ulonglong(0)
+            kernel_time = ctypes.c_ulonglong(0)
+            user_time = ctypes.c_ulonglong(0)
+            ok = kernel32.GetProcessTimes(
+                handle,
+                ctypes.byref(creation),
+                ctypes.byref(exit_time),
+                ctypes.byref(kernel_time),
+                ctypes.byref(user_time),
+            )
+            if not ok:
+                return None
+            return int(creation.value)
+        finally:
+            kernel32.CloseHandle(handle)
+    except Exception:
+        return None
+
+
+def _read_lockfile() -> dict | None:
+    """Read lockfile content. Backwards compatible with legacy PID-only format."""
+    if not LOCKFILE.exists():
+        return None
+    try:
+        raw = LOCKFILE.read_text(encoding="utf-8").strip()
+        if not raw:
+            return None
+        # New format: JSON
+        if raw.startswith("{"):
+            data = json.loads(raw)
+            if isinstance(data, dict) and isinstance(data.get("pid"), int):
+                return data
+            return None
+        # Legacy format: plain PID
+        pid = int(raw)
+        return {"pid": pid, "format": "legacy"}
+    except Exception:
+        return None
+
+
 def acquire_lock():
     """Prevent duplicate bot instances via atomic PID lockfile.
 
@@ -150,12 +204,24 @@ def acquire_lock():
         # First check if a stale lockfile exists
         if LOCKFILE.exists():
             try:
-                old_pid = int(LOCKFILE.read_text().strip())
+                lock = _read_lockfile() or {}
+                old_pid = int(lock.get("pid", -1))
                 if old_pid == os.getpid():
                     return True  # Same process, re-entry is fine
-                if _pid_alive(old_pid):
-                    print(f"Bot laeuft bereits! (PID {old_pid})")
-                    sys.exit(1)
+
+                # PID reuse can cause false positives. Verify creation time when available.
+                stored_create = lock.get("create_time_100ns")
+                current_create = _get_process_create_time_100ns(old_pid) if old_pid > 0 else None
+                if old_pid > 0 and _pid_alive(old_pid):
+                    if stored_create is not None and current_create is not None:
+                        if int(stored_create) == int(current_create):
+                            print(f"Bot laeuft bereits! (PID {old_pid})")
+                            sys.exit(1)
+                        # PID was reused - treat as stale lock
+                    else:
+                        # Legacy lockfile or no create-time available => conservative: assume running
+                        print(f"Bot laeuft bereits! (PID {old_pid})")
+                        sys.exit(1)
                 # Stale lockfile from dead process - remove it
                 LOCKFILE.unlink()
             except (ValueError, OSError) as e:
@@ -164,7 +230,9 @@ def acquire_lock():
 
         # Atomic create: O_CREAT | O_EXCL fails if file already exists
         fd = os.open(str(LOCKFILE), os.O_CREAT | os.O_EXCL | os.O_WRONLY)
-        os.write(fd, str(os.getpid()).encode())
+        create_time = _get_process_create_time_100ns(os.getpid())
+        payload = {"pid": os.getpid(), "create_time_100ns": create_time, "v": 2}
+        os.write(fd, json.dumps(payload, ensure_ascii=False).encode("utf-8"))
         os.close(fd)
         atexit.register(release_lock)
         return True
@@ -182,7 +250,8 @@ def release_lock():
     """Remove lockfile on exit."""
     try:
         if LOCKFILE.exists():
-            stored_pid = int(LOCKFILE.read_text().strip())
+            lock = _read_lockfile() or {}
+            stored_pid = lock.get("pid")
             if stored_pid == os.getpid():
                 LOCKFILE.unlink(missing_ok=True)
     except Exception as e:

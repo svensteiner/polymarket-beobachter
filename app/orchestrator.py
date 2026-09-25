@@ -1426,6 +1426,19 @@ class Orchestrator:
             with open(summary_file, 'a', encoding='utf-8') as f:
                 f.write('\n'.join(entry_lines))
 
+            # Non-blocking artifacts for automation / auditability
+            try:
+                from paper_trader.guardrail_audit import (
+                    write_edge_hunter_artifact,
+                    append_shadow_trades_for_run,
+                )
+
+                run_id = result.summary.get("run_id")
+                write_edge_hunter_artifact(run_id=run_id)
+                append_shadow_trades_for_run(run_id=run_id)
+            except Exception:
+                pass  # Fail-closed: never break the pipeline due to extra artifacts
+
             return StepResult(
                 name="status_writer",
                 success=True,
