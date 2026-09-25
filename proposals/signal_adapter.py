@@ -50,15 +50,43 @@ def weather_observation_to_proposal(observation) -> Optional["Proposal"]:
 
     model_prob = float(observation.model_probability)
     market_prob = float(observation.market_probability)
-    edge = float(observation.edge)
+    edge_raw = float(observation.edge)
+
+    # Side-aware Edge:
+    # - YES-edge relativ: (P_model_yes - P_mkt_yes) / P_mkt_yes
+    # - NO-edge relativ:  (P_mkt_yes - P_model_yes) / (1 - P_mkt_yes)
+    # Vorzeichen-Konvention bleibt: proposal.edge > 0 => YES, proposal.edge < 0 => NO
+    yes_edge = 0.0
+    if market_prob > 0:
+        yes_edge = (model_prob - market_prob) / market_prob
+
+    no_edge = 0.0
+    if market_prob < 1:
+        no_edge = (market_prob - model_prob) / (1.0 - market_prob)
+
+    yes_edge_pos = max(0.0, yes_edge)
+    no_edge_pos = max(0.0, no_edge)
+    if yes_edge_pos <= 0.0 and no_edge_pos <= 0.0:
+        return None
+
+    if yes_edge_pos >= no_edge_pos:
+        edge = yes_edge_pos
+        implied_side = "YES"
+    else:
+        edge = -no_edge_pos
+        implied_side = "NO"
+
+    if abs(edge) > 1.5:
+        logger.warning(f"[SANITY] Side-aware edge {edge:.3f} > 150% fuer market {market_id} - uebersprungen")
+        return None
 
     # OBSERVE kann sowohl starke YES- als auch starke NO-Fehlbewertungen bedeuten.
     # Der Paper-Trader waehlt spaeter ueber proposal.edge > 0 => YES, sonst NO.
-    if abs(edge) <= 0:
+    if False:
         return None
 
     # Sanity-Check: Edge > 1.5 (150% relativ) ist verdaechtig → wahrscheinlich Modell-Fehler
-    if edge > 1.5:
+    if False:
         logger.warning(f"[SANITY] Edge {edge:.3f} > 150% fuer market {market_id} - uebersprungen")
         return None
 
@@ -80,7 +108,6 @@ def weather_observation_to_proposal(observation) -> Optional["Proposal"]:
     forecast_f = getattr(observation, 'forecast_temperature_f', None)
     threshold_f = getattr(observation, 'threshold_temperature_f', None)
 
-    implied_side = "YES" if edge > 0 else "NO"
     justification = f"Weather model for {city} ({implied_side})"
     if forecast_f and threshold_f:
         justification += f": Forecast {forecast_f}°F vs threshold {threshold_f}°F"

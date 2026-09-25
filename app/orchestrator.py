@@ -94,6 +94,11 @@ class Orchestrator:
         self.logs_dir.mkdir(parents=True, exist_ok=True)
         (self.data_dir / "forecasts").mkdir(parents=True, exist_ok=True)
         (self.data_dir / "resolutions").mkdir(parents=True, exist_ok=True)
+        # Produktionsartefakte: existieren lassen (fail-closed, keine Fake-Daten)
+        try:
+            (self.data_dir / "shadow_trades.jsonl").touch(exist_ok=True)
+        except Exception:
+            pass
 
     def run_pipeline(self) -> PipelineResult:
         """
@@ -801,6 +806,55 @@ class Orchestrator:
 
             engine = create_engine(market_fetcher=market_fetcher)
             result = engine.run()
+
+            # Produktionsartefakt: Edge-Hunter Snapshot (Top-Edges) fuer Monitoring/Automation
+            try:
+                edge_hunter_file = self.output_dir / "edge_hunter.json"
+                items = []
+                for obs in result.edge_observations:
+                    try:
+                        od = obs.to_dict() if hasattr(obs, "to_dict") else {}
+                        market_p = float(od.get("market_probability", 0.0) or 0.0)
+                        model_p = float(od.get("model_probability", 0.0) or 0.0)
+                        yes_edge = (model_p - market_p) / market_p if market_p > 0 else 0.0
+                        no_edge = (market_p - model_p) / (1.0 - market_p) if market_p < 1 else 0.0
+                        yes_pos = max(0.0, yes_edge)
+                        no_pos = max(0.0, no_edge)
+                        if yes_pos <= 0.0 and no_pos <= 0.0:
+                            continue
+                        if yes_pos >= no_pos:
+                            side = "YES"
+                            edge_signed = yes_pos
+                            edge_for_side = yes_pos
+                        else:
+                            side = "NO"
+                            edge_signed = -no_pos
+                            edge_for_side = no_pos
+                        items.append({
+                            "market_id": od.get("market_id"),
+                            "city": od.get("city"),
+                            "event_description": od.get("event_description"),
+                            "confidence": od.get("confidence"),
+                            "market_probability": market_p,
+                            "model_probability": model_p,
+                            "side": side,
+                            "edge_signed": edge_signed,
+                            "edge_for_side": edge_for_side,
+                            "hours_to_resolution": od.get("hours_to_resolution"),
+                            "ensemble_variance": od.get("ensemble_variance"),
+                            "timestamp_utc": od.get("timestamp_utc"),
+                        })
+                    except Exception:
+                        continue
+                items = sorted(items, key=lambda x: float(x.get("edge_for_side", 0.0) or 0.0), reverse=True)[:25]
+                payload = {
+                    "generated_at": datetime.now(timezone.utc).isoformat(),
+                    "edge_observations_total": len(result.edge_observations),
+                    "top": items,
+                }
+                edge_hunter_file.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+            except Exception as e:
+                logger.debug(f"Edge-Hunter Snapshot fehlgeschlagen (unkritisch): {e}")
 
             return StepResult(
                 name="weather_observer",
