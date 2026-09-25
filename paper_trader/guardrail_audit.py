@@ -12,13 +12,15 @@ import json
 import logging
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
 PROJECT_ROOT = Path(__file__).parent.parent
 LOGS_DIR = PROJECT_ROOT / "logs"
 AUDIT_FILE = LOGS_DIR / "guardrail_audit.jsonl"
+DEFAULT_EDGE_HUNTER_FILE = PROJECT_ROOT / "output" / "edge_hunter.json"
+DEFAULT_SHADOW_TRADES_FILE = PROJECT_ROOT / "data" / "shadow_trades.jsonl"
 
 
 def record_guardrail_decision(decision: Dict[str, Any]) -> None:
@@ -143,3 +145,150 @@ def get_block_rate_by_reason() -> Dict[str, float]:
         code: count / total_blocked
         for code, count in reason_counts.items()
     }
+
+
+def build_edge_hunter_snapshot(
+    run_id: Optional[str] = None,
+    limit: int = 20,
+    include_shadow_only: bool = True,
+) -> Dict[str, Any]:
+    """
+    Build an "edge hunter" snapshot from recent guardrail decisions.
+
+    Governance intent:
+    - Deterministic, audit-friendly artifact for automations/ops.
+    - NOT a trading signal generator; only a ranking of observed edges.
+    """
+    decisions = get_recent_decisions(2000)
+    if run_id:
+        decisions = [d for d in decisions if d.get("run_id") == run_id]
+
+    # Optionally focus on shadow-eligible (inventory-free) candidates.
+    if include_shadow_only:
+        decisions = [d for d in decisions if d.get("shadow_allowed_without_inventory")]
+
+    def _edge_abs(d: Dict[str, Any]) -> float:
+        try:
+            return abs(float(d.get("edge") or 0.0))
+        except Exception:
+            return 0.0
+
+    top = sorted(decisions, key=_edge_abs, reverse=True)[: max(0, int(limit))]
+
+    return {
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "run_id": run_id,
+        "source": "logs/guardrail_audit.jsonl",
+        "filters": {
+            "include_shadow_only": include_shadow_only,
+            "limit": limit,
+        },
+        "counts": {
+            "total_considered": len(decisions),
+            "top_returned": len(top),
+        },
+        "top_candidates": top,
+    }
+
+
+def write_edge_hunter_artifact(
+    run_id: Optional[str] = None,
+    output_path: Path = DEFAULT_EDGE_HUNTER_FILE,
+    limit: int = 20,
+) -> Tuple[bool, str]:
+    """Write output/edge_hunter.json for ops/automation compatibility."""
+    try:
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        snapshot = build_edge_hunter_snapshot(run_id=run_id, limit=limit, include_shadow_only=True)
+        tmp = output_path.with_suffix(".tmp")
+        tmp.write_text(json.dumps(snapshot, ensure_ascii=False, indent=2), encoding="utf-8")
+        tmp.replace(output_path)
+        return True, f"Wrote {output_path}"
+    except Exception as e:
+        return False, f"edge_hunter write failed: {e}"
+
+
+def _shadow_file_has_run_id(filepath: Path, run_id: str) -> bool:
+    if not filepath.exists():
+        return False
+    try:
+        # Fast check: scan last ~10k lines at most (avoid full file reads).
+        lines = filepath.read_text(encoding="utf-8", errors="replace").splitlines()
+        for ln in reversed(lines[-10000:]):
+            if run_id in ln:
+                try:
+                    obj = json.loads(ln)
+                except Exception:
+                    continue
+                if obj.get("run_id") == run_id:
+                    return True
+        return False
+    except Exception:
+        return False
+
+
+def append_shadow_trades(
+    run_id: str,
+    data_path: Path = DEFAULT_SHADOW_TRADES_FILE,
+    limit: int = 50,
+) -> Tuple[bool, str]:
+    """
+    Append shadow-eligible candidates for this run to data/shadow_trades.jsonl.
+
+    This is NOT execution. It's a paper/shadow audit trail for later evaluation.
+    Fail-closed: on any error, do not write partial data.
+    """
+    try:
+        data_path.parent.mkdir(parents=True, exist_ok=True)
+        if _shadow_file_has_run_id(data_path, run_id):
+            return True, f"shadow_trades already has run_id={run_id}"
+
+        snapshot = build_edge_hunter_snapshot(run_id=run_id, limit=limit, include_shadow_only=True)
+        candidates = snapshot.get("top_candidates", []) or []
+
+        # Build normalized shadow records (stable schema)
+        now = datetime.now(timezone.utc).isoformat()
+        out_lines: List[str] = []
+        for c in candidates:
+            out_lines.append(
+                json.dumps(
+                    {
+                        "schema_version": 1,
+                        "timestamp": now,
+                        "run_id": c.get("run_id", run_id),
+                        "proposal_id": c.get("proposal_id"),
+                        "market_id": c.get("market_id"),
+                        "shadow_allowed_without_inventory": bool(c.get("shadow_allowed_without_inventory")),
+                        "shadow_reason_code": c.get("shadow_reason_code"),
+                        "shadow_reason_detail": c.get("shadow_reason_detail"),
+                        "allowed": bool(c.get("allowed")),
+                        "reason_code": c.get("reason_code"),
+                        "reason_detail": c.get("reason_detail"),
+                        "edge": c.get("edge"),
+                        "implied_probability": c.get("implied_probability"),
+                        "model_probability": c.get("model_probability"),
+                        "confidence_level": c.get("confidence_level"),
+                        "market_question": c.get("market_question"),
+                        "city": c.get("city"),
+                        "entry_price": c.get("entry_price"),
+                        "source": "guardrail_audit",
+                    },
+                    ensure_ascii=False,
+                )
+            )
+
+        if not out_lines:
+            # Ensure the file exists for automation compatibility, even if empty.
+            if not data_path.exists():
+                data_path.write_text("", encoding="utf-8")
+            return True, f"No shadow candidates for run_id={run_id}"
+
+        tmp = data_path.with_suffix(".tmp")
+        prior = ""
+        if data_path.exists():
+            prior = data_path.read_text(encoding="utf-8", errors="replace")
+        tmp.write_text(prior + ("\n" if prior and not prior.endswith("\n") else "") + "\n".join(out_lines) + "\n", encoding="utf-8")
+        tmp.replace(data_path)
+        return True, f"Appended {len(out_lines)} shadow records to {data_path}"
+    except Exception as e:
+        return False, f"shadow_trades append failed: {e}"

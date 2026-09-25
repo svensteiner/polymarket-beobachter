@@ -1426,6 +1426,21 @@ class Orchestrator:
             with open(summary_file, 'a', encoding='utf-8') as f:
                 f.write('\n'.join(entry_lines))
 
+            # Automation/ops compatibility artifacts (non-blocking, fail-closed).
+            try:
+                from paper_trader.guardrail_audit import write_edge_hunter_artifact, append_shadow_trades
+
+                run_id = result.summary.get("run_id")
+                if run_id:
+                    ok1, msg1 = write_edge_hunter_artifact(run_id=run_id)
+                    if not ok1:
+                        logger.warning(msg1)
+                    ok2, msg2 = append_shadow_trades(run_id=run_id)
+                    if not ok2:
+                        logger.warning(msg2)
+            except Exception as e:
+                logger.debug("Compat artifacts skipped: %s", e)
+
             return StepResult(
                 name="status_writer",
                 success=True,
