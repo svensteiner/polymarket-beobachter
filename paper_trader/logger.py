@@ -38,8 +38,13 @@ from paper_trader.models import (
 # =============================================================================
 
 PAPER_TRADER_DIR = Path(__file__).parent
+PROJECT_ROOT = PAPER_TRADER_DIR.parent
 LOGS_DIR = PAPER_TRADER_DIR / "logs"
-REPORTS_DIR = PAPER_TRADER_DIR / "reports"
+# NOTE: On some hardened Windows setups, creating new subdirectories under
+# `paper_trader/` can fail with EPERM/AccessDenied even though file appends work.
+# Reports are non-critical artifacts, so we keep them under `output/` to avoid
+# permission issues while preserving append-only logs in `paper_trader/logs/`.
+REPORTS_DIR = PROJECT_ROOT / "output" / "paper_trader_reports"
 
 TRADES_LOG_PATH = LOGS_DIR / "paper_trades.jsonl"
 POSITIONS_LOG_PATH = LOGS_DIR / "paper_positions.jsonl"

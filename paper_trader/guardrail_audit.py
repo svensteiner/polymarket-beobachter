@@ -89,7 +89,10 @@ def build_guardrail_summary(run_id: Optional[str] = None) -> Dict[str, Any]:
     Returns:
         Dict with summary statistics
     """
-    decisions = get_recent_decisions(500)
+    # NOTE: When summarizing a specific run_id we must scan a much larger window,
+    # otherwise the run may have already rotated out of the last 500 lines and we
+    # would incorrectly report 0 evaluated decisions in status_summary.
+    decisions = get_recent_decisions(20000 if run_id else 5000)
 
     if run_id:
         decisions = [d for d in decisions if d.get("run_id") == run_id]

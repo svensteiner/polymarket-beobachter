@@ -301,6 +301,18 @@ class Orchestrator:
         result.add_step(status_result)
         print(f" {'OK' if status_result.success else 'FAIL'}")
 
+        # Opportunity Coverage: edge hunter + shadow trade backfill (OBSERVE-ONLY, non-blocking)
+        try:
+            from analytics.edge_hunter import write_edge_hunter_report
+            write_edge_hunter_report(run_id=run_id)
+        except Exception as e:
+            logger.debug(f"edge_hunter skipped (unkritisch): {e}")
+        try:
+            from analytics.shadow_trades import backfill_shadow_trades
+            backfill_shadow_trades(run_id=run_id)
+        except Exception as e:
+            logger.debug(f"shadow_trades backfill skipped (unkritisch): {e}")
+
         # Log to audit (includes run_id via summary)
         self._log_to_audit(result)
 

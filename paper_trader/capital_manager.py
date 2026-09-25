@@ -237,7 +237,10 @@ class CapitalManager:
             # mit eigenem tmp-Verzeichnis korrekt funktionieren
             project_root = self._config_path.parent.parent
             logs_dir = project_root / "paper_trader" / "logs"
-            reports_dir = project_root / "paper_trader" / "reports"
+            # Reports live under output/ to avoid Windows permission issues when
+            # creating new directories below paper_trader/.
+            from paper_trader.logger import REPORTS_DIR
+            reports_dir = REPORTS_DIR
             reconcile_logger = PaperTradingLogger(logs_dir=logs_dir, reports_dir=reports_dir)
             positions = reconcile_logger.get_open_positions()
         except Exception as e:

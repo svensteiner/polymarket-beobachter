@@ -14,10 +14,12 @@
 #
 # =============================================================================
 
+import json
 import logging
 from datetime import datetime, date, timezone
-from typing import Dict, List
+from typing import Dict, List, Optional
 from dataclasses import dataclass
+from pathlib import Path
 
 from .client import PolymarketClient
 from .sanitizer import Sanitizer
@@ -95,71 +97,116 @@ class Collector:
         if not dry_run:
             self.storage.ensure_directories()
 
+        latest_candidates_path = Path(self.output_dir) / "latest_candidates.jsonl"
+
         # Step 1: Fetch weather markets from events with weather/climate tags
         logger.info("Step 1: Fetching weather markets from Polymarket API...")
         logger.info("  (Using /events?tag_slug=weather and /events?tag_slug=climate)")
-        raw_markets = self.client.fetch_weather_markets(
-            max_markets=self.max_markets,
-            include_closed=False,  # Only fetch active/open markets
-        )
-        logger.info(f"Fetched {len(raw_markets)} weather-tagged markets")
+        raw_markets: List[Dict] = []
+        used_offline_fallback = False
+        fetch_error: Optional[Exception] = None
+        try:
+            raw_markets = self.client.fetch_weather_markets(
+                max_markets=self.max_markets,
+                include_closed=False,  # Only fetch active/open markets
+            )
+            logger.info(f"Fetched {len(raw_markets)} weather-tagged markets")
+        except Exception as e:
+            fetch_error = e
+            logger.warning("Collector fetch failed: %s", e)
+            if latest_candidates_path.exists() and latest_candidates_path.stat().st_size > 0:
+                logger.warning("Collector offline fallback: using %s", latest_candidates_path)
+                used_offline_fallback = True
+            else:
+                # No local cache available -> bubble up (orchestrator will mark collector FAIL)
+                raise
 
-        # Step 2: Sanitize
-        logger.info("Step 2: Sanitizing (removing forbidden fields)...")
-        sanitized_markets, fields_removed = self.sanitizer.sanitize_markets(raw_markets)
-        logger.info(f"Sanitized {len(sanitized_markets)} markets")
-        if fields_removed:
-            logger.info(f"Removed {sum(fields_removed.values())} forbidden field occurrences")
-
-        # Save raw (sanitized) response
-        if not dry_run:
-            self.storage.save_raw_response(sanitized_markets)
-
-        # Step 3: Filter for weather relevance
-        logger.info("Step 3: Filtering for weather relevance...")
-        filtered_markets, filter_stats = self.filter.filter_markets(sanitized_markets)
-        logger.info(f"Filter results: {filter_stats}")
-
-        # Step 4: Normalize all markets
-        logger.info("Step 4: Normalizing market data...")
+        sanitized_markets: List[Dict] = []
+        fields_removed: Dict[str, int] = {}
+        filtered_markets: List[FilteredMarket] = []
+        filter_stats: Dict[str, int] = {}
         all_normalized: List[NormalizedMarket] = []
         candidates: List[NormalizedMarket] = []
 
-        for fm in filtered_markets:
-            normalized = self.normalizer.normalize(
-                market=fm.market,
-                notes=fm.notes,
-            )
+        if used_offline_fallback:
+            # Load cached candidates (already normalized) and write them into today's partition.
+            logger.info("Step 2-4: OFFLINE fallback (skip sanitize/filter/normalize)")
+            try:
+                with open(latest_candidates_path, "r", encoding="utf-8", errors="replace") as f:
+                    for line in f:
+                        line = line.strip()
+                        if not line:
+                            continue
+                        try:
+                            d = json.loads(line)
+                            candidates.append(NormalizedMarket(**d))
+                        except Exception:
+                            continue
+                all_normalized = list(candidates)
+            except Exception as e:
+                raise RuntimeError(f"Offline fallback failed to load cache: {e}") from e
+        else:
+            # Step 2: Sanitize
+            logger.info("Step 2: Sanitizing (removing forbidden fields)...")
+            sanitized_markets, fields_removed = self.sanitizer.sanitize_markets(raw_markets)
+            logger.info(f"Sanitized {len(sanitized_markets)} markets")
+            if fields_removed:
+                logger.info(f"Removed {sum(fields_removed.values())} forbidden field occurrences")
 
-            # Set category for weather markets
-            if fm.result == FilterResult.INCLUDED_WEATHER:
-                normalized = NormalizedMarket(
-                    market_id=normalized.market_id,
-                    title=normalized.title,
-                    resolution_text=normalized.resolution_text,
-                    end_date=normalized.end_date,
-                    created_time=normalized.created_time,
-                    category="WEATHER_EVENT",
-                    tags=normalized.tags,
-                    url=normalized.url,
-                    collector_notes=normalized.collector_notes + fm.matched_keywords,
-                    collected_at=normalized.collected_at,
+            # Save raw (sanitized) response
+            if not dry_run:
+                self.storage.save_raw_response(sanitized_markets)
+
+            # Step 3: Filter for weather relevance
+            logger.info("Step 3: Filtering for weather relevance...")
+            filtered_markets, filter_stats = self.filter.filter_markets(sanitized_markets)
+            logger.info(f"Filter results: {filter_stats}")
+
+            # Step 4: Normalize all markets
+            logger.info("Step 4: Normalizing market data...")
+            for fm in filtered_markets:
+                normalized = self.normalizer.normalize(
+                    market=fm.market,
+                    notes=fm.notes,
                 )
 
-            all_normalized.append(normalized)
+                # Set category for weather markets
+                if fm.result == FilterResult.INCLUDED_WEATHER:
+                    normalized = NormalizedMarket(
+                        market_id=normalized.market_id,
+                        title=normalized.title,
+                        resolution_text=normalized.resolution_text,
+                        end_date=normalized.end_date,
+                        created_time=normalized.created_time,
+                        category="WEATHER_EVENT",
+                        tags=normalized.tags,
+                        url=normalized.url,
+                        collector_notes=normalized.collector_notes + fm.matched_keywords,
+                        collected_at=normalized.collected_at,
+                    )
 
-            # Include complete weather markets as candidates
-            if fm.result == FilterResult.INCLUDED_WEATHER and normalized.is_complete():
-                candidates.append(normalized)
+                all_normalized.append(normalized)
 
-        logger.info(f"Normalized {len(all_normalized)} markets")
-        logger.info(f"Found {len(candidates)} weather candidates")
+                # Include complete weather markets as candidates
+                if fm.result == FilterResult.INCLUDED_WEATHER and normalized.is_complete():
+                    candidates.append(normalized)
+
+            logger.info(f"Normalized {len(all_normalized)} markets")
+            logger.info(f"Found {len(candidates)} weather candidates")
 
         # Step 5: Save outputs
         if not dry_run:
             logger.info("Step 5: Saving outputs...")
             self.storage.save_normalized_markets(all_normalized)
             self.storage.save_candidates(candidates)
+
+            # Stable cache for resilience: re-use last known good candidates when the network is down.
+            try:
+                with open(latest_candidates_path, "w", encoding="utf-8") as f:
+                    for c in candidates:
+                        f.write(json.dumps(c.to_dict(), ensure_ascii=False) + "\n")
+            except Exception as e:
+                logger.warning("Failed to write latest_candidates cache: %s", e)
 
         # Step 6: Generate report
         end_time = datetime.now(timezone.utc)
@@ -175,6 +222,12 @@ class Collector:
         )
 
         report = self._generate_report(stats, candidates, filtered_markets)
+        if used_offline_fallback:
+            report += (
+                "\n\n## OFFLINE FALLBACK\n\n"
+                f"- Used cache: `{latest_candidates_path}`\n"
+                f"- Reason: `{fetch_error}`\n"
+            )
 
         if not dry_run:
             self.storage.save_report(report)
