@@ -215,6 +215,105 @@ def reconcile_capital(base_dir: Path) -> Dict[str, Any]:
 
 
 # -----------------------------------------------------------------------
+# POSITION RECONCILIATION (FAIL-CLOSED, DETERMINISTIC)
+# -----------------------------------------------------------------------
+
+def reconcile_positions_against_trades(base_dir: Path) -> Dict[str, Any]:
+    """
+    Reconcile paper_positions.jsonl against paper_trades.jsonl.
+
+    Fix:
+    - Latest position status is OPEN but a PAPER_EXIT exists for the same position_id/market_id
+
+    Intent:
+    - Deterministisch, auditierbar, fail-closed.
+    - Macht keine neuen Trades; korrigiert nur eindeutig widerspruechliche States.
+    """
+    changes: Dict[str, Any] = {"reconciled": False, "fixes": []}
+
+    positions_path = base_dir / "paper_trader" / "logs" / "paper_positions.jsonl"
+    trades_path = base_dir / "paper_trader" / "logs" / "paper_trades.jsonl"
+
+    if not positions_path.exists() or not trades_path.exists():
+        return changes
+
+    try:
+        # Load latest position per position_id (append-only Log)
+        pos_map: Dict[str, Dict[str, Any]] = {}
+        with open(positions_path, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    obj = json.loads(line)
+                except Exception:
+                    continue
+                pid = str(obj.get("position_id") or "")
+                if pid:
+                    pos_map[pid] = obj
+
+        # Index exits by position_id and market_id
+        exit_by_pid: Dict[str, Dict[str, Any]] = {}
+        exit_by_market: Dict[str, Dict[str, Any]] = {}
+        with open(trades_path, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    t = json.loads(line)
+                except Exception:
+                    continue
+                if str(t.get("action") or "") != "PAPER_EXIT":
+                    continue
+                pid = str(t.get("position_id") or "")
+                mid = str(t.get("market_id") or "")
+                if pid:
+                    exit_by_pid[pid] = t
+                if mid:
+                    exit_by_market[mid] = t
+
+        fixed_positions: list[Dict[str, Any]] = []
+        for pid, p in pos_map.items():
+            if str(p.get("status") or "") != "OPEN":
+                continue
+
+            mid = str(p.get("market_id") or "")
+            exit_trade = exit_by_pid.get(pid) or (exit_by_market.get(mid) if mid else None)
+            if not exit_trade:
+                continue
+
+            # Apply deterministic close
+            p["status"] = "CLOSED"
+            p["exit_time"] = exit_trade.get("timestamp") or datetime.now(timezone.utc).isoformat()
+            if exit_trade.get("exit_price") is not None:
+                p["exit_price"] = exit_trade.get("exit_price")
+            p["exit_reason"] = f"SELF-HEAL: reconciled against PAPER_EXIT ({exit_trade.get('reason') or 'n/a'})"
+            if exit_trade.get("pnl_eur") is not None:
+                p["realized_pnl_eur"] = exit_trade.get("pnl_eur")
+            fixed_positions.append(p)
+
+        if fixed_positions:
+            # Append-only: preserve audit history, but make latest snapshot consistent.
+            with open(positions_path, "a", encoding="utf-8") as f:
+                for obj in fixed_positions:
+                    f.write(json.dumps(obj, ensure_ascii=False) + "\n")
+            changes["reconciled"] = True
+            changes["fixes"].append(f"closed_positions_reconciled={len(fixed_positions)}")
+            logger.warning(
+                "SELF-HEAL Position Reconciliation: appended %d CLOSED corrections",
+                len(fixed_positions),
+            )
+
+    except Exception as e:
+        logger.error("Position reconciliation failed: %s", e)
+        changes["error"] = str(e)
+
+    return changes
+
+
+# -----------------------------------------------------------------------
 # ZOMBIE POSITION DETECTION
 # -----------------------------------------------------------------------
 
@@ -424,6 +523,14 @@ def run_self_heal(base_dir: Path, run_result: Optional[Dict] = None) -> Dict[str
         "capital_reconciliation": None,
         "zombie_count": 0,
     }
+
+    # 0. Position Reconciliation (every run, vor Kapital)
+    try:
+        pos_recon = reconcile_positions_against_trades(base_dir)
+        if pos_recon.get("reconciled"):
+            report["actions"].append(f"Positions reconciled: {pos_recon.get('fixes')}")
+    except Exception as e:
+        logger.error(f"Self-heal position reconciliation failed: {e}")
 
     # 1. Capital Reconciliation (every run)
     try:

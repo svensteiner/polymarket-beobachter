@@ -29,6 +29,9 @@ AUDIT_DIR = PROJECT_ROOT / "logs" / "audit"
 POSITIONS_FILE = PROJECT_ROOT / "paper_trader" / "logs" / "paper_positions.jsonl"
 REPORT_FILE = PROJECT_ROOT / "analytics" / "performance_report.json"
 ADVICE_FILE = PROJECT_ROOT / "output" / "strategy_advice.json"
+HEARTBEAT_FILE = PROJECT_ROOT / "logs" / "heartbeat.txt"
+BOT_STATUS_FILE = PROJECT_ROOT / "logs" / "bot_status.json"
+STATUS_SUMMARY_FILE = PROJECT_ROOT / "output" / "status_summary.txt"
 
 RISK_HEALTHY = "HEALTHY"
 RISK_ELEVATED = "ELEVATED"
@@ -115,6 +118,82 @@ def _atomic_write(path: Path, data: dict[str, Any]) -> None:
     tmp = path.with_suffix(path.suffix + ".tmp")
     tmp.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
     tmp.replace(path)
+
+
+def _read_text(path: Path, max_bytes: int = 64_000) -> str:
+    try:
+        if not path.exists():
+            return ""
+        data = path.read_bytes()
+        if len(data) > max_bytes:
+            data = data[-max_bytes:]
+        return data.decode("utf-8", errors="ignore")
+    except Exception:
+        return ""
+
+
+def _parse_first_iso(text: str) -> datetime | None:
+    value = (text or "").strip().splitlines()[0] if (text or "").strip() else ""
+    dt = _parse_iso(value)
+    if dt is not None and dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt
+
+
+def _extract_last_run_ts(status_summary_text: str) -> datetime | None:
+    """
+    Robust: sucht die letzte 'Run: ' Zeile im (Tail-)Text.
+    """
+    if not status_summary_text:
+        return None
+    last = None
+    for line in status_summary_text.splitlines():
+        line = line.strip()
+        if line.startswith("Run:"):
+            ts = line.replace("Run:", "", 1).strip()
+            dt = _parse_iso(ts)
+            if dt is not None:
+                last = dt if dt.tzinfo is not None else dt.replace(tzinfo=timezone.utc)
+    return last
+
+
+def _detect_data_staleness(*, max_age_hours: float = 2.0) -> tuple[bool, list[str]]:
+    """
+    Fail-closed Staleness-Check.
+
+    Wenn Kern-Artefakte (Heartbeat/Bot-Status/Status-Summary) alt sind oder fehlen,
+    blockieren wir neue Entries, bis wieder echte frische Runs existieren.
+    """
+    now = _utc_now()
+    max_age = timedelta(hours=max_age_hours)
+    reasons: list[str] = []
+
+    # Primäre Wahrheit: Heartbeat wird nach jedem Run geschrieben.
+    # Bot-Status/Status-Summary werden im Pipeline-Ablauf spaeter geschrieben
+    # und sind waehrend des Runs regelmaessig "alt" -> false positives.
+    heartbeat_dt = _parse_first_iso(_read_text(HEARTBEAT_FILE, max_bytes=4096))
+    if heartbeat_dt is None:
+        return True, ["missing_or_invalid_heartbeat"]
+    age = now - heartbeat_dt
+    if age > max_age:
+        return True, [f"stale_heartbeat_{age.total_seconds():.0f}s"]
+
+    # Sekundaere Integritaets-Hinweise (nicht blockierend, nur Diagnose)
+    try:
+        status = _load_json(BOT_STATUS_FILE)
+        if not _parse_iso(status.get("timestamp")):
+            reasons.append("note:bot_status_invalid")
+    except Exception:
+        reasons.append("note:bot_status_unreadable")
+
+    try:
+        tail = _read_text(STATUS_SUMMARY_FILE, max_bytes=64_000)
+        if _extract_last_run_ts(tail) is None:
+            reasons.append("note:status_summary_invalid")
+    except Exception:
+        reasons.append("note:status_summary_unreadable")
+
+    return False, reasons
 
 
 def _parse_iso(value: str | None) -> datetime | None:
@@ -296,73 +375,102 @@ def derive_bot_health(
     # create an unrecoverable Catch-22 (no trades → no data → no recovery).
     _insufficient_data = total_trades < 10
 
-    if (
-        drawdown_pct >= 20.0
-        or (recent_loss_streak >= 4 and not _insufficient_data)
-        or consecutive_non_ok_runs >= 2
-        or (advisor_protect_wr_trigger and not _insufficient_data)
-    ):
+    # FAIL-CLOSED STALENESS: Wenn Kern-Artefakte alt/kaputt sind, ist jede
+    # Edge/PnL-Interpretation wertlos. Dann blockieren wir neue Entries,
+    # bis wieder frische Runs Artefakte aktualisieren.
+    is_stale, stale_reasons = _detect_data_staleness(max_age_hours=2.0)
+    if is_stale:
         status = RISK_CRITICAL
         ttl_hours = 6
+        triggers.append("stale_data")
+        # Keep triggers kurz (Log-Noise vermeiden), aber deterministisch
+        triggers.extend(stale_reasons[:5])
         guardrails = {
             "block_new_entries": True,
             "block_averaging_down": True,
-            "max_entry_price": 0.75,
-            "blocked_cities": suggested_city_cooldowns[:3],
-            "blocked_market_types": suggested_market_type_cooldowns[:3],
-            "blocked_price_bands": suggested_price_band_blocks[:3],
-            "allowed_trades_per_cycle": 1,  # Always allow 1 trade to break deadlock
+            "max_entry_price": 0.70,
+            "blocked_cities": [],
+            "blocked_market_types": [],
+            "blocked_price_bands": [],
+            "allowed_trades_per_cycle": 0,  # 0 = keine Recovery-Trades bei Staleness
         }
-        if drawdown_pct >= 20.0:
-            triggers.append(f"drawdown_{drawdown_pct:.1f}pct")
-        if recent_loss_streak >= 4 and not _insufficient_data:
-            triggers.append(f"loss_streak_{recent_loss_streak}")
-        if consecutive_non_ok_runs >= 2:
-            triggers.append(f"non_ok_runs_{consecutive_non_ok_runs}")
-        if advisor_protect_wr_trigger and not _insufficient_data:
-            triggers.append("advisor_protect_with_low_wr")
-    elif (
-        drawdown_pct >= 10.0
-        or (recent_loss_streak >= 2 and not _insufficient_data)
-        or consecutive_zero_edge_runs >= 8  # Raised 4→8: at 15-min intervals, 4 runs = 1h.
-        # Daily timing gaps (when near-horizon markets expire before far-horizon ones are
-        # indexed) routinely cause 1-2h of zero-edge runs. Threshold of 8 (≈2h) prevents
-        # false-positive ELEVATED status during these structural transitions.
-        or (stop_loss_ratio >= 0.60 and not _insufficient_data)
-        or (advisor_mode == "PROTECT" and not _insufficient_data)
-        or high_price_open_positions >= 8
-    ):
-        status = RISK_ELEVATED
-        ttl_hours = 4
-        guardrails = {
-            "block_new_entries": False,
-            "block_averaging_down": True,
-            "max_entry_price": 0.85,
-            "blocked_cities": suggested_city_cooldowns[:2],
-            "blocked_market_types": suggested_market_type_cooldowns[:2],
-            "blocked_price_bands": suggested_price_band_blocks[:2],
-            "allowed_trades_per_cycle": 5,  # Paper mode: allow more trades per cycle
-        }
-        if drawdown_pct >= 10.0:
-            triggers.append(f"drawdown_{drawdown_pct:.1f}pct")
-        if recent_loss_streak >= 2 and not _insufficient_data:
-            triggers.append(f"loss_streak_{recent_loss_streak}")
-        if consecutive_zero_edge_runs >= 8:
-            triggers.append(f"edge_drought_{consecutive_zero_edge_runs}")
-        if stop_loss_ratio >= 0.60 and not _insufficient_data:
-            triggers.append(f"stop_loss_ratio_{stop_loss_ratio:.0%}")
-        if advisor_mode == "PROTECT" and not _insufficient_data:
-            triggers.append("advisor_protect")
-        if high_price_open_positions >= 8:
-            triggers.append(f"high_price_opens_{high_price_open_positions}")
+
+    if not is_stale:
+        if (
+            drawdown_pct >= 20.0
+            or (recent_loss_streak >= 4 and not _insufficient_data)
+            or consecutive_non_ok_runs >= 2
+            or (advisor_protect_wr_trigger and not _insufficient_data)
+        ):
+            status = RISK_CRITICAL
+            ttl_hours = 6
+            guardrails = {
+                "block_new_entries": True,
+                "block_averaging_down": True,
+                "max_entry_price": 0.75,
+                "blocked_cities": suggested_city_cooldowns[:3],
+                "blocked_market_types": suggested_market_type_cooldowns[:3],
+                "blocked_price_bands": suggested_price_band_blocks[:3],
+                "allowed_trades_per_cycle": 1,  # Always allow 1 trade to break deadlock
+            }
+            if drawdown_pct >= 20.0:
+                triggers.append(f"drawdown_{drawdown_pct:.1f}pct")
+            if recent_loss_streak >= 4 and not _insufficient_data:
+                triggers.append(f"loss_streak_{recent_loss_streak}")
+            if consecutive_non_ok_runs >= 2:
+                triggers.append(f"non_ok_runs_{consecutive_non_ok_runs}")
+            if advisor_protect_wr_trigger and not _insufficient_data:
+                triggers.append("advisor_protect_with_low_wr")
+        elif (
+            drawdown_pct >= 10.0
+            or (recent_loss_streak >= 2 and not _insufficient_data)
+            or consecutive_zero_edge_runs >= 8  # Raised 4→8: at 15-min intervals, 4 runs = 1h.
+            # Daily timing gaps (when near-horizon markets expire before far-horizon ones are
+            # indexed) routinely cause 1-2h of zero-edge runs. Threshold of 8 (≈2h) prevents
+            # false-positive ELEVATED status during these structural transitions.
+            or (stop_loss_ratio >= 0.60 and not _insufficient_data)
+            or (advisor_mode == "PROTECT" and not _insufficient_data)
+            or high_price_open_positions >= 8
+        ):
+            status = RISK_ELEVATED
+            ttl_hours = 4
+            guardrails = {
+                "block_new_entries": False,
+                "block_averaging_down": True,
+                "max_entry_price": 0.85,
+                "blocked_cities": suggested_city_cooldowns[:2],
+                "blocked_market_types": suggested_market_type_cooldowns[:2],
+                "blocked_price_bands": suggested_price_band_blocks[:2],
+                "allowed_trades_per_cycle": 5,  # Paper mode: allow more trades per cycle
+            }
+            if drawdown_pct >= 10.0:
+                triggers.append(f"drawdown_{drawdown_pct:.1f}pct")
+            if recent_loss_streak >= 2 and not _insufficient_data:
+                triggers.append(f"loss_streak_{recent_loss_streak}")
+            if consecutive_zero_edge_runs >= 8:
+                triggers.append(f"edge_drought_{consecutive_zero_edge_runs}")
+            if stop_loss_ratio >= 0.60 and not _insufficient_data:
+                triggers.append(f"stop_loss_ratio_{stop_loss_ratio:.0%}")
+            if advisor_mode == "PROTECT" and not _insufficient_data:
+                triggers.append("advisor_protect")
+            if high_price_open_positions >= 8:
+                triggers.append(f"high_price_opens_{high_price_open_positions}")
     if _insufficient_data and status != RISK_HEALTHY:
         triggers.append(f"note:insufficient_data({total_trades}_trades)")
 
     active_until = (_utc_now() + timedelta(hours=ttl_hours)).isoformat() if ttl_hours else None
-    active_guardrails = [
-        name for name, enabled in guardrails.items()
-        if enabled not in (False, None)
-    ]
+
+    def _guardrail_active(value: Any) -> bool:
+        if value is None:
+            return False
+        if isinstance(value, bool):
+            return value
+        if isinstance(value, (list, tuple, set, dict)):
+            return len(value) > 0
+        # numbers / strings: treat as active when present
+        return True
+
+    active_guardrails = [name for name, value in guardrails.items() if _guardrail_active(value)]
     if guardrails.get("max_entry_price") is not None:
         active_guardrails.append(f"max_entry_price<={guardrails['max_entry_price']:.2f}")
     if guardrails.get("blocked_cities"):

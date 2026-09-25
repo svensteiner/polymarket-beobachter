@@ -381,6 +381,17 @@ class Orchestrator:
         except Exception as e:
             logger.debug(f"Self-Heal fehlgeschlagen (unkritisch): {e}")
 
+        # Produktionsreife-Artefakte: Edge-Snapshot + Shadow-Journal (read-only, fail-closed)
+        try:
+            from analytics.edge_hunter import write_edge_hunter_snapshot
+            from analytics.shadow_logger import append_shadow_trades_for_run
+
+            run_id_str = str(run_id)
+            write_edge_hunter_snapshot(self.base_dir, run_id=run_id_str)
+            append_shadow_trades_for_run(self.base_dir, run_id=run_id_str)
+        except Exception as e:
+            logger.debug(f"Edge/Shadow Artefakte uebersprungen: {e}")
+
         logger.info(f"=== Pipeline END === run_id={run_id} state={result.state.value}")
 
         return result
