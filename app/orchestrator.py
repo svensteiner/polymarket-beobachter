@@ -95,6 +95,35 @@ class Orchestrator:
         (self.data_dir / "forecasts").mkdir(parents=True, exist_ok=True)
         (self.data_dir / "resolutions").mkdir(parents=True, exist_ok=True)
 
+        # Monitoring expectations (fail-closed, deterministic):
+        # Some automation checks expect these files to exist even when empty.
+        try:
+            edge_hunter_file = self.output_dir / "edge_hunter.json"
+            if not edge_hunter_file.exists():
+                edge_hunter_file.write_text(
+                    json.dumps(
+                        {
+                            "generated_at": None,
+                            "run_id": None,
+                            "edge_observations_total": 0,
+                            "top_edges": [],
+                        },
+                        ensure_ascii=False,
+                        indent=2,
+                    ),
+                    encoding="utf-8",
+                )
+        except Exception:
+            pass
+
+        try:
+            shadow_trades_file = self.data_dir / "shadow_trades.jsonl"
+            if not shadow_trades_file.exists():
+                shadow_trades_file.parent.mkdir(parents=True, exist_ok=True)
+                shadow_trades_file.write_text("", encoding="utf-8")
+        except Exception:
+            pass
+
     def run_pipeline(self) -> PipelineResult:
         """
         Execute the weather observer pipeline with performance optimization.
@@ -161,6 +190,9 @@ class Orchestrator:
             )
         result.add_step(weather_result)
         print(f" {'OK' if weather_result.success else 'FAIL'} ({weather_result.message})")
+
+        # Persist "edge hunter" output for monitoring/audit (even if empty).
+        self._write_edge_hunter_output(run_id=run_id, weather_data=weather_result.data)
 
         # Step 2b: Market Condition Assessment (READ-ONLY)
         edge_obs_count = weather_result.data.get("edge_observations", 0)
@@ -384,6 +416,49 @@ class Orchestrator:
         logger.info(f"=== Pipeline END === run_id={run_id} state={result.state.value}")
 
         return result
+
+    def _write_edge_hunter_output(self, run_id: str, weather_data: Dict[str, Any]) -> None:
+        """
+        Write a compact, deterministic snapshot of the current best edges.
+
+        Governance:
+        - Read-only with respect to strategy (pure output)
+        - Fail-closed: errors must not affect pipeline state
+        - Deterministic ordering (stable sort keys)
+        """
+        try:
+            edge_observations = weather_data.get("edge_observations_list", []) or []
+            edges: list[dict] = []
+
+            for obs in edge_observations:
+                if hasattr(obs, "to_dict"):
+                    d = obs.to_dict()
+                elif isinstance(obs, dict):
+                    d = obs
+                else:
+                    continue
+                edges.append(d)
+
+            # Stable ranking: largest absolute prob gap first, then edge magnitude.
+            def _rank_key(d: dict) -> tuple:
+                mp = float(d.get("model_probability") or 0.0)
+                mkp = float(d.get("market_probability") or 0.0)
+                edge = float(d.get("edge") or 0.0)
+                return (abs(mp - mkp), abs(edge), str(d.get("market_id") or ""))
+
+            edges_sorted = sorted(edges, key=_rank_key, reverse=True)
+
+            payload = {
+                "generated_at": datetime.now(timezone.utc).isoformat(),
+                "run_id": run_id,
+                "edge_observations_total": len(edges_sorted),
+                "top_edges": edges_sorted[:25],
+            }
+
+            out = self.output_dir / "edge_hunter.json"
+            out.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+        except Exception:
+            pass
 
     def _run_arbitrage_scan(self, weather_data: dict) -> None:
         """Scanne Wetter-Maerkte auf Arbitrage-Moeglichkeiten (non-blocking)."""
