@@ -34,6 +34,7 @@ from proposals.review_gate import ReviewGate
 from paper_trader.entry_guardrails import describe_proposal, evaluate_entry_guardrails
 from paper_trader.guardrail_audit import record_guardrail_decision
 from paper_trader.logger import get_paper_logger
+from paper_trader.shadow_logger import append_shadow_trade_record, build_shadow_record
 from analytics.edge_memory import assess_proposal_edge, detect_market_type
 
 logger = logging.getLogger(__name__)
@@ -143,6 +144,24 @@ class ProposalIntake:
                     **proposal_meta,
                 }
             )
+            # SHADOW logging (read-only, does not impact execution):
+            # Persist shadow-eligible opportunities for later evaluation.
+            if shadow_allowed:
+                append_shadow_trade_record(
+                    build_shadow_record(
+                        run_id=run_id,
+                        proposal_id=proposal.proposal_id,
+                        market_id=proposal.market_id,
+                        shadow_allowed_without_inventory=shadow_allowed,
+                        shadow_reason_code=shadow_reason_code,
+                        shadow_reason_detail=shadow_reason_detail,
+                        allowed_paper=allowed,
+                        paper_reason_code=reason_code,
+                        paper_reason_detail=reason_detail,
+                        proposal_meta=proposal_meta,
+                    ),
+                    base_dir=Path(__file__).parent.parent,
+                )
             if not allowed:
                 _side = getattr(proposal, "token", None) or getattr(proposal, "side", "?")
                 _ep = getattr(proposal, "implied_probability", None)

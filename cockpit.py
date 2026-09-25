@@ -59,6 +59,12 @@ BOT_STATUS_FILE = BASE_DIR / "logs" / "bot_status.json"
 BOT_CONTROL_FILE = BASE_DIR / "logs" / "bot_control.json"
 HEARTBEAT_TXT = BASE_DIR / "logs" / "heartbeat.txt"
 
+try:
+    from analytics.edge_hunter import write_edge_hunter_snapshot as _write_edge_hunter_snapshot
+except Exception:
+    def _write_edge_hunter_snapshot(*args, **kwargs):  # type: ignore[misc]
+        return None
+
 
 def _write_heartbeat_txt():
     """Write plain-text heartbeat for watchdog.ps1 compatibility.
@@ -311,6 +317,12 @@ def write_bot_status(
         tmp.replace(BOT_STATUS_FILE)
     except Exception as e:
         logger.warning("Fehler beim Bot-Status schreiben: %s", e)
+
+    # Best-effort: produce edge-hunter snapshot for monitoring.
+    try:
+        _write_edge_hunter_snapshot(base_dir=BASE_DIR, lookback_hours=24, max_items=25)
+    except Exception:
+        pass
 
 
 # =============================================================================
