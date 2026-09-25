@@ -226,3 +226,32 @@ class StorageManager:
             "candidate_files": count_files(self.candidates_dir, "*.jsonl"),
             "report_files": count_files(self.reports_dir, "*.md"),
         }
+
+    def load_latest_raw_response(self) -> tuple[List[Dict[str, Any]], Optional[Path]]:
+        """
+        Load the newest raw markets snapshot from storage (any date partition).
+
+        This is a SAFE, read-only fallback for offline/no-network environments.
+
+        Returns:
+            (data, path) where data is a list of markets and path is the file path.
+            If no snapshot exists, returns ([], None).
+        """
+        raw_root = self.base_dir / "raw"
+        if not raw_root.exists():
+            return [], None
+
+        candidates = list(raw_root.rglob("markets_*.json"))
+        if not candidates:
+            return [], None
+
+        latest = max(candidates, key=lambda p: p.stat().st_mtime)
+        try:
+            with open(latest, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            if isinstance(data, list):
+                return data, latest
+        except Exception as e:
+            logger.warning(f"Failed to load latest raw snapshot {latest}: {e}")
+
+        return [], None

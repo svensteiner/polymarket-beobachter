@@ -19,6 +19,8 @@ logger = logging.getLogger(__name__)
 PROJECT_ROOT = Path(__file__).parent.parent
 LOGS_DIR = PROJECT_ROOT / "logs"
 AUDIT_FILE = LOGS_DIR / "guardrail_audit.jsonl"
+DATA_DIR = PROJECT_ROOT / "data"
+SHADOW_TRADES_FILE = DATA_DIR / "shadow_trades.jsonl"
 
 
 def record_guardrail_decision(decision: Dict[str, Any]) -> None:
@@ -45,6 +47,34 @@ def record_guardrail_decision(decision: Dict[str, Any]) -> None:
 
         with open(AUDIT_FILE, "a", encoding="utf-8") as f:
             f.write(json.dumps(entry, ensure_ascii=False) + "\n")
+
+        # Shadow logging: capture "would trade, but blocked due to inventory/policy" cases.
+        # This is READ-ONLY telemetry to improve opportunity coverage without loosening guardrails.
+        if (entry.get("allowed") is False) and (entry.get("shadow_allowed_without_inventory") is True):
+            try:
+                DATA_DIR.mkdir(parents=True, exist_ok=True)
+                shadow_entry = {
+                    "timestamp": entry.get("timestamp"),
+                    "run_id": entry.get("run_id"),
+                    "proposal_id": entry.get("proposal_id"),
+                    "market_id": entry.get("market_id"),
+                    "block_reason": entry.get("reason_code"),
+                    "block_detail": entry.get("reason_detail"),
+                    "shadow_reason": entry.get("shadow_reason_code"),
+                    "shadow_detail": entry.get("shadow_reason_detail"),
+                    "city": entry.get("city"),
+                    "entry_price": entry.get("entry_price"),
+                    "implied_probability": entry.get("implied_probability"),
+                    "model_probability": entry.get("model_probability"),
+                    "edge": entry.get("edge"),
+                    "net_edge": entry.get("net_edge"),
+                    "confidence_level": entry.get("confidence_level"),
+                    "market_question": entry.get("market_question"),
+                }
+                with open(SHADOW_TRADES_FILE, "a", encoding="utf-8") as f:
+                    f.write(json.dumps(shadow_entry, ensure_ascii=False) + "\n")
+            except Exception as e:
+                logger.debug(f"Failed to write shadow trade telemetry: {e}")
 
     except Exception as e:
         logger.warning(f"Failed to record guardrail decision: {e}")

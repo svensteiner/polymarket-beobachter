@@ -98,10 +98,24 @@ class Collector:
         # Step 1: Fetch weather markets from events with weather/climate tags
         logger.info("Step 1: Fetching weather markets from Polymarket API...")
         logger.info("  (Using /events?tag_slug=weather and /events?tag_slug=climate)")
-        raw_markets = self.client.fetch_weather_markets(
-            max_markets=self.max_markets,
-            include_closed=False,  # Only fetch active/open markets
-        )
+        used_local_snapshot = False
+        snapshot_path = None
+        try:
+            raw_markets = self.client.fetch_weather_markets(
+                max_markets=self.max_markets,
+                include_closed=False,  # Only fetch active/open markets
+            )
+        except Exception as e:
+            logger.warning(
+                "Collector API fetch failed (%s). Falling back to latest local snapshot under %s/raw/...",
+                e,
+                self.output_dir,
+            )
+            raw_markets, snapshot_path = self.storage.load_latest_raw_response()
+            if not raw_markets:
+                raise
+            used_local_snapshot = True
+            logger.info("Loaded %d markets from local snapshot: %s", len(raw_markets), snapshot_path)
         logger.info(f"Fetched {len(raw_markets)} weather-tagged markets")
 
         # Step 2: Sanitize
@@ -113,7 +127,13 @@ class Collector:
 
         # Save raw (sanitized) response
         if not dry_run:
-            self.storage.save_raw_response(sanitized_markets)
+            filename = None
+            if used_local_snapshot and snapshot_path is not None:
+                # Avoid "false freshness" when running offline from an old snapshot.
+                src_date = snapshot_path.parent.name
+                ts = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+                filename = f"markets_offline_{ts}_from_{src_date}.json"
+            self.storage.save_raw_response(sanitized_markets, filename=filename)
 
         # Step 3: Filter for weather relevance
         logger.info("Step 3: Filtering for weather relevance...")
