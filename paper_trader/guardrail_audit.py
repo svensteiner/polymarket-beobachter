@@ -19,6 +19,7 @@ logger = logging.getLogger(__name__)
 PROJECT_ROOT = Path(__file__).parent.parent
 LOGS_DIR = PROJECT_ROOT / "logs"
 AUDIT_FILE = LOGS_DIR / "guardrail_audit.jsonl"
+SHADOW_TRADES_FILE = PROJECT_ROOT / "data" / "shadow_trades.jsonl"
 
 
 def record_guardrail_decision(decision: Dict[str, Any]) -> None:
@@ -45,6 +46,34 @@ def record_guardrail_decision(decision: Dict[str, Any]) -> None:
 
         with open(AUDIT_FILE, "a", encoding="utf-8") as f:
             f.write(json.dumps(entry, ensure_ascii=False) + "\n")
+
+        # Shadow-trades: persist candidates that were blocked ONLY due to inventory/policy,
+        # but would have passed otherwise. This enables offline evaluation of "missed"
+        # opportunities without executing any orders.
+        try:
+            if (not decision.get("allowed")) and decision.get("shadow_allowed_without_inventory"):
+                SHADOW_TRADES_FILE.parent.mkdir(parents=True, exist_ok=True)
+                shadow_entry = {
+                    "timestamp": entry["timestamp"],
+                    "run_id": decision.get("run_id"),
+                    "proposal_id": decision.get("proposal_id"),
+                    "market_id": decision.get("market_id"),
+                    "market_question": decision.get("market_question"),
+                    "city": decision.get("city"),
+                    "market_type": decision.get("market_type"),
+                    "confidence_level": decision.get("confidence_level"),
+                    "edge": decision.get("edge"),
+                    "implied_probability": decision.get("implied_probability"),
+                    "model_probability": decision.get("model_probability"),
+                    "blocked_reason_code": decision.get("reason_code"),
+                    "blocked_reason_detail": decision.get("reason_detail"),
+                    "shadow_reason_code": decision.get("shadow_reason_code"),
+                    "shadow_reason_detail": decision.get("shadow_reason_detail"),
+                }
+                with open(SHADOW_TRADES_FILE, "a", encoding="utf-8") as sf:
+                    sf.write(json.dumps(shadow_entry, ensure_ascii=False) + "\n")
+        except Exception as e:
+            logger.debug("Failed to record shadow trade: %s", e)
 
     except Exception as e:
         logger.warning(f"Failed to record guardrail decision: {e}")

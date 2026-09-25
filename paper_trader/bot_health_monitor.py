@@ -42,9 +42,19 @@ _RECENT_CLOSED_LOOKBACK_DAYS = 7  # Only count positions closed in last N days f
 def _extract_city(question: str) -> str | None:
     if not question:
         return None
-    match = re.search(r"temperature in ([A-Za-z\s]+?)\s+be", question, re.IGNORECASE)
+    match = re.search(
+        r"(?:highest|lowest)?\s*temperature\s+in\s+([^?]+?)\s+(?:be|reach|exceed)\b",
+        question,
+        re.IGNORECASE,
+    )
     if match:
-        return match.group(1).strip()
+        city_raw = re.sub(r"\s+", " ", match.group(1)).strip(" ,")
+        city_lower = city_raw.lower()
+        if city_lower in {"nyc", "new york city"}:
+            return "New York"
+        if city_raw.islower() or city_raw.isupper():
+            return city_raw.title()
+        return city_raw
     return None
 
 

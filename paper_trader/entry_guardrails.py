@@ -103,6 +103,25 @@ def _load_agent_policy() -> Dict[str, Any]:
 
 def _extract_city(question: str) -> Optional[str]:
     """Extract city name from market question."""
+    if not question:
+        return None
+
+    # Prefer robust parsing over a fixed allow-list so international cities
+    # (e.g. Buenos Aires, Ankara) participate in diversification/guardrails.
+    match = re.search(
+        r"(?:highest|lowest)?\s*temperature\s+in\s+([^?]+?)\s+(?:be|reach|exceed)\b",
+        question,
+        re.IGNORECASE,
+    )
+    if match:
+        city_raw = re.sub(r"\s+", " ", match.group(1)).strip(" ,")
+        city_lower = city_raw.lower()
+        if city_lower in {"nyc", "new york city"}:
+            return "New York"
+        if city_raw.islower() or city_raw.isupper():
+            return city_raw.title()
+        return city_raw
+
     # Common cities in weather markets
     cities = [
         "New York", "Los Angeles", "Chicago", "Houston", "Phoenix",

@@ -133,10 +133,20 @@ def _extract_city_from_question(question: str) -> Optional[str]:
     q_lower = question.lower()
     for city in known_cities:
         if city in q_lower:
+            if city in {"nyc", "new york city"}:
+                return "New York"
             return city.title()
-    m = re.search(r"\bin\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)", question)
+
+    m = re.search(
+        r"(?:highest|lowest)?\s*temperature\s+in\s+([^?]+?)\s+(?:be|reach|exceed)\b",
+        question,
+        re.IGNORECASE,
+    )
     if m:
-        return m.group(1)
+        city_raw = re.sub(r"\s+", " ", m.group(1)).strip(" ,")
+        if city_raw.islower() or city_raw.isupper():
+            return city_raw.title()
+        return city_raw
     return None
 
 

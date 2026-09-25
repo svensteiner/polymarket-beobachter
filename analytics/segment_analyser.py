@@ -26,9 +26,19 @@ def _safe_float(value: Any, default: float = 0.0) -> float:
 
 
 def _extract_city(question: str) -> str:
-    match = re.search(r"temperature in ([A-Za-z\s]+?)(?:\s+be|\s+reach|\s+exceed)", question or "", re.IGNORECASE)
+    match = re.search(
+        r"(?:highest|lowest)?\s*temperature\s+in\s+([^?]+?)\s+(?:be|reach|exceed)\b",
+        question or "",
+        re.IGNORECASE,
+    )
     if match:
-        return match.group(1).strip()
+        city_raw = re.sub(r"\s+", " ", match.group(1)).strip(" ,")
+        city_lower = city_raw.lower()
+        if city_lower in {"nyc", "new york city"}:
+            return "New York"
+        if city_raw.islower() or city_raw.isupper():
+            return city_raw.title()
+        return city_raw
     return "Unknown"
 
 
