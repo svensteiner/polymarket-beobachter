@@ -19,6 +19,8 @@ logger = logging.getLogger(__name__)
 PROJECT_ROOT = Path(__file__).parent.parent
 LOGS_DIR = PROJECT_ROOT / "logs"
 AUDIT_FILE = LOGS_DIR / "guardrail_audit.jsonl"
+DATA_DIR = PROJECT_ROOT / "data"
+SHADOW_TRADES_FILE = DATA_DIR / "shadow_trades.jsonl"
 
 
 def record_guardrail_decision(decision: Dict[str, Any]) -> None:
@@ -45,6 +47,35 @@ def record_guardrail_decision(decision: Dict[str, Any]) -> None:
 
         with open(AUDIT_FILE, "a", encoding="utf-8") as f:
             f.write(json.dumps(entry, ensure_ascii=False) + "\n")
+
+        # Shadow trades: persist candidates that would pass without inventory constraints.
+        # This is READ-ONLY and does not affect trading decisions; it only increases
+        # observability and allows later resolution/PnL attribution.
+        try:
+            if entry.get("shadow_allowed_without_inventory") and not entry.get("allowed", False):
+                DATA_DIR.mkdir(parents=True, exist_ok=True)
+                shadow = {
+                    "timestamp": entry.get("timestamp"),
+                    "run_id": entry.get("run_id"),
+                    "proposal_id": entry.get("proposal_id"),
+                    "market_id": entry.get("market_id"),
+                    "market_question": entry.get("market_question"),
+                    "city": entry.get("city"),
+                    "confidence_level": entry.get("confidence_level"),
+                    "edge": entry.get("edge"),
+                    "implied_probability": entry.get("implied_probability"),
+                    "model_probability": entry.get("model_probability"),
+                    "entry_price": entry.get("entry_price"),
+                    "blocked_reason_code": entry.get("reason_code"),
+                    "blocked_reason_detail": entry.get("reason_detail"),
+                    "shadow_reason_code": entry.get("shadow_reason_code"),
+                    "shadow_reason_detail": entry.get("shadow_reason_detail"),
+                }
+                with open(SHADOW_TRADES_FILE, "a", encoding="utf-8") as sf:
+                    sf.write(json.dumps(shadow, ensure_ascii=False) + "\n")
+        except Exception:
+            # Never let observability logging impact the pipeline.
+            pass
 
     except Exception as e:
         logger.warning(f"Failed to record guardrail decision: {e}")

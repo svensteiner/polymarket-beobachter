@@ -147,6 +147,20 @@ def acquire_lock():
     Returns True if lock acquired, False otherwise.
     """
     try:
+        def _heartbeat_is_recent(max_age_minutes: int = 15) -> bool:
+            try:
+                if not HEARTBEAT_TXT.exists():
+                    return False
+                raw = HEARTBEAT_TXT.read_text(encoding="utf-8").strip()
+                if not raw:
+                    return False
+                # heartbeat is written as naive ISO timestamp in local time
+                hb = datetime.fromisoformat(raw)
+                age = datetime.now() - hb
+                return age.total_seconds() <= max_age_minutes * 60
+            except Exception:
+                return False
+
         # First check if a stale lockfile exists
         if LOCKFILE.exists():
             try:
@@ -154,8 +168,17 @@ def acquire_lock():
                 if old_pid == os.getpid():
                     return True  # Same process, re-entry is fine
                 if _pid_alive(old_pid):
-                    print(f"Bot laeuft bereits! (PID {old_pid})")
-                    sys.exit(1)
+                    # PID reuse happens on Windows. If heartbeat is stale, treat the lock as stale
+                    # even if the PID currently belongs to *some* running process.
+                    if not _heartbeat_is_recent(max_age_minutes=15):
+                        logger.warning(
+                            "Stale lock detected (PID %s alive but heartbeat stale) - removing lock",
+                            old_pid,
+                        )
+                        LOCKFILE.unlink(missing_ok=True)
+                    else:
+                        print(f"Bot laeuft bereits! (PID {old_pid})")
+                        sys.exit(1)
                 # Stale lockfile from dead process - remove it
                 LOCKFILE.unlink()
             except (ValueError, OSError) as e:

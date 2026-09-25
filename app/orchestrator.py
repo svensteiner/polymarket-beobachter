@@ -249,6 +249,9 @@ class Orchestrator:
         # Step 5e: Strategy Advisor (persistente Empfehlungen, read-only)
         self._run_strategy_advisor()
 
+        # Step 5e2: Edge Hunter (kompakte Top-Edges aus Guardrail-Audit, read-only)
+        self._run_edge_hunter()
+
         # Step 5f: Arbitrage Scan (READ-ONLY, non-blocking)
         self._run_arbitrage_scan(weather_result.data)
 
@@ -1193,6 +1196,20 @@ class Orchestrator:
             )
         except Exception as e:
             logger.debug(f"Strategy Advisor fehlgeschlagen (unkritisch): {e}")
+
+    def _run_edge_hunter(self) -> None:
+        """Schreibe kompakte Edge-Zusammenfassung (actionable + shadow) nach output/edge_hunter.json."""
+        try:
+            from analytics.edge_hunter import run_edge_hunter
+            payload = run_edge_hunter(self.base_dir)
+            logger.info(
+                "[EDGE-HUNTER] actionable=%s | shadow=%s | rows=%s",
+                payload.get("actionable_now_count", 0),
+                payload.get("shadow_candidates_count", 0),
+                payload.get("decision_rows_considered", 0),
+            )
+        except Exception as e:
+            logger.debug(f"Edge Hunter fehlgeschlagen (unkritisch): {e}")
 
     def _run_segment_analysis(self) -> None:
         """Aktualisiere Segmentanalyse fuer Entry-Qualitaet (non-blocking)."""
