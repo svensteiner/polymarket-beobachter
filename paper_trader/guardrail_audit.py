@@ -19,6 +19,58 @@ logger = logging.getLogger(__name__)
 PROJECT_ROOT = Path(__file__).parent.parent
 LOGS_DIR = PROJECT_ROOT / "logs"
 AUDIT_FILE = LOGS_DIR / "guardrail_audit.jsonl"
+DATA_DIR = PROJECT_ROOT / "data"
+SHADOW_TRADES_FILE = DATA_DIR / "shadow_trades.jsonl"
+
+# Ensure file exists for downstream analytics (best-effort, non-critical)
+try:
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    SHADOW_TRADES_FILE.touch(exist_ok=True)
+except Exception:
+    pass
+
+
+def _maybe_record_shadow_candidate(entry: Dict[str, Any]) -> None:
+    """
+    Persistiere Shadow-Trade-Candidates (auditierbar, offline auswertbar).
+
+    Kriterien (konservativ):
+    - geblockt (allowed == False)
+    - waere ohne Inventory-Limit prinzipiell erlaubt (shadow_allowed_without_inventory == True)
+
+    Fail-closed: Fehler beim Schreiben duerfen die Pipeline nicht crashen.
+    """
+    try:
+        if entry.get("allowed") is not False:
+            return
+        if entry.get("shadow_allowed_without_inventory") is not True:
+            return
+
+        DATA_DIR.mkdir(parents=True, exist_ok=True)
+
+        shadow_entry = {
+            "timestamp": entry.get("timestamp"),
+            "run_id": entry.get("run_id"),
+            "proposal_id": entry.get("proposal_id"),
+            "market_id": entry.get("market_id"),
+            "city": entry.get("city"),
+            "market_question": entry.get("market_question"),
+            "entry_price": entry.get("entry_price"),
+            "implied_probability": entry.get("implied_probability"),
+            "model_probability": entry.get("model_probability"),
+            "edge": entry.get("edge"),
+            "confidence_level": entry.get("confidence_level"),
+            "reason_code": entry.get("reason_code"),
+            "reason_detail": entry.get("reason_detail"),
+            "shadow_reason_code": entry.get("shadow_reason_code"),
+            "shadow_reason_detail": entry.get("shadow_reason_detail"),
+            "governance_notice": "Shadow candidate only. No real trade executed.",
+        }
+
+        with open(SHADOW_TRADES_FILE, "a", encoding="utf-8") as f:
+            f.write(json.dumps(shadow_entry, ensure_ascii=False) + "\n")
+    except Exception as e:
+        logger.debug("Failed to record shadow trade candidate (ignored): %s", e)
 
 
 def record_guardrail_decision(decision: Dict[str, Any]) -> None:
@@ -45,6 +97,8 @@ def record_guardrail_decision(decision: Dict[str, Any]) -> None:
 
         with open(AUDIT_FILE, "a", encoding="utf-8") as f:
             f.write(json.dumps(entry, ensure_ascii=False) + "\n")
+
+        _maybe_record_shadow_candidate(entry)
 
     except Exception as e:
         logger.warning(f"Failed to record guardrail decision: {e}")

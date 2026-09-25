@@ -258,6 +258,9 @@ class Orchestrator:
         # Step 5h: General Market Observer (non-weather edge scan, OBSERVE-ONLY)
         self._run_general_market_observer(weather_result.data)
 
+        # Step 5i: Edge Hunter (Guardrail/Opportunity Diagnose, non-blocking)
+        self._run_edge_hunter()
+
         # Build summary with pipeline duration
         duration_seconds = round(time.perf_counter() - pipeline_start, 2)
         result.summary = self._build_summary(result)
@@ -511,6 +514,18 @@ class Orchestrator:
 
         except Exception as e:
             logger.debug("General market observer failed (non-critical): %s", e)
+
+    def _run_edge_hunter(self) -> None:
+        """Diagnose: Welche Shadow-ready Kandidaten werden durch Guardrails geblockt? (non-blocking)."""
+        try:
+            from analytics.edge_hunter import run_edge_hunter
+
+            payload = run_edge_hunter(max_records=200_000, top_n=50)
+            scanned = payload.get("stats", {}).get("total_records_scanned")
+            if scanned:
+                logger.debug("[EdgeHunter] scanned=%s candidates=%s", scanned, len(payload.get("candidates", [])))
+        except Exception as e:
+            logger.debug("Edge hunter failed (non-critical): %s", e)
 
     def _record_equity_snapshot(self, reason: str = "pipeline_run") -> None:
         """Speichere aktuellen Equity-Wert fuer DrawdownProtector."""
