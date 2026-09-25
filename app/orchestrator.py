@@ -94,6 +94,12 @@ class Orchestrator:
         self.logs_dir.mkdir(parents=True, exist_ok=True)
         (self.data_dir / "forecasts").mkdir(parents=True, exist_ok=True)
         (self.data_dir / "resolutions").mkdir(parents=True, exist_ok=True)
+        # Ensure shadow trades file exists for audit tooling (append-only).
+        try:
+            with open(self.data_dir / "shadow_trades.jsonl", "a", encoding="utf-8"):
+                pass
+        except Exception:
+            pass
 
     def run_pipeline(self) -> PipelineResult:
         """
@@ -257,6 +263,16 @@ class Orchestrator:
 
         # Step 5h: General Market Observer (non-weather edge scan, OBSERVE-ONLY)
         self._run_general_market_observer(weather_result.data)
+
+        # Step 5i: Edge Hunter Snapshot (non-blocking, audit-only)
+        try:
+            from analytics.edge_hunter import write_edge_hunter_snapshot
+
+            out = write_edge_hunter_snapshot(run_id=run_id)
+            if out is not None:
+                logger.info(f"[EDGE-HUNTER] Snapshot -> {out}")
+        except Exception as e:
+            logger.debug(f"Edge Hunter fehlgeschlagen (unkritisch): {e}")
 
         # Build summary with pipeline duration
         duration_seconds = round(time.perf_counter() - pipeline_start, 2)

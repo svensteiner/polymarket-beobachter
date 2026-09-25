@@ -19,6 +19,28 @@ logger = logging.getLogger(__name__)
 PROJECT_ROOT = Path(__file__).parent.parent
 LOGS_DIR = PROJECT_ROOT / "logs"
 AUDIT_FILE = LOGS_DIR / "guardrail_audit.jsonl"
+DATA_DIR = PROJECT_ROOT / "data"
+SHADOW_FILE = DATA_DIR / "shadow_trades.jsonl"
+
+
+def _try_persist_shadow_candidate(entry: Dict[str, Any]) -> None:
+    """
+    Persistiert Shadow-Candidates (blocked im echten Mode, aber shadow-eligible)
+    append-only nach data/shadow_trades.jsonl.
+
+    Fail-closed: niemals Exceptions hochwerfen.
+    """
+    try:
+        allowed = bool(entry.get("allowed"))
+        shadow_ok = bool(entry.get("shadow_allowed_without_inventory"))
+        if allowed or not shadow_ok:
+            return
+
+        DATA_DIR.mkdir(parents=True, exist_ok=True)
+        with open(SHADOW_FILE, "a", encoding="utf-8") as f:
+            f.write(json.dumps(entry, ensure_ascii=False) + "\n")
+    except Exception as e:
+        logger.debug("Failed to persist shadow trade candidate (ignored): %s", e)
 
 
 def record_guardrail_decision(decision: Dict[str, Any]) -> None:
@@ -37,6 +59,13 @@ def record_guardrail_decision(decision: Dict[str, Any]) -> None:
     """
     try:
         LOGS_DIR.mkdir(parents=True, exist_ok=True)
+        DATA_DIR.mkdir(parents=True, exist_ok=True)
+        # Ensure file exists for downstream tooling even if no shadow-candidate occurs.
+        try:
+            with open(SHADOW_FILE, "a", encoding="utf-8"):
+                pass
+        except Exception:
+            pass
 
         entry = {
             "timestamp": datetime.now(timezone.utc).isoformat(),
@@ -45,6 +74,8 @@ def record_guardrail_decision(decision: Dict[str, Any]) -> None:
 
         with open(AUDIT_FILE, "a", encoding="utf-8") as f:
             f.write(json.dumps(entry, ensure_ascii=False) + "\n")
+
+        _try_persist_shadow_candidate(entry)
 
     except Exception as e:
         logger.warning(f"Failed to record guardrail decision: {e}")
