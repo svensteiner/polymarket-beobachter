@@ -14046,3 +14046,428 @@
 2026-04-23 22:03:16 | INFO     | app.orchestrator | [AGENT-EXEC] ausgefuehrt: ['tighten_risk']
 2026-04-23 22:03:16 | INFO     | app.orchestrator | [AGENT] DEFENSIVE | DEFENSIVE: 1 active action(s) | 2 read-only | Open=0 | DD=0.5% | BotHealth=ELEVATED
 2026-04-23 22:03:16 | INFO     | app.orchestrator | === Pipeline END === run_id=RUN-20260423-220158-304bc3 state=OK
+2026-05-18 03:19:10 | INFO     | app.orchestrator | === Pipeline START === run_id=RUN-20260518-031910-c87aa9
+2026-05-18 03:19:10 | INFO     | core.weather_market_classifier | WeatherMarketClassifier initialized
+2026-05-18 03:19:10 | INFO     | collector.collector | ============================================================
+2026-05-18 03:19:10 | INFO     | collector.collector | WEATHER OBSERVER COLLECTOR - Starting run
+2026-05-18 03:19:10 | INFO     | collector.collector | Max markets: 500
+2026-05-18 03:19:10 | INFO     | collector.collector | Output dir: C:\Users\botrunner\.codex\worktrees\8a21\polymarket-beobachter\data\collector
+2026-05-18 03:19:10 | INFO     | collector.collector | Dry run: False
+2026-05-18 03:19:10 | INFO     | collector.collector | ============================================================
+2026-05-18 03:19:10 | INFO     | collector.collector | Step 1: Fetching weather markets from Polymarket API...
+2026-05-18 03:19:10 | INFO     | collector.collector |   (Using /events?tag_slug=weather and /events?tag_slug=climate)
+2026-05-18 03:19:10 | INFO     | collector.client | Fetching weather events: offset=0
+2026-05-18 03:19:12 | WARNING  | collector.client | URL error on attempt 1: [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte
+2026-05-18 03:19:12 | INFO     | collector.client | Retrying in 1.0s...
+2026-05-18 03:19:15 | WARNING  | collector.client | URL error on attempt 2: [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte
+2026-05-18 03:19:15 | INFO     | collector.client | Retrying in 2.0s...
+2026-05-18 03:19:19 | WARNING  | collector.client | URL error on attempt 3: [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte
+2026-05-18 03:19:19 | WARNING  | collector.collector | Collector API fetch failed (All 3 retry attempts failed. Last error: <urlopen error [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte>). Falling back to latest local snapshot under C:\Users\botrunner\.codex\worktrees\8a21\polymarket-beobachter\data\collector/raw/...
+2026-05-18 03:19:19 | INFO     | collector.collector | Loaded 500 markets from local snapshot: C:\Users\botrunner\.codex\worktrees\8a21\polymarket-beobachter\data\collector\raw\2026-04-23\markets_20260423_201833.json
+2026-05-18 03:19:19 | INFO     | collector.collector | Fetched 500 weather-tagged markets
+2026-05-18 03:19:19 | INFO     | collector.collector | Step 2: Sanitizing (removing forbidden fields)...
+2026-05-18 03:19:20 | INFO     | collector.collector | Sanitized 500 markets
+2026-05-18 03:19:20 | INFO     | collector.storage | Saved raw response: C:\Users\botrunner\.codex\worktrees\8a21\polymarket-beobachter\data\collector\raw\2026-05-18\markets_20260518_011920.json (500 markets)
+2026-05-18 03:19:20 | INFO     | collector.collector | Step 3: Filtering for weather relevance...
+2026-05-18 03:19:20 | INFO     | collector.filter | POSSIBLE: 716941 | Will there be at least 5000 measles cases in the U.S. in 202 | text_signals=[] | structural_signals=['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-05-18 03:19:20 | INFO     | collector.filter | POSSIBLE: 716940 | Will there be at least 2000 measles cases in the U.S. in 202 | text_signals=[] | structural_signals=['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-05-18 03:19:20 | INFO     | collector.filter | POSSIBLE: 716942 | Will there be at least 10000 measles cases in the U.S. in 20 | text_signals=[] | structural_signals=['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-05-18 03:19:20 | INFO     | collector.filter | POSSIBLE: 1250830 | Will there be at least 7500 measles cases in the U.S. in 202 | text_signals=[] | structural_signals=['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-05-18 03:19:20 | INFO     | collector.filter | POSSIBLE: 1250957 | Will there be at least 12500 measles cases in the U.S. in 20 | text_signals=[] | structural_signals=['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-05-18 03:19:20 | INFO     | collector.filter | POSSIBLE: 1373742 | Will there be at least 3000 measles cases in the U.S. in 202 | text_signals=[] | structural_signals=['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-05-18 03:19:20 | INFO     | collector.filter | POSSIBLE: 1373743 | Will there be at least 4000 measles cases in the U.S. in 202 | text_signals=[] | structural_signals=['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-05-18 03:19:20 | INFO     | collector.filter | POSSIBLE: 822854 | Will there be 8 or more earthquakes of magnitude 7.0 or high | text_signals=[] | structural_signals=['polymarket_tag:weather', 'polymarket_tag:climate & science']
+2026-05-18 03:19:20 | INFO     | collector.filter | POSSIBLE: 823412 | Will there be exactly 7 earthquakes of magnitude 7.0 or high | text_signals=[] | structural_signals=['polymarket_tag:weather', 'polymarket_tag:climate & science']
+2026-05-18 03:19:20 | INFO     | collector.filter | POSSIBLE: 897843 | 9.0 or above earthquake before 2027? | text_signals=[] | structural_signals=['polymarket_tag:weather', 'polymarket_tag:climate & science']
+2026-05-18 03:19:20 | INFO     | collector.filter | POSSIBLE: 897844 | 10.0 or above earthquake before 2027? | text_signals=[] | structural_signals=['polymarket_tag:weather', 'polymarket_tag:climate & science']
+2026-05-18 03:19:20 | INFO     | collector.filter | POSSIBLE: 1058191 | Major volcano eruption (VEI ≥6) in 2026? | text_signals=[] | structural_signals=['polymarket_tag:weather', 'polymarket_tag:climate', 'polymarket_tag:climate & science']
+2026-05-18 03:19:20 | INFO     | collector.filter | POSSIBLE: 1059021 | Megaquake by June 30? | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-18 03:19:20 | INFO     | collector.filter | POSSIBLE: 1073789 | Will there be between 5 and 7 earthquakes of magnitude 7.0 o | text_signals=[] | structural_signals=['polymarket_tag:weather', 'polymarket_tag:climate & science']
+2026-05-18 03:19:20 | INFO     | collector.filter | POSSIBLE: 1073790 | Will there be between 8 and 10 earthquakes of magnitude 7.0  | text_signals=[] | structural_signals=['polymarket_tag:weather', 'polymarket_tag:climate & science']
+2026-05-18 03:19:20 | INFO     | collector.filter | POSSIBLE: 1073791 | Will there be between 11 and 13 earthquakes of magnitude 7.0 | text_signals=[] | structural_signals=['polymarket_tag:weather', 'polymarket_tag:climate & science']
+2026-05-18 03:19:20 | INFO     | collector.filter | POSSIBLE: 1073792 | Will there be between 14 and 16 earthquakes of magnitude 7.0 | text_signals=[] | structural_signals=['polymarket_tag:weather', 'polymarket_tag:climate & science']
+2026-05-18 03:19:20 | INFO     | collector.filter | POSSIBLE: 1073793 | Will there be between 17 and 19 earthquakes of magnitude 7.0 | text_signals=[] | structural_signals=['polymarket_tag:weather', 'polymarket_tag:climate & science']
+2026-05-18 03:19:20 | INFO     | collector.filter | POSSIBLE: 1073794 | Will there be 20 or more earthquakes of magnitude 7.0 or hig | text_signals=[] | structural_signals=['polymarket_tag:weather', 'polymarket_tag:climate & science']
+2026-05-18 03:19:20 | INFO     | collector.filter | POSSIBLE: 1075291 | Will there be exactly 1 confirmed VEI 4 or higher volcanic e | text_signals=[] | structural_signals=['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-05-18 03:19:20 | INFO     | collector.filter | POSSIBLE: 1075293 | Will there be exactly 3 confirmed VEI 4 or higher volcanic e | text_signals=[] | structural_signals=['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-05-18 03:19:20 | INFO     | collector.filter | POSSIBLE: 1075295 | Will there be 5 or more confirmed VEI 4 or higher volcanic e | text_signals=[] | structural_signals=['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-05-18 03:19:20 | INFO     | collector.filter | POSSIBLE: 1075290 | Will there be exactly 0 confirmed VEI 4 or higher volcanic e | text_signals=[] | structural_signals=['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-05-18 03:19:20 | INFO     | collector.filter | POSSIBLE: 1075292 | Will there be exactly 2 confirmed VEI 4 or higher volcanic e | text_signals=[] | structural_signals=['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-05-18 03:19:20 | INFO     | collector.filter | POSSIBLE: 1075294 | Will there be exactly 4 confirmed VEI 4 or higher volcanic e | text_signals=[] | structural_signals=['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-05-18 03:19:20 | INFO     | collector.filter | POSSIBLE: 1696452 | Will there be at least 2000 measles cases in the U.S. by Apr | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-18 03:19:20 | INFO     | collector.filter | POSSIBLE: 1696453 | Will there be at least 2200 measles cases in the U.S. by Apr | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-18 03:19:20 | INFO     | collector.filter | POSSIBLE: 1745046 | Will there be at least 1800 measles cases in the U.S. by Apr | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-18 03:19:20 | INFO     | collector.filter | POSSIBLE: 1745047 | Will there be at least 1900 measles cases in the U.S. by Apr | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-18 03:19:20 | INFO     | collector.filter | POSSIBLE: 1745048 | Will there be at least 2100 measles cases in the U.S. by Apr | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-18 03:19:20 | INFO     | collector.filter | POSSIBLE: 1910494 | Will there be at least 1950 measles cases in the U.S. by Apr | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-18 03:19:20 | INFO     | collector.filter | POSSIBLE: 1980615 | Will there be at least 1850 measles cases in the U.S. by Apr | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-18 03:19:20 | INFO     | collector.filter | POSSIBLE: 1999441 | Will there be at least 1750 measles cases in the U.S. by Apr | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-18 03:19:20 | INFO     | collector.filter | POSSIBLE: 2053799 | Will there be at least 1775 measles cases in the U.S. by Apr | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-18 03:19:20 | INFO     | collector.filter | POSSIBLE: 1829471 | Will there be exactly 12 earthquakes of magnitude 7.0 or hig | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-18 03:19:20 | INFO     | collector.filter | POSSIBLE: 1829472 | Will there be 14 or more earthquakes of magnitude 7.0 or hig | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-18 03:19:20 | INFO     | collector.filter | POSSIBLE: 1829467 | Will there be 8 or fewer earthquakes of magnitude 7.0 or hig | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-18 03:19:20 | INFO     | collector.filter | POSSIBLE: 1829468 | Will there be exactly 9 earthquake of magnitude 7.0 or highe | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-18 03:19:20 | INFO     | collector.filter | POSSIBLE: 1829469 | Will there be exactly 10 earthquakes of magnitude 7.0 or hig | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-18 03:19:20 | INFO     | collector.filter | POSSIBLE: 1829470 | Will there be exactly 11 earthquakes of magnitude 7.0 or hig | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-18 03:19:20 | INFO     | collector.filter | POSSIBLE: 1836540 | Will there be exactly 13 earthquakes of magnitude 7.0 or hig | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-18 03:19:20 | INFO     | collector.filter | POSSIBLE: 2001545 | Will the U.S. flu hospitalization rate per 100,000 in Week 1 | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-18 03:19:20 | INFO     | collector.filter | POSSIBLE: 2001547 | Will the U.S. flu hospitalization rate per 100,000 in Week 1 | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-18 03:19:20 | INFO     | collector.filter | POSSIBLE: 2001543 | Will the U.S. flu hospitalization rate per 100,000 in Week 1 | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-18 03:19:20 | INFO     | collector.filter | POSSIBLE: 2001546 | Will the U.S. flu hospitalization rate per 100,000 in Week 1 | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-18 03:19:20 | INFO     | collector.filter | POSSIBLE: 2001544 | Will the U.S. flu hospitalization rate per 100,000 in Week 1 | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-18 03:19:20 | INFO     | collector.filter | POSSIBLE: 2001542 | Will the U.S. flu hospitalization rate per 100,000 in Week 1 | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-18 03:19:20 | INFO     | collector.filter | POSSIBLE: 2007298 | Will there be exactly 0 earthquakes of magnitude 6.5 or high | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-18 03:19:20 | INFO     | collector.filter | POSSIBLE: 2007299 | Will there be exactly 1 earthquake of magnitude 6.5 or highe | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-18 03:19:20 | INFO     | collector.filter | POSSIBLE: 2007300 | Will there be exactly 2 earthquakes of magnitude 6.5 or high | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-18 03:19:20 | INFO     | collector.filter | POSSIBLE: 2007301 | Will there be exactly 3 earthquakes of magnitude 6.5 or high | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-18 03:19:20 | INFO     | collector.filter | POSSIBLE: 2007302 | Will there be exactly 4 earthquakes of magnitude 6.5 or high | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-18 03:19:20 | INFO     | collector.filter | POSSIBLE: 2007303 | Will there be exactly 5 earthquakes of magnitude 6.5 or high | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-18 03:19:20 | INFO     | collector.filter | POSSIBLE: 2007304 | Will there be more than 5 earthquakes of magnitude 6.5 or hi | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-18 03:19:20 | INFO     | collector.filter | POSSIBLE: 2007319 | Will there be 3 or fewer earthquakes of magnitude 5.5 or hig | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-18 03:19:20 | INFO     | collector.filter | POSSIBLE: 2007320 | Will there be exactly 4 earthquakes of magnitude 5.5 or high | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-18 03:19:20 | INFO     | collector.filter | POSSIBLE: 2007321 | Will there be exactly 5 earthquakes of magnitude 5.5 or high | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-18 03:19:20 | INFO     | collector.filter | POSSIBLE: 2007322 | Will there be exactly 6 earthquakes of magnitude 5.5 or high | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-18 03:19:20 | INFO     | collector.filter | POSSIBLE: 2007323 | Will there be exactly 7 earthquakes of magnitude 5.5 or high | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-18 03:19:20 | INFO     | collector.filter | POSSIBLE: 2007324 | Will there be exactly 8 earthquakes of magnitude 5.5 or high | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-18 03:19:20 | INFO     | collector.filter | POSSIBLE: 2007325 | Will there be exactly 9 earthquakes of magnitude 5.5 or high | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-18 03:19:20 | INFO     | collector.filter | POSSIBLE: 2007326 | Will there be more than 9 earthquakes of magnitude 5.5 or hi | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-18 03:19:22 | INFO     | collector.filter | POSSIBLE: 2043890 | Another 7.0 or above earthquake by May 30, 2026? | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-18 03:19:22 | INFO     | collector.filter | POSSIBLE: 2043888 | Another 7.0 or above earthquake by April 30, 2026? | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-18 03:19:22 | INFO     | collector.filter | POSSIBLE: 2043889 | Another 7.0 or above earthquake by May 15, 2026? | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-18 03:19:22 | INFO     | collector.filter | POSSIBLE: 2045556 | Vesuvius eruption with 1+ VEI in 2026? | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-18 03:19:22 | INFO     | collector.filter | POSSIBLE: 2045571 | Etna eruption with VEI 2+ in 2026? | text_signals=[] | structural_signals=['polymarket_tag:weather']
+2026-05-18 03:19:23 | INFO     | collector.filter | Filter results: 500 total | 382 CONFIRMED | 67 POSSIBLE | 51 NOT_WEATHER | 0 errors
+2026-05-18 03:19:23 | INFO     | collector.filter | === 67 WEATHER_POSSIBLE markets for review ===
+2026-05-18 03:19:23 | INFO     | collector.filter |   - [716941] Will there be at least 5000 measles cases in the U.S. in 2026?
+2026-05-18 03:19:23 | INFO     | collector.filter |     Text signals: []
+2026-05-18 03:19:23 | INFO     | collector.filter |     Structural signals: ['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-05-18 03:19:23 | INFO     | collector.filter |   - [716940] Will there be at least 2000 measles cases in the U.S. in 2026?
+2026-05-18 03:19:23 | INFO     | collector.filter |     Text signals: []
+2026-05-18 03:19:23 | INFO     | collector.filter |     Structural signals: ['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-05-18 03:19:23 | INFO     | collector.filter |   - [716942] Will there be at least 10000 measles cases in the U.S. in 2026?
+2026-05-18 03:19:23 | INFO     | collector.filter |     Text signals: []
+2026-05-18 03:19:23 | INFO     | collector.filter |     Structural signals: ['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-05-18 03:19:23 | INFO     | collector.filter |   - [1250830] Will there be at least 7500 measles cases in the U.S. in 2026?
+2026-05-18 03:19:23 | INFO     | collector.filter |     Text signals: []
+2026-05-18 03:19:23 | INFO     | collector.filter |     Structural signals: ['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-05-18 03:19:23 | INFO     | collector.filter |   - [1250957] Will there be at least 12500 measles cases in the U.S. in 2026?
+2026-05-18 03:19:23 | INFO     | collector.filter |     Text signals: []
+2026-05-18 03:19:23 | INFO     | collector.filter |     Structural signals: ['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-05-18 03:19:23 | INFO     | collector.filter |   - [1373742] Will there be at least 3000 measles cases in the U.S. in 2026?
+2026-05-18 03:19:23 | INFO     | collector.filter |     Text signals: []
+2026-05-18 03:19:23 | INFO     | collector.filter |     Structural signals: ['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-05-18 03:19:23 | INFO     | collector.filter |   - [1373743] Will there be at least 4000 measles cases in the U.S. in 2026?
+2026-05-18 03:19:23 | INFO     | collector.filter |     Text signals: []
+2026-05-18 03:19:23 | INFO     | collector.filter |     Structural signals: ['polymarket_tag:climate & science', 'polymarket_tag:weather']
+2026-05-18 03:19:23 | INFO     | collector.filter |   - [822854] Will there be 8 or more earthquakes of magnitude 7.0 or higher worldwi
+2026-05-18 03:19:23 | INFO     | collector.filter |     Text signals: []
+2026-05-18 03:19:23 | INFO     | collector.filter |     Structural signals: ['polymarket_tag:weather', 'polymarket_tag:climate & science']
+2026-05-18 03:19:23 | INFO     | collector.filter |   - [823412] Will there be exactly 7 earthquakes of magnitude 7.0 or higher worldwi
+2026-05-18 03:19:23 | INFO     | collector.filter |     Text signals: []
+2026-05-18 03:19:23 | INFO     | collector.filter |     Structural signals: ['polymarket_tag:weather', 'polymarket_tag:climate & science']
+2026-05-18 03:19:23 | INFO     | collector.filter |   - [897843] 9.0 or above earthquake before 2027?
+2026-05-18 03:19:23 | INFO     | collector.filter |     Text signals: []
+2026-05-18 03:19:23 | INFO     | collector.filter |     Structural signals: ['polymarket_tag:weather', 'polymarket_tag:climate & science']
+2026-05-18 03:19:23 | INFO     | collector.collector | Filter results: {'included_weather': 382, 'possible_weather': 67, 'excluded_not_weather': 51, 'excluded_incomplete': 0, 'total': 500}
+2026-05-18 03:19:23 | INFO     | collector.collector | Step 4: Normalizing market data...
+2026-05-18 03:19:23 | INFO     | collector.collector | Normalized 500 markets
+2026-05-18 03:19:23 | INFO     | collector.collector | Found 382 weather candidates
+2026-05-18 03:19:23 | INFO     | collector.collector | Step 5: Saving outputs...
+2026-05-18 03:19:23 | INFO     | collector.storage | Saved normalized markets: C:\Users\botrunner\.codex\worktrees\8a21\polymarket-beobachter\data\collector\normalized\2026-05-18\markets.jsonl (500 records)
+2026-05-18 03:19:23 | INFO     | collector.storage | Saved candidates: C:\Users\botrunner\.codex\worktrees\8a21\polymarket-beobachter\data\collector\candidates\2026-05-18\candidates.jsonl (382 records)
+2026-05-18 03:19:23 | INFO     | collector.storage | Saved report: C:\Users\botrunner\.codex\worktrees\8a21\polymarket-beobachter\data\collector\reports\2026-05-18\report.md
+2026-05-18 03:19:23 | INFO     | collector.collector | ============================================================
+2026-05-18 03:19:23 | INFO     | collector.collector | COLLECTION COMPLETE
+2026-05-18 03:19:23 | INFO     | collector.collector | Duration: 12.4s
+2026-05-18 03:19:23 | INFO     | collector.collector | Fetched: 500
+2026-05-18 03:19:23 | INFO     | collector.collector | Weather Candidates: 382
+2026-05-18 03:19:23 | INFO     | collector.collector | ============================================================
+2026-05-18 03:19:23 | INFO     | app.orchestrator | Collector-Daten geloescht: raw/2026-04-17
+2026-05-18 03:19:23 | INFO     | app.orchestrator | Collector-Daten geloescht: raw/2026-04-18
+2026-05-18 03:19:23 | INFO     | app.orchestrator | Collector-Daten geloescht: raw/2026-04-19
+2026-05-18 03:19:23 | INFO     | app.orchestrator | Collector-Daten geloescht: raw/2026-04-20
+2026-05-18 03:19:23 | INFO     | app.orchestrator | Collector-Daten geloescht: raw/2026-04-21
+2026-05-18 03:19:23 | INFO     | app.orchestrator | Collector-Daten geloescht: raw/2026-04-22
+2026-05-18 03:19:23 | INFO     | app.orchestrator | Collector-Daten geloescht: raw/2026-04-23
+2026-05-18 03:19:23 | INFO     | app.orchestrator | Collector-Daten geloescht: normalized/2026-04-17
+2026-05-18 03:19:23 | INFO     | app.orchestrator | Collector-Daten geloescht: normalized/2026-04-18
+2026-05-18 03:19:23 | INFO     | app.orchestrator | Collector-Daten geloescht: normalized/2026-04-19
+2026-05-18 03:19:23 | INFO     | app.orchestrator | Collector-Daten geloescht: normalized/2026-04-20
+2026-05-18 03:19:23 | INFO     | app.orchestrator | Collector-Daten geloescht: normalized/2026-04-21
+2026-05-18 03:19:23 | INFO     | app.orchestrator | Collector-Daten geloescht: normalized/2026-04-22
+2026-05-18 03:19:23 | INFO     | app.orchestrator | Collector-Daten geloescht: normalized/2026-04-23
+2026-05-18 03:19:23 | INFO     | app.orchestrator | Collector-Daten geloescht: candidates/2026-04-17
+2026-05-18 03:19:23 | INFO     | app.orchestrator | Collector-Daten geloescht: candidates/2026-04-18
+2026-05-18 03:19:23 | INFO     | app.orchestrator | Collector-Daten geloescht: candidates/2026-04-19
+2026-05-18 03:19:23 | INFO     | app.orchestrator | Collector-Daten geloescht: candidates/2026-04-20
+2026-05-18 03:19:23 | INFO     | app.orchestrator | Collector-Daten geloescht: candidates/2026-04-21
+2026-05-18 03:19:23 | INFO     | app.orchestrator | Collector-Daten geloescht: candidates/2026-04-22
+2026-05-18 03:19:23 | INFO     | app.orchestrator | Collector-Daten geloescht: candidates/2026-04-23
+2026-05-18 03:19:23 | INFO     | app.orchestrator | Collector cleanup: 21 alte Verzeichnisse geloescht
+2026-05-18 03:19:23 | INFO     | core.weather_market_filter | WeatherMarketFilter initialized | min_liquidity=375.0 | odds_range=[0.1, 0.85] | min_hours=24.0 | cities=21
+2026-05-18 03:19:23 | INFO     | app.orchestrator | Merged 33 gamma candidates into observation pipeline
+2026-05-18 03:19:23 | INFO     | app.orchestrator | Pre-filtered 382 stale candidates (resolution < 24h away), 33 remain
+2026-05-18 03:19:25 | WARNING  | collector.client | URL error on attempt 1: [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte
+2026-05-18 03:19:25 | INFO     | collector.client | Retrying in 1.0s...
+2026-05-18 03:19:28 | WARNING  | collector.client | URL error on attempt 2: [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte
+2026-05-18 03:19:28 | INFO     | collector.client | Retrying in 2.0s...
+2026-05-18 03:19:32 | WARNING  | collector.client | URL error on attempt 3: [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte
+2026-05-18 03:19:32 | WARNING  | collector.client | Failed to fetch prices for 678686: All 3 retry attempts failed. Last error: <urlopen error [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte>
+2026-05-18 03:19:34 | WARNING  | collector.client | URL error on attempt 1: [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte
+2026-05-18 03:19:34 | INFO     | collector.client | Retrying in 1.0s...
+2026-05-18 03:19:37 | WARNING  | collector.client | URL error on attempt 2: [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte
+2026-05-18 03:19:37 | INFO     | collector.client | Retrying in 2.0s...
+2026-05-18 03:19:41 | WARNING  | collector.client | URL error on attempt 3: [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte
+2026-05-18 03:19:41 | WARNING  | collector.client | Failed to fetch prices for 678688: All 3 retry attempts failed. Last error: <urlopen error [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte>
+2026-05-18 03:19:43 | WARNING  | collector.client | URL error on attempt 1: [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte
+2026-05-18 03:19:43 | INFO     | collector.client | Retrying in 1.0s...
+2026-05-18 03:19:46 | WARNING  | collector.client | URL error on attempt 2: [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte
+2026-05-18 03:19:46 | INFO     | collector.client | Retrying in 2.0s...
+2026-05-18 03:19:50 | WARNING  | collector.client | URL error on attempt 3: [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte
+2026-05-18 03:19:50 | WARNING  | collector.client | Failed to fetch prices for 678690: All 3 retry attempts failed. Last error: <urlopen error [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte>
+2026-05-18 03:19:52 | WARNING  | collector.client | URL error on attempt 1: [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte
+2026-05-18 03:19:52 | INFO     | collector.client | Retrying in 1.0s...
+2026-05-18 03:19:55 | WARNING  | collector.client | URL error on attempt 2: [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte
+2026-05-18 03:19:55 | INFO     | collector.client | Retrying in 2.0s...
+2026-05-18 03:19:59 | WARNING  | collector.client | URL error on attempt 3: [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte
+2026-05-18 03:19:59 | WARNING  | collector.client | Failed to fetch prices for 678687: All 3 retry attempts failed. Last error: <urlopen error [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte>
+2026-05-18 03:20:01 | WARNING  | collector.client | URL error on attempt 1: [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte
+2026-05-18 03:20:01 | INFO     | collector.client | Retrying in 1.0s...
+2026-05-18 03:20:04 | WARNING  | collector.client | URL error on attempt 2: [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte
+2026-05-18 03:20:04 | INFO     | collector.client | Retrying in 2.0s...
+2026-05-18 03:20:08 | WARNING  | collector.client | URL error on attempt 3: [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte
+2026-05-18 03:20:08 | WARNING  | collector.client | Failed to fetch prices for 678689: All 3 retry attempts failed. Last error: <urlopen error [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte>
+2026-05-18 03:20:10 | WARNING  | collector.client | URL error on attempt 1: [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte
+2026-05-18 03:20:10 | INFO     | collector.client | Retrying in 1.0s...
+2026-05-18 03:20:13 | WARNING  | collector.client | URL error on attempt 2: [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte
+2026-05-18 03:20:13 | INFO     | collector.client | Retrying in 2.0s...
+2026-05-18 03:20:17 | WARNING  | collector.client | URL error on attempt 3: [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte
+2026-05-18 03:20:17 | WARNING  | collector.client | Failed to fetch prices for 678691: All 3 retry attempts failed. Last error: <urlopen error [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte>
+2026-05-18 03:20:19 | WARNING  | collector.client | URL error on attempt 1: [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte
+2026-05-18 03:20:19 | INFO     | collector.client | Retrying in 1.0s...
+2026-05-18 03:20:22 | WARNING  | collector.client | URL error on attempt 2: [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte
+2026-05-18 03:20:22 | INFO     | collector.client | Retrying in 2.0s...
+2026-05-18 03:20:26 | WARNING  | collector.client | URL error on attempt 3: [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte
+2026-05-18 03:20:26 | WARNING  | collector.client | Failed to fetch prices for 693869: All 3 retry attempts failed. Last error: <urlopen error [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte>
+2026-05-18 03:20:29 | WARNING  | collector.client | URL error on attempt 1: [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte
+2026-05-18 03:20:29 | INFO     | collector.client | Retrying in 1.0s...
+2026-05-18 03:20:32 | WARNING  | collector.client | URL error on attempt 2: [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte
+2026-05-18 03:20:32 | INFO     | collector.client | Retrying in 2.0s...
+2026-05-18 03:20:36 | WARNING  | collector.client | URL error on attempt 3: [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte
+2026-05-18 03:20:36 | WARNING  | collector.client | Failed to fetch prices for 693871: All 3 retry attempts failed. Last error: <urlopen error [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte>
+2026-05-18 03:20:38 | WARNING  | collector.client | URL error on attempt 1: [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte
+2026-05-18 03:20:38 | INFO     | collector.client | Retrying in 1.0s...
+2026-05-18 03:20:41 | WARNING  | collector.client | URL error on attempt 2: [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte
+2026-05-18 03:20:41 | INFO     | collector.client | Retrying in 2.0s...
+2026-05-18 03:20:45 | WARNING  | collector.client | URL error on attempt 3: [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte
+2026-05-18 03:20:45 | WARNING  | collector.client | Failed to fetch prices for 693873: All 3 retry attempts failed. Last error: <urlopen error [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte>
+2026-05-18 03:20:47 | WARNING  | collector.client | URL error on attempt 1: [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte
+2026-05-18 03:20:47 | INFO     | collector.client | Retrying in 1.0s...
+2026-05-18 03:20:50 | WARNING  | collector.client | URL error on attempt 2: [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte
+2026-05-18 03:20:50 | INFO     | collector.client | Retrying in 2.0s...
+2026-05-18 03:20:54 | WARNING  | collector.client | URL error on attempt 3: [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte
+2026-05-18 03:20:54 | WARNING  | collector.client | Failed to fetch prices for 693875: All 3 retry attempts failed. Last error: <urlopen error [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte>
+2026-05-18 03:20:56 | WARNING  | collector.client | URL error on attempt 1: [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte
+2026-05-18 03:20:56 | INFO     | collector.client | Retrying in 1.0s...
+2026-05-18 03:20:59 | WARNING  | collector.client | URL error on attempt 2: [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte
+2026-05-18 03:20:59 | INFO     | collector.client | Retrying in 2.0s...
+2026-05-18 03:21:03 | WARNING  | collector.client | URL error on attempt 3: [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte
+2026-05-18 03:21:03 | WARNING  | collector.client | Failed to fetch prices for 693870: All 3 retry attempts failed. Last error: <urlopen error [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte>
+2026-05-18 03:21:05 | WARNING  | collector.client | URL error on attempt 1: [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte
+2026-05-18 03:21:05 | INFO     | collector.client | Retrying in 1.0s...
+2026-05-18 03:21:08 | WARNING  | collector.client | URL error on attempt 2: [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte
+2026-05-18 03:21:08 | INFO     | collector.client | Retrying in 2.0s...
+2026-05-18 03:21:12 | WARNING  | collector.client | URL error on attempt 3: [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte
+2026-05-18 03:21:12 | WARNING  | collector.client | Failed to fetch prices for 693872: All 3 retry attempts failed. Last error: <urlopen error [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte>
+2026-05-18 03:21:14 | WARNING  | collector.client | URL error on attempt 1: [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte
+2026-05-18 03:21:14 | INFO     | collector.client | Retrying in 1.0s...
+2026-05-18 03:21:17 | WARNING  | collector.client | URL error on attempt 2: [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte
+2026-05-18 03:21:17 | INFO     | collector.client | Retrying in 2.0s...
+2026-05-18 03:21:21 | WARNING  | collector.client | URL error on attempt 3: [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte
+2026-05-18 03:21:21 | WARNING  | collector.client | Failed to fetch prices for 693874: All 3 retry attempts failed. Last error: <urlopen error [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte>
+2026-05-18 03:21:23 | WARNING  | collector.client | URL error on attempt 1: [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte
+2026-05-18 03:21:23 | INFO     | collector.client | Retrying in 1.0s...
+2026-05-18 03:21:26 | WARNING  | collector.client | URL error on attempt 2: [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte
+2026-05-18 03:21:26 | INFO     | collector.client | Retrying in 2.0s...
+2026-05-18 03:21:30 | WARNING  | collector.client | URL error on attempt 3: [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte
+2026-05-18 03:21:30 | WARNING  | collector.client | Failed to fetch prices for 820350: All 3 retry attempts failed. Last error: <urlopen error [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte>
+2026-05-18 03:21:32 | WARNING  | collector.client | URL error on attempt 1: [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte
+2026-05-18 03:21:32 | INFO     | collector.client | Retrying in 1.0s...
+2026-05-18 03:21:35 | WARNING  | collector.client | URL error on attempt 2: [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte
+2026-05-18 03:21:35 | INFO     | collector.client | Retrying in 2.0s...
+2026-05-18 03:21:39 | WARNING  | collector.client | URL error on attempt 3: [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte
+2026-05-18 03:21:39 | WARNING  | collector.client | Failed to fetch prices for 820351: All 3 retry attempts failed. Last error: <urlopen error [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte>
+2026-05-18 03:21:41 | WARNING  | collector.client | URL error on attempt 1: [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte
+2026-05-18 03:21:41 | INFO     | collector.client | Retrying in 1.0s...
+2026-05-18 03:21:44 | WARNING  | collector.client | URL error on attempt 2: [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte
+2026-05-18 03:21:44 | INFO     | collector.client | Retrying in 2.0s...
+2026-05-18 03:21:48 | WARNING  | collector.client | URL error on attempt 3: [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte
+2026-05-18 03:21:48 | WARNING  | collector.client | Failed to fetch prices for 823568: All 3 retry attempts failed. Last error: <urlopen error [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte>
+2026-05-18 03:21:50 | WARNING  | collector.client | URL error on attempt 1: [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte
+2026-05-18 03:21:50 | INFO     | collector.client | Retrying in 1.0s...
+2026-05-18 03:21:53 | WARNING  | collector.client | URL error on attempt 2: [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte
+2026-05-18 03:21:53 | INFO     | collector.client | Retrying in 2.0s...
+2026-05-18 03:21:57 | WARNING  | collector.client | URL error on attempt 3: [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte
+2026-05-18 03:21:57 | WARNING  | collector.client | Failed to fetch prices for 1058988: All 3 retry attempts failed. Last error: <urlopen error [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte>
+2026-05-18 03:21:59 | WARNING  | collector.client | URL error on attempt 1: [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte
+2026-05-18 03:21:59 | INFO     | collector.client | Retrying in 1.0s...
+2026-05-18 03:22:02 | WARNING  | collector.client | URL error on attempt 2: [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte
+2026-05-18 03:22:02 | INFO     | collector.client | Retrying in 2.0s...
+2026-05-18 03:22:06 | WARNING  | collector.client | URL error on attempt 3: [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte
+2026-05-18 03:22:06 | WARNING  | collector.client | Failed to fetch prices for 1058997: All 3 retry attempts failed. Last error: <urlopen error [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte>
+2026-05-18 03:22:08 | WARNING  | collector.client | URL error on attempt 1: [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte
+2026-05-18 03:22:08 | INFO     | collector.client | Retrying in 1.0s...
+2026-05-18 03:22:11 | WARNING  | collector.client | URL error on attempt 2: [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte
+2026-05-18 03:22:11 | INFO     | collector.client | Retrying in 2.0s...
+2026-05-18 03:22:15 | WARNING  | collector.client | URL error on attempt 3: [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte
+2026-05-18 03:22:15 | WARNING  | collector.client | Failed to fetch prices for 1074058: All 3 retry attempts failed. Last error: <urlopen error [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte>
+2026-05-18 03:22:17 | WARNING  | collector.client | URL error on attempt 1: [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte
+2026-05-18 03:22:17 | INFO     | collector.client | Retrying in 1.0s...
+2026-05-18 03:22:20 | WARNING  | collector.client | URL error on attempt 2: [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte
+2026-05-18 03:22:20 | INFO     | collector.client | Retrying in 2.0s...
+2026-05-18 03:22:24 | WARNING  | collector.client | URL error on attempt 3: [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte
+2026-05-18 03:22:24 | WARNING  | collector.client | Failed to fetch prices for 1360605: All 3 retry attempts failed. Last error: <urlopen error [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte>
+2026-05-18 03:22:26 | WARNING  | collector.client | URL error on attempt 1: [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte
+2026-05-18 03:22:26 | INFO     | collector.client | Retrying in 1.0s...
+2026-05-18 03:22:30 | WARNING  | collector.client | URL error on attempt 2: [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte
+2026-05-18 03:22:30 | INFO     | collector.client | Retrying in 2.0s...
+2026-05-18 03:22:34 | WARNING  | collector.client | URL error on attempt 3: [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte
+2026-05-18 03:22:34 | WARNING  | collector.client | Failed to fetch prices for 1845358: All 3 retry attempts failed. Last error: <urlopen error [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte>
+2026-05-18 03:22:36 | WARNING  | collector.client | URL error on attempt 1: [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte
+2026-05-18 03:22:36 | INFO     | collector.client | Retrying in 1.0s...
+2026-05-18 03:22:39 | WARNING  | collector.client | URL error on attempt 2: [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte
+2026-05-18 03:22:39 | INFO     | collector.client | Retrying in 2.0s...
+2026-05-18 03:22:43 | WARNING  | collector.client | URL error on attempt 3: [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte
+2026-05-18 03:22:43 | WARNING  | collector.client | Failed to fetch prices for 920402: All 3 retry attempts failed. Last error: <urlopen error [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte>
+2026-05-18 03:22:45 | WARNING  | collector.client | URL error on attempt 1: [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte
+2026-05-18 03:22:45 | INFO     | collector.client | Retrying in 1.0s...
+2026-05-18 03:22:48 | WARNING  | collector.client | URL error on attempt 2: [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte
+2026-05-18 03:22:48 | INFO     | collector.client | Retrying in 2.0s...
+2026-05-18 03:22:52 | WARNING  | collector.client | URL error on attempt 3: [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte
+2026-05-18 03:22:52 | WARNING  | collector.client | Failed to fetch prices for 1249037: All 3 retry attempts failed. Last error: <urlopen error [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte>
+2026-05-18 03:22:54 | WARNING  | collector.client | URL error on attempt 1: [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte
+2026-05-18 03:22:54 | INFO     | collector.client | Retrying in 1.0s...
+2026-05-18 03:22:57 | WARNING  | collector.client | URL error on attempt 2: [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte
+2026-05-18 03:22:57 | INFO     | collector.client | Retrying in 2.0s...
+2026-05-18 03:23:01 | WARNING  | collector.client | URL error on attempt 3: [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte
+2026-05-18 03:23:01 | WARNING  | collector.client | Failed to fetch prices for 1125394: All 3 retry attempts failed. Last error: <urlopen error [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte>
+2026-05-18 03:23:03 | WARNING  | collector.client | URL error on attempt 1: [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte
+2026-05-18 03:23:03 | INFO     | collector.client | Retrying in 1.0s...
+2026-05-18 03:23:06 | WARNING  | collector.client | URL error on attempt 2: [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte
+2026-05-18 03:23:06 | INFO     | collector.client | Retrying in 2.0s...
+2026-05-18 03:23:10 | WARNING  | collector.client | URL error on attempt 3: [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte
+2026-05-18 03:23:10 | WARNING  | collector.client | Failed to fetch prices for 1125396: All 3 retry attempts failed. Last error: <urlopen error [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte>
+2026-05-18 03:23:12 | WARNING  | collector.client | URL error on attempt 1: [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte
+2026-05-18 03:23:12 | INFO     | collector.client | Retrying in 1.0s...
+2026-05-18 03:23:15 | WARNING  | collector.client | URL error on attempt 2: [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte
+2026-05-18 03:23:15 | INFO     | collector.client | Retrying in 2.0s...
+2026-05-18 03:23:19 | WARNING  | collector.client | URL error on attempt 3: [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte
+2026-05-18 03:23:19 | WARNING  | collector.client | Failed to fetch prices for 1125385: All 3 retry attempts failed. Last error: <urlopen error [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte>
+2026-05-18 03:23:21 | WARNING  | collector.client | URL error on attempt 1: [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte
+2026-05-18 03:23:21 | INFO     | collector.client | Retrying in 1.0s...
+2026-05-18 03:23:24 | WARNING  | collector.client | URL error on attempt 2: [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte
+2026-05-18 03:23:24 | INFO     | collector.client | Retrying in 2.0s...
+2026-05-18 03:23:28 | WARNING  | collector.client | URL error on attempt 3: [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte
+2026-05-18 03:23:28 | WARNING  | collector.client | Failed to fetch prices for 956449: All 3 retry attempts failed. Last error: <urlopen error [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte>
+2026-05-18 03:23:30 | WARNING  | collector.client | URL error on attempt 1: [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte
+2026-05-18 03:23:30 | INFO     | collector.client | Retrying in 1.0s...
+2026-05-18 03:23:33 | WARNING  | collector.client | URL error on attempt 2: [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte
+2026-05-18 03:23:33 | INFO     | collector.client | Retrying in 2.0s...
+2026-05-18 03:23:37 | WARNING  | collector.client | URL error on attempt 3: [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte
+2026-05-18 03:23:37 | WARNING  | collector.client | Failed to fetch prices for 1541328: All 3 retry attempts failed. Last error: <urlopen error [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte>
+2026-05-18 03:23:39 | WARNING  | collector.client | URL error on attempt 1: [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte
+2026-05-18 03:23:39 | INFO     | collector.client | Retrying in 1.0s...
+2026-05-18 03:23:42 | WARNING  | collector.client | URL error on attempt 2: [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte
+2026-05-18 03:23:42 | INFO     | collector.client | Retrying in 2.0s...
+2026-05-18 03:23:46 | WARNING  | collector.client | URL error on attempt 3: [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte
+2026-05-18 03:23:46 | WARNING  | collector.client | Failed to fetch prices for 2001248: All 3 retry attempts failed. Last error: <urlopen error [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte>
+2026-05-18 03:23:48 | WARNING  | collector.client | URL error on attempt 1: [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte
+2026-05-18 03:23:48 | INFO     | collector.client | Retrying in 1.0s...
+2026-05-18 03:23:51 | WARNING  | collector.client | URL error on attempt 2: [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte
+2026-05-18 03:23:51 | INFO     | collector.client | Retrying in 2.0s...
+2026-05-18 03:23:55 | WARNING  | collector.client | URL error on attempt 3: [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte
+2026-05-18 03:23:55 | WARNING  | collector.client | Failed to fetch prices for 562794: All 3 retry attempts failed. Last error: <urlopen error [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte>
+2026-05-18 03:23:57 | WARNING  | collector.client | URL error on attempt 1: [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte
+2026-05-18 03:23:57 | INFO     | collector.client | Retrying in 1.0s...
+2026-05-18 03:24:00 | WARNING  | collector.client | URL error on attempt 2: [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte
+2026-05-18 03:24:00 | INFO     | collector.client | Retrying in 2.0s...
+2026-05-18 03:24:04 | WARNING  | collector.client | URL error on attempt 3: [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte
+2026-05-18 03:24:04 | WARNING  | collector.client | Failed to fetch prices for 618507: All 3 retry attempts failed. Last error: <urlopen error [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte>
+2026-05-18 03:24:06 | WARNING  | collector.client | URL error on attempt 1: [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte
+2026-05-18 03:24:06 | INFO     | collector.client | Retrying in 1.0s...
+2026-05-18 03:24:09 | WARNING  | collector.client | URL error on attempt 2: [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte
+2026-05-18 03:24:09 | INFO     | collector.client | Retrying in 2.0s...
+2026-05-18 03:24:13 | WARNING  | collector.client | URL error on attempt 3: [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte
+2026-05-18 03:24:13 | WARNING  | collector.client | Failed to fetch prices for 1335136: All 3 retry attempts failed. Last error: <urlopen error [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte>
+2026-05-18 03:24:15 | WARNING  | collector.client | URL error on attempt 1: [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte
+2026-05-18 03:24:15 | INFO     | collector.client | Retrying in 1.0s...
+2026-05-18 03:24:18 | WARNING  | collector.client | URL error on attempt 2: [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte
+2026-05-18 03:24:18 | INFO     | collector.client | Retrying in 2.0s...
+2026-05-18 03:24:22 | WARNING  | collector.client | URL error on attempt 3: [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte
+2026-05-18 03:24:22 | WARNING  | collector.client | Failed to fetch prices for 667082: All 3 retry attempts failed. Last error: <urlopen error [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte>
+2026-05-18 03:24:22 | INFO     | collector.client | Fetched prices for 0/33 markets
+2026-05-18 03:24:22 | INFO     | app.orchestrator | Fetched real odds for 0/33 markets
+2026-05-18 03:24:22 | INFO     | app.orchestrator | Loaded 0 weather candidates for observation (skipped: 21 no-price, 19 filter [CITY:8, ODDS:5, TYPE:4, LIQUIDITY:2])
+2026-05-18 03:24:22 | INFO     | core.weather_market_filter | WeatherMarketFilter initialized | min_liquidity=375.0 | odds_range=[0.1, 0.85] | min_hours=24.0 | cities=21
+2026-05-18 03:24:22 | INFO     | core.weather_probability_model | WeatherProbabilityModel initialized | base_sigma=5.5°F | max_horizon=10 days
+2026-05-18 03:24:22 | INFO     | core.weather_engine | WeatherEngine initialized | version=1.0.0 | config_hash=9b2feaa764f1beca
+2026-05-18 03:24:22 | INFO     | core.weather_engine | WeatherObserver run started | timestamp=2026-05-18T01:24:22Z
+2026-05-18 03:24:22 | INFO     | core.weather_engine | Fetched 0 weather markets
+2026-05-18 03:24:22 | INFO     | core.weather_market_filter | Filtered 0 markets: 0 passed, 0 rejected
+2026-05-18 03:24:22 | INFO     | core.weather_engine | Filtered markets: 0/0 passed
+2026-05-18 03:24:22 | INFO     | core.weather_engine | WeatherObserver run complete | duration=0.01s | observations=0 | with_edge=0
+2026-05-18 03:24:22 | INFO     | app.orchestrator | Market Condition: FAVORABLE (0 edge obs)
+2026-05-18 03:24:22 | INFO     | paper_trader.intake | Loaded 1477 total proposals
+2026-05-18 03:24:22 | INFO     | paper_trader.intake | Using 0 recent unique proposals (<= 12h, YES-first sort)
+2026-05-18 03:24:23 | INFO     | paper_trader.intake | Found 58 already paper-executed proposals
+2026-05-18 03:24:23 | INFO     | paper_trader.intake | Found 0 eligible proposals for paper trading
+2026-05-18 03:24:23 | INFO     | paper_trader.capital_manager | Capital loaded: 4945.28 EUR available, 0.00 EUR allocated
+2026-05-18 03:24:23 | INFO     | paper_trader.averaging_down | Averaging down DISABLED (requires proven calibration, win_rate > 40%%)
+2026-05-18 03:24:24 | INFO     | app.orchestrator | Found 0 eligible proposals for paper trading
+2026-05-18 03:24:24 | INFO     | paper_trader.position_manager | Checking 0 open positions for resolution
+2026-05-18 03:24:26 | WARNING  | core.outcome_tracker | Failed to check resolution for 2057055: <urlopen error [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte>
+2026-05-18 03:24:28 | WARNING  | core.outcome_tracker | Failed to check resolution for 2049493: <urlopen error [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte>
+2026-05-18 03:24:30 | WARNING  | core.outcome_tracker | Failed to check resolution for 2040214: <urlopen error [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte>
+2026-05-18 03:24:32 | WARNING  | core.outcome_tracker | Failed to check resolution for 2040231: <urlopen error [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte>
+2026-05-18 03:24:34 | WARNING  | core.outcome_tracker | Failed to check resolution for 2040192: <urlopen error [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte>
+2026-05-18 03:24:37 | WARNING  | core.outcome_tracker | Failed to check resolution for 2040289: <urlopen error [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte>
+2026-05-18 03:24:39 | WARNING  | core.outcome_tracker | Failed to check resolution for 2049710: <urlopen error [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte>
+2026-05-18 03:24:41 | WARNING  | core.outcome_tracker | Failed to check resolution for 2056709: <urlopen error [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte>
+2026-05-18 03:24:43 | WARNING  | core.outcome_tracker | Failed to check resolution for 2040523: <urlopen error [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte>
+2026-05-18 03:24:45 | WARNING  | core.outcome_tracker | Failed to check resolution for 2040239: <urlopen error [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte>
+2026-05-18 03:24:47 | WARNING  | core.outcome_tracker | Failed to check resolution for 2040310: <urlopen error [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte>
+2026-05-18 03:24:49 | WARNING  | core.outcome_tracker | Failed to check resolution for 2040240: <urlopen error [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte>
+2026-05-18 03:24:51 | WARNING  | core.outcome_tracker | Failed to check resolution for 2049370: <urlopen error [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte>
+2026-05-18 03:24:53 | WARNING  | core.outcome_tracker | Failed to check resolution for 2049383: <urlopen error [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte>
+2026-05-18 03:24:55 | WARNING  | core.outcome_tracker | Failed to check resolution for 2056742: <urlopen error [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte>
+2026-05-18 03:24:57 | WARNING  | core.outcome_tracker | Failed to check resolution for 2056811: <urlopen error [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte>
+2026-05-18 03:24:59 | WARNING  | core.outcome_tracker | Failed to check resolution for 2056879: <urlopen error [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte>
+2026-05-18 03:25:01 | WARNING  | core.outcome_tracker | Failed to check resolution for 2040233: <urlopen error [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte>
+2026-05-18 03:25:03 | WARNING  | core.outcome_tracker | Failed to check resolution for 2049371: <urlopen error [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte>
+2026-05-18 03:25:05 | WARNING  | core.outcome_tracker | Failed to check resolution for 2040278: <urlopen error [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte>
+2026-05-18 03:25:07 | WARNING  | core.outcome_tracker | Failed to check resolution for 2049439: <urlopen error [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte>
+2026-05-18 03:25:10 | WARNING  | core.outcome_tracker | Failed to check resolution for 2040277: <urlopen error [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte>
+2026-05-18 03:25:12 | WARNING  | core.outcome_tracker | Failed to check resolution for 2049384: <urlopen error [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte>
+2026-05-18 03:25:14 | WARNING  | core.outcome_tracker | Failed to check resolution for 2057000: <urlopen error [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte>
+2026-05-18 03:25:16 | WARNING  | core.outcome_tracker | Failed to check resolution for 2057230: <urlopen error [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte>
+2026-05-18 03:25:18 | WARNING  | core.outcome_tracker | Failed to check resolution for 2040241: <urlopen error [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte>
+2026-05-18 03:25:18 | INFO     | analytics.outcome_analyser | Starte Outcome-Analyse...
+2026-05-18 03:25:18 | INFO     | analytics.outcome_analyser | Positions geladen: 116 Eintraege, 58 eindeutige, 32 geschlossen mit P&L
+2026-05-18 03:25:18 | INFO     | analytics.outcome_analyser | Performance-Report gespeichert: C:\Users\botrunner\.codex\worktrees\8a21\polymarket-beobachter\analytics\performance_report.json
+2026-05-18 03:25:18 | INFO     | app.orchestrator | Outcome-Analyser: Performance-Report aktualisiert
+2026-05-18 03:25:18 | INFO     | app.orchestrator | [SEGMENTS] 58 closed positions | risky cities: none
+2026-05-18 03:25:18 | INFO     | analytics.strategy_advisor | Strategy-Advisor: mode=balance recommendations=4
+2026-05-18 03:25:18 | INFO     | app.orchestrator | [ADVISOR] BALANCE | BALANCE: Win-Rate 31.2% | P&L -54.72 EUR | Attack 0.13 | 0 offene Positionen | 4 Empfehlung(en)
+2026-05-18 03:25:18 | INFO     | analytics.arbitrage_detector | Arbitrage Scan: 15 parseable Maerkte von 39
+2026-05-18 03:25:18 | INFO     | analytics.arbitrage_detector | ARBITRAGE: Moscow | P(>43F)=42.5% > P(>32F)=0.1% | delta=42.45%
+2026-05-18 03:25:18 | INFO     | analytics.arbitrage_detector | Arbitrage: 1 Moeglichkeiten -> C:\Users\botrunner\.codex\worktrees\8a21\polymarket-beobachter\output\arbitrage_opportunities.json
+2026-05-18 03:25:18 | INFO     | app.orchestrator | Arbitrage: 1 Moeglichkeiten gefunden
+2026-05-18 03:25:18 | INFO     | paper_trader.bot_health_monitor | BotHealthMonitor: status=HEALTHY triggers=none
+2026-05-18 03:25:18 | INFO     | app.orchestrator | [BOT-HEALTH] HEALTHY | HEALTHY: DD 0.5% | WR 31.2%(all-time) | Loss-Streak 0 | Guardrails blocked_cities, blocked_market_types, blocked_price_bands
+2026-05-18 03:25:20 | INFO     | app.orchestrator | [AGENT-POLICY] NORMAL | max_entry=0.850 | city_cooldowns=0
+2026-05-18 03:25:20 | INFO     | app.orchestrator | [AGENT] OBSERVE_ONLY | OBSERVE_ONLY: 0 active action(s) | 1 read-only | Open=0 | DD=0.5% | BotHealth=HEALTHY
+2026-05-18 03:25:20 | WARNING  | core.self_healer | SELF-HEAL: 2 zombie positions detected (>120h old)
+2026-05-18 03:25:20 | WARNING  | core.self_healer | SELF-HEAL: Auto-closed 2 zombie positions (>120h)
+2026-05-18 03:25:20 | INFO     | core.self_healer | SELF-HEAL completed: 1 actions taken
+2026-05-18 03:25:20 | INFO     | app.orchestrator | Self-Heal: 1 Aktionen ausgefuehrt
+2026-05-18 03:25:20 | INFO     | app.orchestrator | === Pipeline END === run_id=RUN-20260518-031910-c87aa9 state=OK
