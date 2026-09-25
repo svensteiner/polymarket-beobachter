@@ -162,6 +162,14 @@ class Orchestrator:
         result.add_step(weather_result)
         print(f" {'OK' if weather_result.success else 'FAIL'} ({weather_result.message})")
 
+        # Best-effort artifact for monitoring / downstream automations
+        if weather_result.success:
+            self._write_edge_hunter_artifact(
+                run_id=run_id,
+                engine_timestamp=result.timestamp,
+                edge_observations=weather_result.data.get("edge_observations_list", []) or [],
+            )
+
         # Step 2b: Market Condition Assessment (READ-ONLY)
         edge_obs_count = weather_result.data.get("edge_observations", 0)
         self._assess_market_condition(edge_obs_count)
@@ -873,6 +881,20 @@ class Orchestrator:
                 error=str(e)
             )
 
+    def _write_edge_hunter_artifact(self, run_id: str | None, engine_timestamp: str | None, edge_observations: list) -> None:
+        """Best-effort write of output/edge_hunter.json (non-blocking)."""
+        try:
+            from analytics.edge_hunter import write_edge_hunter
+
+            write_edge_hunter(
+                base_dir=self.base_dir,
+                run_id=run_id,
+                engine_timestamp_iso=engine_timestamp,
+                edge_observations=edge_observations,
+            )
+        except Exception as e:
+            logger.debug(f"edge_hunter artifact write failed (non-critical): {e}")
+
     def _run_paper_trader(self, run_id: str | None = None, eligible=None) -> StepResult:
         """
         Run paper trading cycle.
@@ -893,6 +915,7 @@ class Orchestrator:
             from paper_trader.edge_reversal import check_edge_reversal_exits
             from paper_trader.drawdown_protector import get_drawdown_status
             from paper_trader.guardrail_audit import build_guardrail_summary
+            from paper_trader.guardrail_audit import export_shadow_trades
             from paper_trader.logger import get_paper_logger
 
             # Step 0: Force-close any positions that violate the current entry
@@ -951,6 +974,10 @@ class Orchestrator:
                 eligible = get_eligible_proposals(run_id=run_id)
             guardrail_summary = build_guardrail_summary(run_id=run_id)
             logger.info(f"Found {len(eligible)} eligible proposals for paper trading")
+
+            # Best-effort export for shadow analysis (append-only, deduped)
+            if run_id:
+                export_shadow_trades(run_id)
 
             # Simulate entries
             entered = 0

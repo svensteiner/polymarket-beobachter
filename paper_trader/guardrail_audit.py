@@ -18,7 +18,9 @@ logger = logging.getLogger(__name__)
 
 PROJECT_ROOT = Path(__file__).parent.parent
 LOGS_DIR = PROJECT_ROOT / "logs"
+DATA_DIR = PROJECT_ROOT / "data"
 AUDIT_FILE = LOGS_DIR / "guardrail_audit.jsonl"
+SHADOW_TRADES_FILE = DATA_DIR / "shadow_trades.jsonl"
 
 
 def record_guardrail_decision(decision: Dict[str, Any]) -> None:
@@ -118,6 +120,84 @@ def build_guardrail_summary(run_id: Optional[str] = None) -> Dict[str, Any]:
         "shadow_allowed_without_inventory": shadow_allowed,
         "shadow_allowed_ratio_without_inventory": shadow_allowed / total if total > 0 else 0,
     }
+
+
+def export_shadow_trades(run_id: str, *, limit: int = 500) -> Dict[str, Any]:
+    """
+    Export "shadow-eligible" proposals into data/shadow_trades.jsonl.
+
+    Purpose:
+    - create an append-only ledger of what *would* have passed without inventory limits
+    - enables post-run divergence analysis vs paper/live fills
+
+    Contract:
+    - deterministic + append-only
+    - de-duplicate by (run_id, proposal_id) using a stable record_id
+    - never throws (best-effort); returns counts for status/audit
+    """
+    try:
+        DATA_DIR.mkdir(parents=True, exist_ok=True)
+
+        decisions = get_recent_decisions(limit)
+        run_decisions = [d for d in decisions if d.get("run_id") == run_id]
+        shadow = [d for d in run_decisions if d.get("shadow_allowed_without_inventory")]
+
+        # Ensure file exists for downstream consumers even if empty for this run
+        if not SHADOW_TRADES_FILE.exists():
+            SHADOW_TRADES_FILE.touch()
+
+        if not shadow:
+            return {"run_id": run_id, "exported": 0, "skipped_existing": 0}
+
+        existing_ids: set[str] = set()
+        if SHADOW_TRADES_FILE.exists():
+            try:
+                with open(SHADOW_TRADES_FILE, "r", encoding="utf-8") as f:
+                    for line in f:
+                        line = line.strip()
+                        if not line:
+                            continue
+                        try:
+                            existing_ids.add(json.loads(line).get("record_id", ""))
+                        except Exception:
+                            continue
+            except Exception:
+                pass
+
+        exported = 0
+        skipped = 0
+        with open(SHADOW_TRADES_FILE, "a", encoding="utf-8") as f:
+            for d in shadow:
+                proposal_id = str(d.get("proposal_id") or "")
+                record_id = f"SHADOW-{run_id}-{proposal_id}"
+                if record_id in existing_ids:
+                    skipped += 1
+                    continue
+
+                entry = {
+                    "record_id": record_id,
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "run_id": run_id,
+                    "proposal_id": d.get("proposal_id"),
+                    "market_id": d.get("market_id"),
+                    "city": d.get("city"),
+                    "market_question": d.get("market_question"),
+                    "edge": d.get("edge"),
+                    "implied_probability": d.get("implied_probability"),
+                    "model_probability": d.get("model_probability"),
+                    "confidence_level": d.get("confidence_level"),
+                    "entry_price": d.get("entry_price"),
+                    "reason_code": d.get("reason_code"),
+                    "reason_detail": d.get("reason_detail"),
+                    "source_audit_timestamp": d.get("timestamp"),
+                }
+                f.write(json.dumps(entry, ensure_ascii=False) + "\n")
+                exported += 1
+
+        return {"run_id": run_id, "exported": exported, "skipped_existing": skipped}
+    except Exception as e:
+        logger.warning("Failed to export shadow trades: %s", e)
+        return {"run_id": run_id, "exported": 0, "skipped_existing": 0, "error": str(e)[:200]}
 
 
 def get_block_rate_by_reason() -> Dict[str, float]:
