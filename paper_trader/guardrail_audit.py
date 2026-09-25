@@ -120,6 +120,60 @@ def build_guardrail_summary(run_id: Optional[str] = None) -> Dict[str, Any]:
     }
 
 
+def build_shadow_eligibility(run_id: Optional[str] = None, limit: int = 20) -> Dict[str, Any]:
+    """
+    Build a small report of top shadow-eligible candidates.
+
+    "Shadow-eligible" means: the entry would pass all guardrails if the
+    inventory limit is ignored (used for opportunity scouting only).
+    """
+    decisions = get_recent_decisions(1000)
+    if run_id:
+        decisions = [d for d in decisions if d.get("run_id") == run_id]
+
+    candidates = [d for d in decisions if d.get("shadow_allowed_without_inventory")]
+
+    def _edge_abs(item: Dict[str, Any]) -> float:
+        try:
+            return abs(float(item.get("edge", 0.0) or 0.0))
+        except Exception:
+            return 0.0
+
+    candidates.sort(key=_edge_abs, reverse=True)
+
+    trimmed: list[Dict[str, Any]] = []
+    for item in candidates[:limit]:
+        # Keep only a stable subset to avoid schema churn.
+        trimmed.append(
+            {
+                "timestamp": item.get("timestamp"),
+                "run_id": item.get("run_id"),
+                "proposal_id": item.get("proposal_id"),
+                "market_id": item.get("market_id"),
+                "allowed": item.get("allowed"),
+                "reason_code": item.get("reason_code"),
+                "reason_detail": item.get("reason_detail"),
+                "policy_open_positions_count": item.get("policy_open_positions_count"),
+                "shadow_allowed_without_inventory": item.get("shadow_allowed_without_inventory"),
+                "shadow_reason_code": item.get("shadow_reason_code"),
+                "shadow_reason_detail": item.get("shadow_reason_detail"),
+                "city": item.get("city"),
+                "market_type": item.get("market_type"),
+                "price_band": item.get("price_band"),
+                "confidence": item.get("confidence"),
+                "implied_probability": item.get("implied_probability"),
+                "edge": item.get("edge"),
+            }
+        )
+
+    return {
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "run_id": run_id,
+        "shadow_allowed_without_inventory": len(candidates),
+        "top_candidates": trimmed,
+    }
+
+
 def get_block_rate_by_reason() -> Dict[str, float]:
     """
     Calculate block rates by reason code.

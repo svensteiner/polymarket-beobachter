@@ -893,6 +893,7 @@ class Orchestrator:
             from paper_trader.edge_reversal import check_edge_reversal_exits
             from paper_trader.drawdown_protector import get_drawdown_status
             from paper_trader.guardrail_audit import build_guardrail_summary
+            from paper_trader.guardrail_audit import build_shadow_eligibility
             from paper_trader.logger import get_paper_logger
 
             # Step 0: Force-close any positions that violate the current entry
@@ -950,6 +951,30 @@ class Orchestrator:
             if eligible is None:
                 eligible = get_eligible_proposals(run_id=run_id)
             guardrail_summary = build_guardrail_summary(run_id=run_id)
+            shadow_eligibility = build_shadow_eligibility(run_id=run_id)
+            # Persist scouting artefacts for production observability (non-blocking).
+            try:
+                (self.output_dir / "guardrail_summary.json").write_text(
+                    json.dumps(
+                        {"generated_at": datetime.now(timezone.utc).isoformat(), **guardrail_summary},
+                        indent=2,
+                        ensure_ascii=False,
+                    ),
+                    encoding="utf-8",
+                )
+                (self.output_dir / "shadow_eligibility.json").write_text(
+                    json.dumps(shadow_eligibility, indent=2, ensure_ascii=False),
+                    encoding="utf-8",
+                )
+            except Exception:
+                pass
+            # Edge-Hunter snapshot (actionable vs shadow-only vs blocked)
+            try:
+                from analytics.edge_hunter import run_edge_hunter
+
+                run_edge_hunter(max_candidates=30)
+            except Exception:
+                pass
             logger.info(f"Found {len(eligible)} eligible proposals for paper trading")
 
             # Simulate entries

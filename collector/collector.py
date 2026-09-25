@@ -18,6 +18,8 @@ import logging
 from datetime import datetime, date, timezone
 from typing import Dict, List
 from dataclasses import dataclass
+from pathlib import Path
+import json
 
 from .client import PolymarketClient
 from .sanitizer import Sanitizer
@@ -95,13 +97,30 @@ class Collector:
         if not dry_run:
             self.storage.ensure_directories()
 
+        data_source = "polymarket_api"
+
         # Step 1: Fetch weather markets from events with weather/climate tags
         logger.info("Step 1: Fetching weather markets from Polymarket API...")
         logger.info("  (Using /events?tag_slug=weather and /events?tag_slug=climate)")
-        raw_markets = self.client.fetch_weather_markets(
-            max_markets=self.max_markets,
-            include_closed=False,  # Only fetch active/open markets
-        )
+        try:
+            raw_markets = self.client.fetch_weather_markets(
+                max_markets=self.max_markets,
+                include_closed=False,  # Only fetch active/open markets
+            )
+        except Exception as exc:
+            # Offline/locked-down environments: fall back to last gamma-discovery cache.
+            # Governance: still READ-ONLY; we only read local files.
+            cached = self._load_latest_gamma_cache()
+            if cached:
+                data_source = "gamma_cache"
+                raw_markets = cached
+                logger.warning(
+                    "Collector API fetch failed (%s). Using gamma cache (%d markets).",
+                    str(exc)[:120],
+                    len(raw_markets),
+                )
+            else:
+                raise
         logger.info(f"Fetched {len(raw_markets)} weather-tagged markets")
 
         # Step 2: Sanitize
@@ -174,7 +193,7 @@ class Collector:
             run_duration_seconds=duration,
         )
 
-        report = self._generate_report(stats, candidates, filtered_markets)
+        report = self._generate_report(stats, candidates, filtered_markets, data_source=data_source)
 
         if not dry_run:
             self.storage.save_report(report)
@@ -194,6 +213,7 @@ class Collector:
         stats: CollectorStats,
         candidates: List[NormalizedMarket],
         filtered: List[FilteredMarket],
+        data_source: str = "polymarket_api",
     ) -> str:
         """
         Generate markdown run report.
@@ -211,6 +231,7 @@ class Collector:
             "",
             f"**Run Date:** {date.today().isoformat()}",
             f"**Run Time:** {datetime.now(timezone.utc).isoformat()}",
+            f"**Data Source:** {data_source}",
             f"**Duration:** {stats.run_duration_seconds:.1f} seconds",
             "",
             "## Summary",
@@ -300,3 +321,37 @@ class Collector:
         ])
 
         return "\n".join(lines)
+
+    def _load_latest_gamma_cache(self) -> List[Dict]:
+        """
+        Load most recent `data/collector/gamma/<date>/gamma_candidates.jsonl` as a fallback.
+
+        The gamma-discovery output contains mixed market types; the normal filter later
+        keeps only weather-relevant entries.
+        """
+        try:
+            # gamma-discovery writes into the same collector base dir:
+            # `data/collector/gamma/<date>/gamma_candidates.jsonl`
+            base = Path(self.output_dir) / "gamma"
+            if not base.exists():
+                return []
+            latest_dir = sorted([p for p in base.iterdir() if p.is_dir()], key=lambda p: p.name)[-1:]
+            if not latest_dir:
+                return []
+            path = latest_dir[0] / "gamma_candidates.jsonl"
+            if not path.exists():
+                return []
+
+            markets: List[Dict] = []
+            with open(path, "r", encoding="utf-8") as handle:
+                for line in handle:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    try:
+                        markets.append(json.loads(line))
+                    except Exception:
+                        continue
+            return markets
+        except Exception:
+            return []
