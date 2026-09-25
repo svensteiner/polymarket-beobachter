@@ -1426,6 +1426,37 @@ class Orchestrator:
             with open(summary_file, 'a', encoding='utf-8') as f:
                 f.write('\n'.join(entry_lines))
 
+            # Observability artifacts (best-effort, never fail the pipeline on this)
+            try:
+                from paper_trader.guardrail_audit import (
+                    build_guardrail_summary,
+                    build_shadow_eligibility,
+                    build_edge_hunter,
+                    ensure_shadow_trades_file,
+                )
+
+                run_id = result.summary.get("run_id")
+                ensure_shadow_trades_file()
+                guardrail_summary = build_guardrail_summary(run_id=run_id)
+                (self.output_dir / "guardrail_summary.json").write_text(
+                    json.dumps(guardrail_summary, ensure_ascii=False, indent=2),
+                    encoding="utf-8",
+                )
+
+                shadow_eligibility = build_shadow_eligibility(run_id=run_id)
+                (self.output_dir / "shadow_eligibility.json").write_text(
+                    json.dumps(shadow_eligibility, ensure_ascii=False, indent=2),
+                    encoding="utf-8",
+                )
+
+                edge_hunter = build_edge_hunter(run_id=run_id)
+                (self.output_dir / "edge_hunter.json").write_text(
+                    json.dumps(edge_hunter, ensure_ascii=False, indent=2),
+                    encoding="utf-8",
+                )
+            except Exception as e:
+                logger.debug(f"Observability artifacts konnten nicht geschrieben werden (unkritisch): {e}")
+
             return StepResult(
                 name="status_writer",
                 success=True,

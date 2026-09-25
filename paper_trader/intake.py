@@ -32,7 +32,7 @@ from proposals.storage import get_storage
 from proposals.review_gate import ReviewGate
 
 from paper_trader.entry_guardrails import describe_proposal, evaluate_entry_guardrails
-from paper_trader.guardrail_audit import record_guardrail_decision
+from paper_trader.guardrail_audit import record_guardrail_decision, record_shadow_trade_candidate
 from paper_trader.logger import get_paper_logger
 from analytics.edge_memory import assess_proposal_edge, detect_market_type
 
@@ -144,6 +144,22 @@ class ProposalIntake:
                 }
             )
             if not allowed:
+                # Observability: record "missed opportunity" candidates that would pass without inventory.
+                # This does NOT change trading decisions; it only helps quantify opportunity loss.
+                if shadow_allowed:
+                    record_shadow_trade_candidate(
+                        {
+                            "run_id": run_id,
+                            "proposal_id": proposal.proposal_id,
+                            "market_id": proposal.market_id,
+                            "blocked_reason_code": reason_code,
+                            "blocked_reason_detail": reason_detail,
+                            "shadow_allowed_without_inventory": True,
+                            "shadow_reason_code": shadow_reason_code,
+                            "shadow_reason_detail": shadow_reason_detail,
+                            **proposal_meta,
+                        }
+                    )
                 _side = getattr(proposal, "token", None) or getattr(proposal, "side", "?")
                 _ep = getattr(proposal, "implied_probability", None)
                 _edge = getattr(proposal, "edge", None)
