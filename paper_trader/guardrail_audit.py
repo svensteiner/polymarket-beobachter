@@ -19,6 +19,8 @@ logger = logging.getLogger(__name__)
 PROJECT_ROOT = Path(__file__).parent.parent
 LOGS_DIR = PROJECT_ROOT / "logs"
 AUDIT_FILE = LOGS_DIR / "guardrail_audit.jsonl"
+DATA_DIR = PROJECT_ROOT / "data"
+SHADOW_FILE = DATA_DIR / "shadow_trades.jsonl"
 
 
 def record_guardrail_decision(decision: Dict[str, Any]) -> None:
@@ -37,6 +39,7 @@ def record_guardrail_decision(decision: Dict[str, Any]) -> None:
     """
     try:
         LOGS_DIR.mkdir(parents=True, exist_ok=True)
+        DATA_DIR.mkdir(parents=True, exist_ok=True)
 
         entry = {
             "timestamp": datetime.now(timezone.utc).isoformat(),
@@ -45,6 +48,20 @@ def record_guardrail_decision(decision: Dict[str, Any]) -> None:
 
         with open(AUDIT_FILE, "a", encoding="utf-8") as f:
             f.write(json.dumps(entry, ensure_ascii=False) + "\n")
+
+        # Shadow journal: opportunities that WOULD pass without inventory limits
+        # but were blocked for another reason. This is NOT execution, only audit.
+        try:
+            if entry.get("shadow_allowed_without_inventory") and not entry.get("allowed"):
+                with open(SHADOW_FILE, "a", encoding="utf-8") as sf:
+                    sf.write(json.dumps(entry, ensure_ascii=False) + "\n")
+            else:
+                # Ensure the file exists for monitoring even if empty on a run.
+                if not SHADOW_FILE.exists():
+                    SHADOW_FILE.touch()
+        except Exception:
+            # Never affect the pipeline due to journaling.
+            pass
 
     except Exception as e:
         logger.warning(f"Failed to record guardrail decision: {e}")

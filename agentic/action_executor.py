@@ -23,6 +23,7 @@ logger = logging.getLogger(__name__)
 _PROJECT_ROOT = Path(__file__).parent.parent
 _COOLDOWNS_PATH = _PROJECT_ROOT / "data" / "agent_city_cooldowns.json"
 _PROPOSALS_PATH = _PROJECT_ROOT / "output" / "agent_proposals.json"
+_EDGE_HUNTER_PATH = _PROJECT_ROOT / "output" / "edge_hunter.json"
 
 
 # =============================================================================
@@ -162,6 +163,12 @@ def _execute_tighten_risk(proposal: ActionProposal, root: Path) -> None:
 
     proposals_path.parent.mkdir(parents=True, exist_ok=True)
     proposals_path.write_text(
+        json.dumps(existing, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
+
+    # Backward-compatible alias for legacy monitoring/automation paths.
+    edge_hunter_path = root / "output" / "edge_hunter.json"
+    edge_hunter_path.write_text(
         json.dumps(existing, ensure_ascii=False, indent=2), encoding="utf-8"
     )
     logger.info("tighten_risk: Proposal nach %s geschrieben", proposals_path)

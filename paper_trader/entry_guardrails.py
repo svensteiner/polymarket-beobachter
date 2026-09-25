@@ -53,14 +53,34 @@ YES_MIN_EDGE_ABSOLUTE = 0.065
 
 def describe_proposal(proposal) -> Dict[str, Any]:
     """Extract metadata from a proposal for logging/auditing."""
+    edge_val = float(getattr(proposal, "edge", 0) or 0.0)
+    side = "NO" if edge_val < 0 else "YES"
+
+    market_question = getattr(proposal, "market_question", "") or ""
+    market_type_str = str(getattr(proposal, "market_type", "") or "").lower()
+    if not market_type_str:
+        _q = market_question.lower()
+        if re.search(r"or\s+below|or\s+less|or\s+under|or\s+lower|\bbelow\b", _q):
+            market_type_str = "at_or_below"
+        elif re.search(r"above|or\s+above|exceed|or\s+higher|or\s+more|or\s+over", _q):
+            market_type_str = "at_or_above"
+        elif re.search(r"\bbetween\b", _q):
+            market_type_str = "between"
+        else:
+            # exact markets are common; keep as "exact" only if question indicates it,
+            # otherwise leave empty to avoid false classification.
+            market_type_str = "exact" if re.search(r"\bbe\s+[0-9]+(?:\\.[0-9]+)?\\s*°?[cf]\\b", _q) else ""
+
     return {
         "market_id": getattr(proposal, "market_id", None),
-        "market_question": getattr(proposal, "market_question", "")[:100],
-        "edge": getattr(proposal, "edge", 0),
+        "market_question": market_question[:100],
+        "edge": edge_val,
+        "side": side,
+        "market_type": market_type_str or None,
         "implied_probability": getattr(proposal, "implied_probability", 0),
         "model_probability": getattr(proposal, "model_probability", 0),
         "confidence_level": getattr(proposal, "confidence_level", "UNKNOWN"),
-        "city": _extract_city(getattr(proposal, "market_question", "")),
+        "city": _extract_city(market_question),
         "entry_price": getattr(proposal, "implied_probability", 0),
     }
 
