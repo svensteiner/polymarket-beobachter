@@ -130,6 +130,7 @@ class ProposalIntake:
                 shadow_reason_detail = shadow_reason
             record_guardrail_decision(
                 {
+                    "stage": "entry_guardrails",
                     "run_id": run_id,
                     "proposal_id": proposal.proposal_id,
                     "market_id": proposal.market_id,
@@ -169,6 +170,7 @@ class ProposalIntake:
                 )
                 record_guardrail_decision(
                     {
+                        "stage": "edge_memory",
                         "run_id": run_id,
                         "proposal_id": proposal.proposal_id,
                         "market_id": proposal.market_id,

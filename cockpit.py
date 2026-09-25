@@ -840,13 +840,16 @@ Examples:
     # Install crash logger for all modes
     setup_crash_logger()
 
-    # Start Bot Monitor (System Tray) falls nicht bereits aktiv
-    try:
-        sys.path.insert(0, str(BASE_DIR.parent.parent))
-        from bot_monitor import ensure_running
-        ensure_running()
-    except Exception:
-        pass  # Monitor ist optional
+    # Start Bot Monitor (System Tray) nur fuer long-running Modi.
+    # In --run-once/--status kann der Monitor auf manchen Windows-Setups
+    # native/CLR-Abhaengigkeiten triggern und den Prozess hart beenden.
+    if args.scheduler or not (args.run_once or args.status):
+        try:
+            sys.path.insert(0, str(BASE_DIR.parent.parent))
+            from bot_monitor import ensure_running
+            ensure_running()
+        except Exception:
+            pass  # Monitor ist optional
 
     # Lockfile only for long-running modes (scheduler, interactive)
     if args.scheduler or not (args.run_once or args.status):

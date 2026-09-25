@@ -19,6 +19,14 @@ logger = logging.getLogger(__name__)
 PROJECT_ROOT = Path(__file__).parent.parent
 LOGS_DIR = PROJECT_ROOT / "logs"
 AUDIT_FILE = LOGS_DIR / "guardrail_audit.jsonl"
+DEFAULT_STAGE = "entry_guardrails"
+
+
+def _normalize_stage(decision: Dict[str, Any]) -> str:
+    stage = decision.get("stage")
+    if isinstance(stage, str) and stage.strip():
+        return stage.strip()
+    return DEFAULT_STAGE
 
 
 def record_guardrail_decision(decision: Dict[str, Any]) -> None:
@@ -40,6 +48,7 @@ def record_guardrail_decision(decision: Dict[str, Any]) -> None:
 
         entry = {
             "timestamp": datetime.now(timezone.utc).isoformat(),
+            "stage": _normalize_stage(decision),
             **decision,
         }
 
@@ -94,19 +103,29 @@ def build_guardrail_summary(run_id: Optional[str] = None) -> Dict[str, Any]:
     if run_id:
         decisions = [d for d in decisions if d.get("run_id") == run_id]
 
-    total = len(decisions)
-    allowed = sum(1 for d in decisions if d.get("allowed"))
+    # We only count intake-stage decisions in the headline stats. This prevents
+    # mixing future audit stages into the classic "guardrail pass/block rate".
+    included_stages = {DEFAULT_STAGE, "edge_memory"}
+    stage_counts: Dict[str, int] = {}
+    for d in decisions:
+        st = d.get("stage") if isinstance(d.get("stage"), str) else DEFAULT_STAGE
+        stage_counts[st] = stage_counts.get(st, 0) + 1
+
+    headline = [d for d in decisions if (d.get("stage") or DEFAULT_STAGE) in included_stages]
+
+    total = len(headline)
+    allowed = sum(1 for d in headline if d.get("allowed"))
     blocked = total - allowed
 
     # Group by reason code
     reason_counts: Dict[str, int] = {}
-    for d in decisions:
+    for d in headline:
         if not d.get("allowed"):
             code = d.get("reason_code", "unknown")
             reason_counts[code] = reason_counts.get(code, 0) + 1
 
     # Shadow analysis (what would have been allowed without inventory limit)
-    shadow_allowed = sum(1 for d in decisions if d.get("shadow_allowed_without_inventory"))
+    shadow_allowed = sum(1 for d in headline if d.get("shadow_allowed_without_inventory"))
 
     return {
         "run_id": run_id,
@@ -117,6 +136,8 @@ def build_guardrail_summary(run_id: Optional[str] = None) -> Dict[str, Any]:
         "blocked_by_reason": reason_counts,
         "shadow_allowed_without_inventory": shadow_allowed,
         "shadow_allowed_ratio_without_inventory": shadow_allowed / total if total > 0 else 0,
+        "included_stages": sorted(included_stages),
+        "stage_counts": stage_counts,
     }
 
 
