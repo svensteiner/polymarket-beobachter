@@ -37,6 +37,7 @@ class CollectorStats:
     filter_results: Dict[str, int]
     fields_removed: Dict[str, int]
     run_duration_seconds: float
+    used_cache: bool = False
 
 
 class Collector:
@@ -73,6 +74,27 @@ class Collector:
         self.normalizer = MarketNormalizer()
         self.storage = StorageManager(base_dir=output_dir)
 
+    def _load_latest_cached_raw_markets(self) -> List[Dict]:
+        """Load the most recent cached raw response (sanitized markets_*.json)."""
+        base = self.storage.base_dir / "raw"
+        if not base.exists():
+            return []
+        candidates = list(base.rglob("markets_*.json"))
+        if not candidates:
+            return []
+        latest = max(candidates, key=lambda p: p.stat().st_mtime)
+        try:
+            import json
+            with open(latest, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            if isinstance(data, list):
+                logger.warning("Collector cache fallback: using %s (%d markets)", latest, len(data))
+                return data
+            return []
+        except Exception as e:
+            logger.warning("Collector cache fallback failed to read %s: %s", latest, e)
+            return []
+
     def run(self, dry_run: bool = False) -> CollectorStats:
         """
         Execute the full collection pipeline.
@@ -98,10 +120,19 @@ class Collector:
         # Step 1: Fetch weather markets from events with weather/climate tags
         logger.info("Step 1: Fetching weather markets from Polymarket API...")
         logger.info("  (Using /events?tag_slug=weather and /events?tag_slug=climate)")
-        raw_markets = self.client.fetch_weather_markets(
-            max_markets=self.max_markets,
-            include_closed=False,  # Only fetch active/open markets
-        )
+        used_cache = False
+        try:
+            raw_markets = self.client.fetch_weather_markets(
+                max_markets=self.max_markets,
+                include_closed=False,  # Only fetch active/open markets
+            )
+        except Exception as e:
+            logger.warning("Collector fetch failed (%s). Trying local cache fallback...", str(e)[:200])
+            raw_markets = self._load_latest_cached_raw_markets()
+            used_cache = True if raw_markets else False
+            if not raw_markets:
+                # Important: signal failure so the pipeline can fall back to persisted candidates
+                raise RuntimeError("Collector fetch failed and no local cache was available") from e
         logger.info(f"Fetched {len(raw_markets)} weather-tagged markets")
 
         # Step 2: Sanitize
@@ -172,6 +203,7 @@ class Collector:
             filter_results=filter_stats,
             fields_removed=fields_removed,
             run_duration_seconds=duration,
+            used_cache=used_cache,
         )
 
         report = self._generate_report(stats, candidates, filtered_markets)

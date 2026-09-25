@@ -59,6 +59,26 @@ BOT_STATUS_FILE = BASE_DIR / "logs" / "bot_status.json"
 BOT_CONTROL_FILE = BASE_DIR / "logs" / "bot_control.json"
 HEARTBEAT_TXT = BASE_DIR / "logs" / "heartbeat.txt"
 
+def _is_recent_heartbeat(max_age_seconds: int = 1800) -> bool:
+    """Return True if heartbeat.txt exists and is recent enough.
+
+    This protects against PID reuse: a stale lockfile may point to a PID that is
+    alive, but not our bot process. In that case the heartbeat will usually be
+    stale and we can safely recover.
+    """
+    try:
+        if not HEARTBEAT_TXT.exists():
+            return False
+        raw = HEARTBEAT_TXT.read_text(encoding="utf-8").strip()
+        if not raw:
+            return False
+        # heartbeat.txt is written via datetime.now().isoformat() (local time)
+        ts = datetime.fromisoformat(raw.rstrip("Z"))
+        age = (datetime.now() - ts).total_seconds()
+        return age >= 0 and age <= max_age_seconds
+    except Exception:
+        return False
+
 
 def _write_heartbeat_txt():
     """Write plain-text heartbeat for watchdog.ps1 compatibility.
@@ -154,10 +174,17 @@ def acquire_lock():
                 if old_pid == os.getpid():
                     return True  # Same process, re-entry is fine
                 if _pid_alive(old_pid):
-                    print(f"Bot laeuft bereits! (PID {old_pid})")
-                    sys.exit(1)
+                    # PID reuse is common on Windows. Only block start if we have a recent heartbeat.
+                    if _is_recent_heartbeat(max_age_seconds=1800):
+                        print(f"Bot laeuft bereits! (PID {old_pid})")
+                        sys.exit(1)
+                    logger.warning(
+                        "Staler Lock erkannt (PID %s lebt, aber Heartbeat ist stale) -> Lock wird entfernt",
+                        old_pid,
+                    )
+                    LOCKFILE.unlink(missing_ok=True)
                 # Stale lockfile from dead process - remove it
-                LOCKFILE.unlink()
+                LOCKFILE.unlink(missing_ok=True)
             except (ValueError, OSError) as e:
                 logger.warning("Fehler beim Lesen des Lockfile: %s", e)
                 LOCKFILE.unlink(missing_ok=True)

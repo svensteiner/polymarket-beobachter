@@ -950,6 +950,12 @@ class Orchestrator:
             if eligible is None:
                 eligible = get_eligible_proposals(run_id=run_id)
             guardrail_summary = build_guardrail_summary(run_id=run_id)
+            # Persist edge hunter report for the current run (non-blocking, read-only summary).
+            try:
+                from paper_trader.guardrail_audit import write_edge_hunter_report
+                write_edge_hunter_report(run_id=run_id)
+            except Exception as e:
+                logger.debug(f"Edge-Hunter Report nicht verfuegbar (unkritisch): {e}")
             logger.info(f"Found {len(eligible)} eligible proposals for paper trading")
 
             # Simulate entries
