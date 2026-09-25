@@ -33,6 +33,7 @@ from proposals.review_gate import ReviewGate
 
 from paper_trader.entry_guardrails import describe_proposal, evaluate_entry_guardrails
 from paper_trader.guardrail_audit import record_guardrail_decision
+from paper_trader.shadow_trades import record_shadow_candidate
 from paper_trader.logger import get_paper_logger
 from analytics.edge_memory import assess_proposal_edge, detect_market_type
 
@@ -79,12 +80,17 @@ class ProposalIntake:
         all_proposals = self._storage.load_proposals()
         logger.info(f"Loaded {len(all_proposals)} total proposals")
         all_proposals = self._filter_recent_unique_proposals(all_proposals)
+        def _sort_key(p: Proposal):
+            raw_edge = float(getattr(p, "edge", 0) or 0.0)
+            abs_edge = abs(raw_edge)
+            yes_bonus = 0.001 if raw_edge > 0 else 0.0
+            return -(abs_edge + yes_bonus)
         # Sort: positive-edge (YES) proposals first so they are evaluated before NO-bets
         # fill up the position-count limit.  NO-bets consume eligible slots and then get
         # rejected by the YES-only simulator check — blocking valid YES opportunities.
-        all_proposals.sort(key=lambda p: -(float(getattr(p, "edge", 0) or 0)))
+        all_proposals.sort(key=_sort_key)
         logger.info(
-            "Using %d recent unique proposals (<= %dh, YES-first sort)",
+            "Using %d recent unique proposals (<= %dh, abs-edge sort)",
             len(all_proposals),
             MAX_PROPOSAL_AGE_HOURS,
         )
@@ -128,21 +134,24 @@ class ProposalIntake:
             if not shadow_reason_detail:
                 shadow_reason_code = "passed"
                 shadow_reason_detail = shadow_reason
-            record_guardrail_decision(
-                {
-                    "run_id": run_id,
-                    "proposal_id": proposal.proposal_id,
-                    "market_id": proposal.market_id,
-                    "allowed": allowed,
-                    "reason_code": reason_code,
-                    "reason_detail": reason_detail,
-                    "policy_open_positions_count": len(open_positions) + len(eligible),
-                    "shadow_allowed_without_inventory": shadow_allowed,
-                    "shadow_reason_code": shadow_reason_code,
-                    "shadow_reason_detail": shadow_reason_detail,
-                    **proposal_meta,
-                }
-            )
+            decision = {
+                "run_id": run_id,
+                "proposal_id": proposal.proposal_id,
+                "market_id": proposal.market_id,
+                "allowed": allowed,
+                "reason_code": reason_code,
+                "reason_detail": reason_detail,
+                "policy_open_positions_count": len(open_positions) + len(eligible),
+                "shadow_allowed_without_inventory": shadow_allowed,
+                "shadow_reason_code": shadow_reason_code,
+                "shadow_reason_detail": shadow_reason_detail,
+                **proposal_meta,
+            }
+            record_guardrail_decision(decision)
+
+            # Persist "shadow" candidates blocked only by inventory limits for later evaluation.
+            if shadow_allowed and not allowed:
+                record_shadow_candidate(decision)
             if not allowed:
                 _side = getattr(proposal, "token", None) or getattr(proposal, "side", "?")
                 _ep = getattr(proposal, "implied_probability", None)

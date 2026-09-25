@@ -25,7 +25,7 @@ import logging
 import time
 import traceback
 from pathlib import Path
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 logger = logging.getLogger(__name__)
 
@@ -139,6 +139,45 @@ def _pid_alive(pid: int) -> bool:
             return False
 
 
+def _process_create_time_utc(pid: int) -> datetime | None:
+    """Best-effort process creation time (UTC) for PID reuse detection (Windows)."""
+    try:
+        import ctypes
+
+        kernel32 = ctypes.windll.kernel32
+        PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
+        handle = kernel32.OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, False, pid)
+        if not handle:
+            return None
+        try:
+            class FILETIME(ctypes.Structure):
+                _fields_ = [("dwLowDateTime", ctypes.c_ulong), ("dwHighDateTime", ctypes.c_ulong)]
+
+            creation = FILETIME()
+            exit_time = FILETIME()
+            kernel = FILETIME()
+            user = FILETIME()
+
+            ok = kernel32.GetProcessTimes(
+                handle,
+                ctypes.byref(creation),
+                ctypes.byref(exit_time),
+                ctypes.byref(kernel),
+                ctypes.byref(user),
+            )
+            if not ok:
+                return None
+
+            # Windows FILETIME: 100-ns intervals since 1601-01-01
+            ft = (creation.dwHighDateTime << 32) + creation.dwLowDateTime
+            unix_seconds = (ft / 10_000_000) - 11_644_473_600  # seconds between 1601 and 1970
+            return datetime.fromtimestamp(unix_seconds, tz=timezone.utc)
+        finally:
+            kernel32.CloseHandle(handle)
+    except Exception:
+        return None
+
+
 def acquire_lock():
     """Prevent duplicate bot instances via atomic PID lockfile.
 
@@ -150,12 +189,33 @@ def acquire_lock():
         # First check if a stale lockfile exists
         if LOCKFILE.exists():
             try:
-                old_pid = int(LOCKFILE.read_text().strip())
+                raw = LOCKFILE.read_text(encoding="utf-8").strip()
+                old_pid = None
+                created_at = None
+                if raw.startswith("{"):
+                    meta = json.loads(raw)
+                    old_pid = int(meta.get("pid"))
+                    ca = meta.get("created_at")
+                    if ca:
+                        created_at = datetime.fromisoformat(ca.replace("Z", "+00:00")).astimezone(timezone.utc)
+                else:
+                    old_pid = int(raw)
+                    # Back-compat: use file mtime as creation proxy
+                    created_at = datetime.fromtimestamp(LOCKFILE.stat().st_mtime, tz=timezone.utc)
+
+                if old_pid is None:
+                    raise ValueError("Lockfile pid missing")
                 if old_pid == os.getpid():
                     return True  # Same process, re-entry is fine
                 if _pid_alive(old_pid):
-                    print(f"Bot laeuft bereits! (PID {old_pid})")
-                    sys.exit(1)
+                    # PID reuse guard: if the *current* process start time is after
+                    # our lockfile creation, treat it as stale (different process).
+                    proc_created = _process_create_time_utc(old_pid)
+                    if created_at and proc_created and proc_created > (created_at + timedelta(seconds=5)):
+                        LOCKFILE.unlink(missing_ok=True)
+                    else:
+                        print(f"Bot laeuft bereits! (PID {old_pid})")
+                        sys.exit(1)
                 # Stale lockfile from dead process - remove it
                 LOCKFILE.unlink()
             except (ValueError, OSError) as e:
@@ -164,7 +224,11 @@ def acquire_lock():
 
         # Atomic create: O_CREAT | O_EXCL fails if file already exists
         fd = os.open(str(LOCKFILE), os.O_CREAT | os.O_EXCL | os.O_WRONLY)
-        os.write(fd, str(os.getpid()).encode())
+        payload = json.dumps(
+            {"pid": os.getpid(), "created_at": datetime.now(timezone.utc).isoformat()},
+            ensure_ascii=False,
+        )
+        os.write(fd, payload.encode("utf-8"))
         os.close(fd)
         atexit.register(release_lock)
         return True
@@ -182,7 +246,11 @@ def release_lock():
     """Remove lockfile on exit."""
     try:
         if LOCKFILE.exists():
-            stored_pid = int(LOCKFILE.read_text().strip())
+            raw = LOCKFILE.read_text(encoding="utf-8").strip()
+            if raw.startswith("{"):
+                stored_pid = int(json.loads(raw).get("pid"))
+            else:
+                stored_pid = int(raw)
             if stored_pid == os.getpid():
                 LOCKFILE.unlink(missing_ok=True)
     except Exception as e:

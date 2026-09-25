@@ -50,6 +50,80 @@ def record_guardrail_decision(decision: Dict[str, Any]) -> None:
         logger.warning(f"Failed to record guardrail decision: {e}")
 
 
+def write_edge_hunter_report(run_id: Optional[str] = None, top_n: int = 25) -> Dict[str, Any]:
+    """
+    Write a compact report of the strongest candidates.
+
+    Output: `output/edge_hunter.json`
+    Purpose: quick diagnostics whether there is actionable edge and why trades
+    are blocked, without changing any guardrails.
+    """
+    try:
+        output_dir = PROJECT_ROOT / "output"
+        output_dir.mkdir(parents=True, exist_ok=True)
+        out_path = output_dir / "edge_hunter.json"
+
+        decisions = get_recent_decisions(2000)
+        if run_id:
+            decisions = [d for d in decisions if d.get("run_id") == run_id]
+
+        def _edge_abs(d: Dict[str, Any]) -> float:
+            try:
+                return abs(float(d.get("edge") or 0.0))
+            except Exception:
+                return 0.0
+
+        def _side(d: Dict[str, Any]) -> str:
+            try:
+                return "YES" if float(d.get("edge") or 0.0) > 0 else "NO"
+            except Exception:
+                return "NO"
+
+        total = len(decisions)
+        allowed = [d for d in decisions if d.get("allowed")]
+        blocked = [d for d in decisions if not d.get("allowed")]
+
+        allowed_sorted = sorted(allowed, key=_edge_abs, reverse=True)[:top_n]
+        blocked_sorted = sorted(blocked, key=_edge_abs, reverse=True)[:top_n]
+
+        def _project(d: Dict[str, Any]) -> Dict[str, Any]:
+            return {
+                "proposal_id": d.get("proposal_id"),
+                "market_id": d.get("market_id"),
+                "city": d.get("city"),
+                "market_type": d.get("market_type"),
+                "side": _side(d),
+                "edge": d.get("edge"),
+                "implied_probability": d.get("implied_probability"),
+                "model_probability": d.get("model_probability"),
+                "confidence_level": d.get("confidence_level"),
+                "entry_price": d.get("entry_price"),
+                "allowed": d.get("allowed"),
+                "reason_code": d.get("reason_code"),
+                "reason_detail": d.get("reason_detail"),
+                "shadow_allowed_without_inventory": d.get("shadow_allowed_without_inventory"),
+            }
+
+        summary = build_guardrail_summary(run_id=run_id)
+        payload = {
+            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "run_id": run_id,
+            "total_evaluated": total,
+            "summary": summary,
+            "top_allowed": [_project(d) for d in allowed_sorted],
+            "top_blocked": [_project(d) for d in blocked_sorted],
+        }
+
+        with open(out_path, "w", encoding="utf-8") as f:
+            json.dump(payload, f, ensure_ascii=False, indent=2)
+
+        return payload
+
+    except Exception as e:
+        logger.warning("Failed to write edge_hunter report: %s", e)
+        return {"error": str(e), "run_id": run_id}
+
+
 def get_recent_decisions(limit: int = 100) -> List[Dict[str, Any]]:
     """
     Get recent guardrail decisions.

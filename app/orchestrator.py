@@ -892,7 +892,7 @@ class Orchestrator:
             from paper_trader.averaging_down import check_averaging_down
             from paper_trader.edge_reversal import check_edge_reversal_exits
             from paper_trader.drawdown_protector import get_drawdown_status
-            from paper_trader.guardrail_audit import build_guardrail_summary
+            from paper_trader.guardrail_audit import build_guardrail_summary, write_edge_hunter_report
             from paper_trader.logger import get_paper_logger
 
             # Step 0: Force-close any positions that violate the current entry
@@ -950,6 +950,10 @@ class Orchestrator:
             if eligible is None:
                 eligible = get_eligible_proposals(run_id=run_id)
             guardrail_summary = build_guardrail_summary(run_id=run_id)
+            try:
+                write_edge_hunter_report(run_id=run_id, top_n=25)
+            except Exception:
+                pass
             logger.info(f"Found {len(eligible)} eligible proposals for paper trading")
 
             # Simulate entries
