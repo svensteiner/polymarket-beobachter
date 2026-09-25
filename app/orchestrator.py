@@ -295,6 +295,13 @@ class Orchestrator:
         result.summary["agent_hypothesis"] = agent_result.get("hypothesis", "")
         result.summary["agent_proposed_actions"] = len(agent_result.get("proposed_actions", []))
 
+        # Step 6: Edge-Hunter Snapshot (non-blocking, read-only)
+        try:
+            edge_hunter_result = self._write_edge_hunter(result)
+            result.add_step(edge_hunter_result)
+        except Exception as e:
+            logger.debug(f"Edge hunter write skipped (unkritisch): {e}")
+
         # Step 6: Write status
         print("[6/6] Status schreiben ...", end="", flush=True)
         status_result = self._write_status_summary(result)
@@ -1373,6 +1380,85 @@ class Orchestrator:
                 logger.info(f"Log rotiert: {filepath} -> {rotated}")
         except OSError as e:
             logger.warning(f"Log-Rotation fehlgeschlagen fuer {filepath}: {e}")
+
+    def _write_edge_hunter(self, result: PipelineResult) -> StepResult:
+        """
+        Persistiert eine kompakte Edge-Toplist als JSON.
+
+        Zweck:
+        - Automation/Monitoring erwartet `output/edge_hunter.json`
+        - Schneller Blick: Wo war Edge, auf welcher Side (YES/NO), welche Confidence
+
+        NOTE: Read-only. Keine Orders/Trades.
+        """
+        try:
+            edge_file = self.output_dir / "edge_hunter.json"
+
+            weather_step = next((s for s in result.steps if s.name == "weather_observer"), None)
+            edge_observations = []
+            if weather_step and isinstance(weather_step.data, dict):
+                edge_observations = weather_step.data.get("edge_observations_list", []) or []
+
+            serialized: list[dict[str, Any]] = []
+            for obs in edge_observations:
+                try:
+                    if hasattr(obs, "to_dict"):
+                        d = obs.to_dict()
+                    elif isinstance(obs, dict):
+                        d = dict(obs)
+                    else:
+                        d = {
+                            "market_id": getattr(obs, "market_id", None),
+                            "city": getattr(obs, "city", None),
+                            "event_description": getattr(obs, "event_description", None),
+                            "market_probability": getattr(obs, "market_probability", None),
+                            "model_probability": getattr(obs, "model_probability", None),
+                            "edge": getattr(obs, "edge", None),
+                            "confidence": getattr(getattr(obs, "confidence", None), "value", getattr(obs, "confidence", None)),
+                            "timestamp_utc": getattr(obs, "timestamp_utc", None),
+                        }
+                except Exception:
+                    continue
+
+                edge = d.get("edge", 0.0)
+                try:
+                    edge_float = float(edge)
+                except Exception:
+                    edge_float = 0.0
+
+                d["edge_abs"] = abs(edge_float)
+                d["suggested_side"] = "YES" if edge_float >= 0 else "NO"
+                serialized.append(d)
+
+            serialized.sort(key=lambda x: float(x.get("edge_abs", 0.0) or 0.0), reverse=True)
+
+            payload = {
+                "generated_at": datetime.now(timezone.utc).isoformat(),
+                "run_id": result.summary.get("run_id") if isinstance(result.summary, dict) else None,
+                "edge_observations": len(serialized),
+                "top": serialized[:25],
+            }
+
+            edge_file.parent.mkdir(parents=True, exist_ok=True)
+            tmp = edge_file.with_suffix(edge_file.suffix + ".tmp")
+            tmp.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
+            tmp.replace(edge_file)
+
+            return StepResult(
+                name="edge_hunter_writer",
+                success=True,
+                message=f"Edge hunter written to {edge_file.name}",
+                data={"edge_hunter_written": True, "edge_hunter_count": len(serialized)},
+            )
+        except Exception as e:
+            logger.error(f"Edge hunter write failed: {e}")
+            return StepResult(
+                name="edge_hunter_writer",
+                success=False,
+                message="Failed to write edge hunter",
+                error=str(e),
+                data={"edge_hunter_written": False},
+            )
 
     def _write_status_summary(self, result: PipelineResult) -> StepResult:
         """Write status summary to file."""
