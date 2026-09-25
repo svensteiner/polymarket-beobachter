@@ -29,6 +29,13 @@ from typing import Dict, Any, Optional, List
 from dataclasses import dataclass, field
 from enum import Enum
 
+
+def _safe_float(value: Any, default: float = 0.0) -> float:
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return default
+
 # Import performance optimizers
 try:
     from shared.memory_optimizer import get_memory_monitor
@@ -1426,6 +1433,18 @@ class Orchestrator:
             with open(summary_file, 'a', encoding='utf-8') as f:
                 f.write('\n'.join(entry_lines))
 
+            # Compatibility exports for automation/auditing. Fail-closed (never break pipeline).
+            run_id = str(result.summary.get("run_id") or "")
+            if run_id:
+                try:
+                    self._export_edge_hunter(run_id=run_id)
+                except Exception as exc:
+                    logger.debug("edge_hunter Export fehlgeschlagen (unkritisch): %s", exc)
+                try:
+                    self._export_shadow_trades(run_id=run_id)
+                except Exception as exc:
+                    logger.debug("shadow_trades Export fehlgeschlagen (unkritisch): %s", exc)
+
             return StepResult(
                 name="status_writer",
                 success=True,
@@ -1440,6 +1459,125 @@ class Orchestrator:
                 message="Failed to write status",
                 error=str(e)
             )
+
+    def _read_guardrail_audit(self, limit: int = 5000) -> List[Dict[str, Any]]:
+        audit_file = self.logs_dir / "guardrail_audit.jsonl"
+        if not audit_file.exists():
+            return []
+
+        # Read tail to keep runtime bounded.
+        try:
+            lines = audit_file.read_text(encoding="utf-8").splitlines()
+        except UnicodeDecodeError:
+            lines = audit_file.read_text(encoding="utf-8", errors="replace").splitlines()
+
+        if limit and len(lines) > limit:
+            lines = lines[-limit:]
+
+        decisions: List[Dict[str, Any]] = []
+        for line in lines:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                parsed = json.loads(line)
+                if isinstance(parsed, dict):
+                    decisions.append(parsed)
+            except Exception:
+                continue
+        return decisions
+
+    def _export_edge_hunter(self, run_id: str) -> None:
+        """
+        Export a compact opportunity snapshot for automation consumers.
+
+        Writes: output/edge_hunter.json
+        Source of truth: logs/guardrail_audit.jsonl (filtered to run_id)
+        """
+        decisions = [d for d in self._read_guardrail_audit() if d.get("run_id") == run_id]
+        candidates = []
+        for d in decisions:
+            edge = _safe_float(d.get("edge"), default=None)  # type: ignore[arg-type]
+            if edge is None or edge <= 0:
+                continue
+            if not d.get("allowed", False):
+                continue
+            entry_price = _safe_float(d.get("entry_price"), default=None)  # type: ignore[arg-type]
+            implied = _safe_float(d.get("implied_probability"), default=None)  # type: ignore[arg-type]
+            model_p = _safe_float(d.get("model_probability"), default=None)  # type: ignore[arg-type]
+            candidates.append(
+                {
+                    "proposal_id": d.get("proposal_id"),
+                    "market_id": d.get("market_id"),
+                    "market_question": d.get("market_question"),
+                    "city": d.get("city"),
+                    "confidence_level": d.get("confidence_level"),
+                    "entry_price": entry_price,
+                    "implied_probability": implied,
+                    "model_probability": model_p,
+                    "edge": edge,
+                    "reason_code": d.get("reason_code"),
+                }
+            )
+
+        candidates.sort(key=lambda item: _safe_float(item.get("edge"), 0.0), reverse=True)
+        payload = {
+            "schema_version": 1,
+            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "run_id": run_id,
+            "candidates": candidates[:50],
+            "counts": {
+                "guardrail_rows": len(decisions),
+                "positive_edge_allowed": len(candidates),
+            },
+        }
+        (self.output_dir / "edge_hunter.json").write_text(
+            json.dumps(payload, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+
+    def _export_shadow_trades(self, run_id: str) -> None:
+        """
+        Export shadow trade candidates (blocked mainly by inventory/risk limits).
+
+        Writes/ensures: data/shadow_trades.jsonl
+        Append-only. Filtered to a single run_id per export.
+        """
+        out_file = self.data_dir / "shadow_trades.jsonl"
+        out_file.parent.mkdir(parents=True, exist_ok=True)
+        if not out_file.exists():
+            out_file.write_text("", encoding="utf-8")
+
+        decisions = [d for d in self._read_guardrail_audit() if d.get("run_id") == run_id]
+        shadow = [
+            d
+            for d in decisions
+            if (not d.get("allowed", False)) and d.get("shadow_allowed_without_inventory", False)
+        ]
+
+        if not shadow:
+            return
+
+        now = datetime.now(timezone.utc).isoformat()
+        with open(out_file, "a", encoding="utf-8") as f:
+            for d in shadow:
+                entry = {
+                    "schema_version": 1,
+                    "timestamp": now,
+                    "run_id": run_id,
+                    "proposal_id": d.get("proposal_id"),
+                    "market_id": d.get("market_id"),
+                    "market_question": d.get("market_question"),
+                    "city": d.get("city"),
+                    "confidence_level": d.get("confidence_level"),
+                    "entry_price": d.get("entry_price"),
+                    "implied_probability": d.get("implied_probability"),
+                    "model_probability": d.get("model_probability"),
+                    "edge": d.get("edge"),
+                    "blocked_reason_code": d.get("reason_code"),
+                    "blocked_reason_detail": d.get("reason_detail"),
+                }
+                f.write(json.dumps(entry, ensure_ascii=False) + "\n")
 
     def _log_to_audit(self, result: PipelineResult):
         """Log pipeline run to audit."""
