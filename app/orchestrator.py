@@ -301,6 +301,16 @@ class Orchestrator:
         result.add_step(status_result)
         print(f" {'OK' if status_result.success else 'FAIL'}")
 
+        # Audit-only: Edge Hunter snapshot (deterministic, fail-closed)
+        try:
+            from analytics.edge_hunter import write_edge_hunter_snapshot
+            write_edge_hunter_snapshot(
+                project_root=self.base_dir,
+                run_id=run_id,
+            )
+        except Exception as e:
+            logger.debug(f"Edge Hunter Snapshot uebersprungen (unkritisch): {e}")
+
         # Log to audit (includes run_id via summary)
         self._log_to_audit(result)
 

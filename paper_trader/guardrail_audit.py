@@ -19,6 +19,8 @@ logger = logging.getLogger(__name__)
 PROJECT_ROOT = Path(__file__).parent.parent
 LOGS_DIR = PROJECT_ROOT / "logs"
 AUDIT_FILE = LOGS_DIR / "guardrail_audit.jsonl"
+DATA_DIR = PROJECT_ROOT / "data"
+SHADOW_TRADES_FILE = DATA_DIR / "shadow_trades.jsonl"
 
 
 def record_guardrail_decision(decision: Dict[str, Any]) -> None:
@@ -46,8 +48,57 @@ def record_guardrail_decision(decision: Dict[str, Any]) -> None:
         with open(AUDIT_FILE, "a", encoding="utf-8") as f:
             f.write(json.dumps(entry, ensure_ascii=False) + "\n")
 
+        _record_shadow_trade_if_applicable(entry)
+
     except Exception as e:
         logger.warning(f"Failed to record guardrail decision: {e}")
+
+
+def _record_shadow_trade_if_applicable(audit_entry: Dict[str, Any]) -> None:
+    """
+    Record 'shadow trades' for opportunity-cost analysis.
+
+    Definition (strict):
+    - Entry was blocked (allowed == False)
+    - BUT would have been allowed if inventory limits were ignored
+      (shadow_allowed_without_inventory == True)
+
+    Governance:
+    - This is READ-ONLY / audit-only; no trading behavior changes.
+    - Best-effort: never raises.
+    """
+    try:
+        if audit_entry.get("allowed") is True:
+            return
+        if not audit_entry.get("shadow_allowed_without_inventory"):
+            return
+        run_id = audit_entry.get("run_id")
+        proposal_id = audit_entry.get("proposal_id")
+        market_id = audit_entry.get("market_id")
+        if not run_id or not proposal_id or not market_id:
+            return
+
+        DATA_DIR.mkdir(parents=True, exist_ok=True)
+        shadow_entry = {
+            "timestamp": audit_entry.get("timestamp"),
+            "run_id": run_id,
+            "proposal_id": proposal_id,
+            "market_id": market_id,
+            "blocked_reason_code": audit_entry.get("reason_code"),
+            "blocked_reason_detail": audit_entry.get("reason_detail"),
+            "shadow_reason_code": audit_entry.get("shadow_reason_code"),
+            "shadow_reason_detail": audit_entry.get("shadow_reason_detail"),
+            "edge": audit_entry.get("edge"),
+            "implied_probability": audit_entry.get("implied_probability"),
+            "model_probability": audit_entry.get("model_probability"),
+            "confidence_level": audit_entry.get("confidence_level"),
+            "city": audit_entry.get("city"),
+            "market_question": audit_entry.get("market_question"),
+        }
+        with open(SHADOW_TRADES_FILE, "a", encoding="utf-8") as f:
+            f.write(json.dumps(shadow_entry, ensure_ascii=False) + "\n")
+    except Exception:
+        return
 
 
 def get_recent_decisions(limit: int = 100) -> List[Dict[str, Any]]:
