@@ -102,13 +102,15 @@ def test_cli_malformed_status_returns_structured_error(tmp_path: Path):
 
 class _FakeSession:
     def __init__(self, state): self.status, self.state = state, state
-    def model_dump(self): return {"usage": {"input_tokens": 2, "output_tokens": 1, "total_tokens": 3}}
+    id = "sess-1"
+    def model_dump(self): return {"id": "sess-1", "agent": {"id": "agent-1"}, "usage": {"input_tokens": 2, "output_tokens": 1, "total_tokens": 3}}
 
 
 class _FakeTurn:
     id = "turn-1"; status = "completed"
+    session_id = "sess-1"; agent_id = "agent-1"
     usage = {"input_tokens": 2, "output_tokens": 1, "total_tokens": 3}
-    def model_dump(self): return {}
+    def model_dump(self): return {"session_id": "sess-1", "agent_id": "agent-1"}
 
 
 class _FakeItem:
@@ -120,7 +122,7 @@ class _FakeItem:
 def _seed_session(store_path: Path):
     key = "a" * 64
     RunStore(store_path).save(key, {"model": "gpt-5.6-luna", "prompt_hash": "p", "input": "{}",
-                                    "state": "session_created", "session_id": "sess-1"})
+                                    "state": "session_created", "session_id": "sess-1", "agent_id": "agent-1"})
     return key
 
 
@@ -150,7 +152,7 @@ def test_reconcile_in_progress_and_failed_exit_codes(tmp_path: Path, monkeypatch
     store_path = tmp_path / "store.json"; key = _seed_session(store_path)
     mode = {"value": "running"}
     class Sessions:
-        def retrieve(self, sid): return types.SimpleNamespace(status=mode["value"], model_dump=lambda: {"usage": {}})
+        def retrieve(self, sid): return types.SimpleNamespace(id="sess-1", agent=types.SimpleNamespace(id="agent-1"), status=mode["value"], model_dump=lambda: {"id": "sess-1", "agent": {"id": "agent-1"}, "usage": {}})
         class items:
             list = staticmethod(lambda *a, **k: types.SimpleNamespace(has_more=False, data=[]))
         class turns:

@@ -31,10 +31,22 @@ def has_pinned_sdk():
 @unittest.skipUnless(has_pinned_sdk(), "run with .venv-agentic: pinned openai==3.13.0 required")
 class AgentSDKAcceptance(unittest.TestCase):
     def test_cli_reconciles_with_only_three_gets(self):
+        self._exercise()
+
+    def test_foreign_session_stops_after_one_get(self):
+        self._exercise("session")
+
+    def test_foreign_turn_cannot_persist_output(self):
+        self._exercise("turn")
+
+    def test_foreign_message_metadata_cannot_persist_output(self):
+        self._exercise("message")
+
+    def _exercise(self, violation=None):
         calls = []
         session_path = f"/v1/agents/sessions/{SESSION}"
         fixtures = {
-            session_path: {"id": SESSION, "object": "agent.session", "status": "idle",
+            session_path: {"id": SESSION, "agent": {"id": "agent_local"}, "object": "agent.session", "status": "idle",
                            "usage": USAGE, "error": None},
             session_path + "/items": {
                 "object": "list", "has_more": False,
@@ -48,6 +60,14 @@ class AgentSDKAcceptance(unittest.TestCase):
                           "created_at": 1, "status": "completed", "error": None,
                           "usage": USAGE}]},
         }
+        if violation:
+            fixtures[session_path + "/items"]["data"][0]["content"][0]["text"] = "FOREIGN_MARKER"
+            if violation == "session":
+                fixtures[session_path]["id"] = "sess_foreign"
+            elif violation == "turn":
+                fixtures[session_path + "/turns"]["data"][0]["agent_id"] = "agent_foreign"
+            else:
+                fixtures[session_path + "/items"]["data"][0]["agent_id"] = "agent_foreign"
 
         class Handler(BaseHTTPRequestHandler):
             def do_GET(self):
@@ -76,7 +96,8 @@ class AgentSDKAcceptance(unittest.TestCase):
                 store = Path(directory) / "runs.json"
                 store.write_text(json.dumps({KEY: {"state": "session_created",
                     "session_id": SESSION, "agent_id": "agent_local",
-                    "model": "gpt-5.6-luna"}}), encoding="utf-8")
+                    "model": "gpt-5.6-luna", "messages": [{"text": "previous output"}],
+                    "usage": USAGE, "estimated_cost_usd": "1"}}), encoding="utf-8")
                 environment = os.environ.copy()
                 environment.update(OPENAI_API_KEY="local-fixture-only",
                     OPENAI_BASE_URL=f"http://127.0.0.1:{server.server_port}/v1",
@@ -86,6 +107,18 @@ class AgentSDKAcceptance(unittest.TestCase):
                 completed = subprocess.run([sys.executable, str(ROOT / "research_agent.py"),
                     "--store", str(store), "reconcile", "--run-key", KEY, "--timeout", "5"],
                     cwd=directory, env=environment, capture_output=True, text=True, timeout=25)
+                if violation:
+                    self.assertEqual(completed.returncode, 1, completed.stdout + completed.stderr)
+                    saved = json.loads(store.read_text(encoding="utf-8"))[KEY]
+                    self.assertEqual(saved["state"], "failed")
+                    self.assertEqual(saved["error"]["type"], "OwnershipError")
+                    for field in ("messages", "usage", "estimated_cost_usd"):
+                        self.assertNotIn(field, saved)
+                    self.assertNotIn("FOREIGN_MARKER", store.read_text(encoding="utf-8"))
+                    self.assertNotIn("FOREIGN_MARKER", completed.stdout + completed.stderr)
+                    expected = [session_path] if violation == "session" else list(fixtures)
+                    self.assertEqual(calls, [("GET", path) for path in expected])
+                    return
                 self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
                 result = json.loads(completed.stdout)
                 self.assertEqual(result["state"], "completed")

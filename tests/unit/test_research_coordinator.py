@@ -202,7 +202,7 @@ def test_mutated_plan_is_rejected_before_factory(tmp_path: Path):
 
 def test_reconcile_retrieve_failure_is_sanitized(tmp_path: Path):
     key = "c" * 64; store = RunStore(tmp_path / "runs.json")
-    store.save(key, {"state": "session_created", "session_id": "s1", "model": "gpt-5.6-luna", "input": "{}", "prompt_hash": "x"})
+    store.save(key, {"state": "session_created", "session_id": "s1", "agent_id": "a1", "model": "gpt-5.6-luna", "input": "{}", "prompt_hash": "x"})
     def fail(**kw):
         raise RuntimeError("secret")
     with pytest.raises(CoordinatorError): reconcile(store, fail, key)
@@ -212,16 +212,16 @@ def test_reconcile_retrieve_failure_is_sanitized(tmp_path: Path):
 
 def test_reconcile_requires_completed_turn_and_usage(tmp_path: Path):
     store = RunStore(tmp_path / "runs.json"); key = "b" * 64
-    store.save(key, {"state": "session_created", "session_id": "s1", "model": "gpt-5.6-luna", "input": "{}", "prompt_hash": "x"})
+    store.save(key, {"state": "session_created", "session_id": "s1", "agent_id": "a1", "model": "gpt-5.6-luna", "input": "{}", "prompt_hash": "x"})
     class Obj:
         def __init__(self, **kw): self.__dict__.update(kw)
     class Items:
         def list(self, *a, **kw): return Obj(data=[Obj(model_dump=lambda: {"id": "m1", "turn_id": "t1", "role": "assistant", "content": [{"type": "output_text", "text": "OK"}, {"type": "output_text", "text": "DONE"}]})])
     class Turns:
-        def list(self, *a, **kw): return Obj(data=[Obj(id="t1", status="completed", usage=Obj(model_dump=lambda: {"input_tokens": 2, "output_tokens": 1, "total_tokens": 3}), model_dump=lambda: {"error": None})])
+        def list(self, *a, **kw): return Obj(data=[Obj(id="t1", status="completed", session_id="s1", agent_id="a1", usage=Obj(model_dump=lambda: {"input_tokens": 2, "output_tokens": 1, "total_tokens": 3}), model_dump=lambda: {"error": None, "session_id": "s1", "agent_id": "a1"})])
     class Sessions:
         items = Items(); turns = Turns()
-        def retrieve(self, *a, **kw): return Obj(status="idle", model_dump=lambda: {"error": None, "usage": {"input_tokens": 2, "output_tokens": 1, "total_tokens": 3}})
+        def retrieve(self, *a, **kw): return Obj(id="s1", agent=Obj(id="a1"), status="idle", model_dump=lambda: {"id": "s1", "agent": {"id": "a1"}, "error": None, "usage": {"input_tokens": 2, "output_tokens": 1, "total_tokens": 3}})
     class Client: beta = Obj(agents=Obj(sessions=Sessions()))
     out = reconcile(store, lambda **kw: Client(), key)
     assert out["state"] == "completed" and out["messages"][0]["text"] == "OK"
@@ -230,21 +230,58 @@ def test_reconcile_requires_completed_turn_and_usage(tmp_path: Path):
 
 def test_reconcile_rejects_extra_turn(tmp_path: Path):
     store = RunStore(tmp_path / "runs.json"); key = "d" * 64
-    store.save(key, {"state": "session_created", "session_id": "s1", "model": "gpt-5.6-luna", "input": "{}", "prompt_hash": "x"})
+    store.save(key, {"state": "session_created", "session_id": "s1", "agent_id": "a1", "model": "gpt-5.6-luna", "input": "{}", "prompt_hash": "x"})
     class Obj:
         def __init__(self, **kw): self.__dict__.update(kw)
     usage = Obj(model_dump=lambda: {"input_tokens": 1, "output_tokens": 1, "total_tokens": 2})
     class Sessions:
+        @staticmethod
+        def retrieve(*a, **kw): return Obj(id="s1", agent=Obj(id="a1"), status="idle", model_dump=lambda: {"id": "s1", "agent": {"id": "a1"}, "error": None, "usage": {"input_tokens": 1, "output_tokens": 1, "total_tokens": 2}})
         class items:
             @staticmethod
             def list(*a, **kw): return Obj(data=[Obj(model_dump=lambda: {"turn_id": "t1", "role": "assistant", "content": [{"type": "output_text", "text": "OK"}]})])
         class turns:
             @staticmethod
-            def list(*a, **kw): return Obj(data=[Obj(id="t1", status="completed", usage=usage, model_dump=lambda: {"error": None}), Obj(id="t2", status="failed", usage=None, model_dump=lambda: {"error": {}})])
-        @staticmethod
-        def retrieve(*a, **kw): return Obj(status="idle", model_dump=lambda: {"error": None, "usage": {"input_tokens": 1, "output_tokens": 1, "total_tokens": 2}})
+            def list(*a, **kw): return Obj(data=[Obj(id="t1", session_id="s1", agent_id="a1", status="completed", usage=usage, model_dump=lambda: {"error": None}), Obj(id="t2", session_id="s1", agent_id="a1", status="failed", usage=None, model_dump=lambda: {"error": {}})])
     out = reconcile(store, lambda **kw: Obj(beta=Obj(agents=Obj(sessions=Sessions()))), key)
     assert out["state"] == "failed"
+
+
+def test_reconcile_foreign_session_fails_before_result_fetch(tmp_path: Path):
+    key = "f" * 64; store = RunStore(tmp_path / "runs.json")
+    store.save(key, {"state": "session_created", "session_id": "s1", "agent_id": "a1"})
+    calls = []
+    class Obj:
+        def __init__(self, **kw): self.__dict__.update(kw)
+    class Sessions:
+        def retrieve(self, sid): return Obj(id="foreign", agent=Obj(id="a1"), status="idle", model_dump=lambda: {"id": "foreign", "agent": {"id": "a1"}})
+        class items:
+            @staticmethod
+            def list(*a, **k): calls.append("items"); return Obj(data=[])
+        class turns:
+            @staticmethod
+            def list(*a, **k): calls.append("turns"); return Obj(data=[])
+    client = Obj(beta=Obj(agents=Obj(sessions=Sessions())))
+    with pytest.raises(CoordinatorError): reconcile(store, lambda **k: client, key)
+    assert calls == [] and store.load(key)["state"] == "failed"
+
+
+def test_reconcile_foreign_turn_does_not_persist_text(tmp_path: Path):
+    key = "b" * 64; store = RunStore(tmp_path / "runs.json")
+    store.save(key, {"state": "session_created", "session_id": "s1", "agent_id": "a1"})
+    class Obj:
+        def __init__(self, **kw): self.__dict__.update(kw)
+    class Sessions:
+        def retrieve(self, sid): return Obj(id="s1", agent=Obj(id="a1"), status="idle", model_dump=lambda: {"id": "s1", "agent": {"id": "a1"}})
+        class items:
+            @staticmethod
+            def list(*a, **k): return Obj(data=[Obj(model_dump=lambda: {"turn_id": "t1", "role": "assistant", "content": [{"type": "output_text", "text": "FOREIGN"}]})])
+        class turns:
+            @staticmethod
+            def list(*a, **k): return Obj(data=[Obj(id="t1", status="completed", session_id="foreign", agent_id="a1", model_dump=lambda: {"session_id": "foreign", "agent_id": "a1"})])
+    with pytest.raises(CoordinatorError): reconcile(store, lambda **k: Obj(beta=Obj(agents=Obj(sessions=Sessions()))), key)
+    saved = store.load(key)
+    assert saved["state"] == "failed" and "FOREIGN" not in json.dumps(saved)
 
 
 @pytest.mark.parametrize("text", ["x", "x" * 4096, "\u20ac" * 2000],
@@ -255,15 +292,15 @@ def test_oversized_output_is_bounded_and_durably_incomplete(tmp_path: Path, text
 
     store = RunStore(tmp_path / "runs.json")
     key = "e" * 64
-    store.save(key, {"state": "session_created", "session_id": "s1"})
+    store.save(key, {"state": "session_created", "session_id": "s1", "agent_id": "a1"})
     usage = {"input_tokens": 1, "output_tokens": 1, "total_tokens": 2}
     message = {"id": "m1", "turn_id": "t1", "role": "assistant",
                "content": [{"type": "output_text", "text": text}] * 10}
     sessions = Obj(
-        retrieve=lambda *a, **kw: Obj(status="idle", model_dump=lambda: {"usage": usage}),
+            retrieve=lambda *a, **kw: Obj(id="s1", agent=Obj(id="a1"), status="idle", model_dump=lambda: {"id": "s1", "agent": {"id": "a1"}, "usage": usage}),
         items=Obj(list=lambda *a, **kw: Obj(data=[Obj(model_dump=lambda: message)] * 20)),
-        turns=Obj(list=lambda *a, **kw: Obj(data=[Obj(id="t1", status="completed",
-            usage=usage, model_dump=lambda: {"error": None})])),
+            turns=Obj(list=lambda *a, **kw: Obj(data=[Obj(id="t1", status="completed", session_id="s1", agent_id="a1",
+                usage=usage, model_dump=lambda: {"error": None, "session_id": "s1", "agent_id": "a1"})])),
     )
     result = reconcile(store, lambda **kw: Obj(beta=Obj(agents=Obj(sessions=sessions))), key)
     assert result["state"] == "failed"

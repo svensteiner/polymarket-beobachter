@@ -111,6 +111,18 @@ optionale OpenAI-Python-SDK-Umgebung nötig:
 .\.venv-agentic\Scripts\python.exe research_agent.py --store output\agent_runs.json reconcile --run-key <run-key> --timeout 30
 ```
 
+Der gespeicherte Lauf muss Session- und Agent-Kennung enthalten. Beim Abgleich
+müssen die zurückgegebene Session, ihr Agent und die Kennungen jedes Turns dazu
+passen. Nachrichten werden über ihre Turn-Kennung zugeordnet; widersprüchliche
+zusätzliche Kennungen werden abgewiesen. Fehlen bei einem laufenden Auftrag noch
+die Turns, wird vorerst kein Antworttext zugeordnet.
+
+Bei einem Zuordnungsfehler wird der Lauf als `failed` gespeichert; Antworttext,
+Verbrauch und Kostenschätzung werden aus dem aktuellen Ergebnis entfernt. Die
+Fehlerursache steht ohne fremden Antworttext in `ownership_reason`. Fehlende
+Kennungen alter Datensätze werden nicht automatisch ergänzt. Ein späterer
+erfolgreicher Abgleich ersetzt den Fehlerzustand; er erzeugt keine neue Session.
+
 Es gibt keinen `dispatch`- oder `create`-Befehl. Vorbereitung und Anzeige
 bleiben offline; `reconcile` liest nur eine bekannte Session. Exitcode 0 steht
 für erfolgreiche Vorbereitung/Anzeige oder einen abgeschlossenen Abgleich,
