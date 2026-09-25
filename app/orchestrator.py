@@ -23,6 +23,7 @@ import os
 import shutil
 import time
 import uuid
+from collections import deque
 from datetime import datetime, date, timedelta, timezone
 from pathlib import Path
 from typing import Dict, Any, Optional, List
@@ -300,6 +301,13 @@ class Orchestrator:
         status_result = self._write_status_summary(result)
         result.add_step(status_result)
         print(f" {'OK' if status_result.success else 'FAIL'}")
+
+        # Step 6b: Edge-Hunter Snapshot (READ-ONLY)
+        try:
+            edge_hunter_result = self._write_edge_hunter(result)
+            result.add_step(edge_hunter_result)
+        except Exception as e:
+            logger.debug(f"Edge-Hunter Snapshot uebersprungen (unkritisch): {e}")
 
         # Log to audit (includes run_id via summary)
         self._log_to_audit(result)
@@ -710,7 +718,8 @@ class Orchestrator:
 
                     # Get real odds and liquidity - SKIP if price unavailable
                     odds_yes = None
-                    liquidity_usd = 100.0  # Default fallback
+                    liquidity_usd: Optional[float] = None
+                    missing_liquidity = False
 
                     if market_id in real_prices:
                         price_data = real_prices[market_id]
@@ -733,7 +742,7 @@ class Orchestrator:
 
                     # Fallback: use outcomePrices/liquidity stored in the candidate data itself
                     # (Gamma-discovered markets carry these fields; CLOB API won't find them)
-                    if odds_yes is None or liquidity_usd == 100.0:
+                    if odds_yes is None or liquidity_usd is None:
                         stored_op = data.get("outcomePrices")
                         if stored_op and odds_yes is None:
                             try:
@@ -752,17 +761,25 @@ class Orchestrator:
                             except Exception:
                                 pass
                         stored_liq = data.get("liquidity")
-                        if stored_liq is not None and liquidity_usd == 100.0:
+                        if stored_liq is not None and liquidity_usd is None:
                             try:
                                 liquidity_usd = float(stored_liq)
                             except Exception:
                                 pass
+
+                    # Fail-closed: WeatherMarketFilter requires liquidity_usd to be known.
+                    # A silent fallback (e.g. 100.0) violates the filter's governance intent.
+                    if liquidity_usd is None:
+                        liquidity_usd = 0.0
+                        missing_liquidity = True
 
                     # Skip markets without live price - can't compute edge without it
                     if odds_yes is None:
                         _skip_no_price += 1
                         logger.debug(f"Skipping {market_id}: no live price available")
                         continue
+                    if missing_liquidity:
+                        _skip_filter["missing_liquidity"] = _skip_filter.get("missing_liquidity", 0) + 1
 
                     market = WeatherMarket(
                         market_id=market_id,
@@ -812,6 +829,7 @@ class Orchestrator:
                     "edge_observations_list": result.edge_observations,
                     "markets_processed": result.markets_processed,
                     "markets_filtered": result.markets_filtered,
+                    "missing_liquidity_candidates": int(_skip_filter.get("missing_liquidity", 0)),
                 }
             )
         except Exception as e:
@@ -1439,6 +1457,111 @@ class Orchestrator:
                 success=False,
                 message="Failed to write status",
                 error=str(e)
+            )
+
+    def _write_edge_hunter(self, result: PipelineResult) -> StepResult:
+        """
+        Write a compact, local triage snapshot for production-readiness.
+
+        This is READ-ONLY (derived from local logs + current run summary).
+        Output: output/edge_hunter.json
+        """
+        try:
+            out_file = self.output_dir / "edge_hunter.json"
+
+            def _tail_jsonl(path: Path, max_lines: int) -> List[Dict[str, Any]]:
+                if not path.exists():
+                    return []
+                buf: deque[str] = deque(maxlen=max_lines)
+                with open(path, "r", encoding="utf-8", errors="replace") as f:
+                    for line in f:
+                        if line and line.strip():
+                            buf.append(line)
+                rows: List[Dict[str, Any]] = []
+                for line in buf:
+                    try:
+                        rows.append(json.loads(line))
+                    except Exception:
+                        continue
+                return rows
+
+            guardrail_rows = _tail_jsonl(self.logs_dir / "guardrail_audit.jsonl", max_lines=5000)
+            paper_trade_rows = _tail_jsonl(
+                self.base_dir / "paper_trader" / "logs" / "paper_trades.jsonl",
+                max_lines=5000,
+            )
+
+            def _top_counts(items: List[str], top_n: int = 8) -> List[Dict[str, Any]]:
+                counts: Dict[str, int] = {}
+                for it in items:
+                    key = (it or "UNKNOWN")
+                    counts[key] = counts.get(key, 0) + 1
+                top = sorted(counts.items(), key=lambda kv: (-kv[1], kv[0]))[:top_n]
+                return [{"key": k, "count": v} for k, v in top]
+
+            guardrail_blocked = [
+                str(r.get("reason_code", "UNKNOWN"))
+                for r in guardrail_rows
+                if r.get("allowed") is False
+            ]
+            paper_skips_raw = [
+                r.get("reason", "UNKNOWN")
+                for r in paper_trade_rows
+                if str(r.get("action", "")).upper() == "SKIP"
+            ]
+            paper_skips = [
+                (s[:180] + "…" if isinstance(s, str) and len(s) > 181 else s)
+                for s in paper_skips_raw
+            ]
+
+            edge_list = (result.summary or {}).get("edge_observations_list", [])
+
+            payload = {
+                "generated_at": datetime.now(timezone.utc).isoformat(),
+                "run_id": (result.summary or {}).get("run_id", ""),
+                "state": getattr(result.state, "value", "UNKNOWN"),
+                "bot_health": {
+                    "status": (result.summary or {}).get("bot_health_status", "UNKNOWN"),
+                    "guardrails_active": bool((result.summary or {}).get("bot_health_guardrails_active", False)),
+                    "summary": (result.summary or {}).get("bot_health_summary", ""),
+                },
+                "edge": {
+                    "edge_observations": int((result.summary or {}).get("edge_observations", 0) or 0),
+                    "sample": edge_list[:10] if isinstance(edge_list, list) else [],
+                },
+                "paper": {
+                    "paper_pnl_eur": float((result.summary or {}).get("paper_pnl_eur", 0.0) or 0.0),
+                    "positions_entered": int((result.summary or {}).get("paper_positions_entered", 0) or 0),
+                    "positions_closed": int((result.summary or {}).get("paper_positions_closed", 0) or 0),
+                },
+                "blockers": {
+                    "guardrail_blocked_top": _top_counts(guardrail_blocked, top_n=8),
+                    "paper_skip_top": _top_counts([str(s) for s in paper_skips], top_n=8),
+                },
+                "windowing": {
+                    "guardrail_audit_tail": 5000,
+                    "paper_trades_tail": 5000,
+                },
+            }
+
+            out_file.parent.mkdir(parents=True, exist_ok=True)
+            tmp = out_file.with_suffix(".tmp")
+            tmp.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+            tmp.replace(out_file)
+
+            return StepResult(
+                name="edge_hunter",
+                success=True,
+                message=f"Wrote {out_file.name}",
+                data={"edge_observations": payload["edge"]["edge_observations"]},
+            )
+        except Exception as e:
+            logger.error(f"Edge-Hunter write failed: {e}")
+            return StepResult(
+                name="edge_hunter",
+                success=False,
+                message="Failed to write edge_hunter.json",
+                error=str(e),
             )
 
     def _log_to_audit(self, result: PipelineResult):
