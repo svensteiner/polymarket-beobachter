@@ -301,6 +301,14 @@ class Orchestrator:
         result.add_step(status_result)
         print(f" {'OK' if status_result.success else 'FAIL'}")
 
+        # Optional: Edge Hunter report (non-blocking)
+        try:
+            from analytics.edge_hunter import generate_edge_hunter_outputs
+
+            generate_edge_hunter_outputs(self.base_dir, run_id=run_id)
+        except Exception as e:
+            logger.debug(f"Edge Hunter report fehlgeschlagen (unkritisch): {e}")
+
         # Log to audit (includes run_id via summary)
         self._log_to_audit(result)
 

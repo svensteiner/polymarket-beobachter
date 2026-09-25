@@ -53,15 +53,22 @@ YES_MIN_EDGE_ABSOLUTE = 0.065
 
 def describe_proposal(proposal) -> Dict[str, Any]:
     """Extract metadata from a proposal for logging/auditing."""
+    edge_val = float(getattr(proposal, "edge", 0) or 0.0)
+    entry_price = float(getattr(proposal, "implied_probability", 0) or 0.0)
+    side = "NO" if edge_val < 0 else "YES"
+    contract_price = (1.0 - entry_price) if side == "NO" else entry_price
     return {
         "market_id": getattr(proposal, "market_id", None),
         "market_question": getattr(proposal, "market_question", "")[:100],
-        "edge": getattr(proposal, "edge", 0),
-        "implied_probability": getattr(proposal, "implied_probability", 0),
+        "edge": edge_val,
+        "side": side,
+        "contract_price": contract_price,
+        "implied_probability": entry_price,
         "model_probability": getattr(proposal, "model_probability", 0),
         "confidence_level": getattr(proposal, "confidence_level", "UNKNOWN"),
         "city": _extract_city(getattr(proposal, "market_question", "")),
-        "entry_price": getattr(proposal, "implied_probability", 0),
+        "entry_price": entry_price,
+        "market_type": getattr(proposal, "market_type", None),
     }
 
 
