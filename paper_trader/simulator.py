@@ -508,37 +508,6 @@ class ExecutionSimulator:
                 exception_reason,
             )
 
-        # BotHealthMonitor: temporäre Schutzregeln ohne Config-Mutation
-        health_ok, health_reason = check_can_open_entry(
-            is_addon=False,
-            market_question=proposal.market_question,
-        )
-        if not health_ok and not exception_allowed:
-            record = PaperTradeRecord(
-                record_id=generate_record_id(),
-                timestamp=now,
-                proposal_id=proposal.proposal_id,
-                market_id=proposal.market_id,
-                action=TradeAction.SKIP.value,
-                reason=health_reason,
-                position_id=None,
-                snapshot_time=None,
-                entry_price=None,
-                exit_price=None,
-                slippage_applied=None,
-                pnl_eur=None,
-            )
-            log_trade(record)
-            logger.warning(f"SKIP (BotHealthMonitor): {health_reason} for {proposal.market_id}")
-            return (None, record)
-        if not health_ok and exception_allowed:
-            logger.warning(
-                "BotHealth-Bypass fuer %s: %s | %s",
-                proposal.market_id,
-                health_reason,
-                exception_reason,
-            )
-
         # Check diversification: max positions per city+date (exclusive markets)
         new_city, new_date = _extract_city_date(proposal.market_question)
         if new_city:

@@ -301,6 +301,18 @@ class Orchestrator:
         result.add_step(status_result)
         print(f" {'OK' if status_result.success else 'FAIL'}")
 
+        # Zusatz-Outputs (non-blocking): Edge-Hunter + Shadow-Trades
+        try:
+            edge_result = self._write_edge_hunter_report(result)
+            result.add_step(edge_result)
+        except Exception as e:
+            logger.debug(f"Edge-Hunter Report fehlgeschlagen (unkritisch): {e}")
+        try:
+            shadow_result = self._write_shadow_trades(result)
+            result.add_step(shadow_result)
+        except Exception as e:
+            logger.debug(f"Shadow-Trades Writer fehlgeschlagen (unkritisch): {e}")
+
         # Log to audit (includes run_id via summary)
         self._log_to_audit(result)
 
@@ -1439,6 +1451,155 @@ class Orchestrator:
                 success=False,
                 message="Failed to write status",
                 error=str(e)
+            )
+
+    def _write_edge_hunter_report(self, result: PipelineResult) -> StepResult:
+        """Write a compact edge-hunter report to output/edge_hunter.json.
+
+        GOVERNANCE:
+        - Read-only: uses existing guardrail audit + pipeline summary.
+        - No config mutation, no trading.
+        """
+        try:
+            import json
+            from datetime import datetime, timezone
+
+            from paper_trader.guardrail_audit import get_recent_decisions
+
+            output_file = self.output_dir / "edge_hunter.json"
+            run_id = (result.summary or {}).get("run_id")
+
+            decisions = get_recent_decisions(limit=1000)
+            if run_id:
+                decisions = [d for d in decisions if d.get("run_id") == run_id]
+
+            def _edge_val(d: dict) -> float:
+                try:
+                    return float(d.get("edge") or 0.0)
+                except Exception:
+                    return 0.0
+
+            top = sorted(decisions, key=lambda d: abs(_edge_val(d)), reverse=True)[:30]
+
+            blocked_by_reason: dict[str, int] = {}
+            for d in decisions:
+                if not d.get("allowed", False):
+                    code = str(d.get("reason_code") or "unknown")
+                    blocked_by_reason[code] = blocked_by_reason.get(code, 0) + 1
+
+            payload = {
+                "generated_at": datetime.now(timezone.utc).isoformat(),
+                "run_id": run_id,
+                "bot_health_status": (result.summary or {}).get("bot_health_status"),
+                "total_evaluated": len(decisions),
+                "allowed_count": sum(1 for d in decisions if d.get("allowed", False)),
+                "blocked_count": sum(1 for d in decisions if not d.get("allowed", False)),
+                "blocked_by_reason": blocked_by_reason,
+                "top_by_abs_edge": [
+                    {
+                        "timestamp": d.get("timestamp"),
+                        "proposal_id": d.get("proposal_id"),
+                        "market_id": d.get("market_id"),
+                        "allowed": d.get("allowed"),
+                        "reason_code": d.get("reason_code"),
+                        "reason_detail": d.get("reason_detail"),
+                        "shadow_allowed_without_inventory": d.get("shadow_allowed_without_inventory"),
+                        "edge": d.get("edge"),
+                        "implied_probability": d.get("implied_probability"),
+                        "model_probability": d.get("model_probability"),
+                        "confidence_level": d.get("confidence_level"),
+                        "city": d.get("city"),
+                        "entry_price": d.get("entry_price"),
+                        "market_question": d.get("market_question"),
+                    }
+                    for d in top
+                ],
+            }
+
+            self.output_dir.mkdir(parents=True, exist_ok=True)
+            tmp = output_file.with_suffix(".tmp")
+            tmp.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
+            tmp.replace(output_file)
+
+            return StepResult(
+                name="edge_hunter_writer",
+                success=True,
+                message=f"Edge-Hunter report written to {output_file.name}",
+            )
+        except Exception as e:
+            return StepResult(
+                name="edge_hunter_writer",
+                success=False,
+                message="Failed to write edge-hunter report",
+                error=str(e),
+            )
+
+    def _write_shadow_trades(self, result: PipelineResult) -> StepResult:
+        """Append shadow-trade candidates (inventory-limited) to data/shadow_trades.jsonl.
+
+        Shadow trades are *not executed*. They are recorded for later resolution / learning.
+        """
+        try:
+            import json
+            from datetime import datetime, timezone
+            from pathlib import Path
+
+            from paper_trader.guardrail_audit import get_recent_decisions
+
+            run_id = (result.summary or {}).get("run_id")
+            decisions = get_recent_decisions(limit=2000)
+            if run_id:
+                decisions = [d for d in decisions if d.get("run_id") == run_id]
+
+            shadow = [
+                d
+                for d in decisions
+                if bool(d.get("shadow_allowed_without_inventory"))
+                and not bool(d.get("allowed"))
+            ]
+
+            data_dir = Path(__file__).parent.parent / "data"
+            data_dir.mkdir(parents=True, exist_ok=True)
+            out_file = data_dir / "shadow_trades.jsonl"
+
+            if not shadow:
+                out_file.touch(exist_ok=True)
+                return StepResult(
+                    name="shadow_trades_writer",
+                    success=True,
+                    message="No shadow trades to record",
+                )
+
+            now = datetime.now(timezone.utc).isoformat()
+            with open(out_file, "a", encoding="utf-8") as f:
+                for d in shadow:
+                    entry = {
+                        "timestamp": now,
+                        "run_id": run_id,
+                        "proposal_id": d.get("proposal_id"),
+                        "market_id": d.get("market_id"),
+                        "market_question": d.get("market_question"),
+                        "edge": d.get("edge"),
+                        "implied_probability": d.get("implied_probability"),
+                        "model_probability": d.get("model_probability"),
+                        "confidence_level": d.get("confidence_level"),
+                        "city": d.get("city"),
+                        "reason_code": d.get("reason_code"),
+                        "reason_detail": d.get("reason_detail"),
+                    }
+                    f.write(json.dumps(entry, ensure_ascii=False) + "\n")
+
+            return StepResult(
+                name="shadow_trades_writer",
+                success=True,
+                message=f"Recorded {len(shadow)} shadow trade(s) to {out_file.name}",
+            )
+        except Exception as e:
+            return StepResult(
+                name="shadow_trades_writer",
+                success=False,
+                message="Failed to write shadow trades",
+                error=str(e),
             )
 
     def _log_to_audit(self, result: PipelineResult):
