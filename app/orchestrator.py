@@ -1426,6 +1426,14 @@ class Orchestrator:
             with open(summary_file, 'a', encoding='utf-8') as f:
                 f.write('\n'.join(entry_lines))
 
+            # Best-effort: write edge hunter snapshot for ops visibility (does not affect trading).
+            try:
+                from analytics.edge_hunter import write_edge_hunter_snapshot
+
+                write_edge_hunter_snapshot(self.output_dir / "edge_hunter.json")
+            except Exception:
+                pass
+
             return StepResult(
                 name="status_writer",
                 success=True,

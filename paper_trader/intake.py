@@ -33,6 +33,7 @@ from proposals.review_gate import ReviewGate
 
 from paper_trader.entry_guardrails import describe_proposal, evaluate_entry_guardrails
 from paper_trader.guardrail_audit import record_guardrail_decision
+from paper_trader.shadow_trades import record_shadow_trade
 from paper_trader.logger import get_paper_logger
 from analytics.edge_memory import assess_proposal_edge, detect_market_type
 
@@ -143,6 +144,21 @@ class ProposalIntake:
                     **proposal_meta,
                 }
             )
+            # Shadow logging: track opportunities blocked only by inventory/open-position limits.
+            # This is used for production readiness + opportunity coverage analysis.
+            if shadow_allowed and not allowed:
+                record_shadow_trade(
+                    {
+                        "run_id": run_id,
+                        "proposal_id": proposal.proposal_id,
+                        "market_id": proposal.market_id,
+                        "reason_code": reason_code,
+                        "reason_detail": reason_detail,
+                        "shadow_reason_code": shadow_reason_code,
+                        "shadow_reason_detail": shadow_reason_detail,
+                        **proposal_meta,
+                    }
+                )
             if not allowed:
                 _side = getattr(proposal, "token", None) or getattr(proposal, "side", "?")
                 _ep = getattr(proposal, "implied_probability", None)
