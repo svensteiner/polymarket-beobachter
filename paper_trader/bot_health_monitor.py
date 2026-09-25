@@ -29,6 +29,13 @@ AUDIT_DIR = PROJECT_ROOT / "logs" / "audit"
 POSITIONS_FILE = PROJECT_ROOT / "paper_trader" / "logs" / "paper_positions.jsonl"
 REPORT_FILE = PROJECT_ROOT / "analytics" / "performance_report.json"
 ADVICE_FILE = PROJECT_ROOT / "output" / "strategy_advice.json"
+GUARDRAIL_AUDIT_FILE = PROJECT_ROOT / "logs" / "guardrail_audit.jsonl"
+EDGE_HUNTER_FILE = PROJECT_ROOT / "output" / "edge_hunter.json"
+SHADOW_TRADES_FILE = PROJECT_ROOT / "data" / "shadow_trades.jsonl"
+
+# Scheduler runs every 15 minutes. If these "truth" artifacts are older than this
+# window, the system must assume it is flying blind and fail-closed.
+ARTIFACT_STALE_AFTER_HOURS = 2.0
 
 RISK_HEALTHY = "HEALTHY"
 RISK_ELEVATED = "ELEVATED"
@@ -127,6 +134,138 @@ def _parse_iso(value: str | None) -> datetime | None:
     if dt.tzinfo is None:
         return dt.replace(tzinfo=timezone.utc)
     return dt.astimezone(timezone.utc)
+
+
+def _artifact_age_hours(generated_at: Any) -> float | None:
+    if generated_at is None:
+        return None
+    if not isinstance(generated_at, str):
+        generated_at = str(generated_at)
+    ts = _parse_iso(generated_at)
+    if not ts:
+        return None
+    return (_utc_now() - ts).total_seconds() / 3600.0
+
+
+def _load_jsonl_tail(path: Path, *, max_lines: int) -> list[dict[str, Any]]:
+    if not path.exists():
+        return []
+    try:
+        lines = path.read_text(encoding="utf-8").splitlines()[-max_lines:]
+    except OSError:
+        return []
+    out: list[dict[str, Any]] = []
+    for line in lines:
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            obj = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(obj, dict):
+            out.append(obj)
+    return out
+
+
+def _write_edge_hunter_snapshot() -> None:
+    """Write a lightweight opportunity snapshot for monitoring/debugging.
+
+    Deterministic, monitoring-only output. Must not influence trading.
+    """
+    payload: dict[str, Any] = {"generated_at": _iso_now(), "status": "empty", "top_candidates": [], "stats": {}}
+    try:
+        events = _load_jsonl_tail(GUARDRAIL_AUDIT_FILE, max_lines=3000)
+        if not events:
+            payload["reason"] = "guardrail_audit_missing_or_empty"
+        else:
+            def _ts(e: dict[str, Any]) -> datetime:
+                return _parse_iso(str(e.get("timestamp", "") or "")) or datetime.min.replace(tzinfo=timezone.utc)
+
+            def _edge(e: dict[str, Any]) -> float:
+                try:
+                    return float(e.get("edge", 0.0) or 0.0)
+                except (TypeError, ValueError):
+                    return 0.0
+
+            events.sort(key=_ts)
+            latest_run_id = str(events[-1].get("run_id", "") or "")
+            latest = [e for e in events if str(e.get("run_id", "") or "") == latest_run_id] if latest_run_id else events[-200:]
+            top = sorted(latest, key=lambda e: abs(_edge(e)), reverse=True)[:20]
+
+            def _cand(e: dict[str, Any]) -> dict[str, Any]:
+                return {
+                    "timestamp": e.get("timestamp"),
+                    "run_id": e.get("run_id"),
+                    "proposal_id": e.get("proposal_id"),
+                    "market_id": e.get("market_id"),
+                    "city": e.get("city"),
+                    "market_question": e.get("market_question"),
+                    "allowed": bool(e.get("allowed", False)),
+                    "reason_code": e.get("reason_code"),
+                    "entry_price": e.get("entry_price"),
+                    "implied_probability": e.get("implied_probability"),
+                    "model_probability": e.get("model_probability"),
+                    "confidence_level": e.get("confidence_level"),
+                    "edge": _edge(e),
+                }
+
+            payload = {
+                "generated_at": _iso_now(),
+                "status": "ok",
+                "latest_run_id": latest_run_id,
+                "stats": {
+                    "events_total_tail": len(events),
+                    "events_latest_run": len(latest),
+                    "allowed_latest_run": sum(1 for e in latest if bool(e.get("allowed", False))),
+                    "positive_edge_latest_run": sum(1 for e in latest if _edge(e) > 0),
+                    "negative_edge_latest_run": sum(1 for e in latest if _edge(e) < 0),
+                },
+                "top_candidates": [_cand(e) for e in top],
+            }
+    except Exception as exc:
+        payload = {"generated_at": _iso_now(), "status": "error", "error": str(exc)[:200], "top_candidates": [], "stats": {}}
+
+    try:
+        EDGE_HUNTER_FILE.parent.mkdir(parents=True, exist_ok=True)
+        EDGE_HUNTER_FILE.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
+    except Exception:
+        pass
+
+
+def _ensure_shadow_trades_file_exists() -> None:
+    try:
+        SHADOW_TRADES_FILE.parent.mkdir(parents=True, exist_ok=True)
+        if not SHADOW_TRADES_FILE.exists():
+            SHADOW_TRADES_FILE.write_text("", encoding="utf-8")
+    except Exception:
+        pass
+
+
+def _artifact_warnings() -> list[str]:
+    warnings: list[str] = []
+
+    for path, key in [
+        (REPORT_FILE, "analytics/performance_report.json"),
+        (ADVICE_FILE, "output/strategy_advice.json"),
+        (AUDIT_DIR, "logs/audit/"),
+    ]:
+        if not path.exists():
+            warnings.append(f"missing:{key}")
+
+    if not GUARDRAIL_AUDIT_FILE.exists():
+        warnings.append("missing:logs/guardrail_audit.jsonl")
+
+    report = _load_json(REPORT_FILE)
+    advice = _load_json(ADVICE_FILE)
+    for obj, name in [(report, "analytics/performance_report.json"), (advice, "output/strategy_advice.json")]:
+        age = _artifact_age_hours(obj.get("generated_at"))
+        if age is None:
+            warnings.append(f"stale_or_missing_generated_at:{name}")
+        elif age > ARTIFACT_STALE_AFTER_HOURS:
+            warnings.append(f"stale:{name}:{age:.1f}h")
+
+    return warnings
 
 
 def _load_recent_runs(max_runs: int = _RECENT_RUN_WINDOW) -> list[dict[str, Any]]:
@@ -296,8 +435,13 @@ def derive_bot_health(
     # create an unrecoverable Catch-22 (no trades → no data → no recovery).
     _insufficient_data = total_trades < 10
 
+    artifact_warnings = current_summary.get("artifact_warnings", [])
+    artifact_warnings = artifact_warnings if isinstance(artifact_warnings, list) else []
+    artifact_fail_closed = len(artifact_warnings) > 0
+
     if (
-        drawdown_pct >= 20.0
+        artifact_fail_closed
+        or drawdown_pct >= 20.0
         or (recent_loss_streak >= 4 and not _insufficient_data)
         or consecutive_non_ok_runs >= 2
         or (advisor_protect_wr_trigger and not _insufficient_data)
@@ -315,6 +459,8 @@ def derive_bot_health(
         }
         if drawdown_pct >= 20.0:
             triggers.append(f"drawdown_{drawdown_pct:.1f}pct")
+        if artifact_fail_closed:
+            triggers.append("artifact_fail_closed")
         if recent_loss_streak >= 4 and not _insufficient_data:
             triggers.append(f"loss_streak_{recent_loss_streak}")
         if consecutive_non_ok_runs >= 2:
@@ -443,6 +589,19 @@ def update_bot_health(current_summary: dict[str, Any]) -> dict[str, Any]:
     strategy_advice = _load_json(ADVICE_FILE)
     recent_runs = _load_recent_runs()
     recent_closed_positions = _load_recent_closed_positions()
+
+    # Monitoring artifacts + fail-closed signal if core artifacts are missing/stale.
+    _write_edge_hunter_snapshot()
+    _ensure_shadow_trades_file_exists()
+    current_summary = dict(current_summary)
+    warnings = _artifact_warnings()
+    try:
+        markets_fetched = int(current_summary.get("markets_fetched", 0) or 0)
+    except (TypeError, ValueError):
+        markets_fetched = 0
+    if markets_fetched <= 0:
+        warnings.append("no_markets_fetched")
+    current_summary["artifact_warnings"] = warnings
 
     state = derive_bot_health(
         current_summary=current_summary,
