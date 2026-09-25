@@ -1426,6 +1426,19 @@ class Orchestrator:
             with open(summary_file, 'a', encoding='utf-8') as f:
                 f.write('\n'.join(entry_lines))
 
+            # Optional: Produktions-Telemetrie (READ-ONLY, non-blocking)
+            try:
+                from analytics.edge_hunter import write_edge_hunter_report
+                write_edge_hunter_report(max_lines=5000)
+            except Exception as _exc:
+                logger.debug("edge_hunter export fehlgeschlagen (unkritisch): %s", _exc)
+
+            try:
+                from analytics.shadow_trades import export_shadow_trades
+                export_shadow_trades()
+            except Exception as _exc:
+                logger.debug("shadow_trades export fehlgeschlagen (unkritisch): %s", _exc)
+
             return StepResult(
                 name="status_writer",
                 success=True,
