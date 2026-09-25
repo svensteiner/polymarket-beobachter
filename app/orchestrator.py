@@ -258,6 +258,9 @@ class Orchestrator:
         # Step 5h: General Market Observer (non-weather edge scan, OBSERVE-ONLY)
         self._run_general_market_observer(weather_result.data)
 
+        # Step 5i: Edge Hunter Report (READ-ONLY, aus Audit/Shadow-Logs)
+        self._run_edge_hunter()
+
         # Build summary with pipeline duration
         duration_seconds = round(time.perf_counter() - pipeline_start, 2)
         result.summary = self._build_summary(result)
@@ -1207,6 +1210,20 @@ class Orchestrator:
             )
         except Exception as e:
             logger.debug(f"Segmentanalyse fehlgeschlagen (unkritisch): {e}")
+
+    def _run_edge_hunter(self) -> None:
+        """Erzeuge Edge-Hunter Report aus Guardrail-Audit + Shadow-Candidates (non-blocking)."""
+        try:
+            from analytics.edge_hunter import run_edge_hunter
+            report = run_edge_hunter(self.base_dir)
+            logger.info(
+                "[EDGE-HUNTER] candidates=%s audit_rows=%s shadow_rows=%s",
+                report.get("candidates_count", 0),
+                report.get("audit_rows_considered", 0),
+                report.get("shadow_rows_considered", 0),
+            )
+        except Exception as e:
+            logger.debug(f"Edge-Hunter fehlgeschlagen (unkritisch): {e}")
 
     def _refresh_agent_policy(self, summary: Dict[str, Any]) -> Dict[str, Any]:
         """Baue aktive Entry-Policy aus Advisor + Segmentanalyse."""

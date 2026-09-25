@@ -19,6 +19,27 @@ logger = logging.getLogger(__name__)
 PROJECT_ROOT = Path(__file__).parent.parent
 LOGS_DIR = PROJECT_ROOT / "logs"
 AUDIT_FILE = LOGS_DIR / "guardrail_audit.jsonl"
+DATA_DIR = PROJECT_ROOT / "data"
+SHADOW_TRADES_FILE = DATA_DIR / "shadow_trades.jsonl"
+
+
+def _record_shadow_candidate(entry: Dict[str, Any]) -> None:
+    """
+    Persistiere Shadow-Trade-Candidates (ohne echte Trades auszufuehren).
+
+    Governance:
+    - Reines Logging fuer Analyse/Monitoring.
+    - Keine Aenderung von Guardrails/Policy.
+    """
+    try:
+        DATA_DIR.mkdir(parents=True, exist_ok=True)
+        if not SHADOW_TRADES_FILE.exists():
+            SHADOW_TRADES_FILE.write_text("", encoding="utf-8")
+
+        with open(SHADOW_TRADES_FILE, "a", encoding="utf-8") as f:
+            f.write(json.dumps(entry, ensure_ascii=False) + "\n")
+    except Exception as e:
+        logger.debug(f"Failed to record shadow trade candidate: {e}")
 
 
 def record_guardrail_decision(decision: Dict[str, Any]) -> None:
@@ -45,6 +66,31 @@ def record_guardrail_decision(decision: Dict[str, Any]) -> None:
 
         with open(AUDIT_FILE, "a", encoding="utf-8") as f:
             f.write(json.dumps(entry, ensure_ascii=False) + "\n")
+
+        # Shadow-Candidate: waere ohne Inventory/Policy-Block handelbar gewesen.
+        # Nur loggen, wenn der echte Entry BLOCKED ist, aber shadow_allowed_without_inventory True.
+        if (entry.get("allowed") is False) and entry.get("shadow_allowed_without_inventory"):
+            shadow_entry = {
+                "timestamp": entry.get("timestamp"),
+                "run_id": entry.get("run_id"),
+                "proposal_id": entry.get("proposal_id"),
+                "market_id": entry.get("market_id"),
+                "allowed": entry.get("allowed"),
+                "reason_code": entry.get("reason_code"),
+                "reason_detail": entry.get("reason_detail"),
+                "shadow_allowed_without_inventory": entry.get("shadow_allowed_without_inventory"),
+                "shadow_reason_code": entry.get("shadow_reason_code"),
+                "shadow_reason_detail": entry.get("shadow_reason_detail"),
+                "market_question": entry.get("market_question"),
+                "edge": entry.get("edge"),
+                "implied_probability": entry.get("implied_probability"),
+                "model_probability": entry.get("model_probability"),
+                "confidence_level": entry.get("confidence_level"),
+                "city": entry.get("city"),
+                "entry_price": entry.get("entry_price"),
+                "source": "guardrail_audit",
+            }
+            _record_shadow_candidate(shadow_entry)
 
     except Exception as e:
         logger.warning(f"Failed to record guardrail decision: {e}")
