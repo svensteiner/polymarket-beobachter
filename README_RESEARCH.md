@@ -196,3 +196,18 @@ Ergebnis gilt ausschließlich für `research_only` und setzt
 `openai==3.13.0` vorausgesetzt und der lokale SDK-Loopbacktest ausgeführt.
 Für eine saubere Testumgebung kann `requirements-research-test.txt` in `.venv-research-test`
 installiert werden; die Datei pinnt Pytest und seine Testlaufzeit-Abhängigkeiten.
+
+## Persistenz und Prozesssperre
+
+Schreibzugriffe auf `output/agent_runs.json` werden durch eine Prozesssperre
+serialisiert. Lifecycle-Aufrufer halten zusätzlich `operation()` über ihre
+gesamte Operation; einzelne `load()`-Aufrufe lesen ohne Sperre den atomar
+veröffentlichten Stand.
+Der Store akzeptiert nur begrenztes, gültiges JSON mit eindeutigen Hex-Lauf-
+schlüsseln und Objekt-Records; doppelte Schlüssel, `NaN`/unendliche Zahlen,
+falsche Strukturen und übergroße Dateien werden fail-closed abgewiesen. Jeder
+Schreibvorgang schreibt eine eindeutige temporäre Datei im selben Verzeichnis,
+ruft `flush`/`fsync` auf und ersetzt danach atomar. Ein fehlgeschlagener Ersatz
+lässt die bestehende Datei unverändert und räumt nur die eigene temporäre Datei
+auf. Das bietet Prozessabstimmung und best effort für lokale Abstürze; es ist
+keine Garantie für Verzeichnis-Metadaten nach einem plötzlichen Stromausfall.

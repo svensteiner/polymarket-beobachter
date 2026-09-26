@@ -24,6 +24,7 @@ RESEARCH_TESTS = [
     "tests/unit/test_research_ownership.py", "tests/unit/test_research_runner.py",
     "tests/unit/test_research_supervisor.py", "tests/unit/test_research_verification.py",
     "tests/integration/test_agent_snapshot_cli.py", "tests/integration/test_research_control_process.py",
+    "tests/integration/test_agent_store_process.py",
 ]
 
 
