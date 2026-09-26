@@ -132,6 +132,19 @@ Vorgangsfehler erscheinen als JSON; argparse-Aufruffehler auf stderr.
 `--timeout` begrenzt jeden SDK-Request (höchstens 60 Sekunden), nicht den
 gesamten Abgleich. Es gibt keine automatischen Wiederholungen.
 
+Die interne Create-Funktion wird separat gegen einen lokalen HTTP-Testserver
+geprüft. Sie speichert vor jedem POST den beabsichtigten Zustandswechsel,
+verwendet 30 Sekunden Timeout pro Request und deaktiviert SDK-Retries.
+Ungültige Antwortkennungen oder eine unpassende Session-Agent-Zuordnung
+sperren den Lauf als `uncertain`. Nach einem unklaren Create-Ergebnis darf
+derselbe Lauf nicht erneut gestartet werden. Nur ein sauber gespeicherter
+Zustand `agent_created` ohne Session-Evidenz kann beim Session-Schritt fortsetzen.
+Ein solcher Zustand ist kein Nachweis für ein verfügbares Geldbudget:
+`admission_budget` ist bislang nur ein Eingabe-Gate, weder Kostenreservierung
+noch durchgesetztes Ausgabenlimit. Bezahlter autonomer Betrieb bleibt gesperrt.
+SDK-Retries sind ausdrücklich konfigurierbar; siehe die
+[offizielle Dokumentation](https://developers.openai.com/api/docs/guides/rate-limits).
+
 Standardpfade werden aus dem Skriptverzeichnis abgeleitet; explizite relative
 Pfade beziehen sich auf das Arbeitsverzeichnis. Der lokale Entwurf erteilt
 keine Freigabe für bezahlte Sessions und reserviert kein Budget. Die SDK-Sitzung

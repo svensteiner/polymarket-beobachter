@@ -159,7 +159,7 @@ def test_dispatch_is_single_call_and_no_retry(tmp_path: Path):
     class Client:
         beta = type("Beta", (), {"agents": Agents()})()
     def factory(**kwargs):
-        calls.append(("factory", kwargs)); assert kwargs == {"max_retries": 0}; return Client()
+        calls.append(("factory", kwargs)); assert kwargs == {"timeout": 30, "max_retries": 0}; return Client()
     with pytest.raises(CoordinatorError): dispatch(factory, "gpt-5.6-luna", live_enabled=True,
         acknowledge_no_hard_session_cost_cap=True, admission_budget=1, status_path=p,
         store_path=tmp_path / "runs.json")
@@ -173,7 +173,7 @@ def test_prepare_allowlist_and_dispatch_intent(tmp_path: Path):
                    acknowledge_no_hard_session_cost_cap=True, admission_budget=1)
     store = RunStore(tmp_path / "runs.json"); calls = []
     class Sessions:
-        def create(self, **kw): calls.append(("session", kw)); return type("S", (), {"id": "s1", "status": "queued"})()
+        def create(self, **kw): calls.append(("session", kw)); return type("S", (), {"id": "s1", "agent": type("A", (), {"id": "a1"})(), "status": "queued", "model_dump": lambda self: {"id": "s1", "agent": {"id": "a1"}}})()
     class Agents:
         sessions = Sessions()
         def create(self, **kw): calls.append(("agent", kw)); return type("A", (), {"id": "a1"})()

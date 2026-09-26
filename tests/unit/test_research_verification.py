@@ -73,16 +73,26 @@ def test_low_level_run_handles_timeout_and_missing_interpreter():
 
 
 def test_sdk_zero_or_skipped_tests_do_not_pass(tmp_path, monkeypatch):
-    for sdk_output in ("Ran 0 tests\nOK\n", "OK (skipped=1)\n"):
+    for sdk_output in ("Ran 0 tests\nOK\n", "Ran 4 tests\nOK\n", "Ran 8 tests\nOK (skipped=1)\n"):
         calls = []
         def fake(command, **kw):
             calls.append(command)
             if len(calls) == 1: return result("3.12.8\n9.0.2\n")
             if len(calls) == 2: return result("121 passed\n")
+            if len(calls) == 3: return result("3.13.0\n")
             return result(sdk_output)
         monkeypatch.setattr(verifier, "_run", fake)
         code, report = verifier.verify(python="fake", agent_python="agent", report=tmp_path / (str(len(calls)) + ".json"))
         assert code == 1 and report["sdk"]["status"] == "failed"
+        assert len(calls) == 4
+
+
+def test_both_sdk_suites_pass(tmp_path, monkeypatch):
+    outputs = iter([result("3.12.8\n9.0.2\n"), result("passed"),
+                    result("3.13.0\n"), result("Ran 8 tests\nOK\n")])
+    monkeypatch.setattr(verifier, "_run", lambda *args, **kwargs: next(outputs))
+    code, report = verifier.verify(python="fake", agent_python="agent", report=tmp_path / "r.json")
+    assert code == 0 and report["sdk"]["status"] == "passed"
 
 
 def test_allowlist_contains_control_process_and_ownership():
