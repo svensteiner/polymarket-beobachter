@@ -20,6 +20,7 @@ TIMEOUT = 120
 RESEARCH_TESTS = [
     "tests/unit/test_agent_cost_report.py", "tests/unit/test_agent_run_store.py",
     "tests/unit/test_agent_dispatch.py",
+    "tests/unit/test_agent_admission.py",
     "tests/unit/test_agent_result_validation.py",
     "tests/unit/test_research_agent.py", "tests/unit/test_research_control.py",
     "tests/unit/test_research_coordinator.py", "tests/unit/test_research_health.py",
@@ -27,6 +28,7 @@ RESEARCH_TESTS = [
     "tests/unit/test_research_supervisor.py", "tests/unit/test_research_verification.py",
     "tests/integration/test_agent_snapshot_cli.py", "tests/integration/test_research_control_process.py",
     "tests/integration/test_agent_store_process.py",
+    "tests/integration/test_agent_admission_cli.py",
 ]
 
 

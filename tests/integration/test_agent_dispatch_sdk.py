@@ -35,7 +35,8 @@ class AgentDispatchSDKAcceptance(unittest.TestCase):
         self._exercise("sessionwrongagent")
 
     def _exercise(self, scenario):
-        from analytics.research_coordinator import CoordinatorError, RunStore, dispatch_once, prepare
+        from analytics.research_coordinator import CoordinatorError, RunStore, prepare
+        from tests.dispatch_harness import dispatch_once
 
         calls = []
         factory_calls = []

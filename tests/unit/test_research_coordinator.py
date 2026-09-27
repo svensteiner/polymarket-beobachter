@@ -44,8 +44,9 @@ def test_rehashed_invalid_canonical_plan_never_creates_client(tmp_path, mutation
     assert not store.path.exists()
 
 from analytics.agent_run_store import RunStore
-from analytics.research_coordinator import (CoordinatorError, compact_status, dispatch, dispatch_once,
+from analytics.research_coordinator import (CoordinatorError, compact_status, dispatch,
                                              prepare, reconcile, request_plan)
+from tests.dispatch_harness import dispatch_once, dispatch as fixture_dispatch
 
 
 def good_status():
@@ -160,7 +161,7 @@ def test_dispatch_is_single_call_and_no_retry(tmp_path: Path):
         beta = type("Beta", (), {"agents": Agents()})()
     def factory(**kwargs):
         calls.append(("factory", kwargs)); assert kwargs == {"timeout": 30, "max_retries": 0}; return Client()
-    with pytest.raises(CoordinatorError): dispatch(factory, "gpt-5.6-luna", live_enabled=True,
+    with pytest.raises(CoordinatorError): fixture_dispatch(factory, "gpt-5.6-luna", live_enabled=True,
         acknowledge_no_hard_session_cost_cap=True, admission_budget=1, status_path=p,
         store_path=tmp_path / "runs.json")
     assert [x[0] for x in calls] == ["factory", "agent", "session"]

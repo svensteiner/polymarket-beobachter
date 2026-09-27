@@ -4,7 +4,8 @@ from pathlib import Path
 import pytest
 
 from analytics.agent_run_store import RunStore, RunStoreError
-from analytics.research_coordinator import CoordinatorError, dispatch_once, prepare
+from analytics.research_coordinator import CoordinatorError, prepare
+from tests.dispatch_harness import dispatch_once
 
 
 def _plan(tmp_path: Path):

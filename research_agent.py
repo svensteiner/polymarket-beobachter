@@ -90,9 +90,13 @@ def main(argv: list[str] | None = None) -> int:
     s = sub.add_parser("show"); s.add_argument("--run-key", required=True)
     r = sub.add_parser("reconcile"); r.add_argument("--run-key", required=True); r.add_argument("--timeout", type=float, default=30.0)
     sub.add_parser("costs")
+    sub.add_parser("admission", help="Show offline authorization for new paid sessions")
     args = parser.parse_args(argv)
     try:
-        if args.command == "prepare": result = prepare(args.model, args.status, args.store)
+        if args.command == "admission":
+            from analytics.agent_admission import report
+            result = report()
+        elif args.command == "prepare": result = prepare(args.model, args.status, args.store)
         elif args.command == "show": result = show(args.run_key, args.store)
         elif args.command == "costs":
             from analytics.agent_cost_report import report

@@ -141,13 +141,29 @@ Vorgangsfehler erscheinen als JSON; argparse-Aufruffehler auf stderr.
 `--timeout` begrenzt jeden SDK-Request (höchstens 60 Sekunden), nicht den
 gesamten Abgleich. Es gibt keine automatischen Wiederholungen.
 
-Die interne Create-Funktion wird separat gegen einen lokalen HTTP-Testserver
+Die öffentlichen Funktionen `dispatch` und `dispatch_once` verweigern neue
+Starts vor Client-Erstellung, Storezugriff und Sperren. Auch alte
+`live_enabled`-/`admission_budget`-Werte oder Umgebungsvariablen heben diese
+Sperre nicht auf. Die aktuelle Freigabe lässt sich ohne SDK und ohne
+Status- oder Storedatei prüfen:
+
+```powershell
+.\.venv-research\Scripts\python.exe research_agent.py admission
+```
+
+Exitcode 3 und `allowed=false` bedeuten gesperrt. Das ausgewiesene Budget von
+0 EUR bezieht sich auf neue bezahlte Starts, nicht auf Kontoguthaben oder
+bisherige Ausgaben. Es gibt keinen Freischalter. Eine spätere Aktivierung
+benötigt eine ausdrückliche Freigabe sowie ein überprüftes Kostenlimit und
+eine durchgesetzte Reservierung.
+
+Die private Create-Funktion wird ausschließlich über einen Testhelfer gegen einen lokalen HTTP-Testserver
 geprüft. Sie speichert vor jedem POST den beabsichtigten Zustandswechsel,
 verwendet 30 Sekunden Timeout pro Request und deaktiviert SDK-Retries.
 Ungültige Antwortkennungen oder eine unpassende Session-Agent-Zuordnung
 sperren den Lauf als `uncertain`. Nach einem unklaren Create-Ergebnis darf
 derselbe Lauf nicht erneut gestartet werden. Nur ein sauber gespeicherter
-Zustand `agent_created` ohne Session-Evidenz kann beim Session-Schritt fortsetzen.
+Zustand `agent_created` ohne Session-Evidenz kann im isolierten Test beim Session-Schritt fortsetzen.
 Ein solcher Zustand ist kein Nachweis für ein verfügbares Geldbudget:
 `admission_budget` ist bislang nur ein Eingabe-Gate, weder Kostenreservierung
 noch durchgesetztes Ausgabenlimit. Bezahlter autonomer Betrieb bleibt gesperrt.
@@ -157,7 +173,7 @@ SDK-Retries sind ausdrücklich konfigurierbar; siehe die
 Standardpfade werden aus dem Skriptverzeichnis abgeleitet; explizite relative
 Pfade beziehen sich auf das Arbeitsverzeichnis. Der lokale Entwurf erteilt
 keine Freigabe für bezahlte Sessions und reserviert kein Budget. Die SDK-Sitzung
-hat kein garantiertes hartes Kostenlimit.
+hat im vorliegenden geprüften Integrationsstand kein verifiziertes hartes Kostenlimit.
 
 Der Integrationstest verwendet das installierte SDK und einen lokalen HTTP-Server
 mit Testdaten. Er prüft genau drei GET-Requests und keine Session-Erstellung:
