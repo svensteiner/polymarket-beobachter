@@ -20,6 +20,7 @@ TIMEOUT = 120
 RESEARCH_TESTS = [
     "tests/unit/test_agent_cost_report.py", "tests/unit/test_agent_run_store.py",
     "tests/unit/test_agent_dispatch.py",
+    "tests/unit/test_agent_result_validation.py",
     "tests/unit/test_research_agent.py", "tests/unit/test_research_control.py",
     "tests/unit/test_research_coordinator.py", "tests/unit/test_research_health.py",
     "tests/unit/test_research_ownership.py", "tests/unit/test_research_runner.py",
@@ -102,7 +103,7 @@ def verify(*, python: str = sys.executable, agent_python: str | None = None,
         result["sdk"]["run"] = sdk_result
         skipped = "skipped=" in (sdk_result["stdout"] + sdk_result["stderr"])
         match = re.search(r"Ran (\d+) tests?", sdk_result["stdout"] + sdk_result["stderr"])
-        result["sdk"]["status"] = "passed" if sdk_result["returncode"] == 0 and not sdk_result["timed_out"] and not skipped and match and int(match.group(1)) >= 8 else "failed"
+        result["sdk"]["status"] = "passed" if sdk_result["returncode"] == 0 and not sdk_result["timed_out"] and not skipped and match and int(match.group(1)) >= 12 else "failed"
         if result["sdk"]["status"] != "passed":
             result["status"] = "failed"; return _write(report, result), result
     result["status"] = "passed"; return _write(report, result), result

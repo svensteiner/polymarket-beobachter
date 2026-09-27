@@ -42,17 +42,41 @@ class AgentSDKAcceptance(unittest.TestCase):
     def test_foreign_message_metadata_cannot_persist_output(self):
         self._exercise("message")
 
+    def test_items_has_more_is_reconcile_error(self):
+        self._exercise_malformed("has_more")
+
+    def test_items_missing_has_more_is_reconcile_error(self):
+        self._exercise_malformed("missing_has_more")
+
+    def test_items_null_data_is_reconcile_error(self):
+        self._exercise_malformed("null_data")
+
+    def test_message_null_content_is_reconcile_error(self):
+        self._exercise_malformed("null_content")
+
     def _exercise(self, violation=None):
         calls = []
         session_path = f"/v1/agents/sessions/{SESSION}"
+        assistant_item = {"id": "msg_local", "type": "message", "role": "assistant",
+                          "turn_id": "turn_local", "status": "completed",
+                          "content": [{"type": "output_text", "text": "OK"}]}
+        if violation is None:
+            item_data = [
+                {"id": "reason_local", "type": "reasoning", "turn_id": "turn_local",
+                 "summary": []},
+                {"id": "user_local", "type": "message", "turn_id": "turn_local",
+                 "role": "user", "status": "completed",
+                 "content": [{"type": "input_text", "text": "fixture input"}]},
+                assistant_item,
+            ]
+        else:
+            item_data = [assistant_item]
         fixtures = {
             session_path: {"id": SESSION, "agent": {"id": "agent_local"}, "object": "agent.session", "status": "idle",
                            "usage": USAGE, "error": None},
             session_path + "/items": {
                 "object": "list", "has_more": False,
-                "data": [{"id": "msg_local", "type": "message", "role": "assistant",
-                          "turn_id": "turn_local", "status": "completed",
-                          "content": [{"type": "output_text", "text": "OK"}]}]},
+                "data": item_data},
             session_path + "/turns": {
                 "object": "list", "has_more": False,
                 "data": [{"id": "turn_local", "object": "agent.session.turn",
@@ -125,7 +149,8 @@ class AgentSDKAcceptance(unittest.TestCase):
                 saved = json.loads(store.read_text(encoding="utf-8"))[KEY]
                 self.assertEqual(saved["state"], "completed")
                 self.assertEqual(saved["usage"], USAGE)
-                self.assertEqual(saved["messages"][0]["text"], "OK")
+                assistant_messages = [m for m in saved["messages"] if m.get("role") == "assistant"]
+                self.assertEqual(assistant_messages[0]["text"], "OK")
                 before_costs = store.read_bytes()
                 costs = subprocess.run([sys.executable, str(ROOT / "research_agent.py"),
                     "--store", str(store), "costs"], cwd=directory, env=environment,
@@ -137,6 +162,99 @@ class AgentSDKAcceptance(unittest.TestCase):
                 self.assertFalse(report["authorization"])
                 self.assertEqual(store.read_bytes(), before_costs)
                 self.assertEqual(calls, [("GET", path) for path in fixtures])
+        finally:
+            server.shutdown()
+            server.server_close()
+            thread.join(timeout=5)
+
+    def _exercise_malformed(self, malformed):
+        calls = []
+        session_path = f"/v1/agents/sessions/{SESSION}"
+        items = {
+            "object": "list", "has_more": False,
+            "data": [{"id": "msg_local", "type": "message", "role": "assistant",
+                      "turn_id": "turn_local", "status": "completed",
+                      "content": [{"type": "output_text", "text": "NEW_OUTPUT"}]}],
+        }
+        if malformed == "has_more":
+            items["has_more"] = True
+        elif malformed == "missing_has_more":
+            items.pop("has_more")
+        elif malformed == "null_data":
+            items["data"] = None
+        else:
+            items["data"][0]["content"] = None
+        fixtures = {
+            session_path: {"id": SESSION, "agent": {"id": "agent_local"}, "object": "agent.session",
+                           "status": "idle", "usage": USAGE, "error": None},
+            session_path + "/items": items,
+            session_path + "/turns": {
+                "object": "list", "has_more": False,
+                "data": [{"id": "turn_local", "object": "agent.session.turn",
+                          "agent_id": "agent_local", "session_id": SESSION,
+                          "created_at": 1, "status": "completed", "error": None,
+                          "usage": USAGE}]},
+        }
+
+        class Handler(BaseHTTPRequestHandler):
+            def do_GET(self):
+                path = self.path.split("?", 1)[0]
+                calls.append(("GET", path))
+                value = fixtures.get(path)
+                body = json.dumps(value if value is not None else {"error": "unexpected path"}).encode()
+                self.send_response(200 if value is not None else 404)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+
+            def do_POST(self):
+                calls.append(("POST", self.path))
+                self.send_error(405)
+
+            def log_message(self, *_args):
+                pass
+
+        server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        try:
+            with tempfile.TemporaryDirectory() as directory:
+                store = Path(directory) / "runs.json"
+                store.write_text(json.dumps({KEY: {"state": "completed", "session_id": SESSION,
+                    "agent_id": "agent_local", "model": "gpt-5.6-luna", "messages": [{"text": "OLD_OUTPUT"}],
+                    "usage": USAGE, "estimated_cost_usd": "1", "session_status": "idle"}}), encoding="utf-8")
+                environment = os.environ.copy()
+                environment.update(OPENAI_API_KEY="local-fixture-only",
+                    OPENAI_BASE_URL=f"http://127.0.0.1:{server.server_port}/v1",
+                    NO_PROXY="127.0.0.1,localhost", no_proxy="127.0.0.1,localhost")
+                for name in ("OPENAI_ORG_ID", "OPENAI_PROJECT_ID", "OPENAI_ADMIN_KEY"):
+                    environment.pop(name, None)
+                completed = subprocess.run([sys.executable, str(ROOT / "research_agent.py"),
+                    "--store", str(store), "reconcile", "--run-key", KEY, "--timeout", "5"],
+                    cwd=directory, env=environment, capture_output=True, text=True, timeout=25)
+                self.assertEqual(completed.returncode, 1, completed.stdout + completed.stderr)
+                self.assertNotIn("Traceback", completed.stdout + completed.stderr)
+                saved = json.loads(store.read_text(encoding="utf-8"))[KEY]
+                self.assertEqual(saved["state"], "reconcile_error")
+                self.assertTrue(saved["output_incomplete"])
+                self.assertEqual(saved["session_id"], SESSION)
+                self.assertEqual(saved["agent_id"], "agent_local")
+                for field in ("messages", "usage", "estimated_cost_usd", "session_status"):
+                    self.assertNotIn(field, saved)
+                self.assertNotIn("OLD_OUTPUT", store.read_text(encoding="utf-8"))
+                self.assertNotIn("NEW_OUTPUT", store.read_text(encoding="utf-8"))
+                costs = subprocess.run([sys.executable, str(ROOT / "research_agent.py"),
+                    "--store", str(store), "costs"], cwd=directory, env=environment,
+                    capture_output=True, text=True, timeout=10)
+                self.assertEqual(costs.returncode, 3, costs.stdout + costs.stderr)
+                cost_result = json.loads(costs.stdout)
+                self.assertIsNone(cost_result["total_estimated_cost_usd"])
+                self.assertEqual(cost_result["accounted_completed"], 0)
+                self.assertEqual(cost_result["partial_known_estimated_cost_usd"], "0")
+                self.assertNotIn('"total_estimated_cost_usd": "1"', costs.stdout)
+                self.assertEqual(calls, [("GET", session_path), ("GET", session_path + "/items"),
+                                         ("GET", session_path + "/turns")])
         finally:
             server.shutdown()
             server.server_close()

@@ -123,6 +123,15 @@ Fehlerursache steht ohne fremden Antworttext in `ownership_reason`. Fehlende
 Kennungen alter Datensätze werden nicht automatisch ergänzt. Ein späterer
 erfolgreicher Abgleich ersetzt den Fehlerzustand; er erzeugt keine neue Session.
 
+Eine Ergebnisseite gilt nur bei ausdrücklich `has_more=false` und einer
+gültigen Liste mit höchstens 20 Einträgen als vollständig. Fehlende oder
+fehlerhafte Seitenangaben führen zu `reconcile_error`. Dabei werden alte
+Antworttexte, Verbrauchswerte und Kostenschätzungen entfernt; die bekannten
+Agent- und Session-Kennungen bleiben für einen späteren Abgleich erhalten.
+Auch Abruffehler verwerfen den bisherigen Ergebnisstand. Nur ein vollständig
+bestätigter Abschluss erhält eine neue Kostenschätzung. Ein fehlgeschlagener
+Abgleich darf daher nicht als weiterhin gültiger früherer Erfolg gelesen werden.
+
 Es gibt keinen `dispatch`- oder `create`-Befehl. Vorbereitung und Anzeige
 bleiben offline; `reconcile` liest nur eine bekannte Session. Exitcode 0 steht
 für erfolgreiche Vorbereitung/Anzeige oder einen abgeschlossenen Abgleich,

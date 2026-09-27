@@ -73,7 +73,7 @@ def test_low_level_run_handles_timeout_and_missing_interpreter():
 
 
 def test_sdk_zero_or_skipped_tests_do_not_pass(tmp_path, monkeypatch):
-    for sdk_output in ("Ran 0 tests\nOK\n", "Ran 4 tests\nOK\n", "Ran 8 tests\nOK (skipped=1)\n"):
+    for sdk_output in ("Ran 0 tests\nOK\n", "Ran 8 tests\nOK\n", "Ran 12 tests\nOK (skipped=1)\n"):
         calls = []
         def fake(command, **kw):
             calls.append(command)
@@ -89,7 +89,7 @@ def test_sdk_zero_or_skipped_tests_do_not_pass(tmp_path, monkeypatch):
 
 def test_both_sdk_suites_pass(tmp_path, monkeypatch):
     outputs = iter([result("3.12.8\n9.0.2\n"), result("passed"),
-                    result("3.13.0\n"), result("Ran 8 tests\nOK\n")])
+                    result("3.13.0\n"), result("Ran 12 tests\nOK\n")])
     monkeypatch.setattr(verifier, "_run", lambda *args, **kwargs: next(outputs))
     code, report = verifier.verify(python="fake", agent_python="agent", report=tmp_path / "r.json")
     assert code == 0 and report["sdk"]["status"] == "passed"

@@ -52,7 +52,7 @@ def test_whitespace_stored_ownership_rejected_before_factory(tmp_path: Path):
 def test_pending_empty_or_owned_stream_has_no_cost(tmp_path: Path):
     turn = {"id": "turn-1", "status": "running", "session_id": "sess-1", "agent_id": "agent-1",
             "usage": None, "model_dump": lambda: {"session_id": "sess-1", "agent_id": "agent-1"}}
-    item = {"turn_id": "turn-1", "role": "assistant", "content": [{"type": "output_text", "text": "draft"}]}
+    item = {"id": "msg-1", "turn_id": "turn-1", "role": "assistant", "content": [{"type": "output_text", "text": "draft"}]}
     store = _store(tmp_path / "runs.json", estimated_cost_usd="9.99")
     result = reconcile(store, lambda **k: _client(turn=turn, item=item, status="running"), KEY)
     assert result["state"] == "in_progress" and "estimated_cost_usd" not in result
@@ -69,7 +69,7 @@ def test_pending_empty_result_has_no_attributed_output(tmp_path: Path):
 def test_foreign_optional_message_metadata_rejected(tmp_path: Path):
     turn = {"id": "turn-1", "status": "completed", "session_id": "sess-1", "agent_id": "agent-1",
             "usage": None, "model_dump": lambda: {"session_id": "sess-1", "agent_id": "agent-1"}}
-    item = {"turn_id": "turn-1", "session_id": "foreign", "agent_id": "agent-1",
+    item = {"id": "msg-1", "turn_id": "turn-1", "session_id": "foreign", "agent_id": "agent-1",
             "role": "assistant", "content": [{"type": "output_text", "text": "foreign"}]}
     store = _store(tmp_path / "runs.json")
     with pytest.raises(CoordinatorError): reconcile(store, lambda **k: _client(turn=turn, item=item), KEY)

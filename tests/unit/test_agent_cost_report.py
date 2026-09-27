@@ -16,6 +16,16 @@ def rec(cost="0.3", session="s1", **extra):
 def write(path, value): path.write_text(json.dumps(value), encoding="utf-8")
 
 
+def test_reconcile_error_is_incomplete_and_never_counts_old_cost(tmp_path):
+    path = tmp_path / "store.json"
+    write(path, {"a" * 64: rec("1", state="reconcile_error")})
+    result = report(path)
+    assert result["exit_code"] == 3 and result["store_state"] == "valid"
+    assert result["accounted_completed"] == 0
+    assert result["total_estimated_cost_usd"] is None
+    assert result["partial_known_estimated_cost_usd"] == "0"
+
+
 def test_exact_decimal_sum_and_pending_separation(tmp_path: Path):
     path = tmp_path / "store.json"
     write(path, {"a" * 64: rec("0.1"), "b" * 64: rec("0.2", "s2"), "c" * 64: {"state": "prepared"}})

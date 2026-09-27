@@ -216,9 +216,9 @@ def test_reconcile_requires_completed_turn_and_usage(tmp_path: Path):
     class Obj:
         def __init__(self, **kw): self.__dict__.update(kw)
     class Items:
-        def list(self, *a, **kw): return Obj(data=[Obj(model_dump=lambda: {"id": "m1", "turn_id": "t1", "role": "assistant", "content": [{"type": "output_text", "text": "OK"}, {"type": "output_text", "text": "DONE"}]})])
+        def list(self, *a, **kw): return Obj(has_more=False, data=[Obj(model_dump=lambda: {"id": "m1", "turn_id": "t1", "role": "assistant", "content": [{"type": "output_text", "text": "OK"}, {"type": "output_text", "text": "DONE"}]})])
     class Turns:
-        def list(self, *a, **kw): return Obj(data=[Obj(id="t1", status="completed", session_id="s1", agent_id="a1", usage=Obj(model_dump=lambda: {"input_tokens": 2, "output_tokens": 1, "total_tokens": 3}), model_dump=lambda: {"error": None, "session_id": "s1", "agent_id": "a1"})])
+        def list(self, *a, **kw): return Obj(has_more=False, data=[Obj(id="t1", status="completed", session_id="s1", agent_id="a1", usage=Obj(model_dump=lambda: {"input_tokens": 2, "output_tokens": 1, "total_tokens": 3}), model_dump=lambda: {"id": "t1", "error": None, "session_id": "s1", "agent_id": "a1"})])
     class Sessions:
         items = Items(); turns = Turns()
         def retrieve(self, *a, **kw): return Obj(id="s1", agent=Obj(id="a1"), status="idle", model_dump=lambda: {"id": "s1", "agent": {"id": "a1"}, "error": None, "usage": {"input_tokens": 2, "output_tokens": 1, "total_tokens": 3}})
@@ -239,10 +239,10 @@ def test_reconcile_rejects_extra_turn(tmp_path: Path):
         def retrieve(*a, **kw): return Obj(id="s1", agent=Obj(id="a1"), status="idle", model_dump=lambda: {"id": "s1", "agent": {"id": "a1"}, "error": None, "usage": {"input_tokens": 1, "output_tokens": 1, "total_tokens": 2}})
         class items:
             @staticmethod
-            def list(*a, **kw): return Obj(data=[Obj(model_dump=lambda: {"turn_id": "t1", "role": "assistant", "content": [{"type": "output_text", "text": "OK"}]})])
+            def list(*a, **kw): return Obj(has_more=False, data=[Obj(model_dump=lambda: {"id": "m1", "turn_id": "t1", "role": "assistant", "content": [{"type": "output_text", "text": "OK"}]})])
         class turns:
             @staticmethod
-            def list(*a, **kw): return Obj(data=[Obj(id="t1", session_id="s1", agent_id="a1", status="completed", usage=usage, model_dump=lambda: {"error": None}), Obj(id="t2", session_id="s1", agent_id="a1", status="failed", usage=None, model_dump=lambda: {"error": {}})])
+            def list(*a, **kw): return Obj(has_more=False, data=[Obj(id="t1", session_id="s1", agent_id="a1", status="completed", usage=usage, model_dump=lambda: {"id": "t1", "error": None, "session_id": "s1", "agent_id": "a1"}), Obj(id="t2", session_id="s1", agent_id="a1", status="failed", usage=None, model_dump=lambda: {"id": "t2", "error": {}})])
     out = reconcile(store, lambda **kw: Obj(beta=Obj(agents=Obj(sessions=Sessions()))), key)
     assert out["state"] == "failed"
 
@@ -275,10 +275,10 @@ def test_reconcile_foreign_turn_does_not_persist_text(tmp_path: Path):
         def retrieve(self, sid): return Obj(id="s1", agent=Obj(id="a1"), status="idle", model_dump=lambda: {"id": "s1", "agent": {"id": "a1"}})
         class items:
             @staticmethod
-            def list(*a, **k): return Obj(data=[Obj(model_dump=lambda: {"turn_id": "t1", "role": "assistant", "content": [{"type": "output_text", "text": "FOREIGN"}]})])
+            def list(*a, **k): return Obj(has_more=False, data=[Obj(model_dump=lambda: {"id": "m1", "turn_id": "t1", "role": "assistant", "content": [{"type": "output_text", "text": "FOREIGN"}]})])
         class turns:
             @staticmethod
-            def list(*a, **k): return Obj(data=[Obj(id="t1", status="completed", session_id="foreign", agent_id="a1", model_dump=lambda: {"session_id": "foreign", "agent_id": "a1"})])
+            def list(*a, **k): return Obj(has_more=False, data=[Obj(id="t1", status="completed", session_id="foreign", agent_id="a1", model_dump=lambda: {"id": "t1", "session_id": "foreign", "agent_id": "a1"})])
     with pytest.raises(CoordinatorError): reconcile(store, lambda **k: Obj(beta=Obj(agents=Obj(sessions=Sessions()))), key)
     saved = store.load(key)
     assert saved["state"] == "failed" and "FOREIGN" not in json.dumps(saved)
@@ -298,8 +298,8 @@ def test_oversized_output_is_bounded_and_durably_incomplete(tmp_path: Path, text
                "content": [{"type": "output_text", "text": text}] * 10}
     sessions = Obj(
             retrieve=lambda *a, **kw: Obj(id="s1", agent=Obj(id="a1"), status="idle", model_dump=lambda: {"id": "s1", "agent": {"id": "a1"}, "usage": usage}),
-        items=Obj(list=lambda *a, **kw: Obj(data=[Obj(model_dump=lambda: message)] * 20)),
-            turns=Obj(list=lambda *a, **kw: Obj(data=[Obj(id="t1", status="completed", session_id="s1", agent_id="a1",
+            items=Obj(list=lambda *a, **kw: Obj(has_more=False, data=[Obj(model_dump=lambda i=i: {**message, "id": f"m{i}"}) for i in range(20)])),
+                turns=Obj(list=lambda *a, **kw: Obj(has_more=False, data=[Obj(id="t1", status="completed", session_id="s1", agent_id="a1",
                 usage=usage, model_dump=lambda: {"error": None, "session_id": "s1", "agent_id": "a1"})])),
     )
     result = reconcile(store, lambda **kw: Obj(beta=Obj(agents=Obj(sessions=sessions))), key)
