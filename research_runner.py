@@ -6,6 +6,7 @@ import logging
 import os
 import sys
 import time
+import re
 from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
@@ -19,6 +20,7 @@ HEARTBEAT_PATH = ROOT / "output" / "research_runner.heartbeat.json"
 LOG_PATH = ROOT / "logs" / "research_runner.log"
 LOCK_PATH = ROOT / "output" / "research_runner.lock"
 MAX_LOG_BYTES = 2 * 1024 * 1024
+CYCLE_ID_RE = re.compile(r"^[0-9a-fA-F]+$")
 
 
 class AlreadyRunningError(RuntimeError):
@@ -136,9 +138,11 @@ def discover(events: list[dict[str, Any]] | None = None) -> dict[str, Any]:
         "max_events": struct_arb.MAX_EVENTS,
     }
 
-def run_once() -> dict[str, Any]:
+def run_once(cycle_id: str | None = None) -> dict[str, Any]:
     logger = _logger()
     status: dict[str, Any] = {"status": "ok", "research_scope": "DISCOVERY INVENTORY", "scan_validity": "discovery_only", "started_at": _utc_now(), "finished_at": None, "research_only": True, "profit_proven": False, "live_orders": False, "ledger_mutations": False}
+    if cycle_id is not None:
+        status["cycle_id"] = cycle_id
     try:
         universe = fetch_universe()
         events = universe["events"]
@@ -180,13 +184,18 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Read-only struct-arb research runner")
     parser.add_argument("--once", action="store_true")
     parser.add_argument("--interval", type=int, default=900)
+    parser.add_argument("--cycle-id")
     args = parser.parse_args(argv)
     if args.interval <= 0:
         parser.error("--interval must be positive")
+    if args.cycle_id is not None and (not CYCLE_ID_RE.fullmatch(args.cycle_id) or len(args.cycle_id) > 128):
+        parser.error("--cycle-id must be a non-empty hexadecimal string")
+    if args.cycle_id is not None and not args.once:
+        parser.error("--cycle-id requires --once")
     try:
         with single_instance():
             while True:
-                status = run_once()
+                status = run_once(cycle_id=args.cycle_id)
                 if args.once:
                     return 0 if status["status"] == "ok" else 1
                 time.sleep(args.interval)

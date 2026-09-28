@@ -34,11 +34,17 @@ def test_success_writes_healthy_status_and_next_due(tmp_path: Path):
     clock = iter([100.0, 100.0, 101.0, 101.0, 1001.0, 1001.0]).__next__
     proc = FakeProcess(0)
     runner_status = tmp_path / "runner.json"
-    runner_status.write_text(json.dumps({"status": "ok", "research_only": True}))
     sup.RUNNER_STATUS = runner_status
+    def spawn(argv, **kwargs):
+        cycle_id = argv[argv.index("--cycle-id") + 1]
+        runner_status.write_text(json.dumps({"status": "ok", "cycle_id": cycle_id,
+            "research_only": True, "live_orders": False, "ledger_mutations": False,
+            "started_at": "1970-01-01T00:00:00+00:00",
+            "finished_at": "1970-01-01T00:00:00+00:00"}))
+        return proc
     result = sup.run_supervisor(
         interval=900, cycle_timeout=300, once=True, status_path=tmp_path / "s.json",
-        lock_path=tmp_path / "l", process_factory=lambda *a, **k: proc,
+        lock_path=tmp_path / "l", process_factory=spawn,
         clock=clock, wall_clock=lambda: 0.0, sleep_fn=lambda _: None,
     )
     assert result["status"] == "healthy"
@@ -95,10 +101,13 @@ def test_keyboard_interrupt_terminates_child(tmp_path: Path):
 
 def test_status_freshness_uses_wall_epoch_not_monotonic(tmp_path: Path, monkeypatch):
     status = tmp_path / "runner.json"
-    status.write_text(json.dumps({"status": "ok", "research_only": True}))
+    status.write_text(json.dumps({"status": "ok", "cycle_id": "abc",
+        "research_only": True, "live_orders": False, "ledger_mutations": False,
+        "started_at": "1970-01-01T00:00:01+00:00",
+        "finished_at": "1970-01-01T00:00:02+00:00"}))
     monkeypatch.setattr(sup, "RUNNER_STATUS", status)
-    assert sup._fresh_child_status(1.0)
-    assert not sup._fresh_child_status(10**12)
+    assert sup._fresh_child_status(1.0, "abc", now=3.0)
+    assert not sup._fresh_child_status(10**12, "abc", now=3.0)
 
 
 def test_spawn_failure_is_durable(tmp_path: Path):
@@ -146,7 +155,7 @@ def test_stop_request_wrong_run_is_ignored(tmp_path: Path):
 def test_targeted_stop_during_active_child(tmp_path: Path, monkeypatch):
     proc = FakeProcess(None, poll_after=100)
     stop = tmp_path / "stop"
-    monkeypatch.setattr(sup, "_fresh_child_status", lambda _: True)
+    monkeypatch.setattr(sup, "_fresh_child_status", lambda *args, **kwargs: True)
     def spawn(*args, **kwargs):
         run_id = json.loads((tmp_path / "s.json").read_text())["run_id"]
         stop.write_text(json.dumps({"action": "stop", "run_id": run_id}))
@@ -179,3 +188,61 @@ def test_unreaped_timeout_is_failed_and_not_restarted(tmp_path: Path):
 def test_requested_stop_exits_successfully_for_launcher(monkeypatch):
     monkeypatch.setattr(sup, "run_supervisor", lambda **kwargs: {"status": "stopped"})
     assert sup.main([]) == 0
+
+
+def test_report_validation_rejects_wrong_cycle_and_unsafe_flags(tmp_path: Path, monkeypatch):
+    report = tmp_path / "runner.json"
+    monkeypatch.setattr(sup, "RUNNER_STATUS", report)
+    payload = {"status": "ok", "cycle_id": "expected", "research_only": True,
+        "live_orders": False, "ledger_mutations": False,
+        "started_at": "1970-01-01T00:00:01+00:00",
+        "finished_at": "1970-01-01T00:00:02+00:00"}
+    report.write_text(json.dumps({**payload, "cycle_id": "stale"}))
+    assert not sup._fresh_child_status(1, "expected", now=3)
+    report.write_text(json.dumps({**payload, "live_orders": True}))
+    assert not sup._fresh_child_status(1, "expected", now=3)
+
+
+def test_report_validation_rejects_malformed_duplicate_nonfinite_and_oversize(tmp_path: Path, monkeypatch):
+    report = tmp_path / "runner.json"
+    monkeypatch.setattr(sup, "RUNNER_STATUS", report)
+    report.write_text('{"status":"ok","status":"ok"}')
+    assert not sup._fresh_child_status(1, "expected", now=3)
+    report.write_text('{"status":NaN}')
+    assert not sup._fresh_child_status(1, "expected", now=3)
+    report.write_text("{" + "\"x\":\"" + ("x" * sup.MAX_REPORT_BYTES) + "\"}")
+    assert not sup._fresh_child_status(1, "expected", now=3)
+
+
+def test_report_validation_rejects_valid_payload_mutations(tmp_path: Path, monkeypatch):
+    report = tmp_path / "runner.json"
+    monkeypatch.setattr(sup, "RUNNER_STATUS", report)
+    base = {"status": "ok", "cycle_id": "expected", "research_only": True,
+        "live_orders": False, "ledger_mutations": False,
+        "started_at": "1970-01-01T00:00:01+00:00",
+        "finished_at": "1970-01-01T00:00:02+00:00"}
+
+    def rejected(**changes):
+        report.write_text(json.dumps({**base, **changes}))
+        assert not sup._fresh_child_status(1, "expected", now=3)
+
+    rejected(started_at="1970-01-01T00:00:01")
+    rejected(started_at="1970-01-01T00:00:03+00:00", finished_at="1970-01-01T00:00:02+00:00")
+    rejected(started_at="1969-12-31T23:59:50+00:00")
+    rejected(finished_at="1970-01-01T00:00:10+00:00")
+    rejected(research_only=1)
+    rejected(live_orders=0)
+    rejected(ledger_mutations=0)
+    report.write_text(json.dumps({**base, "value": 1e999}))
+    assert not sup._fresh_child_status(1, "expected", now=3)
+    report.write_text('{"status":"ok","cycle_id":"expected","research_only":true,'
+                      '"live_orders":false,"ledger_mutations":false,"started_at":"1970-01-01T00:00:01+00:00",'
+                      '"finished_at":"1970-01-01T00:00:02+00:00","status":"ok"}')
+    assert not sup._fresh_child_status(1, "expected", now=3)
+
+
+def test_report_validation_rejects_deep_json(tmp_path: Path, monkeypatch):
+    report = tmp_path / "runner.json"
+    monkeypatch.setattr(sup, "RUNNER_STATUS", report)
+    report.write_text("[" * 2000 + "0" + "]" * 2000)
+    assert not sup._fresh_child_status(1, "expected", now=3)

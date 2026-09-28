@@ -184,6 +184,21 @@ mit Testdaten. Er prüft genau drei GET-Requests und keine Session-Erstellung:
 
 ## Status und begrenzter Start
 
+Der Supervisor vergibt für jeden gestarteten Scan eine neue `cycle_id` und
+übergibt sie mit `--once --cycle-id` an den Runner. Beide Statusdateien
+enthalten diese Kennung. Ein erfolgreicher Prozessabschluss reicht allein
+nicht: Der Bericht muss zur Kennung passen, ausdrücklich read-only sein und
+gültige Zeitstempel für den aktuellen Lauf enthalten (höchstens 5 Sekunden
+Uhrabweichung). Der JSON-Read ist auf 2 MiB begrenzt; beschädigte oder
+widersprüchliche Daten werden abgewiesen. Ein frisches Dateidatum ersetzt
+diese Prüfung nicht. Die Kennung bindet den Bericht an den geplanten Zyklus;
+sie ist kein kryptografischer Herkunftsnachweis und kein Nachweis einer Edge.
+
+Eigenständige Runner-Aufrufe ohne `--cycle-id` bleiben möglich. Eine explizite
+Kennung ist nur zusammen mit `--once` zulässig. Bereits laufende Supervisoren
+müssen nach einem Update kontrolliert neu gestartet werden, um die neue
+Prüfung zu verwenden.
+
 Die schreibgeschützte Statusprüfung und ein einzelner, kontrollierter Start
 können aus jedem Arbeitsverzeichnis ausgeführt werden:
 

@@ -10,8 +10,9 @@ def test_run_once_writes_research_status_without_trading(monkeypatch, tmp_path):
     monkeypatch.setattr("analytics.execution_scan.scan", lambda *, events: {"status": "ok", "results": []})
     monkeypatch.setattr("analytics.implication_scan.scan", lambda *, events: {"status": "ok", "results": []})
     monkeypatch.setattr(rr, "discover", lambda *, events: {"partitions": 3, "candidates": 1})
-    status = rr.run_once()
+    status = rr.run_once(cycle_id="a1b2")
     assert status["status"] == "ok" and status["research_only"] and not status["profit_proven"] and not status["live_orders"] and not status["ledger_mutations"]
+    assert status["cycle_id"] == "a1b2"
     assert json.loads((tmp_path / "status.json").read_text())["scan"]["candidates"] == 1
     assert json.loads((tmp_path / "heartbeat.json").read_text())["name"] == "research_runner"
 

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import math
 import os
 import signal
 import subprocess
@@ -11,6 +12,7 @@ import uuid
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Any, Iterator, Callable
+from datetime import datetime, timezone
 
 ROOT = Path(__file__).resolve().parent
 STATUS_PATH = ROOT / "output" / "research_supervisor.json"
@@ -20,6 +22,8 @@ STOP_REQUEST = ROOT / "output" / "research_supervisor.stop"
 DEFAULT_INTERVAL = 900.0
 DEFAULT_TIMEOUT = 300.0
 MAX_BACKOFF = 3600.0
+MAX_REPORT_BYTES = 2 * 1024 * 1024
+REPORT_CLOCK_SKEW = 5.0
 
 
 class AlreadyRunningError(RuntimeError):
@@ -64,13 +68,69 @@ def _write(path: Path, data: dict[str, Any]) -> None:
     os.replace(tmp, path)
 
 
-def _fresh_child_status(started: float) -> bool:
+def _strict_object_pairs(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    result: dict[str, Any] = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError("duplicate JSON key")
+        result[key] = value
+    return result
+
+
+def _reject_nonfinite(value: str) -> None:
+    raise ValueError(f"non-finite JSON value: {value}")
+
+
+def _finite_float(value: str) -> float:
+    parsed = float(value)
+    if not math.isfinite(parsed):
+        raise ValueError("non-finite JSON number")
+    return parsed
+
+
+def _parse_report_time(value: Any) -> float:
+    if not isinstance(value, str):
+        raise ValueError("timestamp must be a string")
+    parsed = datetime.fromisoformat(value)
+    if parsed.tzinfo is None or parsed.utcoffset() is None:
+        raise ValueError("timestamp must be timezone-aware")
+    return parsed.astimezone(timezone.utc).timestamp()
+
+
+def _fresh_child_status(started: float, cycle_id: str | None = None,
+                        *, now: float | None = None) -> bool:
+    """Accept only the report produced by this child cycle.
+
+    Supervisor-launched cycles always provide an ID; a missing ID fails closed.
+    """
     try:
-        if RUNNER_STATUS.stat().st_mtime < started:
+        if RUNNER_STATUS.stat().st_size > MAX_REPORT_BYTES:
             return False
-        payload = json.loads(RUNNER_STATUS.read_text(encoding="utf-8"))
-        return payload.get("status") == "ok" and payload.get("research_only") is True
-    except (OSError, ValueError, TypeError):
+        with RUNNER_STATUS.open("rb") as report_file:
+            raw = report_file.read(MAX_REPORT_BYTES + 1)
+        if len(raw) > MAX_REPORT_BYTES:
+            return False
+        payload = json.loads(raw.decode("utf-8"), object_pairs_hook=_strict_object_pairs,
+                             parse_constant=_reject_nonfinite, parse_float=_finite_float)
+        if not isinstance(payload, dict):
+            return False
+        if cycle_id is None:
+            return False
+        if payload.get("cycle_id") != cycle_id:
+            return False
+        if (payload.get("status") != "ok" or payload.get("research_only") is not True
+                or payload.get("live_orders") is not False
+                or payload.get("ledger_mutations") is not False):
+            return False
+        started_at = _parse_report_time(payload.get("started_at"))
+        finished_at = _parse_report_time(payload.get("finished_at"))
+        current = time.time() if now is None else now
+        if started_at < started - REPORT_CLOCK_SKEW or started_at > current + REPORT_CLOCK_SKEW:
+            return False
+        if finished_at < started_at or finished_at > current + REPORT_CLOCK_SKEW:
+            return False
+        return True
+    except (OSError, UnicodeError, json.JSONDecodeError, ValueError, TypeError, OverflowError, RecursionError):
         return False
 
 
@@ -124,13 +184,16 @@ def run_supervisor(*, interval: float = DEFAULT_INTERVAL, cycle_timeout: float =
                         _write(status_path, state); return state
                     sleep_fn(min(1.0, next_due - now)); now = clock()
             started = clock(); started_wall = wall_clock()
+            cycle_id = uuid.uuid4().hex
             state: dict[str, Any] = {"status": "starting", "child_pid": None,
                 "supervisor_pid": supervisor_pid, "run_id": run_id, "started_at": started_wall,
+                "cycle_id": cycle_id,
                 "last_success": last_success, "consecutive_failures": failures,
                 "next_due": wall_clock(), "updated_at": wall_clock()}
             _write(status_path, state)
             try:
-                child = process_factory([sys.executable, str(ROOT / "research_runner.py"), "--once"], cwd=str(ROOT))
+                child = process_factory([sys.executable, str(ROOT / "research_runner.py"), "--once",
+                                         "--cycle-id", cycle_id], cwd=str(ROOT))
             except Exception as exc:
                 failures += 1
                 state.update(status="failed", error=f"spawn failed: {type(exc).__name__}: {exc}",
@@ -166,7 +229,7 @@ def run_supervisor(*, interval: float = DEFAULT_INTERVAL, cycle_timeout: float =
                 code = child.returncode
                 if code == 2:
                     result_status = "failed"; failures += 1
-                elif code == 0 and _fresh_child_status(started_wall):
+                elif code == 0 and _fresh_child_status(started_wall, cycle_id, now=wall_clock()):
                     result_status = "healthy"; failures = 0
                 else:
                     result_status = "degraded"; failures += 1
