@@ -30,6 +30,7 @@ RESEARCH_TESTS = [
     "tests/integration/test_agent_store_process.py",
     "tests/integration/test_agent_admission_cli.py",
     "tests/integration/test_research_cycle_process.py",
+    "tests/integration/test_agent_setup.py",
 ]
 
 

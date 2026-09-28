@@ -49,14 +49,27 @@ Die lokale Planprüfung läuft ohne Netzwerk:
 .\.venv-research\Scripts\python.exe -c "from analytics.research_coordinator import main; raise SystemExit(main(['--model','gpt-5.6-luna']))"
 ```
 
-Die OpenAI-Python-SDK-Umgebung ist getrennt und optional:
+Die OpenAI-Python-SDK-Umgebung ist getrennt und optional. Das Setup-Skript
+erstellt eine reproduzierbare Installation der vollständigen SDK-Laufzeit:
 
 ```powershell
-py -3.12 -m venv .venv-agentic
-.\.venv-agentic\Scripts\python.exe -m pip install -r requirements-agentic.txt
+.\setup_agentic.ps1
 ```
 
-Die Installation startet keine Calls oder Scheduler. SDK-Sessions besitzen kein garantiertes hartes Kostenlimit, etwa 5 EUR; eine lokale Reservierung ist kein Kostenplafond. Die Agents-API ist kein integrierter Produktionsscheduler, und es gibt daraus keinen Nachweis für Edge oder Live-Handel.
+Das Skript erstellt ausschließlich `.venv-agentic-repro` und lässt die
+bestehende Produktionsumgebung `.venv-agentic` unangetastet. Die Datei
+`requirements-agentic-lock.txt` pinnt die vollständige Laufzeitabhängigkeit
+von `openai==3.13.0`, einschließlich der dafür erforderlichen
+`httpx2`-/`httpcore2`-Pakete. Bei einem erneuten Aufruf wird nicht installiert;
+die vorhandene Zielumgebung wird nur mit `pip check` und einer exakten
+Versions-/Python-3.12-Prüfung verifiziert. Ein vorhandener Ordner ohne gültige
+virtuelle Umgebung führt mit Fehler ab, damit er nicht umgewidmet wird.
+
+Die Installation startet keine API-Aufrufe, Sessions, Scheduler oder Bots.
+Sie benötigt lediglich Zugriff auf den Paketindex für die Paketinstallation;
+der Lock ist versionsgepinnt, enthält aber keine Paket-Hashes. Die optionale
+SDK-Umgebung ist weiterhin kein Kostenlimit und kein Nachweis für Edge oder
+Live-Handel.
 
 ## Read-only-Gesundheitsprüfung
 
