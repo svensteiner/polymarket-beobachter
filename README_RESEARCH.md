@@ -263,6 +263,28 @@ Ergebnis gilt ausschließlich für `research_only` und setzt
 Für eine saubere Testumgebung kann `requirements-research-test.txt` in `.venv-research-test`
 installiert werden; die Datei pinnt Pytest und seine Testlaufzeit-Abhängigkeiten.
 
+## Aktualität einer Abnahme
+
+```powershell
+.\.venv-research\Scripts\python.exe verify_research.py --check
+```
+
+Dieser schreibgeschützte Check startet keine Tests und benötigt kein SDK.
+Exitcode 0 bedeutet, dass ein erfolgreicher Bericht höchstens 24 Stunden alt
+ist und zum aktuellen Dateistand seines Prüfbereichs passt. Exitcode 1 bedeutet
+veraltet oder ungültig; ältere Berichtsschemas benötigen einen neuen Testlauf.
+Der ursprüngliche Prüfbereich (`research_only` oder inklusive lokaler SDK-Tests)
+bleibt erkennbar. Das ist keine Produktionsfreigabe oder Bestätigung des
+gerade laufenden Prozesses.
+
+Der Bericht speichert SHA-256-Werte der Python-Dateien im Projektstamm und in
+`analytics`, `paper_trader`, `collector`, `core` und `tests`, außerdem der
+PowerShell-/Batch-Dateien und `requirements*.txt` im Projektstamm.
+Änderungen, neue oder entfernte Dateien dieses Bereichs machen ihn ungültig;
+unterschiedliche Stände vor und nach einem Testlauf verhindern dessen Abnahme.
+Venvs, Daten, Logs und Zugangsdaten gehören nicht zu diesem Bereich.
+Die Hashes erkennen Änderungen, signieren aber weder Bericht noch Urheber.
+
 ## Persistenz und Prozesssperre
 
 Schreibzugriffe auf `output/agent_runs.json` werden durch eine Prozesssperre

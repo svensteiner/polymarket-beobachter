@@ -2,6 +2,7 @@ import json
 import io
 import os
 import sys
+from datetime import datetime, timedelta, timezone
 
 import verify_research as verifier
 
@@ -109,3 +110,50 @@ def test_output_reader_bounds_the_file_read(monkeypatch):
     monkeypatch.setattr(verifier.Path, "open", lambda self, mode: BoundedReader(b"x" * 20000))
     output, truncated = verifier._read_output("unused")
     assert len(output) == verifier.MAX_OUTPUT and truncated
+
+
+def test_check_report_rejects_nonfinite_and_deep_json(tmp_path):
+    for payload in ('{"value": 1e999}', '[' * 2000 + '0' + ']' * 2000):
+        path = tmp_path / f"report-{len(payload)}.json"
+        path.write_text(payload, encoding="utf-8")
+        code, result = verifier.check_report(report=path)
+        assert code == 1 and result["status"] == "failed"
+
+
+def test_check_report_does_not_treat_bool_as_exit_code(tmp_path):
+    path = tmp_path / "report.json"
+    path.write_text(json.dumps({"schema_version": 2,
+                                "pytest": {"returncode": False, "timed_out": False}}),
+                    encoding="utf-8")
+    code, result = verifier.check_report(report=path)
+    assert code == 1 and "pytest did not pass" in result["reasons"]
+
+
+def test_verify_fails_when_source_changes_between_manifests(tmp_path, monkeypatch):
+    calls = iter([{"source.py": {"sha256": "a", "size": 1}},
+                  {"source.py": {"sha256": "b", "size": 1}}])
+    monkeypatch.setattr(verifier, "collect_manifest", lambda _root: next(calls))
+    outputs = iter([result("3.12.8\n9.0.2\n"), result("passed")])
+    monkeypatch.setattr(verifier, "_run", lambda *args, **kwargs: next(outputs))
+    code, report = verifier.verify(python="fake", report=tmp_path / "report.json")
+    assert code == 1 and report["status"] == "failed" and not report["source_stable"]
+
+
+def test_check_report_rejects_old_future_and_legacy_reports(tmp_path):
+    now = datetime.now(timezone.utc)
+    manifest = verifier.collect_manifest(verifier.ROOT)
+    base = {"schema_version": 2, "source_manifest": manifest, "source_stable": True,
+            "status": "passed", "scope": "research_only", "production_ready": False,
+            "preflight": {"ok": True}, "pytest": {"returncode": 0, "timed_out": False},
+            "sdk": {"status": "not_checked"}}
+    for suffix, generated, completed, schema in (
+        ("old", now - timedelta(hours=25), now - timedelta(hours=25), 2),
+        ("future", now, now + timedelta(seconds=10), 2),
+        ("legacy", now, now, 1),
+    ):
+        payload = dict(base, schema_version=schema,
+                       generated_at=generated.isoformat(), completed_at=completed.isoformat())
+        path = tmp_path / f"{suffix}.json"
+        path.write_text(json.dumps(payload), encoding="utf-8")
+        code, result = verifier.check_report(report=path)
+        assert code == 1 and result["status"] == "failed"
