@@ -244,6 +244,14 @@ kein Budgetlimit und aktiviert keine Aufrufe. Exitcode 0 bedeutet einen
 vollständig gültigen oder verifiziert leeren Store, 3 unvollständige Records,
 2 einen fehlenden, beschädigten, übergroßen oder strukturell ungültigen Store.
 
+Nichtfinite Zahlen, doppelte Schlüssel und ungültiges Unicode werden auch in
+Metadaten abgewiesen. Ein `completed`-Eintrag mit Fehler-/Ownership-Markern,
+`output_incomplete` ungleich `false` oder einem vorhandenen `session_status`
+ungleich `idle` zählt nicht mit. Fehlende optionale Abschlussmarker bleiben
+für ältere Einträge zulässig. Bei unvollständigen Records bleibt die Gesamtsumme
+`null`; nur die unabhängig gültigen Einträge erscheinen als bekannte Teilkosten.
+Die CLI verändert weder den Store noch dessen Sperrdateien.
+
 ## Reproduzierbare Offline-Prüfung
 
 ```powershell

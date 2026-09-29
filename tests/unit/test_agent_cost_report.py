@@ -113,6 +113,44 @@ def test_duplicate_json_keys_are_corrupt(tmp_path: Path):
     assert report(path)["store_state"] == "store_corrupt"
 
 
+def test_nonfinite_nested_metadata_is_corrupt(tmp_path: Path):
+    path = tmp_path / "store.json"
+    path.write_text('{"' + "a" * 64 + '": {"state": "prepared", "metadata": 1e999}}', encoding="utf-8")
+    assert report(path)["store_state"] == "store_corrupt"
+
+
+def test_surrogate_and_deep_metadata_are_corrupt(tmp_path: Path):
+    path = tmp_path / "store.json"
+    path.write_text('{"' + "a" * 64 + '": {"state": "prepared", "metadata": "\\ud800"}}', encoding="utf-8")
+    assert report(path)["store_state"] == "store_corrupt"
+    nested = "null"
+    for _ in range(1100):
+        nested = "[" + nested + "]"
+    path.write_text('{"' + "a" * 64 + '": {"state": "prepared", "metadata": ' + nested + '}}', encoding="utf-8")
+    assert report(path)["store_state"] == "store_corrupt"
+
+
+def test_completed_requires_complete_idle_owned_record(tmp_path: Path):
+    path = tmp_path / "store.json"
+    cases = [
+        {"output_incomplete": True},
+        {"output_incomplete": "false"},
+        {"session_status": None},
+        {"session_status": "completed"},
+        {"session_status": "error"},
+        {"error": {"type": "bad"}},
+        {"ownership_reason": "mismatch"},
+    ]
+    for extra in cases:
+        write(path, {"a" * 64: rec("0.3", **extra)})
+        result = report(path)
+        assert result["exit_code"] == 3
+        assert result["accounted_completed"] == 0
+        assert result["total_estimated_cost_usd"] is None
+    write(path, {"a" * 64: rec("0.3", session_status="idle")})
+    assert report(path)["total_estimated_cost_usd"] == "0.3"
+
+
 def test_session_whitespace_uses_consistent_duplicate_identity(tmp_path: Path):
     path = tmp_path / "store.json"
     write(path, {"a" * 64: rec("0.3", " s1 ")})
