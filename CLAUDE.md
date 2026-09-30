@@ -14,15 +14,27 @@ Kein Polymarket-API-Key. Alles lokal. Pipeline alle 15 Min — nicht extra start
 
 ### Vorrangiger Auftrag vom 30.09.2026
 
-Heartbeat 30.09.16:03UTC: Favorite-Collector PID13872 mit korrektem Python/
-Modul weiterhin aktiv; progress.completed=false,26Fenster (19captured,7skipped),
-2qualifizierte Papiereinstiege (Rozin5145153,UCAM5143221),57Requests.
+Heartbeat 30.09.17:02UTC: Favorite-Collector PID13872 mit korrektem Python/
+Modul weiterhin aktiv; progress.completed=false,35Fenster (25captured,10skipped),
+2qualifizierte Papiereinstiege (Rozin5145153,UCAM5143221),74Requests.
 Zwei frische GammaGETs: Condition/Outcome/Token jeweils identisch, beide
-noch offen, kein Settlement-PnL. Beleg output/favorite_forward_status_20260930_1600.json.
+noch nicht final, kein Settlement-PnL; Rozin nur proposed. Beleg output/favorite_forward_status_20260930_1700.json.
 Keine Doppelstarts/Schwellenaenderung. Naechste Runde neue Fenster und
 offizielle Aufloesungen pruefen; offene Ergebnisse nicht als Gewinne zaehlen.
 
-Naechste getrennte Forschungshypothese (noch NICHT getestet): politische
+Politik-Feasibility 17:05UTC getestet, aber Originalprotokoll NICHT erfuellt:
+output/politics_favorite_20260930/report.json ist explizit INVALID. Worker
+selektierte nur YES-Gamma-Mids, fehlende Zwei-Buch-Pruefung; nicht erneut
+run_feasibility.py ausfuehren. Unabhaengige Kontrolle plus archivierte
+Offlinekorrektur corrected_report.json:10selektierteMaerkte,4stale,6gueltige
+Kostenpruefungen, davon4 Kosten+Stress<Auszahlung. KEIN Edge-Test:0freigegebene
+Kandidaten, semantischeRegelpruefung fehlt, YES-biased/trunkiertes100Event-
+Universum. KeineGewinn-/Fillbelege. Workerzusammenfassung6bestanden war falsch;
+6gueltig ist nicht4Kostenbedingungbestanden. Originaldaten erhalten, kein
+neuerDauersammler. Einstufung unzureichendeDaten. Fuer spaetere Forschung erst
+beidseitige deterministischeAuswahl und Regeln vorDatensichtung korrigieren.
+
+Zugrunde liegende getrennte Forschungshypothese: politische
 Favoriten ab0.90 statt weiterer Sport-Schwellenoptimierung. Quelle Volltext
 https://arxiv.org/html/2609.12878v1, Abschnitte2/4/5: historische Transaktionen,
 keine fuer uns zugesicherten Fills. Gegenargumente: kleiner Vorteil, Spread,
