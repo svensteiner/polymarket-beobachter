@@ -89,6 +89,36 @@ beenden; Edge NICHT erreicht. Datensammler und aktive09/18-Automation laufen
 weiter. Bei neuen Fenstern/Settlements Forschung nach gespeichertem Protokoll
 fortsetzen, kein Nutzerentscheid erforderlich.
 
+30.09.13:31 UTC: Nutzer hat Ziel mit Dringlichkeit wiederaufgenommen
+("wir brauchen edge lass dir was einfallen und das schnell"). Neue begrenzte
+wirtschaftliche Screens fuer semantisch aequivalente Sportvertraege und
+verschachtelte Over/Under-Linien delegiert, keine Produktionsumbauten.
+Forward inzwischen10Fenster:9captured/1stale-skip,8ausserhalbBand,1qualifiziert.
+Rozin5145153 offen, direkteGammaProbeidentisch/closedfalse. Papierkosten3.84560
+plusStress0.10 fuer5Anteile: Break-even0.78912 beiMid0.725, ohneunabhaengige
+Wahrscheinlichkeit keinpositiverErwartungswertbelegt. Gewinnfall+1.05440,
+Verlustfall-3.94560. Belege output/favorite_settlement_probe_20260930_1329.json
+und output/favorite_interim_economics_20260930_1332.json. Sammler13872live,
+keineRegelaenderung/Orders. Exakttitel-/Regelhashscreen500Events7149Maerkte0
+Duplikate; semantischerFollowup laeuft, HashscreenkeinvollstaendigerAusschluss.
+
+30.09.13:38 UTC: Zwei schnelle neue wirtschaftliche Screens abgeschlossen.
+Semantikscreen380Moneyline/Spread-Paare:0passende+/-0.5-Vertraege/0belegte
+Aequivalenzen im500EventAusschnitt, output/equivalence_screen_20260930/result_v2.json.
+Ladderscreen urspruenglichFEHLERHAFT Over+Over; scheinbares+2.51284 ist verworfen,
+alleInitialreports explizitvalidfalse/INVALID markiert. Main korrigierte Code
+und4echteRegelassertions, unabhaengigerReview nachFix freigegeben. Korrigiert
+Over(niedrigeLinie)+Under(hoehereLinie),222passendePaare,5frischgeprueft mit
+10GammaGET+1Bookbatch20Tokens. RichtigeindikativeKosten mind1.09 vorGebuehren
+jeMinimumPayoff1; alle5Buchpaare stale/keinstrictvalid, Nettonull. KeinEdgebeleg,
+keineErleichterungderFrischesperre. output/sports_ladder_screen_20260930/
+report_corrected.json plus11gespeicherteOriginalHTTPAntworten; Mainhashaudit
+alle11identisch. KeineProduktionscodeaenderung/Orders/neuePaidSessions.
+Naechste offene Hypothese: unabhaengige externe Referenzquoten fuer gleiche
+Sportereignisse mit exaktgleichenAbrechnungsregeln; nuroeffentlicheQuellen,
+nachSpread/Gebuehren/Referenzmarge pruefen. Nicht weitere Favoritenschwellen
+amgleichenDatensatzoptimieren. VorregistrierterForwardtest laeuftunveraendert.
+
 Nutzerauftrag: aufraeumen, neu starten, nachweisbare Netto-Edge finden. Hauptagent plant/nimmt ab; guenstige Worker implementieren begrenzte Pakete. Keine Gewinnzusage. Paper/research-only, keine Keys, echten Orders, Kapitalerhoehungen oder Schliessung der Legacy-SD-Position.
 
 ### Aktueller Betrieb
