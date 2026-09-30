@@ -37,6 +37,8 @@ RESEARCH_TESTS = [
     "tests/integration/test_research_setup.py",
     "tests/integration/test_verification_check_cli.py",
     "tests/unit/test_verification_manifest.py",
+    "tests/unit/test_favorite_forward.py",
+    "tests/integration/test_favorite_forward_cli.py",
 ]
 
 

@@ -12,6 +12,83 @@ Kein Polymarket-API-Key. Alles lokal. Pipeline alle 15 Min — nicht extra start
 
 ## Neustart (2026-09-12) — hat Vorrang vor dem historischen Stand
 
+### Vorrangiger Auftrag vom 30.09.2026
+
+Autonom ohne Rueckfragen an wirtschaftlich belastbarer Strategie-Evidenz arbeiten;
+Skill autonomous-loops: begrenzte Experimente, guenstige Luna-Worker, unabhaengige
+Abnahme, keine LLM-Pollings. Frueherer Wartezustand auf Risikobudget blockiert
+oeffentliche Paper-Forschung NICHT. Echtgeld und neue bezahlte Agentensessions
+bleiben gesperrt. Bestehende Automation polymarket-produktionsreife heisst jetzt
+Polymarket Strategie-Forschung und arbeitet weiterhin um 09/18 Uhr.
+
+Aktuelle Evidenz: Archiv 200 Zyklen/4000 binaere Versuche, 1178 gueltige Bewertungen,
+kein positives Netto; wiederholte Snapshots sind keine unabhaengigen Trades.
+Frischer Fullset-Screen urspruenglich fehlerhaft (YES+NO summiert bei falscher
+Auszahlung), deshalb run_screen.py deaktiviert; offline_correct.py rechnet YES-only
+nach, 0 zeitlich gueltige komplette Sets. Rohdaten unter output/strategy_search_20260930.
+Maker-Hedge fuer 567621/560317 in beiden Richtungen netto 0; zugehoeriger WS-Test
+hat falsche Tokens aufgenommen und gilt NICHT als Persistenz-/Fillbeleg.
+
+Sport-Favoriten-Hypothese: Eine Stunde vor Spielbeginn, Moneyline binaer,
+Favoritenpreis 0.70..0.90. Historische V2-Stichprobe 80 Maerkte, 21 qualifiziert,
+18 Siege; Summe bei einem Anteil je Signal nach deklarierten Gebuehren und
+0.02/Anteil Stress +1.02318. Aeltere Haelfte 10 Signale netto -0.18140,
+neuere 11 netto +1.20458. Nur ca.26 Stunden Spielzeitraum, historische Preise
+sind keine Ask-Fills, Unsicherheit erlaubt negativen Erwartungswert. Explorativ,
+profit_proven=false. Auswahl/Arithmetik unabhaengig nachgerechnet; Belege
+output/favorite_calibration_20260930. Fruehere 24h-Stichprobe war vor Listing
+und wurde als ungueltig korrigiert, nicht als API-Ausfall gewertet.
+
+Naechster Schritt ist der unveraenderte prospektive Favorite-Test, nicht weitere
+Schwellenoptimierung. analytics/favorite_forward.py abgenommen und gestartet;
+Laufstart und konkrete Prozess-/Ausgabedaten unten. Spaetere Auswertung
+alle qualifizierten Eintraege inklusive Verluste und offener Aufloesungen erfassen.
+Stand 11:14 UTC: Supervisorstatus meldet PID4728/run e3c2abfd6f864b4981749cab43234ea5
+healthy, letzte erfolgreiche Messung 11:07 UTC. CIM liefert fuer diesen PID keine
+CommandLine/ExecutablePath, daher research_health unbekannt/supervisor_probe_failed.
+Kein ungepruefter Neustart; fruehere PID15356 ist nicht mehr aktuell.
+
+Forward-Lauf 30.09.2026 11:18:46 UTC: output/favorite_forward_20260930_111846,
+Launcher38728/Collector13872, CIM-Pfade und exakter Modulaufruf geprueft.
+80 Maerkte aus 80 Events vorregistriert; Entscheidungen 30.09.12:00 bis
+01.10.10:45 UTC. Noch keine Fenster erfasst zum Start. Discovery44.94MB,
+stderr leer, Prozess wartet auf erstes Fenster. Max24h/80Maerkte/500Requests/
+64MiB, keine Orders/LLM-Calls. Aufloesung erfolgt spaeter durch 09/18-Routine;
+deren Prompt enthaelt konkreten Lauf, keine Doppelstarts und Abrechnungsformel.
+progress.completed=false ist Zwischenstand, windows.completed=true nur Ende
+der Erfassung, NICHT Ende aller Spiele. Qualifiziert nur evaluation.ok=true;
+Netto = aufgeloeste Auszahlung fuer5Anteile - cost_decimal - stress_cost_decimal.
+Offene/ungueltige/negative Faelle nicht entfernen. AlleProspektivergebnisse
+getrennt vonhistorischemV2; keineAenderungvonPreisband/Vorlauf/Kostenpuffer.
+
+Abnahme: guenstigeLunaImplementierung + zweiunabhaengigeReviewrollen,
+Main korrigierte Testinjektion/Queryabdeckung ueberReviewer. 229Pytest +12SDK
+Loopback bestanden,2bekannteWindowsSymlinkskips. Quellstand stabil,
+verify_research --check Exit0/current, run3b06431269464d12b3f28d934f07c08a.
+Beleg output/favorite_forward_acceptance.json mitSourceSHA und output/
+favorite_forward_launch.json. GesamteProduktionsreife/Profitabilitaet weiterhin
+false. AltehistorischeStatusabschnitte unten ersetzen diesenaktuellenLauf nicht.
+
+30.09.11:21 UTC: Vor ersten Fenstern evaluation_protocol.json im Forward-Lauf
+angelegt, unabhaengige wirtschaftliche Pruefung ohne materielle Luecke.
+80 Fenster vollstaendig bilanzieren; offene Resultate mit Auszahlungsspanne
+0..Q statt Complete-case-Gewinn; amtlich bestaetigte Teil-/Void-Auszahlungen
+separat. Netto/Modellkosten, Verluste, maximale gleichzeitig gebundene Mittel
+und deskriptive Tages-/Ligagruppen berichten. 58 Entscheidungen am30.09.,22am01.10.,
+nur2Tagescluster: keine IID-Konfidenz/Profitfreigabe aus diesem Pilot. Positives
+vollstaendiges Ergebnis begruendet unveraenderte unabhaengige Replikation.
+Entryregeln unveraendert, AnhangSHA9182e9fd77462c1961d142558520ea8e985d2dd02c43a64d720d021b43460414.
+Collector13872 um11:20perCIMmitexaktemAufruflivebestaetigt; erstesFenster12UTC.
+
+30.09.11:23 UTC: Wiederholte Zielrunden bestaetigen denselben externen Engpass:
+noch keine prospektiven Fenster/Resultate vor12UTC. Collector13872 erneut mit
+exakterCommandLine live, stderr leer; keine Neustarts. Vorbereitung und
+unabhaengige Auswertungsregeln abgeschlossen. AktiverChat-Zielloop wird als
+blocked auf neue Marktdaten gesetzt, um kostspielige Wiederholungsabfragen zu
+beenden; Edge NICHT erreicht. Datensammler und aktive09/18-Automation laufen
+weiter. Bei neuen Fenstern/Settlements Forschung nach gespeichertem Protokoll
+fortsetzen, kein Nutzerentscheid erforderlich.
+
 Nutzerauftrag: aufraeumen, neu starten, nachweisbare Netto-Edge finden. Hauptagent plant/nimmt ab; guenstige Worker implementieren begrenzte Pakete. Keine Gewinnzusage. Paper/research-only, keine Keys, echten Orders, Kapitalerhoehungen oder Schliessung der Legacy-SD-Position.
 
 ### Aktueller Betrieb

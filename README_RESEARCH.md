@@ -298,6 +298,26 @@ unterschiedliche Stände vor und nach einem Testlauf verhindern dessen Abnahme.
 Venvs, Daten, Logs und Zugangsdaten gehören nicht zu diesem Bereich.
 Die Hashes erkennen Änderungen, signieren aber weder Bericht noch Urheber.
 
+## Vorwaertstest: Sport-Favoriten
+
+`python -m analytics.favorite_forward --output output/NEUER_LAUF --hours 24 --max-markets 80`
+zeichnet ausschliesslich oeffentliche Daten auf. Das Ausgabeverzeichnis muss neu
+sein. Pro Event wird vorab ein binaerer Moneyline-Markt ausgewaehlt. Eine Stunde
+vor Spielbeginn wird der Favorit anhand des Orderbuch-Mittelkurses bestimmt;
+das unveraenderte Preisband ist 0,70 bis 0,90. Die Papierrechnung kauft hypothetisch
+5 Anteile zur angezeigten Ask-Tiefe, inklusive deklarierter Gebuehren und
+zusaetzlich 0,02 je Anteil Kostenpuffer. Es werden keine Orders erstellt.
+
+Der Lauf ist auf 24 Stunden, 80 Maerkte, 500 HTTP-Anfragen und 64 MiB
+Ausgabedaten begrenzt. Ungueltige, zu alte oder verspaetet erfasste Fenster
+werden dokumentiert. Vorregistrierung und Rohdaten bleiben erhalten;
+Zwischenstaende werden nach jedem Fenster atomar gespeichert.
+`windows.json` bedeutet abgeschlossene Erfassung, nicht abgeschlossene Spiele.
+Die spaetere Auswertung muss alle qualifizierten Signale einschliesslich
+Verlusten anhand identischer Conditions und Token-Zuordnungen abrechnen.
+Offene Aufloesungen bleiben offen; angezeigte Tiefe ist kein Fillnachweis.
+Historische positive Stichproben sind lediglich Hypothesen, kein Gewinnbeweis.
+
 ## Persistenz und Prozesssperre
 
 Schreibzugriffe auf `output/agent_runs.json` werden durch eine Prozesssperre
