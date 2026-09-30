@@ -14,10 +14,11 @@ Kein Polymarket-API-Key. Alles lokal. Pipeline alle 15 Min — nicht extra start
 
 ### Vorrangiger Auftrag vom 30.09.2026
 
-Heartbeat 30.09.19:02UTC: Favorite-Collector PID13872 mit korrektem Python/
-Modul weiterhin aktiv; progress.completed=false,38Fenster (27captured,11skipped),
-2qualifizierte Papiereinstiege (Rozin5145153,UCAM5143221),79Requests.
-Zwei frische GammaGETs: Condition/Outcome/Token jeweils identisch, BEIDE FINAL
+Heartbeat 30.09.20:00UTC: Favorite-Collector PID13872 mit korrektem Python/
+Modul weiterhin aktiv; progress.completed=false,40Fenster (29captured,11skipped),
+weiterhin2qualifizierte Papiereinstiege (Rozin5145153,UCAM5143221),83Requests.
+Keine neuen offenen Einstiege; keine erneuten Settlement-GETs erforderlich.
+GammaGETs von19:02UTC: Condition/Outcome/Token jeweils identisch, BEIDE FINAL
 geschlossen mit aktuellem umaResolutionStatus=resolved. Rozin Auszahlung5,
 Netto+1.05440; UCAM Auszahlung5,Netto+0.37750; Summe+1.43190 nachgespeicherten
 Gebuehren undje0.10Stress. Nur2hypothetischePapiereinstiege, keinProfitabilitaetsbeweis.
