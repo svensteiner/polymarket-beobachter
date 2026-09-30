@@ -10,7 +10,12 @@ Aus der Projektmappe:
 .\setup_research.ps1
 ```
 
-Das Skript erstellt `.venv-research` mit Python 3.12 und prüft die Imports. Der Scanner benötigt nur die Python-Standardbibliothek. Es gibt keinen Fallback auf eine globale Python-Installation.
+Das Skript erstellt eine fehlende `.venv-research` mit Python 3.12. Eine vorhandene
+Umgebung wird ausschließlich geprüft: Python-Version, Zielverzeichnis, Isolation
+von globalen Paketen, Paketbestand (nur `pip`) und Scanner-Imports müssen passen.
+Ungültige vorhandene Ziele werden mit einem Fehler abgewiesen und nicht repariert
+oder überschrieben. Der Scanner benötigt nur die Python-Standardbibliothek.
+Es gibt keinen Fallback auf eine globale Python-Installation.
 
 ## Start und Status
 

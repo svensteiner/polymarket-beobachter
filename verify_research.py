@@ -34,6 +34,7 @@ RESEARCH_TESTS = [
     "tests/integration/test_agent_cost_integrity_cli.py",
     "tests/integration/test_research_cycle_process.py",
     "tests/integration/test_agent_setup.py",
+    "tests/integration/test_research_setup.py",
     "tests/integration/test_verification_check_cli.py",
     "tests/unit/test_verification_manifest.py",
 ]
