@@ -14,12 +14,26 @@ Kein Polymarket-API-Key. Alles lokal. Pipeline alle 15 Min — nicht extra start
 
 ### Vorrangiger Auftrag vom 30.09.2026
 
+GitHub-Recherche/Testauftrag 30.09. nachmittags: drei gepinnte Repositories
+offline untersucht, keine Installation/Orders/bezahlten Calls. Details und SHAs:
+output/github_research_20260930/README.md. pm-calibration 50 Originaltests,
+poly-alpha 3 Originaltests bestanden; Polymaker reiner Quote-Smoke bestanden,
+vollstaendige Upstream-Quote-Suite wegen fehlender Imports nicht gesammelt.
+Poly-alpha unveraendertes clean_late_no_config auf 7149 eindeutigen Maerkten /
+500 eingefrorenen Events: 0 Kandidaten. Gamma1.2-Komponente auf wiederverwendeten
+80 historischen Maerkten Brier0.206144->0.205459, aeltere40 verschlechtert;
+kein OOS-/Gewinnbeleg. pm-calibration Gebuehrenmodell NICHT fuer aktuelle
+Sportgebuehren uebernehmen. Quelle arxiv.org/abs/2609.12878 berichtet FLB
+im Aggregat, aber abwesend in Sports: Gegenbeleg zur Hypothese, laufenden
+Favorite-Forward dennoch unveraendert abschliessen. Nicht erneut dieselben
+Repos/Datenschnitte pruefen ohne neue Evidenz. Kein Produktionsstrategie-Wechsel.
+
 Autonom ohne Rueckfragen an wirtschaftlich belastbarer Strategie-Evidenz arbeiten;
 Skill autonomous-loops: begrenzte Experimente, guenstige Luna-Worker, unabhaengige
 Abnahme, keine LLM-Pollings. Frueherer Wartezustand auf Risikobudget blockiert
 oeffentliche Paper-Forschung NICHT. Echtgeld und neue bezahlte Agentensessions
 bleiben gesperrt. Bestehende Automation polymarket-produktionsreife heisst jetzt
-Polymarket Strategie-Forschung und arbeitet weiterhin um 09/18 Uhr.
+Polymarket Strategie-Forschung und arbeitet seit Nutzerauftrag rund um die Uhr stuendlich (volle Stunde), maximal45Min aktive Arbeit pro Runde. Bestehende Automation aktualisiert, keine Doppelroutine; guenstige Worker, Paper-only, unveraenderte Kosten-/Ordergrenzen. Wartende Runden frueh und still beenden.
 
 Aktuelle Evidenz: Archiv 200 Zyklen/4000 binaere Versuche, 1178 gueltige Bewertungen,
 kein positives Netto; wiederholte Snapshots sind keine unabhaengigen Trades.
@@ -118,6 +132,44 @@ Naechste offene Hypothese: unabhaengige externe Referenzquoten fuer gleiche
 Sportereignisse mit exaktgleichenAbrechnungsregeln; nuroeffentlicheQuellen,
 nachSpread/Gebuehren/Referenzmarge pruefen. Nicht weitere Favoritenschwellen
 amgleichenDatensatzoptimieren. VorregistrierterForwardtest laeuftunveraendert.
+
+30.09.13:41 UTC: ExterneQuotenhypothese konkretgeprueft. BetfairSuchindex
+Rozin/Schlagenhauf1.29/3.25; proportionalmargenbereinigt0.715859 gegen
+PapierBreak-even0.78912, hypothetisch-0.366305beiQ5. NURasynchroneIndexillustration,
+keinezeitgleicheQuote/Regelgleichheit: direkteSeite404, Webopenunzugreifbar.
+output/external_odds_rozin_20260930.json. NHLKings/Avalanche Gamma4190321
+Start01.10.02UTC undOT/Shootouts explizit; PokerStarsIndex2.55/1.45,
+Direkt403, genaueOT/Void/PreseasonRegelnunbestaetigt. Workerbeleg
+output/external_odds_nhl_20260930/evidence.json, keinpositiverEdgeclaim.
+ZusaetzlicheoeffentlicheESPNScoreboardProbe403, output/espn_nhl_20260930_probe.json.
+DieseQuellen nichtdurchIndexpreisealszeitgleicheausfuehrbareQuotenersetzen;
+keinLogin/Bezahldatenabo/Umgehung. NaechsterwirtschaftlicherFortschritt braucht
+validefrischeReferenz oder neueForwardergebnisse. BestehenderPilotunveraendert,
+10Fenster/1offenesqualifiziertesSignalzum13:39Stand; keineOrders/PaidAPI.
+
+30.09.13:46 UTC: NeueHypothese SettlementDiscount untersucht. Worker fand
+130archivierteproposed/open/acceptingEintraege;5deterministischrefresht alle
+inzwischenresolved/closed/acceptingfalse, Mainidentitaetalle5bestaetigt.
+output/settlement_discount_20260930.json mit11Archivhashes. NICHTalsaktuellen
+UniverseAusschlusswerten: Archivewarenalt. MainpruefteoffizielleAPIParameter
+undholtefrisch /markets?limit=100&closed=false&uma_resolution_status=proposed
+&order=updatedAt&ascending=false:100passendeoffeneProposals, Ausschnittnicht
+vollstaendig.6MoneylineMaerkte mitmaxquotierterWahrscheinlichkeit>=.98 gewaehlt,
+KEINWinnerinferiert.12TokenBooks in1Batch;alle6hochbewertetenSeitenhaben
+leereAsks, keinKaufangebot. Rohdaten/Hashes/Preisgate unter output/
+settlement_discount_fresh_20260930.json, settlement_discount_books_20260930.json,
+settlement_discount_price_gate_20260930.json. NullpositiverEdge; GammaKurse
+sindkeineausfuehrbarenAngebote. OffizielleResolutiondocs: nachfinalerAufloesung
+Handelsende, proposednoch2hdisputierbar; keinrisikoloserGewinnbehauptet.
+Quelle https://docs.polymarket.com/concepts/resolution . KeineOrders/Keys/PaidAPI.
+
+30.09.13:48 UTC: Nach abgeschlossenen neuen Screens drei aufeinanderfolgende
+Zielrunden ohne neue Forwarddaten, jeweilsCollector13872mitexaktemAufruflive
+bestaetigt.10Fensterunveraendert,naechstes14UTC/16Wien. Referenzseitenzugriff
+nichtvalide, untersuchtefrischeSettlementBooks ohneKaufangebote. Keinweiterer
+belastbarerFortschritt ohneexterneDatenaenderung. Chat-Zielerneutblocked,
+NICHTerreicht; Sammler undACTIVE09/18Automation bleibenunveraendert. Automation
+wertetneueFenster/AufloesungennachvorregistriertemProtokollaus,keineRueckfrage.
 
 Nutzerauftrag: aufraeumen, neu starten, nachweisbare Netto-Edge finden. Hauptagent plant/nimmt ab; guenstige Worker implementieren begrenzte Pakete. Keine Gewinnzusage. Paper/research-only, keine Keys, echten Orders, Kapitalerhoehungen oder Schliessung der Legacy-SD-Position.
 
