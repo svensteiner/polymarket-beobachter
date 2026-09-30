@@ -14,13 +14,24 @@ Kein Polymarket-API-Key. Alles lokal. Pipeline alle 15 Min — nicht extra start
 
 ### Vorrangiger Auftrag vom 30.09.2026
 
-Heartbeat 30.09.15:01UTC: Favorite-Collector PID13872 mit korrektem Python/
-Modul weiterhin aktiv; progress.completed=false,24Fenster (17captured,7skipped),
-2qualifizierte Papiereinstiege (Rozin5145153,UCAM5143221),53Requests.
+Heartbeat 30.09.16:03UTC: Favorite-Collector PID13872 mit korrektem Python/
+Modul weiterhin aktiv; progress.completed=false,26Fenster (19captured,7skipped),
+2qualifizierte Papiereinstiege (Rozin5145153,UCAM5143221),57Requests.
 Zwei frische GammaGETs: Condition/Outcome/Token jeweils identisch, beide
-noch offen, kein Settlement-PnL. Beleg output/favorite_forward_status_20260930_1500.json.
+noch offen, kein Settlement-PnL. Beleg output/favorite_forward_status_20260930_1600.json.
 Keine Doppelstarts/Schwellenaenderung. Naechste Runde neue Fenster und
 offizielle Aufloesungen pruefen; offene Ergebnisse nicht als Gewinne zaehlen.
+
+Naechste getrennte Forschungshypothese (noch NICHT getestet): politische
+Favoriten ab0.90 statt weiterer Sport-Schwellenoptimierung. Quelle Volltext
+https://arxiv.org/html/2609.12878v1, Abschnitte2/4/5: historische Transaktionen,
+keine fuer uns zugesicherten Fills. Gegenargumente: kleiner Vorteil, Spread,
+Gebuehren, Kapitalbindung und abhaengige Kindmaerkte koennen ihn aufzehren.
+Vor Auswertung Auswahlzeit, fixePreisgrenzen und einSignal jeParentEvent
+registrieren; zuerst hoechstens100oeffentliche Metadaten,10frischeBuchpaare,
+keine neuen Dauersammler. Bei fehlendem zeitgleichem Buch/Regel-/Gebuehrenbeleg
+als unzureichendeDaten abbrechen, keine Midpoint-Gewinne behaupten. Laufenden
+Sport-Forward unveraendert lassen. Testprotokoll vor Ergebnissichtung abnehmen.
 
 GitHub-Recherche/Testauftrag 30.09. nachmittags: drei gepinnte Repositories
 offline untersucht, keine Installation/Orders/bezahlten Calls. Details und SHAs:
