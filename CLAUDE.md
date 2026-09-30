@@ -14,6 +14,14 @@ Kein Polymarket-API-Key. Alles lokal. Pipeline alle 15 Min — nicht extra start
 
 ### Vorrangiger Auftrag vom 30.09.2026
 
+Heartbeat 30.09.15:01UTC: Favorite-Collector PID13872 mit korrektem Python/
+Modul weiterhin aktiv; progress.completed=false,24Fenster (17captured,7skipped),
+2qualifizierte Papiereinstiege (Rozin5145153,UCAM5143221),53Requests.
+Zwei frische GammaGETs: Condition/Outcome/Token jeweils identisch, beide
+noch offen, kein Settlement-PnL. Beleg output/favorite_forward_status_20260930_1500.json.
+Keine Doppelstarts/Schwellenaenderung. Naechste Runde neue Fenster und
+offizielle Aufloesungen pruefen; offene Ergebnisse nicht als Gewinne zaehlen.
+
 GitHub-Recherche/Testauftrag 30.09. nachmittags: drei gepinnte Repositories
 offline untersucht, keine Installation/Orders/bezahlten Calls. Details und SHAs:
 output/github_research_20260930/README.md. pm-calibration 50 Originaltests,
