@@ -14,6 +14,11 @@ Kein Polymarket-API-Key. Alles lokal. Pipeline alle 15 Min — nicht extra start
 
 ### Vorrangiger Auftrag vom 30.09.2026
 
+Run2Heartbeat01.10.16:01UTC: PID44616aktiv,progress.completed=false,
+3Fensterallecaptured,2qualifizierte5167965/5167968,11Requests.
+2GammaGETsIdentitaetkorrekt,beideoffen/keinFinalnetto. Beleg
+output/favorite_replication_status_20261001_1600.json. Unveraendertweiterlaufen.
+
 REPLIKATION GESTARTET 01.10.15:06:06UTC: unabhaengigabgenommenerWrapper
 output/favorite_replication_20261001/prepare_replication.py, Protokoll und
 review_acceptance.json daneben. Run output/favorite_replication_20261001_run2,
