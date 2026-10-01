@@ -14,6 +14,159 @@ Kein Polymarket-API-Key. Alles lokal. Pipeline alle 15 Min — nicht extra start
 
 ### Vorrangiger Auftrag vom 30.09.2026
 
+01.10.2026 Markout-Auswertungsplan VOR erstenMessungen festgeschrieben:
+output/favorite_markout_20261001/evaluation_plan.json undevaluation_review.json
+unabhaengigalsbegrenzteexplorativeDiagnostikabgenommen. BeiRegistrierung
+0Entries/0Requests/0Horizonbeobachtungen mitProgressSHAbelegt. Primaer30Min,
+5/60MinNURsekundaerkeinBesthorizonPicking. OriginaleventgameStartTime
+ueberCondition/Tokenjoin:request+receiptvorGEPLANTEMStart,fehlendeinkonsistente
+Zeitangabeflaggen/nichtschweigenddroppen;keinBeweisfuerrealenFruehstart.
+Minimum30distinctParentEvents,>=80%validPrimaercoveragefuerKandidat,
+missing/late/stale/error/invalidseparatundalleEntriesimNenner. Worstcaseszenario
+fehlenderAusstieg=0ErloesminusEntrykostenStress,keinbehaupteterFill.
+EntrykostenenthaltenEntryfee;keinDoppelabzug. Exitfeeunbekannt=Nettonicht
+bewiesen; hypotheticalfeesnurseparateSzenarien. Nieprofit_proven/Livefreigabe
+voneinempositivenoptimistischenMittelwertableiten. UnveraenderteReplikation
+fuerbelastbareEvidenznoetig. BeideProzesse41124/44616erneutCIMaktiv,
+SidecarwartetaufneueEntries;keinRestartundkeineLLMPollingsnötig.
+
+01.10.2026 19:28:56UTC NEUER MARKOUT-SIDECAR TATSAECHLICH GESTARTET:
+output/favorite_markout_20261001/sidecar.py --capture; PID41124 CIMexakt
+bestaetigt,stderrleer. launch.json + review.json + transport_check.json.
+Runoutput/favorite_markout_20261001/run/progress.json,completed=false,
+0entries/0requestsbeimStart; NICHTalsfertigeEvidenzoderErfolgdarstellen.
+NUR neue evaluation.ok Run2Entries decision>=19:28:56.253355UTC; gleiche
+Favoritenregelnunveraendert. Einmalnach5/30/60Min echteQ5BIDVWAPs,
+30sDeadline/Bookage,identischeConditionToken,RawtextHashZeitstempel.
+Max30Entries,90Capturerequests,32MiBkonservativgerechneteResponsebytes,
+2MiBproAntwort,15sTimeout,30sPoll,24hRuntime; EndewennQuellefertigundalle
+Horizonserledigt. KeinResume/keinDoppelstart, neuesOutputverzeichnisexklusiv.
+1separaterTransportcheckGETvorStartok1296Bytes;keineOrders/Keys/LLM/APIKosten.
+ScriptSHA66395d234b152f4cadcfdf5ef6e42722b8c94ffaf7400e7d55fdc3ac07488b11.
+Mainhat2unvollstaendigeWorkerentwuerfeeretzt;JETZTdynamischeSource-Polls,
+echtesSleep,Budgets,Q5BidDepth,IdentityFreshness.7OfflineTestsbestanden,
+unabhaengigeAbnahmevorStart. Exitfeesunbekannt: gespeichertePnLsind
+VORExitgebuehrundkeinNettoGewinnnachweis! FehlendeMessungennichtNull/
+Gewinnsetzen; ungenuegendeStichprobeundCensoringoffenberichten.
+VorherigerOfflineMarkouttest output/markout_feasibility_20261001:
+4000Summaries/1178valid/545Conditions/122ersteBandentries,nur1passender
+Folgedatensatz30m..2h(1809s). Ask-zu-AskoptimistischQ5-.35,mitStress-.45;
+1/122keineStrategieaussage. Zukunftsbidsfehlen,deshalberfasstSidecarjetzt.
+HistoricalreviewnotiertToken/Q5GateimAnalsescriptnichtgenerellerzwungen;
+derEINZIGEgemesseneFallbeidesgeprueft. NichtalsrobustesBacktestframework.
+GammaSettlementstatusGET19:15miturllib403,keineResolutionabgeleitet;
+errorbelegfavorite_replication_status_20261001_1915_error.json. KeinRestart.
+NächsteRoutine:beideProzessidentitaeten+faelligeHorizonsergebnisseprüfen,
+keineSammlerduplikate. AuswertungwennneueDaten vorliegen, keineLLM-Pollschleife.
+
+01.10.2026 ~19:14UTC Preisbereichstest abgeschlossen:
+output/crypto_partition_20261001/report.json + review.json, 2GammaGET+22Books.
+BTCevent1080633 undETHevent1080637 jeweils11Bins02.10.Binance1mNoonET,
+alleYESasksundQ5MinSize/Identitaetgeprueft. AskSummenBTC1.065 ETH1.060,
+alsoKEINBruttoedge selbstunterguenstigerAnnahmevoller1Auszahlung.
+Globalbookskew9.436s>5,ageunter9s. SettlementboundaryRESTUNSICHER:
+UpperTailTitelstrict>92000/>3100,DescriptionordnetEquality'higher range
+bracket'zu; ReviewwillletztenRandnichtunbedingtabnehmen. KeinGarantiefloor
+fuerdiesePartitionsbehaupten! AblehnungwegenKostenbleibtunabhaengigdavon.
+KeineOrders/Fees/Profitclaim. OriginalProtokollundRawbleibenerhalten.
+Bewertungbisher: SofortigeStruktur-/CrossvenueArbitrageinbegrenztenScreens
+nichtgefunden. WeitereRundensollenkeineschontenSnapshotsblindwiederholen.
+NaechstewirtschaftlichandereHypothese: vergleichbarePreisbereiche und
+SchwellenkoennenalsKonsistenzsignal dienen,aberkeinNettoEVNachweisallein.
+BevorneueBautestausloesen, aktuelleFavoritenreplikationundvorhandene
+historischeForward-/Markoutdatengezieltauswerten; beiPreissignalnur
+zeitlichgetrennteMessungnachFeesundohneoptimistischeFillsalsEvidenz.
+Run2Prozess44616indieserRundeCIMbestaetigtaktiv, nichtneustarten.
+
+01.10.2026 ~19:10UTC Krypto-Schwellentest abgeschlossen, KEIN Edge:
+output/crypto_threshold_20261001: 4vorabgewaehlteBTC/ETHBinance1mNoonET
+Close-Ladders;3fehlendeLowerYESasks,1Kosten1.001undSkew6.499s>5.
+Folgetest output/crypto_threshold_ranked_20261001:96weitereadjazentePaare
+ausarchiviertenQuellen,4kleinsteGammaindikativeSummenvorBookabrufgewaehlt.
+Massgeblich report_corrected.json + final_review.json (unabhaengiggeprueft).
+Rank1BTC76/78kOct4 undRank3BTC76/78kOct3:Q5Tiefe/Identitaet/Frischeok,
+Kostenje1.001VORFees. Rank2ETH2300/2400Oct3:1.002,Skew21.471sungueltig;
+Rank4ETH3100/3200Oct2:higherNOaskfehlt. Insgesamt18GETbeideScreens.
+BUGkorrigiertOFFLINE:alteLoopfrageinselected/all_pairs kopiert,IDs/Tokens
+warenkorrekt. Urspruenglicher ranked/report.json explizitINVALID! Niemals
+fuerSemantikverwenden. reconstruct_pairs.py ziehtSchwelleausEIGENER
+OriginalfragebyMarketID; neueSourcebindungabgenommen,keineneuenGETs.
+PayoffkorrekturbeiderOrdner payoff_correction.json:strict> Formel
+1[x>L]+1[x<=H], FaellebelowL/=L/between/=H/aboveH =1,1,2,2,1.
+20BoundarytestsproScreenbestanden. AlteProtokollProsa0/1/1warFALSCH,
+Originalhashesbleibenerhalten;KorrekturenhabenVorrang. Floor1bleibt.
+Entscheidung:Snapshot-Ladder-Chanceaktuellnichtbelegt,keinefeeoderprofit
+Behauptung. KeineschonabgelehntenQuoteserneutabfragenalsneuerTest.
+NaechsterneuerTest: Krypto-Preisbereichsmaerkte amidentischenStichtag/
+Oracle aufvollstaendigeueberschneidungsfreiePartitionpruefen; nurwenn
+ALLEIntervalleinklbeiderRandbereichebelegt,darfSummeallerYESAskKosten
+gegenAuszahlung1geprueftwerden. KeinunvollstaendigerBinsatzalsArbitrage.
+BestehendeFavoritenreplikationunveraendert;progresszuletzt15Fenster,
+4qualifizierteIDs5167965/5167968/5166311/5167978,completed=false (Dateistand,
+keinProzesscheckindieserRunde). Nichtneu starten.
+
+01.10.2026 ~19:02UTC Snapshot-Crossvenue-Screen jetzt abgeschlossen:
+restliche4der8NFLPaarungen in output/sx_crossvenue_remaining_20261001/report.json
+plus review.json unabhaengiggeprueft. Jaguars/Bengals1.01375/1.00375,
+Cardinals/Giants1.00375/1.00875, Patriots/Bills1.00000/1.01500,
+Packers/Buccaneers1.01375/1.00125. Alle16Kosten der8Auswahlspiele>=1vorFees.
+NeueNCAAStichprobe (separaterScope) output/sx_ncaa_probe_20261001:
+Tulsa/NorthTexas1.0100/1.0075, VirginiaTech/Pittsburgh1.0100/1.0175.
+6GETs,rawhashes/identities,review.json accepted_bounded_diagnostic.
+run_probe.py offlinebereinigt: purecomplementary_costs reversedPMorder-Test,
+UTC+00/+00:00Regression,2outcome2tokenvalidation,6GEThardcap,boundedread.
+CodeundRohdatenunabhaengiggeprueft;keineweiterenGETsdurchTests.
+Entscheidung: KeinprofitablerCrossvenueSoforteinstieg in diesenSnapshots.
+NichtidentischeSnapshotsoderfertigeSuchennochmalsabfragenalsFortschritt.
+Naechste NEUE Hypothese: logischverschachtelte Krypto-Preisschwellen innerhalb
+Polymarket mit identischem Underlying/Stichtag/Oracle/Settlement. Wenn lower
+threshold YES + higher threshold NO zusammen <1 nachFees/Depth/Stress, ist
+das eine zupruefende strukturelle Chance. BeideRegeltextevergleichennichtnur
+Titel! Insbesondere intraday-touch vs closing-price nichtgleichsetzen.
+VorQuotesStichprobe/Gatesfixieren; begrenzteDiscovery,beiFehlenexakterPaare
+keinenEdgebehaupten. AlteSportsladder warverworfen,neuesKryptosegmentseparat.
+FavoritenRun2nichtveraendern;diesesForschungssegmentfertig,keineNeustarts.
+
+01.10.2026 ~18:55UTC weitere echte Crossvenue-Tests abgeschlossen:
+Browns/Steelers Kosten1.005/1.0075 (output/sx_crossvenue_batch_20261001).
+Vier weitere exactNFLmatches in output/sx_crossvenue_eligible_batch_20261001/
+report_v2.json: Rams/Eagles1.00125/1.01625, Jets/Bears1.005/1.0075,
+Cowboys/Texans1.00375/1.0125, Titans/Ravens1.005/1.00875.
+Alle acht Gegenseitenkosten vorGebuehren>1; keinepositiveBruttomarge,
+keineOrders. Rawbooks+Zeitstempel+Identitaet separat review.json abgenommen.
+WICHTIG: SX/PMOutcomeREIHENFOLGEunterschiedlich! Nur nachTeamidentitaet
+zuordnen, nieindexbasiert. FalscheIndexberechnungen ausreport_v2 entfernt.
+Altes report.json desselbenOrdners ist schlechteCITYsuche, superseded byv2.
+NFLkurznamen sindEagles/Rams usw, NICHTPhiladelphia/Losoder'New'.
+SXAPIzweiteSeitelieferteidentischenHash; dedupiert,kein200Markteclaim.
+NCAAFvorcapausschliessen; keinForschungsnegativ ausSuchfehlern ableiten.
+Gebuehrenaudit output/sx_crossvenue_20261001/fee_audit.json bestaetigt Run1
+.05 war gespeichertersports_fees_v3 Satz. FremderNFLGamma.03 nichtuebertragen.
+NaechsterkonkreterSchritt: restliche4derbereitsfestgelegten8NFLPairs mit
+korrektenNicknames undidentischen Kostenregeln quotepruefen,fallsnochnicht
+inaktuellenArtefaktenvorhanden. KeinNeustartderFavoritenreplikation.
+
+Nutzerkorrektur 01.10.2026: aktiv neue Hypothesen testen statt nur laufenden
+Favoritenlauf ueberwachen. Bestehende stündliche Automation entsprechend
+aktualisiert; bei wartendem Experiment einen anderen begrenzten Test waehlen.
+Neue Quelle erfolgreich: SX.bet öffentliche active API + V3 snapshot ohne Key.
+Beleg output/sx_crossvenue_20261001/report.json und Rohdaten. Ein exakter Match:
+NFL Colts vs Commanders 04.10.13:30UTC, PM909431, SX L18900779.
+01.10.18:44UTC PM asks Colts .64 / Commanders .37; SX korrekte Takerpreise
+Colts .65 / Commanders .36. Optimistische Gegenseitenkosten 1.00 bzw1.02
+je1Auszahlung im normalen Siegfall: KEIN positiver Bruttovorteil, nach Kosten
+schlechter. Keine Trades/Profitbehauptung. Tie/void-Regeln unterscheiden sich
+moeglicherweise (PM50:50 vs SXrefund), Gebuehren SX kontospezifisch unbekannt.
+SX scale1e20, Snapshot Makerseite: zum Kauf Gegenseite nehmen und1-p rechnen.
+Gamma /markets?search ignoriert Suche! /public-search mit kurzen Teamnamen
+und 'vs.' fand Match, Vollnamen lieferten nur Saisonwetten. Kein universeller
+Negativbefund aus ersten100SXMarkten oder5Suchtreffern ableiten.
+Naechster begrenzter Test: weitere vorab ausgewaehlte aktuelle Spiele ueber
+SX type226 + Gamma nickname public-search abgleichen und Gegenseitenkosten
+nachpruefen. Erst bei positivem Bruttospread Tiefe/Fees/Settlement vertiefen.
+Keine neue Infrastruktur allein fuer Zugang, keine Wiederholung dieser alten
+Quotes. Run2 unten unveraendert weiterlaufen lassen, nicht neu starten.
+
 Run2Heartbeat01.10.18:01UTC: PID44616aktiv,progress.completed=false,
 12Fenster(11captured,1skipped),3qualifizierte5167965/5167968/5166311,28Requests.
 3GammaGETsIdentitaetkorrekt,alleoffen/keinFinalnetto. Beleg
