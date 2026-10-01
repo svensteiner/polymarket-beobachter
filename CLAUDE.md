@@ -14,6 +14,17 @@ Kein Polymarket-API-Key. Alles lokal. Pipeline alle 15 Min — nicht extra start
 
 ### Vorrangiger Auftrag vom 30.09.2026
 
+REPLIKATION GESTARTET 01.10.15:06:06UTC: unabhaengigabgenommenerWrapper
+output/favorite_replication_20261001/prepare_replication.py, Protokoll und
+review_acceptance.json daneben. Run output/favorite_replication_20261001_run2,
+PID44616 exaktCIMbestaetigt,stderrleer.80frischeEvents vorregistriert,
+0Condition-/ParentEvent-Ueberschneidungmitallen80ausRun1. Fenster01.10.15:30
+bis02.10.15:00UTC. GleicheBand.70..90,Q5,1h,.02Stress;24h/500Requests/64MiB.
+KeineOrders/LLMCalls. KeineDoppelstarts; naechsteRoutineDIESENRunpruefen,
+beiSettlementallequalifizierteninklVerluste/currentumaResolutionStatus.
+Run1fertigundnichtneuabfragen. Run2separatberichtenunddanachgemeinsamauswerten,
+keineRegelanpassungwegenEinzelergebnissen. LaunchbelegimPrepOrdnerlaunch.json.
+
 ABSCHLUSS 01.10.14:02UTC hat Vorrang vor Zwischenstaenden unten: alle5
 Papiereinstiege FINAL,4Siege1Verlust. FalconsForce5150550 verlor: -3.70148;
 aimclub5150553 gewann:+0.86000. Gesamtkosten19.61106+Stress0.50,Auszahlung20,
