@@ -14,12 +14,12 @@ Kein Polymarket-API-Key. Alles lokal. Pipeline alle 15 Min — nicht extra start
 
 ### Vorrangiger Auftrag vom 30.09.2026
 
-Heartbeat 01.10.12:01UTC: ERFASSUNG seit10:45UTC ABGESCHLOSSEN,PID13872 beendet,
+Heartbeat 01.10.13:01UTC: ERFASSUNG seit10:45UTC ABGESCHLOSSEN,PID13872 beendet,
 windows.json completed=true,80/80vorregistrierteIDs exakt/ohneDuplikate.
 62captured,18skipped (15stale/future,3identitychanged),57ausserPreisband/tie,
 5qualifiziertePapiereinstiege,162Requests. UnabhaengigeAbnahmevollstaendig.
 5150550FalconsForce/5150553aimclub weiterhinOFFEN,2GammaGETsIdentitaetok.
-Belege output/favorite_forward_status_20261001_1200.json und
+Belege output/favorite_forward_status_20261001_1300.json und
 output/favorite_forward_capture_summary_20261001.json. Erst3finalnetto2.73042,
 offeneKosten+Stress7.84148: Gesamtuntergrenzebei2Verlusten -5.11106.
 Erfassungfertig NICHT Gesamtauswertungfertig. KeinNeustartvorAbrechnung/
