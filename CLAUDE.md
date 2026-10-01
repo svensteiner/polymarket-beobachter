@@ -14,11 +14,17 @@ Kein Polymarket-API-Key. Alles lokal. Pipeline alle 15 Min — nicht extra start
 
 ### Vorrangiger Auftrag vom 30.09.2026
 
-Heartbeat 01.10.10:01UTC: Favorite-Collector PID13872 mit korrektem Python/
-Modul weiterhin aktiv; progress.completed=false,79Fenster (61captured,18skipped),
-5qualifizierte Papiereinstiege,160Requests. Neu5150550/5150553 beideoffen;
-2GammaGETsIdentitaetbestaetigt,keineFinalitaet/keinNetto. Beleg
-output/favorite_forward_status_20261001_1000.json. EinFenster10:45UTCstehtaus.
+Heartbeat 01.10.11:00UTC: ERFASSUNG ABGESCHLOSSEN,PID13872 beendet,
+windows.json completed=true,80/80vorregistrierteIDs exakt/ohneDuplikate.
+62captured,18skipped (15stale/future,3identitychanged),57ausserPreisband/tie,
+5qualifiziertePapiereinstiege,162Requests. UnabhaengigeAbnahmevollstaendig.
+5150550FalconsForce/5150553aimclub weiterhinOFFEN,2GammaGETsIdentitaetok.
+Belege output/favorite_forward_status_20261001_1100.json und
+output/favorite_forward_capture_summary_20261001.json. Erst3finalnetto2.73042,
+offeneKosten+Stress7.84148: Gesamtuntergrenzebei2Verlusten -5.11106.
+Erfassungfertig NICHT Gesamtauswertungfertig. KeinNeustartvorAbrechnung/
+unabhaengigerEntscheidungueberunveraenderteReplikation. NaechsteRunde nur
+offene2Settlementspruefen; dieseVerluste niemalsauslassen.
 Seit06:01 FINAL5153145 DaneSweeny,
 Entscheidung02:00UTC,cost3.60148+stress0.10; einGammaGET identitaetsgeprueft,
 closed=true/statusresolved,Outcomes[0,1],richtigerzweiterAusgang,Auszahlung5,
