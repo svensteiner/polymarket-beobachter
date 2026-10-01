@@ -13,6 +13,13 @@ Kein Polymarket-API-Key. Alles lokal. Pipeline alle 15 Min — nicht extra start
 ## Neustart (2026-09-12) — hat Vorrang vor dem historischen Stand
 
 ### Vorrangiger Auftrag vom 30.09.2026
+02.10.2026 00:01 Wien / 01.10.22:01UTC: Run2PID44616 undSidecar41124
+CIMlive;21Fenster,weiter4qualifizierteQuellentries,Sidecar0/0/0Errors.
+Keine neue Markout-Auswertung erforderlich. Zwei offene Settlements per
+je1GET geprueft: output/favorite_run2_settlement_20261001_2201/report.json.
+Moyano5167965 jetzt proposed/offen, NICHT final trotz .9995; Brengle5167978
+offen. Keine neuen finalen PnL, finaleTeilsummeweiter1.28452fuer2Entries,
+keinGesamtergebnis. Sammlerunveraendert; keineDoppelstarts/LLMPollings.
 01.10.2026 21:02UTC Heartbeat: BeidePID44616/41124CIMlive; Run2jetzt16
 Fenster,21:00Turma/MIBRmitMid.975/.025wegenBandverworfen; Sidecarweiter0,
 keinEvaluationrerunnoetig. DreiPendingSettlementeinmalgeprueft:
