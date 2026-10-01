@@ -14,13 +14,16 @@ Kein Polymarket-API-Key. Alles lokal. Pipeline alle 15 Min — nicht extra start
 
 ### Vorrangiger Auftrag vom 30.09.2026
 
-Heartbeat 01.10.09:01UTC: Favorite-Collector PID13872 mit korrektem Python/
-Modul weiterhin aktiv; progress.completed=false,76Fenster (58captured,18skipped),
-3qualifizierte Papiereinstiege,154Requests. Seit06:01 FINAL5153145 DaneSweeny,
+Heartbeat 01.10.10:01UTC: Favorite-Collector PID13872 mit korrektem Python/
+Modul weiterhin aktiv; progress.completed=false,79Fenster (61captured,18skipped),
+5qualifizierte Papiereinstiege,160Requests. Neu5150550/5150553 beideoffen;
+2GammaGETsIdentitaetbestaetigt,keineFinalitaet/keinNetto. Beleg
+output/favorite_forward_status_20261001_1000.json. EinFenster10:45UTCstehtaus.
+Seit06:01 FINAL5153145 DaneSweeny,
 Entscheidung02:00UTC,cost3.60148+stress0.10; einGammaGET identitaetsgeprueft,
 closed=true/statusresolved,Outcomes[0,1],richtigerzweiterAusgang,Auszahlung5,
 Netto+1.29852. Beleg output/favorite_forward_status_20261001_0600.json.
-Unabhaengigabgenommen. Alle3bisherqualifiziertenfinal,Summe+2.73042 nur
+Unabhaengigabgenommen. Dieersten3qualifiziertenfinal,Summe+2.73042 nur
 hypothetischesPapiernetto,keineEchtgeldfills/Profitabilitaetsbelege.
 ZweiFinale nichtneuabgerufen;Restfenster bis10:45UTC weiterunveraendert.
 GammaGETs von19:02UTC: Condition/Outcome/Token jeweils identisch, BEIDE FINAL
