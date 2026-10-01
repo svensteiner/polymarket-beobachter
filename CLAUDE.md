@@ -13,6 +13,78 @@ Kein Polymarket-API-Key. Alles lokal. Pipeline alle 15 Min — nicht extra start
 ## Neustart (2026-09-12) — hat Vorrang vor dem historischen Stand
 
 ### Vorrangiger Auftrag vom 30.09.2026
+01.10.2026 20:33:43UTC Externe Datenabhaengigkeit dreimal hintereinander
+geprueft (20:31:58,20:33:23,20:33:43): Run2PID44616 undSidecarPID41124
+exaktCIMlive, Sidecar0Entries/0Requests/0Errors. Naechstesvorregistriertes
+Fenster21:00UTC/23:00Vienna,fruehester5MinMarkout21:05UTC. Aktuelle
+autorisierteOffline-/Quotenanalysenabgeschlossen,keinverifizierterEdge;
+weitererbelastbarerFortschrittbrauchtneueForwarddaten/endgueltigeAufloesung.
+InteraktivesGoalwegenexternerDatenabhaengigkeitblocked,nichtcomplete.
+SammlerNICHTgestoppt, stündlicheAutomationpolymarket-produktionsreifeACTIVE
+bestaetigt; bei neuen Daten autonomauswertenundForschungfortsetzen. Keine
+Rueckfrageerforderlich. NichtidentischeSnapshots/abgeschlosseneSettlements
+wiederholenundkeineTestschwellenoptimieren,umErfolgzuerzeugen.
+01.10.2026 20:31UTC read-onlyClockdiagnose: output/liquidity_reward_stream_20261001/clock_diagnostic.json. w32tm/query/status meldetTimeService nichtgestartet(0x80070426). 3stripchartProben time.windows.com offsets+32.5723/+28.4482/+37.2028ms: lokalerClockNachlaufkonsistentmitWSfuture4..13ms, aberkeinrueckwirkenderBeweis/Fehlerbound. KeineUhr/ServiceaenderungbeiaktivenSammlern; OriginalTiminggatesundFehlerbleiben. FuerkuenftigeRuns zeitgleicheClockreferenz/UnsicherheitvorabregistrierenbevoreineToleranzfestgelegtwird.
+01.10.2026 Dune5MinStream ABGESCHLOSSEN, PID30816terminal, nichtrestarten.
+output/liquidity_reward_stream_20261001/analysis.json + frames.jsonl.summary.json:
+60Frames/31272Bytes, timeout/complete=true,2exakteInitialbooks,30price_change
+Events(je2Tokenupdates),0Fremdtoken/Conditions,keineTradeevents. Beobachtete
+TopquotesunveraendertYES.91/.92,NO.08/.09. KEINFill/Reward/Edgebeweis.
+Timingproblem:Initialbooks84412msalt; alle30UpdatesServertime4..13msVOR
+lokalemEmpfanginZukunft(age=-13..-4ms). StriktesNonfutureGatefail; moeglicher
+Clockskewnichtnachgewiesen,nichtstillschweigendToleranzerhoehen. Rohquotes
+nurInhaltsdiagnostik,keineverifizierteAusfuehrungsfrische. WeitereDuneSammler
+nurmitkonkreterFragestellung; keineendlosenWiederholungen.
+01.10.2026 DuneQuoteStabilitaet: EIN vorhandenerWS-Sammler gestartet,
+PID30816 viaCIMexaktbestaetigt, output/liquidity_reward_stream_20261001/
+protocol.json+launch.json. python -m analytics.book_stream_probe mitgenau
+beidenDuneTokens,300s/2000Nachrichten/5MiBOutput; keinneuerCode/keineOrders.
+frames.jsonl wirdbeiEndeatomarfinalisiert; vorherTempdateiistkeinFehler.
+PruefungnachEnde: Manifest/Termination/Zeitraum, nurangeforderteTokensUND
+exakteConditionauswerten,Fremdframesseparatzaehlen; beideInitialbooksnoetig.
+FehlendeBooksNICHTalsstabilerMarktwerten. KeinFillbeweisvonTouch/DepthChange,
+keineRewardsannahme. KeinRestart/Doppelstart. Diesistnur5Mintechnischer
+Feasibilitytest,keinProfitbeleg. FavoritenRun2/Sidecarunveraendert.
+01.10.2026 Rewards-Kandidat Kostenhuerde konkret: output/liquidity_reward_candidate_20261001/hedge_cost_scenarios.json. 1GammaGET20:21UTC exactCondition/Market5178444: feesEnabledtrue,rate.05 exponent1 takerOnlytrue, orderMinSize5. BeiQ20undsofortigerHedgezumaltenAsk: YESMaker.91+NOAsk.09=>Feeverlust.0819; NOMaker.08+YESAsk.92=>.0736, jevorRundung/Rewards. PoolanteilnoetigproFill .0819%/.0736%; mitzusaetzlichem.02/shareLoss .4819%/.4736%. KeineFill/Rewardprognose. WICHTIGQ20NOOrdernotional1.60/1.80<Gamma5USDC: Ausfuehrbarkeitungeklaert; unterbeidenMinregelnNOqtymind62.5bei.08. NichtQ20alsausfuehrbarbezeichnenundnichtTestmengeheimlichaendern. RohFeeAntwort+Meta gespeichert; SammlerbeidelivebeimCheck.
+01.10.2026 NEUER Rewards-Kandidat fuer separat zu pruefende Hypothese:
+output/liquidity_reward_candidate_20261001/report.json,3GET raw+Manifeste.
+DunePartThree RT>=75, Condition0x007d3bd8db2b3572738aaab118114c506dffa5468fc54eef9a3ab9c0326820f6,
+aktiv/offen, Rewardsmin20/pool100proTag/maxspread6.5c. Books20:17:45UTC
+ReceiptSkew14ms; MainpruefteYESbid.91size493.76/ask.92size564.76,
+NObid.08size564.76/ask.09size493.76. Hypothetischje20Bids=>19.80Cash,
+wennBEIDEgefuelltkomplementaererPayout20=+.20VORFees; keineFillsbewiesen.
+NurYESFillkann18.20verlieren, daherkeineArbitragegarantie. Reward1/Tag
+braeuchte1%tatsaechlichenPoolanteil; Pool!=Einnahmen, Gegenparteien/
+Score/Dauerunbekannt. Midpoint.915ausserhalb.10..90: offizielleRewardregeln
+verlangenbeidseitigeScores; einseitigeOrdernachFillkannPraemieverlieren.
+KeinKapitalfreigegeben/keineOrder. BestehenderQ5Favoritentestunveraendert.
+NaechsterTestfallswirtschaftlichsinnvoll: vorabbegrenztepassiveBook/Trade-
+BeobachtungzurQuoteStabilitaet/Einseitigkeitsrisiko; keinFillsimulatoraus
+nurBookBeruehrungundkeinePraemieneinnahmenerfinden.
+01.10.2026 LiquidityRewards Q5Eligibility neu getestet: output/liquidity_reward_eligibility_20261001/report.json +raw.bin,1offiziellerGETerste500Rows,nichtgesamtVenue. 495minsize>=20;5minsize0 mitjeDailyPool.001, selbst100%aller5Poolsnur.005/TagvorKosten. KeinattraktiverQ5Kandidat. Rewards!=MakerRebates, Pool!=eigeneEinnahmen; Wettbewerb/Fillsungeprueft. MainkorrigierteWorkerzaehlung: ALLE500minsizevorhanden,9VERSCHIEDENEWerte (nichtnur9Rows). OffizielleDocs/programs/liquidity-rewards:relativeScoring,minPayout$1,AugustTWAPZusatzprogrammbereitsbeendet. GroessereOrders/anderePagesnichtwiderlegt,keinneuesKapitalautorisiert.
+01.10.2026 20:13UTC Run2Settlement neue Evidenz: output/favorite_run2_settlement_20261001_2013/report.json,4GET4raw. 5166311 Barca eSports ENDGUELTIG closed/resolved, originalCondition/Tokens/Maingeprueft, Preise[0,1], Q5Payout5-cost4.23360-stress.10=+.66640. DreiandereEntriesnochunfinal:5167965offen,5167968proposedNICHTfinal,5167978offen. NurfinalesSubtotal, KEINgesamterRunReturn/profit_proven. Hold-to-resolution: nichtalsbefore_exit_feeMarkoutbezeichnen (MainFeldnamenkorrigiert). KeineerneuteSettlementabfragefuer5166311noetig. Markoutweiter0Entries; Sammlerbeidelive20:12UTC. Naechste23:00ViennaFenster.
+01.10.2026 Offline-Markout-Auswertung implementiert und unabhaengig abgenommen:
+output/favorite_markout_20261001/evaluate_run.py, test_evaluate_run.py,
+evaluator_review.json und evaluator_report.json. Main bestaetigt 9 Tests bestanden
+(nicht die faelschlich vom Worker behaupteten 14). Reviewer Hash:
+00696a41e8be19a3daa84f4d856eae8fe22b8af1749a4fdec05411ea2705f336.
+CLI: python output/favorite_markout_20261001/evaluate_run.py
+Liest aktuelle Sidecar-Progress + Discovery + Plan; keine Netzwerkaufrufe.
+Prueft Hash/Raw-Payload, Condition/Favorit/Token, Q5, Elternereignis, Request
+und Empfang vor geplantem Start und innerhalb Horizonfrist; berechnet Bid-VWAP
+neu. Fehlende/ungueltige Ausstiege konservativ, doppelte Parents blockieren
+Schlussfolgerungen. Exitfee und Ausfuehrbarkeit weiter unverifiziert. Aktueller
+Lauf: awaiting_data, 0 Entries, kein profit_proven. Source darf bei erreichtem
+30-Entry-Limit weiterlaufen; nur Sidecar-Abschluss erforderlich fuer Diagnose.
+Restlimit: grob beschaedigte Top-Level-Daten wie results=[None] werfen Fehler
+(fail closed); kein genereller JSON-Reparaturparser. Nur fuer valides
+Sidecar-Format abgenommen. Sammler/Parameter unveraendert.
+01.10.2026 Maker-HedgeOfflineScreen output/kalshi_three_event_screen_20261001/maker_hedge_screen.json: 3Events/6Teamseiten/je2MakerVenues. NurCommanders+Colts hat1CentGross beiJoinBestBid; alleanderen0oder-.01. PMMaker.35+KalshiTaker.64: nachKalshiFee.07*p*(1-p) -.006128/share. KalshiMaker.63+PMTaker.36: PMrate.03 undKalshiMaker.0175 (KXNFLGAME multiplier1offizielleJuly7PDF) =>-.00099125/share. KontinuierlichvorAufrundung, keineRewards/Rebatesangenommen, guenstigeunbewieseneFills; Q5/Ruleseinschraenkungenbleiben. FuerdieseQuoteskeinMakerFillExperimentstarten; keinuniversellerStrategiebeweis.
+01.10.2026 Kalshi3EventScreen output/kalshi_three_event_screen_20261001/report.json: vorQuotes3Eventsgewaehlt,12GET(3Search+9Books), Q5 depth, alleReceiptSkews<.6s. Steelers/Browns1.01/1.01, Colts/Commanders1.00/1.02, Cardinals/Giants1.01/1.01; keinPreFeeCost<1. KalshiServerzeitfehlt, Q5Minimumunverifiziert, AbsageBasisrisiko; keinExecution/Profitclaim. WICHTIGE KORREKTUR: alteFeasibilityAussagekeineMatchesWARFALSCH wegenTeamkuerzel/Stadtmatching. report.jsondort retracted undkorrigiert; roheSeriesenthaeltARINYG/DALHOU u.a. VollstaendigeRules/Teams/ETvsUTCverwenden. selection.occurrence_datetime istSortierfeld, NICHTbelegterKickoff (liegt3hspaeteralsPMgameStartTime). KeineLivefreigabe.
+01.10.2026 Kalshi REVERSE MATCH tatsaechlich gefunden: output/kalshi_reverse_match_20261001/report.json. Bears-Packers11.10., PMEvent941345/Market4024678, KalshiKXNFLGAME-26OCT11CHIGB-GB. MainpruefteRohbooks: PMBearsask.47(size768)+KalshiYES.57(NO bid.43,size3751.55)=1.04; PMPackersask.58(size266)+KalshiNO.45(YESbid.55,size102)=1.03. Q5preFeeKostennegativ. GlobalReceiptSkew13.743740s; paarweiseerste.486414spasst, zweite13.257326sfail. KalshiServerzeitfehlt; keinFreshness-/Fillnachweis. Mindestgroesseungeklaert, AbsageFairPriceBasisrisiko. KeinGewinnclaim; keineOrders. AktuelleKalshiFeePDFJuly7 sourcecheckimFeasibilityfolder: nichtalteCentRundungblinduebernehmen.
+01.10.2026 Neuer Kalshi-Crossvenue-Zugriffstest: output/kalshi_crossvenue_feasibility_20261001/report.json und5rawResponses. OeffentlicheKalshiMarkets/Orderbook ohneAuth erreichbar. 62KXNFLGAME-Maerkte inbegrenzterAntwort; keinexaktesMatch fuerbestehende8PM-Oct4Matchups; keinPreisvergleich/keinEdgebeleg. BeobachtetesBookOct11CHI/GB istNURZugriffstest. PreisumrechnungASK=1-oppositeBID, nichtKehrwert (Mainkorrigiert). KalshiFairPricebei>48hVerschiebung/Abbruch vsPM50-50Absage: selbstbeiMatchkeinpauschalerGarantiefloor. NaechstergezielterTestfallsnoetig: KalshiTICKER→PMexakteTeams+Datum suchen; nichtfalschbehaupten,venueweitkeineMatches. KeineOrdersKeysKosten.
+01.10.2026 Kostenhuerde konkret berechnet: output/favorite_markout_20261001/break_even_diagnostic.json. Vier alte Run2-Diagnoseentries (NICHT neue Markoutstichprobe). Bei Q5, vorhandenem Entrycost inkl Fee und 0.10 Stress liegt erforderlicher Exit-Bid selbst OHNE Exitfee bei 0.769620 / 0.876376 / 0.866720 / 0.808580. Szenario Exitfee unveraendert rate0.05 exponent1, ein Preis, ohne Rundung: 0.778249 / 0.881595 / 0.872290 / 0.816085; damit 3.66-4.82 Cent oberhalb jeweiligem EntryMID. Gleichungsresiduen <1e-13. Keine Prognose/kein tatsaechlicher Fill; Tiefe, Rundung, Exitfees und Mindestgroesse bleiben zu pruefen. Kleine positive Preisdrifts reichen nicht. Kein nachtraegliches Threshold-Tuning; bestehender30Min-Plan bleibt. BeidePIDs weiterhin live.
+01.10.2026 Ausfuehrbarkeit ergaenzt: output/favorite_markout_20261001/execution_eligibility_addendum.md ist fuer Ergebnisinterpretation verbindlich. Q5 bleibt unveraenderte Preisdiagnostik; evaluation.ok/valid beweisen keine handelbare Mindestorder. Gamma-Doku nennt USDC, CLOB-Beispiel Shares; SDK-Issue302 offen, Nutzerbericht keine Venue-Spezifikation. Konservativ beide Mindestgrenzen verlangt: Q5 bei p<1 unter 5 USDC. Alte negative Kostenarithmetik bleibt negativ; keine nachtraegliche Mengenaenderung. Hypothetischer Bid-Exit ist Taker; Exitfee zeit-/marktspezifisch pruefen oder nur Szenarien. Kein Nettonachweis. Rohdaten, Protokoll und laufende Prozesse unveraendert.
 
 01.10.2026 Markout-Auswertungsplan VOR erstenMessungen festgeschrieben:
 output/favorite_markout_20261001/evaluation_plan.json undevaluation_review.json
@@ -592,3 +664,5 @@ Produktionsrunde 2026-09-29 09 Uhr: Quellstandgebundene Abnahme umgesetzt. verif
 Produktionsrunde 2026-09-29 18 Uhr: Kostenreport-Integritaet geschlossen. Loader verwirft NichtfiniteJSON inkl1e999, defektesUnicode und tiefe/duplizierte Metadaten im gesamtenStore; Lesefehler strukturiert. CompletedRecords mit output_incomplete ungleichfalse, vorhandenem session_status ungleichidle (inklnull), error oder ownership_reason werden nicht aggregiert. FehlendeoptionaleMarker fuerhistorischeRecords weiterzulaessig. KeinwillkuerlichesTokenlimit eingefuehrt. GueltigeTeilkosten getrennt, Gesamtwert beiWiderspruchnull/Exit3, korruptExit2; keineDatei-/Lockmutation. LunaWorkerimplementierung, Code-/PythonReviewabgenommen. Neue11echteCLI-Faelle imVerifier; Gesamtabnahme210Pytest+12SDKLoopback bestanden,2bekannteWindowsSymlinkskips. Report9e23696763ab4eceb1f40862c2268ee8,200Quelldateien, source_stabletrue; --checkExit0. Zusaetzliche .venv-research stdlibCLI ausfremdemcwd mit explizitenFixtures: gueltigExit0/widerspruechlichExit3/NichtfiniteExit2, unveraenderteDateien, keineLockdateien; output/cost_integrity_acceptance.json. Defaultoutput/agent_runs.json fehlt; deshalb keineaktuelleGesamtkostenaussage ableitbar, Fixtures sindkeineRechnungsdaten. LiveSupervisor15356 undLauncher41396 identifiziert, Healthhealthy/within_schedule. KeineNeustarts/paidAPI/Orders. Kostenreport bleibtSchaetzung, keineBudgetdurchsetzung; harteReservierung/Kostenobergrenze/autonomeAgentensteuerung/Gesamtproduktionsreife weiteroffen. Runde abgeschlossen.
 
 Produktionsrunde 2026-09-30 09 Uhr: setup_research.ps1 gehaertet. Vorhandene .venv-research nurpruefen, ungueltigeZiele nichtreparieren; ReparsePoint/Junction vorInterpreter abgewiesen. ExactPython3.12, sys.prefixZiel/baseprefixabweichend, genau ein exakter include-system-site-packages=falseEintrag und ausschliesslichpipDistribution erforderlich; namenlosePakete ebenfallsabgewiesen. Imports mit -I -B ueberstdin PS5kompatibel/rootexplizit, keinepycachewrites. FehlendesZiel erstelltviaPythonlauncher. LunaWorker+MainAbnahme;7echtePSIntegrationfaelle inklNeuinstallation/Wiederholung, nonisolated/duplicate/lookalikecfg, unnamedmetadata/Junction. CodeReview und unabhaengigerEmbeddedPythonReview freigegeben. Gesamtlauf zuerstTestfehler wegenPSZeilenumbruch inFehlermeldung; whitespaceNormalisierung separat reviewed, final217Pytest+12SDKLoopback bestanden,2bekannteSymlinkskips. Report95f96e8d66624fffbf050e557035c433 source_stabletrue, --checkExit0. PraktischePruefung aktuellerLiveVenv ausfremdemcwd:860Dateihashes unveraendert, Python3.12.8/stdlibClosure bestaetigt; output/research_setup_acceptance.json mitscriptSHA. LiveSupervisor15356/Launcher41396 identifiziert, healthhealthy; keineNeustarts/PaidAPI/Orders. Gesamtproduktionsreife weiterhinfalse; harteBudgetreservierung/Kostenobergrenze/autonomerAgentenbetrieb offen. Runde abgeschlossen.
+
+01.10.2026 Stichprobenkapazitaet: output/favorite_markout_20261001/sample_feasibility.json. 65 verbleibende distinct Parents; fuer30 neue Entries mindestens46.1538% Zulassung erforderlich, bisher4/15=26.6667% nurdeskriptiv. Stichprobe kann unzureichend bleiben; Mindestzahl nicht senken. Main korrigierte Worker-Laufzeit: tatsaechlicher Start19:28:56UTC, Ende02.10.19:28:56UTC; letzterPrimaryDeadline15:30:30UTC liegt darin. BeidePIDs19:43UTC live,0SidecarEntries.
