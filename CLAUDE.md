@@ -13,6 +13,15 @@ Kein Polymarket-API-Key. Alles lokal. Pipeline alle 15 Min — nicht extra start
 ## Neustart (2026-09-12) — hat Vorrang vor dem historischen Stand
 
 ### Vorrangiger Auftrag vom 30.09.2026
+01.10.2026 21:02UTC Heartbeat: BeidePID44616/41124CIMlive; Run2jetzt16
+Fenster,21:00Turma/MIBRmitMid.975/.025wegenBandverworfen; Sidecarweiter0,
+keinEvaluationrerunnoetig. DreiPendingSettlementeinmalgeprueft:
+output/favorite_run2_settlement_20261001_2101/report.json+raw. TatjanaMaria
+5167968JETZTclosed/resolved[1,0],OriginalCondition/Token/Outcomesexakt,
+5-4.28188-.10=+.61812. MitBarca+.66640finalesSubtotal1.28452(2final),
+NICHTgesamteRunrendite. Moyano5167965undBrengle5167978nochOFFEN,keine
+MarktoMarketPnL. UnabhaengigeSettlementreviewbeauftragt; review.jsonimOrdner
+vorAbnahmepruefen. 5167968nichtweiterpollen; nur2offeneplusneueEntries.
 01.10.2026 20:33:43UTC Externe Datenabhaengigkeit dreimal hintereinander
 geprueft (20:31:58,20:33:23,20:33:43): Run2PID44616 undSidecarPID41124
 exaktCIMlive, Sidecar0Entries/0Requests/0Errors. Naechstesvorregistriertes
