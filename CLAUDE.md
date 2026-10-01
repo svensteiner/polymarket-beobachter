@@ -14,6 +14,20 @@ Kein Polymarket-API-Key. Alles lokal. Pipeline alle 15 Min — nicht extra start
 
 ### Vorrangiger Auftrag vom 30.09.2026
 
+ABSCHLUSS 01.10.14:02UTC hat Vorrang vor Zwischenstaenden unten: alle5
+Papiereinstiege FINAL,4Siege1Verlust. FalconsForce5150550 verlor: -3.70148;
+aimclub5150553 gewann:+0.86000. Gesamtkosten19.61106+Stress0.50,Auszahlung20,
+NETTO -0.11106. Original80/80vollstaendig,keineoffenenPositionen. Belege:
+output/favorite_forward_final_summary_20261001.json (alle5mitQuellhashes),
+output/favorite_forward_final_review_20261001.json unabhaengigabgenommen.
+Ergebnis unzureichendeEvidenz/leichtnegativ,profit_proven=false. Entscheidung:
+keineProduktion,keineSchwellenoptimierung. NaechsteRunde eine EINZIGE begrenzte
+unveraenderteReplikation auf neuen zukuenftigen Events vorbereiten, vorher
+bereitsgelaufeneConditionIDs ausschliessen und frischeAuswahlvorregistrieren.
+Gleiche.70..90/1h/Q5/.02Stress Regeln; unabhaengigePruefung und Laufzeit24h,
+max80Events/500Requests/64MiB. NichtalterLaufneustarten,keineSettlementGETs
+fuerdiese5mehr. AutomationbleibtfuerForschungaktiv,keineGewinngarantie.
+
 Heartbeat 01.10.13:01UTC: ERFASSUNG seit10:45UTC ABGESCHLOSSEN,PID13872 beendet,
 windows.json completed=true,80/80vorregistrierteIDs exakt/ohneDuplikate.
 62captured,18skipped (15stale/future,3identitychanged),57ausserPreisband/tie,
