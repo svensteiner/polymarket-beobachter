@@ -13,6 +13,36 @@ Kein Polymarket-API-Key. Alles lokal. Pipeline alle 15 Min — nicht extra start
 ## Neustart (2026-09-12) — hat Vorrang vor dem historischen Stand
 
 ### Vorrangiger Auftrag vom 30.09.2026
+02.10.2026 06:08 Wien / 04:08UTC: Options-Folgetest ABGESCHLOSSEN und
+unabhaengig korrigiert/abgenommen: output/option_surface_20261002_0400/
+protocol.json vor5PublicGETs,report.json,point_bounds.json,review.json.
+PM5036098 BTC82k4Okt: frischeBooks YESask.965/NOask.036; konservative
+5USDC-NOOrder18@.036+117.6216216@.037=135.6216216Shares,VWAP.03686728,
+Fee jeLEVELceil5dp=.33710,Stress2.7124324. KeineFillbehauptung.
+80k..84kCallsekanten sind NURIntervallmittel, keine82kPunktwahrscheinlichkeit.
+EngstePuts81500/82000/82500 liefern unterUSD-Konversions-/Konvexitaetsmodell
+NO-Punktband4Okt[0,.06847108],5Okt[0,.102731712]; illustrativeInterpolation
+481/1440 auf16:01UTC [0,.07991508]. Untergrenze0 => keinrobusterpositiver
+Kostenvorteil; frueherer+2.08cBasismodellkandidat NICHTbestaetigt.
+QuoteReceiptSkew.628309s, aberYESServertime~24msnachlokalemEmpfang;
+keinzertifizierterFrischenachweis. Termin/Basis/Risikopraemieungeklaert.
+ReviewkorrigierteerneutWorker-PerShareFeeRundungzuPerLEVEL sowie16:01Gewicht;
+KostenmodellkeinversprochenertatsaechlicherVenueFillfee. KeinneuerSammler.
+FavoriteRun2PID44616/Sidecar41124exaktlive,52/80Fenster,6QuellenEntries,
+Sidecar2Entries/4Requests/0Fehler. NEU5170724 KarenKhachanov04:00UTC,
+Entrycost3.94290,Stress.10;5MinMarkoutvalidBookalter412ms,BidQ5=3.85,
+nachStress-.19290VORExitfee (keinrealisierterVerlust). OfflineEvaluator
+lief,Primary30Minnochpending. 5168902nochopen/proposed,keineGewinnbuchung;
+raw/status output/favorite_run2_settlement_20261002_0401. Maxmoegliche
+SidecarEndzahl2+28=30,nurwennalleRestfensterqualifizieren;keineSchwellenaenderung.
+NAECHSTER neuer begrenzter Forschungsschritt: Datenqualitaetsaudit historischer
+Options/PM-Daten (z.B. zuvorentdecktes ADnocap/taut-arb-backtest GitHub):
+Metadaten/Lizenz/kleineRohstichprobe<=20MiB, originalZeitstempel,Underlying,
+Strikes/Expiry/Resolution und echteBidAsk-Deckung pruefen. ErstbeiEignung
+vorabfixiertenzeitgetrenntenKalibrierungstest planen; Trades/Midpreise allein
+koennenAusfuehrbarkeitnichtbelegen. KeineerneuteidentischeSnapshotSuche,
+keineCME403Retries,keineOrders/paidAPI. BestehendeSammlerweiterlaufenlassen.
+
 02.10.2026 05:15 Wien: AKTIVE NEUE EDGE-FORSCHUNG, guenstiger Worker und
 unabhaengiger Reviewer. Zwei externe Ansaetze mit echten Public-Daten geprueft:
 (1) FedWatch output/edge_new_hypothesis_20261002: PM5FOMCBrackets erreichbar,
