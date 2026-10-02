@@ -14,6 +14,9 @@ Kein Polymarket-API-Key. Alles lokal. Pipeline alle 15 Min — nicht extra start
 
 ### Vorrangiger Auftrag vom 30.09.2026
 
+02.10.2026 02:03 Wien / 00:03UTC: Run2PID44616 undSidecar41124 viaCIMaktiv,30Fenster,4Quelleneintraege,Sidecar0Entries/Requests/Errors. NeuefinaleAufloesung: Moyano5167965 closed/resolved[1,0], IdentitaetundOutcomeIndex0unabhaengiggeprueft. Hypothetisch5-3.74810-.10=+1.15190; mit2frueherenFinalen nunSubtotal+2.43642aus3Entries. Brengle5167978weiterproposed/offen. Quelle output/favorite_run2_settlement_20261002_0002/report.json+raw+review.json(akzeptiert). KeinGesamtrunReturn/Edgebeweis,keineFills. NurBrengleundneueEntriesweiteraufSettlementpruefen; Moyanonichtmehrpollen. KeinMarkoutEvaluationrerunohneEntries.
+
+
 02.10.2026 01:02 Wien: Beide Sammler via CIM aktiv. Run2 25 Fenster, weiterhin 4 qualifizierte Quelleneintraege; Sidecar 0 Eintraege/Requests/Lesefehler. Zwei offene Settlements je einmal geprueft (output/favorite_run2_settlement_20261001_2301/report.json): Moyano und Brengle beide proposed/offen, keine finalen Gewinne ableiten. Keine neue Markout-Auswertung, keine Neustarts; finales Teilsubtotal unveraendert 1.28452 aus 2 Eintraegen, kein Edge-Nachweis.
 
 02.10.2026 00:01 Wien / 01.10.22:01UTC: Run2PID44616 undSidecar41124
