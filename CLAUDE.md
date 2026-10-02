@@ -13,6 +13,25 @@ Kein Polymarket-API-Key. Alles lokal. Pipeline alle 15 Min — nicht extra start
 ## Neustart (2026-09-12) — hat Vorrang vor dem historischen Stand
 
 ### Vorrangiger Auftrag vom 30.09.2026
+02.10.2026 09:03 Wien / 07:03UTC: BeideSammlerexaktCIMlive,Run2
+62/80Fenster,9Admissions,Sidecar5Entries/15Requests/0Fehler. NeueHorizonte
+offlineausgewertet:30Min4valid/1invalid,80%Coverage,alle4validnegativ,
+Mittel-.248595/Median-.23465 nachEntrycost+Stress VORExitfee;kleineStichprobe,
+keinNetto/Fillnachweis. 60Min2invalid+3postscheduledstart,0valid.
+NEUFINAL5170724 KarenKhachanov closed/resolved[0,1], OriginalTokenIndex1
+unabhaengiggeprueft:5-3.94290-.10=+.95710 Hold-to-resolution OHNEExittrade.
+6finaleEntriesSubtotal+4.39334,nichtGesamtrun. Dreiaktuelleoffene
+5176640/5173052/5176649 nachje1GETalleoffen. DerenKosten+Stress12.95148,
+Payout0..15 =>aktuelle9EntriesSettlementspanne[-8.55814,6.44186],OHNE
+Exittrade/Exitfees;spaetereneueAdmissionsnichtenthalten. KeineGewinnprognose.
+Artefakte:output/favorite_run2_settlement_20261002_0701/report.json+review.json,
+raw+metaHTTPzeiten07:01UTC. MainentferntefalschumgerechneteDateimtime05:01UTC
+unduebernahmgespeicherteRequest/Receiptmeta;HoldrangeLabelpreexitfeekorrigiert.
+5170724jetztNICHTmehrpollen;andere5Finaleebenfallsnicht. Sammlerunveraendert.
+KeineidentischenhistorischenDatenaudits/Powerrechnungenwiederholen;naechste
+Runde neueDaten/noch3offeneundNEUEsettlementspruefen. Gegenwaertigkeinneuer
+konkreterDatenzugangfuerzusaetzlichenbelastbarenHypothesentest.
+
 02.10.2026 08:06 Wien / 06:06UTC: BeideSammler44616/41124exaktCIMlive.
 Run2 60/80Fenster,9Quelleneintraege;Sidecar5Entries/12Requests/0Fehler.
 NEU5176649 PaulJubb06:00UTC. EvaluatornachneuenHorizontenausgefuehrt:
