@@ -13,6 +13,16 @@ Kein Polymarket-API-Key. Alles lokal. Pipeline alle 15 Min — nicht extra start
 ## Neustart (2026-09-12) — hat Vorrang vor dem historischen Stand
 
 ### Vorrangiger Auftrag vom 30.09.2026
+02.10.2026 15:03 Wien / 13:03UTC: BeideSammler44616/41124exaktCIMlive;
+Run2 70/80Fenster,12Admissions,Sidecar8Entries/18Requests/0Fehler.
+NEU13UTC5178123 9INE(cost4.23360stress.10) und5178122 Sinners(cost4.52250
+stress.10),jeQ5,Markoutsnochpending. EvaluatornachneuenEntriesgelaufen,
+Snapshot output/favorite_run2_settlement_20261002_1302. 5176640einmalweiteroffen;
+5174683Soccerplan12UTCnochbisca14UTC,dahernichterneutangefragt;neueESports
+plan14UTCerstspaeterSettlementpruefen. KeineFinalen,8finalSubtotal5.53334
+unveraendert,keinGesamtergebnis. Sammlerunveraendert;naechsteRundeNEUE
+Horizonteundoffene5176640/5174683/5178123/5178122nachEventendeplusNEUEpruefen.
+
 02.10.2026 14:02 Wien / 12:02UTC: BeideSammler44616/41124exaktCIMlive;
 Run2 67/80Fenster,10Admissions,Sidecar6Entries/18Requests/0Fehler.
 NeueHorizontenofflineausgewertet:Primary5valid/1invalid,83.33%Coverage,
