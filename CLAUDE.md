@@ -13,6 +13,27 @@ Kein Polymarket-API-Key. Alles lokal. Pipeline alle 15 Min — nicht extra start
 ## Neustart (2026-09-12) — hat Vorrang vor dem historischen Stand
 
 ### Vorrangiger Auftrag vom 30.09.2026
+02.10.2026 17:04 Wien / 15:04UTC: RUN2QUELLENERFASSUNGABGESCHLOSSEN.
+PID44616nichtmehraktiv,FINALwindows.jsoncompletedtrue80/80ausgewaehlte
+Originalparents/conditions,0fehlend/unerwartet;162Requests29679421Bytes
+innerhalb500/64MiB. 15evaluation.ok,alle15Originalfavorit->OutcomeToken->
+Bookasset_idexaktgeprueft. output/favorite_run2_completion_20261002/report.json
++review.jsonunabhaengigabgenommen. progress.jsoncompletedfalseistSTALE
+Checkpoint;FINALwindows.jsonmassgeblich. KEINNeustart/keinQuellfehler.
+SidecarPID41124exaktlive,11Entries/24Requests/0Fehler,nochNICHTabgeschlossen;
+liestweiterprogressfalse,kannbis24hEnde19:28UTCwarten,nichtumkonfigurieren.
+NEUletzte3Entries15UTC:5169563(GenoaCFC,FavoritNo),5174666BountyHuntersEsports,
+5178128JohnnySpeeds;geplanterStartje16UTC;Markouts15:05/15:30/16:00UTC.
+EvaluatornachneuenEntriesgelaufen,Snapshot output/favorite_run2_settlement_20261002_1501.
+Offene5176640jetztproposed[.0005,.9995],5174683proposed[.0005,.9995],
+5178122proposed[.9995,.0005];5178123weiteroffen. KEINERfinal,keineGewinnbuchung.
+8finalSubtotal5.53334unveraendert,KEINGesamtergebnis(15Sourceentries).
+NaechsteRundeNEUEHorizonteund7offene5176640/5174683/5178123/5178122/
+5169563/5174666/5178128nachEventendepruefen. Letzte3gerade16UTCStart,
+Settlementnichtsofortpollen. SidecarPlan30Parentsbleibtunveraendertund
+unerreichbar(max11);nachTerminhorizontenfaktischdiagnostischeEnddaten,
+formellerSidecarEndestatuserstOriginalLaufzeitende. KeineOrders/Profitbehauptung.
+
 02.10.2026 16:02 Wien / 14:02UTC: BeideSammler44616/41124exaktCIMlive;
 Run2 74/80Fenster,12Admissions,Sidecar8Entries/24Requests/0Fehler.
 NeueHorizonteausgewertet:Primary5valid/3invalid,Coverage62.5%,beobachtetes
