@@ -13,6 +13,19 @@ Kein Polymarket-API-Key. Alles lokal. Pipeline alle 15 Min — nicht extra start
 ## Neustart (2026-09-12) — hat Vorrang vor dem historischen Stand
 
 ### Vorrangiger Auftrag vom 30.09.2026
+02.10.2026 04:03 Wien / 02:03UTC: BeideSammlerCIMlive; Run2 47/80Fenster,
+jetzt5qualifizierteQuellentries. NEU5168902 VlasenkoValerii01:15UTC,
+Sidecar1Entry/2Requests/0Lesefehler. evaluate_run.py ausgefuehrt:
+5Minund30MinINVALIDwegenBookalter96.495s/122.916s,60Minpending.
+KeineverwertbarePrimarybeobachtung,awaiting_data,keinNettoGewinnnachweis.
+UnabhaengigeAbnahme first_observation_review.json: OriginalzweitesToken
+korrekt, Ask.97*Q5=4.85+Entryfee.00728=4.85728; Stress.10. Midpoint.725
+istKEINEFillquote. MaxPayout5gibtbeiSieg+.04272; Ausfuehrbarkeitbleibt
+ungeklaert. KonservativesZeroExitSzenario-4.95728NICHTrealisierterVerlust.
+KeineZeitgrenzenaufweichen/keinRestart. VierfruehereEntriesfinalSubtotal
+3.39352; neuesEntrySettlementerstnachEventpruefen. Noch33Quellfenster;
+Minimum30MarkoutParentsunveraendert. Bei neuen Horizon-Daten erneut
+Evaluator ausfuehren, ansonsten keine Pollschleife.
 
 02.10.2026 03:03 Wien / 01:03UTC: BeideSammlerCIMlive; Run2 39/80Fenster,4Quelleneintraege,Sidecarweiter0/0/0Errors. Brengle5167978 nunclosed/resolved[1,0],OriginalIdentity+FavoritIndex0+Rechnungunabhaengigabgenommen:5-3.94290-.10=+.95710. Alle4BISHERIGENRun2Entriesendgueltiggewonnen, hypothetischesSubtotal+3.39352nachEntrykostenundStress. Quelle output/favorite_run2_settlement_20261002_0102/report.json+raw+review.json. Run2NICHTabgeschlossen,keinEdgebeweis/Fillnachweis. KeineSettlementabfragenmehrfuer5167965/5167968/5166311/5167978; nurNEUEqualifizierteEntriespruefen. NaechsteRoutine: neueFenster+SidecarEntrieschecken;bei0keinenEvaluatorerneutstarten. Noch41QuellfensterfuerMarkoutMinimum30;nichtGrenzensenkungnachErgebnissen.
 
