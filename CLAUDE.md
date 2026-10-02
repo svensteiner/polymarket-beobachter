@@ -13,6 +13,36 @@ Kein Polymarket-API-Key. Alles lokal. Pipeline alle 15 Min — nicht extra start
 ## Neustart (2026-09-12) — hat Vorrang vor dem historischen Stand
 
 ### Vorrangiger Auftrag vom 30.09.2026
+02.10.2026 07:06 Wien / 05:06UTC: HistorischeOptionsdaten-Audit abgeschlossen,
+output/options_history_audit_20261002_0500/audit.json+review.json+3rawMetadaten.
+ADnocap/taut-arb-backtest releasev2.0-data: keineDBgeladen (Archive361/453MB
+ueber20MiBAuditcap), keineDrittcodeausfuehrung. DokumentierteOptionsbid/ask
+immerNULL,24hLatestTradeFenster, keineRequestReceiptzeiten/Booktiefe.
+NurSCHEMAAudit: fuerAusfuehrungs-PnLungeeignet; ForecastKalibrierungnochNICHT
+validiert. BehaupteteDatasetgroessenkeinegeprueftenRows. Nichtnochmalsgleichen
+README/releaseabfragen; keinBacktestausMidpreisenalsGewinnnachweis.
+FavoriteRun2PID44616+Sidecar41124exaktlive;56/80Fenster,8Quellentries,
+Sidecar4Entries/6Requests/0Fehler. Neu5176640 DragosNicolaeMadaras und
+5173052 JessicaBouzasManeiro je05:00UTC;5170724 KarenKhachanov04:00UTC.
+OfflineEvaluatorlief: Khachanov30Minvalid3.85BidProceeds-3.94290Cost-.10Stress
+=-.19290 VORExitfee;60Minpostscheduledstart ausgeschlossen. Primary1valid,
+1invalid,2pending beiSnapshot; keineStrategieaussage. MaxSidecarEndzahl
+4+(80-56)=28<vorregistrierten30: DIESEMarkoutRundekannMinimumNICHTmehrerreichen.
+NichtGrenzesenken/nichtheimlichverlaengern;RestdatenbleibenDiagnostik.
+NEU FINAL5168902 VlasenkoValerii resolved[0,1], Originalindex1/tokenbestaetigt:
+5-4.85728-.10=+.04272 Hold-to-resolution OHNEExittrade. Finalsubtotal
+fuenfEntries+3.43624;KEINGesamtrunErgebnis (8admitted),keineFills/Edge.
+Rohdaten+report+review:output/favorite_run2_settlement_20261002_0501.
+5168902NICHTmehrpollen. WeiterSettlementnur5170724/5176640/5173052undNEUE,
+nachderenEventende. VierfruehereFinaleebenfallsnichtpollen.
+Automationprompttokenarmkonsolidiert,ACTIVE/stuendlich/sametaskunveraendert;
+neusterCLAUDEStatusistFortsetzungsquelle,keinwiederholterveralteterOptionsauftrag.
+NAECHSTEArbeit: laufendeFavoritenrunde samtneuenMarkouts/Settlementsabschliessen;
+parallel bei konkretemneuemDatenzugangkleineechteKalibrierungsstichprobepruefen,
+keineweitereMetadaten-Wiederholung. FueretwaigeNAECHSTEseparateFavoritenreplikation
+zuerstvorabPower/CoverageundMindestnotional-Ausfuehrbarkeitloesen;vorregistrierte
+aktuelleRundenunveraendertlassen. KeineautomatischeGewinnbehauptungoderOrders.
+
 02.10.2026 06:08 Wien / 04:08UTC: Options-Folgetest ABGESCHLOSSEN und
 unabhaengig korrigiert/abgenommen: output/option_surface_20261002_0400/
 protocol.json vor5PublicGETs,report.json,point_bounds.json,review.json.
