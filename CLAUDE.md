@@ -13,6 +13,16 @@ Kein Polymarket-API-Key. Alles lokal. Pipeline alle 15 Min — nicht extra start
 ## Neustart (2026-09-12) — hat Vorrang vor dem historischen Stand
 
 ### Vorrangiger Auftrag vom 30.09.2026
+02.10.2026 14:02 Wien / 12:02UTC: BeideSammler44616/41124exaktCIMlive;
+Run2 67/80Fenster,10Admissions,Sidecar6Entries/18Requests/0Fehler.
+NeueHorizontenofflineausgewertet:Primary5valid/1invalid,83.33%Coverage,
+beobachtetesMittel-.238956,Median-.20040 nachEntry+Stress VORExitfee;
+Mindest30unerreichbar,keineStrategieaussage. Evaluatorsnapshotgesichertunter
+output/favorite_run2_settlement_20261002_1202. 5176640einmalabgerufenweiteroffen;
+5174683Soccerstart12UTCerstjetzt,nichtunnuetigSettlementabgefragt(vsl.Endeca14UTC).
+8finalSubtotal5.53334unveraendert,keinGesamtrun. BeideSammlerunveraendert;
+naechsteRundeNEUEdaten/5176640und5174683nachEventendeplusNEUEAdmissions.
+
 02.10.2026 13:04 Wien / 11:04UTC: BeideSammler44616/41124exaktCIMlive;
 Run2 66/80Fenster,10Admissions,Sidecar6Entries/15Requests/0Fehler.
 NEU5174683 um11UTC: No bei DeRedFC vsPersipuraJayapura endetunentschieden?
