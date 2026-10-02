@@ -13,6 +13,18 @@ Kein Polymarket-API-Key. Alles lokal. Pipeline alle 15 Min — nicht extra start
 ## Neustart (2026-09-12) — hat Vorrang vor dem historischen Stand
 
 ### Vorrangiger Auftrag vom 30.09.2026
+02.10.2026 11:03 Wien / 09:03UTC: BeideSammler44616/41124exaktCIMlive;
+Run2 64/80Fenster,9Admissions,Sidecar5Entries/15Requests/0Fehler.
+KeineEvaluatorwiederholungohneNeueHorizonte. NEUFINAL5173052 JessicaBouzasManeiro
+closed/resolved[1,0],OriginalFavoritIndex0/Tokenunabhaengiggeprueft:
+5-4.23360-.10=+.66640 Hold-to-resolution OHNEExittrade. 7finaleSubtotal
+5.05974,nichtGesamtrun/Edge. output/favorite_run2_settlement_20261002_0902/
+raw+meta09:02UTC+report.json+review.json. 5173052NICHTmehrpollen.
+5176640weiteroffen,5176649proposed[.9995,.0005]NICHTfinal. Nurdiese2plus
+NEUEAdmissionsweiterverfolgen;andere7bereitsfinalnichtabfragen.
+AktuelleSammlerunveraendert;keineweiterenidentischenForschungstests,
+keineDoppelstarts/Schwellenanpassung. NaechsteRunde neueMessdaten/Finalepruefen.
+
 02.10.2026 10:01 Wien / 08:01UTC: Run2PID44616/Sidecar41124exaktCIMlive;
 63/80Fenster,9Admissions,Sidecar5Entries/15Requests/0Fehler unveraendert.
 KeineEvaluatorwiederholungohneNeueHorizonte. DreiOffenejeeinmalabgerufen:
