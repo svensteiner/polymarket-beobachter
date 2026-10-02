@@ -13,6 +13,20 @@ Kein Polymarket-API-Key. Alles lokal. Pipeline alle 15 Min — nicht extra start
 ## Neustart (2026-09-12) — hat Vorrang vor dem historischen Stand
 
 ### Vorrangiger Auftrag vom 30.09.2026
+02.10.2026 13:04 Wien / 11:04UTC: BeideSammler44616/41124exaktCIMlive;
+Run2 66/80Fenster,10Admissions,Sidecar6Entries/15Requests/0Fehler.
+NEU5174683 um11UTC: No bei DeRedFC vsPersipuraJayapura endetunentschieden?
+(Nicht-Teamfavorit),geplanterStart12UTC;cost3.65040stress.10Q5,
+maxhypothetischerSieg+1.24960. OriginalAuswahlregelnunveraendert.
+EvaluatornachneuemEntrystandgelaufen;dessenHorizontenochpending.
+NEUFINAL5176649 PaulJubb closed/resolved[1,0],OriginalFavoritIndex0Token
+unabhaengigverifiziert:5-4.42640-.10=+.47360 Hold-to-resolutionOHNEExittrade.
+8finaleSubtotal5.53334,nichtGesamtrun(10Admissions)/Edge. Artefakte
+output/favorite_run2_settlement_20261002_1102/raw+HTTPmeta+report+review.json.
+5176649jetztNICHTmehrpollen;andere7Finaleebenfallsnicht. Offenweiter5176640
+undneues5174683(nachEvent). KeineDoppelstarts/Schwellenanpassung;
+naechsteRundeNEUEHorizonte/FinaleplusNEUEAdmissionspruefen.
+
 02.10.2026 12:02 Wien / 10:02UTC: BeideSammler44616/41124exaktCIMlive;
 65/80Fenster,9Admissions,Sidecar5Entries/15Requests/0Fehler. KeineNeueHorizonte,
 keinEvaluatorrerun. Nur2offenejeeinmalgeprueft:5176640weiteroffen,5176649
