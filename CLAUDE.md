@@ -13,6 +13,44 @@ Kein Polymarket-API-Key. Alles lokal. Pipeline alle 15 Min — nicht extra start
 ## Neustart (2026-09-12) — hat Vorrang vor dem historischen Stand
 
 ### Vorrangiger Auftrag vom 30.09.2026
+02.10.2026 05:15 Wien: AKTIVE NEUE EDGE-FORSCHUNG, guenstiger Worker und
+unabhaengiger Reviewer. Zwei externe Ansaetze mit echten Public-Daten geprueft:
+(1) FedWatch output/edge_new_hypothesis_20261002: PM5FOMCBrackets erreichbar,
+CMEZahlen403/referrerblockiert -> UNGETESTET, review.json bestaetigt.
+(2) output/option_anchor_20261002: Deribit986Optionrows (NICHT986Requests),
+BTC4OCT26-82000C/P vs PM5036098 (BTC>82k am4Okt). Deribit08UTC vs
+PM12ETKerzenclose~16:01UTC, BinanceUSDT vs DeribitUSD/BTCSettlement:
+keine exakte Arbitrage. Modell-Screen jetzt BEIDE Outcomes nach korrigiertem
+YES-onlyWorkerfehler. Black76flatIV35.13%,Forward85273.49: BaseNO.09308946,
+NOask.049, Fee.07*p*(1-p),Stress.02 => Modellueberschuss~.02083/share.
+9Szenarien IV*.8/1/1.2 undForward* .995/1/1.005: NO nachKosten ca-.0417
+bis+.0979. Nicht robust/kalibriert; 133.55s Options-/Bookskew, KEINTradeSignal.
+UnabhaengigerReview reproduziert9Punkte undRawHashes; main16:01Variante
++.0208583/share bestaetigt. Konservative neue Diagnostik>=5USDC UND>=5shares:
+18NO*.049+82.36*.05=5USDC,100.36shares,VWAP.04982065; keinFillbeweis,
+keineAenderungbestehenderFavoriteQ5. Kostenabnahme in review.json nachsehen.
+Bestehende stuendliche Automation per automation_update ACTIVE fortgeschrieben:
+NAECHSTE substanzielle Arbeit digitaleBander aus benachbartenStrikes/Laufzeiten,
+Smile/Termin/Basis,zeitgleicheOriginaldaten,beideOutcomes,AskVWAP+Kosten;
+Auswahlregeln vorQuotes, unabh.Ereignisse zurKalibrierung. Erst bei verbleibendem
+Kandidaten begrenztenprospektivenPaperTest starten. Kein weitererCME403Retry,
+keine Gewinnbehauptung aus Basismodell. LaufendeSammler nichtneustarten.
+
+02.10.2026 05:07 Wien: Nutzer fordert aktive neue Edge-Arbeit statt Warten.
+Run2 50/80 Fenster, beide Sammler 44616/41124 mit exakter Prozessidentitaet aktiv.
+Markout-Evaluator nach drittem Request ausgefuehrt: alle drei Horizonte invalid;
+60Min Buch nur 3.298s alt, aber insufficient_bid_depth (5/30Min zuvor stale).
+0 verwertbare Primarybeobachtungen, kein Profitnachweis. Markt5168902 einmal
+geprueft: offen/proposed[.005,.995], NICHT final; Rohantwort unter
+output/favorite_run2_settlement_20261002_latest/raw5168902.json. Keine Gewinnbuchung.
+Neuer begrenzter Auftrag an guenstigen strategy_evidence Worker: externe
+Optionswahrscheinlichkeiten/andere neue Hypothese, echte oeffentliche Daten,
+keine Orders/paidAPI. Abnahme vor Schlussfolgerung. Neue Literatur:
+https://arxiv.org/html/2606.19517v1 nur16Proxytrades, AlphaCI[-.008,.143],p=.053;
+kein belastbarer Handelsbeweis. EVERYTHINGAICO/polymarket-btc-edge berichtet
+11Hypothesen/9225Fenster ohne NetTakeredge, fruehe Momentumbehauptung wegen
+Lookahead zurueckgezogen; kein Grund generisches15MinOrderflowsignal zu kopieren.
+
 02.10.2026 04:03 Wien / 02:03UTC: BeideSammlerCIMlive; Run2 47/80Fenster,
 jetzt5qualifizierteQuellentries. NEU5168902 VlasenkoValerii01:15UTC,
 Sidecar1Entry/2Requests/0Lesefehler. evaluate_run.py ausgefuehrt:
