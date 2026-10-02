@@ -13,6 +13,33 @@ Kein Polymarket-API-Key. Alles lokal. Pipeline alle 15 Min — nicht extra start
 ## Neustart (2026-09-12) — hat Vorrang vor dem historischen Stand
 
 ### Vorrangiger Auftrag vom 30.09.2026
+02.10.2026 08:06 Wien / 06:06UTC: BeideSammler44616/41124exaktCIMlive.
+Run2 60/80Fenster,9Quelleneintraege;Sidecar5Entries/12Requests/0Fehler.
+NEU5176649 PaulJubb06:00UTC. EvaluatornachneuenHorizontenausgefuehrt:
+Primary3valid,1invalid,1pending;valideStressPnLVORExitfee-.19290/-.34148/
+-.18360, beobachtetesMittel-.2393267,Q5. KeineFills/Strategieaussage.
+MaxmoeglicheSidecarEndzahl5+20=25<Minimum30, schonbekannt,keineAenderung.
+Offene5170724/5176640/5173052jeeinmalgeprueft:alleoffen,keineFinalgewinne;
+raw+request/receipt+EvaluatorSnapshot:output/favorite_run2_settlement_20261002_0601.
+Finalsubtotal5Entries+3.43624unveraendert;bereitsFinaleNICHTerneutpollen.
+NeueOFFLINEStichprobenplanung abgeschlossen/abgenommen:
+output/favorite_next_feasibility_20261002_0600/report.json+review.json.
+140beobachteteQuellfenster(run1=80,run2=60),14admitted=10%,Wilson95Lower
+.0605055. FuerERWARTETE30Admissions300FensterbeobachteteRate/496beiLower,
+KEINEGarantieundVORPrimaryausfaellen. 2Cent/shareEffektunterangenommenem
+wahremBernoullip=.7/.8/.9,80%Power/zweiSeiten95%Normalapproxbraucht
+ca4116/3136/1764unabhaengigeBeobachtungen;30nurDiagnostik. KeineWahrscheinlichkeit
+alsbezahltenPreisannahmeverwechseln. Alle14OriginalFavoritentokenskorrekt
+nachOutcome->clobTokenId->book.asset_idgemappt;14/14gespeicherteBookskoennten
+resized>=5USDCUND>=5sharesdecken,13/14Askpreise.70..90(nurVlasenko.97ausserhalb).
+DasistkeineAusfuehrbarkeitsbestaetigungderurspruenglichenQ5Orders.
+Workerhatte4falschePositionsbooksbenutzt; korrigiertundmainunabhaengig14Rowjoin
+geprueft,finalreview14/14/13. Fruehe9/14oder10/14Aussagensuperseded.
+Run1completedfalseimaltenprogressistCheckpointflag, NICHTBeleglaufenderRun1.
+Keineweitere30ParentRundealsProfitnachweisstarten;aktuelleSamplerunveraendert.
+NAECHSTES: neuePrimarydaten/SettlementsundRun2Abschlussbearbeiten, neueHypothese
+nurmitkonkretenneuenDaten testen; keineidentischePlanung/README/Quoteswiederholen.
+
 02.10.2026 07:06 Wien / 05:06UTC: HistorischeOptionsdaten-Audit abgeschlossen,
 output/options_history_audit_20261002_0500/audit.json+review.json+3rawMetadaten.
 ADnocap/taut-arb-backtest releasev2.0-data: keineDBgeladen (Archive361/453MB
