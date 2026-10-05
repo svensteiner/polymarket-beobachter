@@ -13,6 +13,31 @@ Kein Polymarket-API-Key. Alles lokal. Pipeline alle 15 Min — nicht extra start
 ## Neustart (2026-09-12) — hat Vorrang vor dem historischen Stand
 
 ### Vorrangiger Auftrag vom 30.09.2026
+05.10.2026 10:06UTC: Alternative historische Optionsdaten-Suche abgeschlossen:
+UNZUREICHENDE DATEN; historische Optionsroute vorlaeufig schliessen.
+3Suchanfragen; Rocklabs/Pancake liefern in geprueften READMEs keine gepaarten
+Options-/PM-Rohbeobachtungen. Pancake-Trades explizit synthetisch. OpenMarket
+nur ueber rekonstruierte Such-/Webauszuege erfasst, keine Rohdatenvalidierung.
+Nicht internetweit verallgemeinern. output/options_alternative_source_20261005:
+preregistration.json, report.json, provenance_addendum.json, independent_review.json.
+Root und unabhaengiger Reviewer bestaetigen beideREADME-Hashes/23283Bytes.
+Protokollfehler: mindestens7Quellenabrufversuche inkl.Webopens/Fehlversuche
+ueberschreiten5GETs. Gesamtbytes mangels Fehlversuch/Webreceipts unbekannt.
+Kein regelkonformer begrenzter Test attestiert; nur Dokumentationsbefund akzeptiert.
+Keine Kalibrierung/PnL/Edge aus Metadaten. Keine weiteren Requests dieserRunde.
+Naechster EINMALIGER Rohdatentest: Rocklabs kleiner echter Bookausschnitt,
+keine erneuteREADME-Recherche. Wirtschaftliche Frage: lassen sich vorab
+beobachtete Spreads/Tiefe mit spaeterem Settlement-Residual y-mid verknuepfen,
+um den bisherigen undifferenzierten Favoritentest durch Liquiditaetsfilter zu
+pruefen? Nur Datenfeasibility, noch kein neuer profitabler Strategieanspruch.
+Vorab unveraenderliche Regeln mit echterUTC: max3Quellenabrufe INKLUSIVE
+Webopens/Fehlversuche/Redirects, max5MiB insgesamt/max10Min, kein Archiv,
+kein Drittcode/Collector. Jeder Versuch VOR Abruf zaehlen; streaming hart begrenzen.
+Tatsaechliche rohe Zeitpunkte, Markt-/Tokenidentitaet, beideOutcomes, exakte
+Settlementlabels und zeitlich getrennter Holdout muessen verfuegbar sein.
+Fehlen kleine zugreifbare Rohdaten oder Joins, Route sofort schliessen; keine
+weitere Serie von Metadatenchecks. Keine bisherigen Finalmaerkte erneut pollen.
+
 05.10.2026 09:00UTC: Gespeicherten Auftrag zur kleinen historischen Options-
 Rohdatenprobe abgeschlossen: UNZUREICHENDE DATEN. ADnocap/taut-arb-backtest
 Tree80a115a0886ed77827b4c2383e075e94deab0016, truncated=false, enthaelt keine
