@@ -13,6 +13,31 @@ Kein Polymarket-API-Key. Alles lokal. Pipeline alle 15 Min — nicht extra start
 ## Neustart (2026-09-12) — hat Vorrang vor dem historischen Stand
 
 ### Vorrangiger Auftrag vom 30.09.2026
+05.10.2026 18:04UTC: Wallet-Persistenz Powerplanung OFFLINE abgeschlossen,
+UNZUREICHENDE DATEN; Route bis qualifizierter neuer Evidenz geschlossen.
+20Kandidaten/FamilyAlpha.05 => alpha_i.0025;80%Power bei wahremNettoeffekt.01
+gegen H0<=0. KonservativeHoeffding-SUFFIZIENZ bei bekannterRangeR: n>=
+R^2/(2*.01^2)*(sqrt(ln400)+sqrt(ln5))^2. R1/2/5/10 ergibt
+69058/276231/1726438/6905752 unabh.ParentEvents JE Test. Keine notwendige
+Mindestfallzahl/keine Schaetzung echterEventrate, kein Nachweis mean>.01.
+Root unabhaengig nachgerechnet; optionaleBernoulliwerte1578/12221/33279
+sind Wahrscheinlichkeits-, nicht automatischNettoertrags-Effekte. RealerRange/
+All-in-Risikocap und ParentUnabhaengigkeit fehlen. n/r bleibt konditional.
+Artefakte output/wallet_power_20261005_1800/preregistration.json, report.json,
+root_review.json. Prereg18:00 istSlotplaceholder, keinZeitbeleg. KeineNetzabrufe.
+KeineWalletnachverfolgung/Metadatensuche ohne neue Datenbasis.
+Naechste NEUE Hypothese: Abschlag bereits verbindlich aufgeloester Claims
+gegen nachweisbaren Redemption-Payout (kein Favoritenforecast). Vorab genau
+ein frischer oeffentlicher Marktlistenausschnitt/max100, niemals alteFinalIDs
+erneut anfragen. Max3HTTPversuche inkl.Redirect/Fehler,5MiB/10Min; keineOrders.
+Nur singular umaResolutionStatus=resolved, exakteOutcome/Token/Payoutidentitaet
+und noch tatsaechlich handelbareBooks qualifizieren. Sind alleClosed/inaktiv,
+sofort verwerfen ohneBookpolling. Sonst hoechstens einqualifizierterMarkt,
+beideOutcomebooks/Alter/Tiefe/MinNotional/Feelevel und Redemptionkosten/-zeit
+pruefen. GammaStatus allein beweist KEINE OnchainRedemptionverfuegbarkeit;
+keinen risikofreienGewinn annehmen. Fehlt vollstaendigeAusfuehrungsbasis,
+unzureichend/keinCollector. Vorab Auswahl/Abbruchregeln mit echterUTC speichern.
+
 05.10.2026 17:05UTC: Wallet-Persistenzprobe UNZUREICHENDE DATEN. 1GET200,
 82620Bytes/100Trades/68Wallets/46Conditions. Rohhash/Receipt/Prereg/Report und
 unabhaengige root_review.json: output/wallet_feasibility_20261005_1700.
