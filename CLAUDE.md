@@ -13,6 +13,23 @@ Kein Polymarket-API-Key. Alles lokal. Pipeline alle 15 Min — nicht extra start
 ## Neustart (2026-09-12) — hat Vorrang vor dem historischen Stand
 
 ### Vorrangiger Auftrag vom 30.09.2026
+05.10.2026 22:03UTC: Begrenzter offiziellerFee/Rebate/Reward-Changecheck
+abgeschlossen: KEINE BELEGTE NEUE EVIDENZ, keineResearchroute wiedereroeffnet.
+Worker berichtet1Suchquery 'Polymarket fees rebates rewards', Domainpolymarket.com,
+7Tage, nur Evergreenrewards/fees, keinqualifizierter datierterVorherNachherbeleg.
+0direkteSourceGETs. KeineAussage dassGebuehren unveraendert sind.
+Worker schrieb falschenWorkspace; exakteDatei imRepo gesichert unter
+output/fee_changecheck_20261005_2200/worker_record.md plus root_review.json.
+Nur zusammengefassteSuchresultate, keinRawresponse/Primaerbeleg; kombinierte
+Markdownregistrierung nicht unabhaengig als unveraenderlich nachgewiesen.
+KeineOrders/Collector/Nettoertragsbehauptung. Die bisherigenRouten bleiben
+geschlossen; unveraenderteSnapshots/Sensitivitaeten/Suchqueries nicht wiederholen.
+Naechste Runde: nur neu vorliegende konkreteEvidenz gegen die gespeicherten
+Wiedereroeffnungskriterien pruefen (datierteKostenregel, echtebeideOutcomebooks
+mitPayoutidentitaet oder zeitgetrennte roheTestdaten). Ohne solcheEvidenz
+keine erneuteMetadaten-/Bibliographieschleife oderSammlerstart; still abschliessen.
+Dies ist keinNachweis dass generell keinEdge existiert und keineZielerreichung.
+
 05.10.2026 21:04UTC: Claim-Redemption-Break-even OFFLINE abgeschlossen:
 UNZUREICHENDE AUSFUEHRUNGSDATEN, Route geschlossen bis neuerPayout/Bookbeleg.
 output/claim_economics_20261005_2100/preregistration.json, report.json und echte
