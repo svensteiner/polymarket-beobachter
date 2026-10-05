@@ -13,6 +13,77 @@ Kein Polymarket-API-Key. Alles lokal. Pipeline alle 15 Min — nicht extra start
 ## Neustart (2026-09-12) — hat Vorrang vor dem historischen Stand
 
 ### Vorrangiger Auftrag vom 30.09.2026
+05.10.2026 07:31UTC: Run2 jetzt ALLE15 FINAL: 12 Siege/2 Niederlagen/1 Split.
+Nur die2 offenen IDs erneut angefragt: 5178128 Johnny Speeds resolved[0,1],
+FavoritIndex0 Verlust -4.71840; 5169563 No resolved[0,1], Index1 +1.20072.
+Root verifiziert Originalcondition, beide Outcomes, Tokenreihenfolge und Rawhashes.
+Q5 Hold-to-resolution: Payout62.50000 - Entrycost62.08160 (inkl.Entryfee)
+- Stress1.50000 = -1.08160 USDC; -1.7011% auf Cost+Stress. Keine Exitorder.
+Als Edgekandidat VERWORFEN / keine belastbare Evidenz; kein Beweis negativer
+Populationserwartung. Q5-Minimumnotional/echte Fills weiterhin ungeprueft.
+Rohdaten, HTTPzeiten/Hashes, alle15Rechnungen und unabhaengige Abnahme:
+output/favorite_run2_settlement_20261005/report.json, manifest.json, review.json.
+Keine dieser15IDs mehr abfragen. Run1 undRun2 abgeschlossen, nicht wiederholen.
+Sidecar NICHT ordentlich beendet: PID41124 fehlt, kein exakter Captureprozess,
+stale.lock/progress completedfalse, kein windows.json; letzterCheckpoint02.10.
+18:50UTC. Ursache unbekannt; KEIN Neustart, keine Rohdatenkorrektur.
+11Entries/33Requests/0pending; unveraendert8/11Primary,72.727%<80%,11<30,
+Mean-.3389675 vor Exitfee. UNZUREICHENDE DATEN, administrativ beendet.
+Unabhaengiger Audit output/favorite_markout_terminal_20261005/audit.json;
+Root hat Prozess-/Dateibefund geprueft. Kein erneuter Evaluatorlauf ohne neueDaten.
+Naechste konkrete Forschung: Options-Kalibrierung nur bei pruefbaren kleinen
+historischen Rohdatenpaaren (ex-ante Option/PM + exakte finale Aufloesung).
+Vorabgrenzen: max5oeffentlicheGETs/20MiB/15Min, kein Archiv/Download von
+Drittcode, keine neuen Sammler. Ein zugaengliches Rohsample unabhaengig auf
+Zeitpunkt,Identitaet,Aufloesung und Holdout-Trennbarkeit pruefen. Fehlt es,
+Datenroute als unzureichend abschliessen statt dieselbenMetadaten erneutzupruefen.
+Keine Erfolgswahrscheinlichkeit aus risikoneutralen Optionswerten ableiten;
+erst bei echterDatenbasis einen zeitlich getrennten Kalibrierungstest vorregistrieren.
+
+02.10.2026 18:15UTC: Sidecar per psutil mit exakter Commandline bestaetigt:
+11 Entries/33 Requests/0 Fehler/completed=false, keine neuen Horizonte.
+NEU FINAL 5174666 Bounty Hunters: resolved[.5,.5], SPLIT/VOID, Originalfavorit
+Index0 und Token unabhaengig geprueft. Q5-Payout2.5 - Cost3.69928 - Stress.10
+= -1.29928 Hold-to-resolution OHNE Exittrade. 13 finale Entries:
+11 Siege,1 Niederlage,1 Split; Subtotal3.73536-1.29928=2.43608.
+KEIN kompletter15EntryRun/Edge/Fillnachweis. Nur noch 5178128 und5169563
+nonfinal (proposed/offen), nicht aus Preisen als final ableiten.
+Rohdaten+HTTPmanifest18:03UTC und unabh.review.json:
+output/favorite_run2_settlement_20261002_1802. 5174666 nicht mehr pollen;
+andere12Finale ebenfalls nicht. Keine neuen Markouts/Evaluatorwiederholung.
+Naechste Runde nur diese2Settlements und formellesSidecarEnde19:28UTC pruefen.
+PowerShell/Python-Prozessstarts teils minutenlang verzoegert; cmd.exe-interne
+type/dir sowie apply_patch reagieren schnell. Sammler unberuehrt lassen.
+
+02.10.2026 18:06UTC: Wiederhergestellter Status aus gepruefter Vorstunde:
+12 finale Run2-Entries, 11 Siege/1 Niederlage, Hold-Subtotal 3.73536.
+Neu final zuvor: 5176640 Verlust -4.09148; 5174683 Gewinn +1.24960;
+5178123 Gewinn +.66640. Diese und die 9 frueheren Finalen nicht mehr pollen.
+Nur noch 5174666/5178128/5169563 offen. Vorstunden-Artefakte:
+output/favorite_run2_settlement_20261002_1704/report.json und review.json.
+Sidecar jetzt via psutil exakte Commandline bestaetigt, 11 Entries/33 Requests/
+0 Fehler/completed=false; keine neuen Horizonte, nicht erneut evaluieren.
+Sourcecapture final80/15 unveraendert. PowerShell startet teilweise sehr langsam;
+kurze cmd.exe-Python-stdin-Aufrufe funktionierten. Sammler nicht veraendert.
+Der zuvor als Kopfstatus gemeldete Memory-Append stand doppelt am Dateiende;
+daher diesen Stand explizit am Kopf wiederhergestellt. Aktuelle drei Settlementchecks laufen.
+
+02.10.2026 18:05 Wien / 16:05UTC: Sidecar41124exaktCIMlive,11Entries/
+33Requests/0Fehler, alle33Horizontebeobachtet,nichtmehrpending;formeller
+24hEndestatusnochfalse,bis19:28UTCunveraendertlassen. FINALRun2windows
+completedtrue,80Fenster15Admissions;stalesprogressfalseKEINQuellfehler.
+NeueHorizonteausgewertet:Primary8valid/3invalid=72.727%<80%,Mean-.3389675,
+Median-.28784 nachEntry+Stress VORExitfee. 11Parents<30;keinEdgebeleg.
+NEUFINAL5178122 Sinners resolved[1,0],OriginaltokenIndex0unabhaengiggeprueft:
+5-4.52250-.10=+.37750 Hold-to-resolutionOHNEExittrade. 9finalSubtotal
+5.91084,nichtGesamtrun(15). Artefakte output/favorite_run2_settlement_20261002_1602/
+raw+HTTPmeta+report+review.json;reporterklaertsourcefalsealsEvaluatorcheckpoint.
+5178122jetztNICHTmehrpollen. 5176640/5174683/5178123nochproposedNICHTfinal;
+letzte3Admissions5169563/5174666/5178128Start16UTCnichtsofortangefragt.
+NaechsteRunde6offene5176640/5174683/5178123/5169563/5174666/5178128nach
+Eventendepruefen;keineMarkoutWiederholungbisformellerCompletion/Neuedaten.
+KeineNeustarts/Schwellenaenderungen/identischenHypothesentests.
+
 02.10.2026 17:04 Wien / 15:04UTC: RUN2QUELLENERFASSUNGABGESCHLOSSEN.
 PID44616nichtmehraktiv,FINALwindows.jsoncompletedtrue80/80ausgewaehlte
 Originalparents/conditions,0fehlend/unerwartet;162Requests29679421Bytes
@@ -943,3 +1014,21 @@ Produktionsrunde 2026-09-29 18 Uhr: Kostenreport-Integritaet geschlossen. Loader
 Produktionsrunde 2026-09-30 09 Uhr: setup_research.ps1 gehaertet. Vorhandene .venv-research nurpruefen, ungueltigeZiele nichtreparieren; ReparsePoint/Junction vorInterpreter abgewiesen. ExactPython3.12, sys.prefixZiel/baseprefixabweichend, genau ein exakter include-system-site-packages=falseEintrag und ausschliesslichpipDistribution erforderlich; namenlosePakete ebenfallsabgewiesen. Imports mit -I -B ueberstdin PS5kompatibel/rootexplizit, keinepycachewrites. FehlendesZiel erstelltviaPythonlauncher. LunaWorker+MainAbnahme;7echtePSIntegrationfaelle inklNeuinstallation/Wiederholung, nonisolated/duplicate/lookalikecfg, unnamedmetadata/Junction. CodeReview und unabhaengigerEmbeddedPythonReview freigegeben. Gesamtlauf zuerstTestfehler wegenPSZeilenumbruch inFehlermeldung; whitespaceNormalisierung separat reviewed, final217Pytest+12SDKLoopback bestanden,2bekannteSymlinkskips. Report95f96e8d66624fffbf050e557035c433 source_stabletrue, --checkExit0. PraktischePruefung aktuellerLiveVenv ausfremdemcwd:860Dateihashes unveraendert, Python3.12.8/stdlibClosure bestaetigt; output/research_setup_acceptance.json mitscriptSHA. LiveSupervisor15356/Launcher41396 identifiziert, healthhealthy; keineNeustarts/PaidAPI/Orders. Gesamtproduktionsreife weiterhinfalse; harteBudgetreservierung/Kostenobergrenze/autonomerAgentenbetrieb offen. Runde abgeschlossen.
 
 01.10.2026 Stichprobenkapazitaet: output/favorite_markout_20261001/sample_feasibility.json. 65 verbleibende distinct Parents; fuer30 neue Entries mindestens46.1538% Zulassung erforderlich, bisher4/15=26.6667% nurdeskriptiv. Stichprobe kann unzureichend bleiben; Mindestzahl nicht senken. Main korrigierte Worker-Laufzeit: tatsaechlicher Start19:28:56UTC, Ende02.10.19:28:56UTC; letzterPrimaryDeadline15:30:30UTC liegt darin. BeidePIDs19:43UTC live,0SidecarEntries.
+## Status 2026-10-02 17:12 UTC
+
+- Source capture complete: 80/15.
+- Sidecar last confirmed live: 11 entries, 33 requests, 0 errors, `completed=false`, through 19:28 UTC.
+- Settlement folder 1704: Madaras `-4.09148`, Draw/No `+1.24960`, 9INE `+0.66640`; 12 finalized, 11 wins/1 loss, subtotal `3.73536`, hold-to-resolution with no exit, not full 15.
+- Pending: 5174666 proposed `.495/.505` (not final), 5178128 open, 5169563 Genoa/No soccer 16:00 UTC start; check after 18:00 UTC.
+- Do not repoll the three 1704 settlements or prior nine; no new horizons/evaluator run until status changes.
+- Shell startup/read delays occurred; saved GET eventually succeeded. Sampler was not touched.
+
+## Status 2026-10-02 17:12 UTC
+
+- Source capture complete: 80/15.
+- Sidecar last confirmed live: 11 entries, 33 requests, 0 errors, `completed=false`, through 19:28 UTC.
+- Settlement folder 1704: Madaras `-4.09148`, Draw/No `+1.24960`, 9INE `+0.66640`; 12 finalized, 11 wins/1 loss, subtotal `3.73536`, hold-to-resolution with no exit, not full 15.
+- Pending: 5174666 proposed `.495/.505` (not final), 5178128 open, 5169563 Genoa/No soccer 16:00 UTC start; check after 18:00 UTC.
+- Do not repoll the three 1704 settlements or prior nine; no new horizons/evaluator run until status changes.
+- Shell startup/read delays occurred; saved GET eventually succeeded. Sampler was not touched.
+
