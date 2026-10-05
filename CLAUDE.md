@@ -13,6 +13,28 @@ Kein Polymarket-API-Key. Alles lokal. Pipeline alle 15 Min — nicht extra start
 ## Neustart (2026-09-12) — hat Vorrang vor dem historischen Stand
 
 ### Vorrangiger Auftrag vom 30.09.2026
+05.10.2026 16:04UTC: Exakttitel-Autorenpreprint einmal gesucht/abgerufen:
+Southampton ePrints HTTP401,7382Bytes Anubis-HTML statt Manuskript, keinRedirect.
+Root verifiziert Bytes/SHA/Challenge unabhaengig. Artefakte
+output/reversal_primary_20261005_1600: preregistration.json, request_receipt.json,
+source.bin, report.json, root_review.json. Registrierung vorDirektabruf belegt,
+nicht als vorSuchquery darstellen. UNZUREICHENDE DATEN, News-Reversal-
+Quellenroute geschlossen; keinMethoden-/Ertragsbefund, keine weitereUmgehung/
+Bibliographiesuche/Collector. Finalmaerkte weiter unberuehrt lassen.
+Naechster konkreter ANDERER Auftrag: informierteTrader-Persistenz, nur
+Selektions-/Datenfeasibility. Vorab festenUTC-Cutoff und max100neueste oeffentliche
+Trades/max20verschiedeneWallets nach Aktivitaet (NICHT PnL/Leaderboard) definieren.
+Max2PrimaerGETs inkl.Redirect/Fehler/5MiB/10Min, keineHintergrundsammler.
+Einen kleinen oeffentlichen Polymarket-Tradeausschnitt sichern; reale
+Wallet-/Condition-/Outcome-/Preis-/Mengen-/Zeitidentitaet und beideOutcomes
+pruefen. KeinePersonenidentifikation. VergangeneGewinner nicht nachtraeglich
+auswaehlen; keine aktuellenTrades als historischeHoldoutdaten ausgeben.
+Frage: ist ueberhaupt eine kosten-/latenzbereinigte spaetereReplikation mit
+unabhaengigenEvents und zeitlich getrennterWalletauswahl messbar? Bei fehlender
+Quote-/Outcome-/Historienbasis unzureichend statt Copytrading-Gewinne behaupten.
+KeinPapertradingstart allein durch beobachteteWalletgewinne; bestehende
+Research-only/keineOrders/keinePaidAPI-Grenzen bleiben bestehen.
+
 05.10.2026 15:05UTC: News-Ueberreaktion/Reversal-Suche UNZUREICHENDE DATEN.
 2Suchqueries/2Sourceopens beide403, keinPrimaertext/keine empirischeAuswertung.
 output/distinct_edge_research_20261005_1500: preregistration.json, report.json,
