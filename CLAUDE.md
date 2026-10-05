@@ -13,6 +13,25 @@ Kein Polymarket-API-Key. Alles lokal. Pipeline alle 15 Min — nicht extra start
 ## Neustart (2026-09-12) — hat Vorrang vor dem historischen Stand
 
 ### Vorrangiger Auftrag vom 30.09.2026
+05.10.2026 09:00UTC: Gespeicherten Auftrag zur kleinen historischen Options-
+Rohdatenprobe abgeschlossen: UNZUREICHENDE DATEN. ADnocap/taut-arb-backtest
+Tree80a115a0886ed77827b4c2383e075e94deab0016, truncated=false, enthaelt keine
+geeigneten CSV/JSON-Beobachtungsdateien. Nur1GET/14566Bytes, keine Archive,
+kein Drittcode/Collector/Modellaufruf. Keine Aussage ueber andere Datenquellen.
+Artefakte output/options_small_sample_20261005: tree.json, tree_receipt.json,
+report.json, unabhaengige review.json und root_acceptance.json. Root hat
+Rawhash/Bytes/Dateiinventar selbst bestaetigt. Prereg-Datei hat unzuverlaessigen
+Mitternachtszeitstempel und nachtraegliche Entscheidung: kein unveraenderlicher
+Registrierungsnachweis; Auswahl-/Budgetregeln standen bereits im vorigen Auftrag.
+Diese Repositoryroute schliessen, Metadaten nicht erneut pruefen.
+Naechster konkreter Schritt: einmalige Suche nach EINER anderen oeffentlichen
+historischen Rohdatenquelle fuer Options-/PM-Kalibrierung, max3Suchanfragen,
+max5QuellenGETs/20MiB/15Min. Vor Abruf echte UTC-Regeln separat unveraendert
+speichern. Nur kleine rohe Beobachtungen mit Identitaet, ex-ante Zeit und
+Aufloesung qualifizieren; keine abgeleiteten PnL-Tabellen. Wenn nichts geeignet,
+historische Optionsroute vorlaeufig beenden, statt weitere Metadatenrunden.
+Run1/Run2 final, Sidecar administrativ beendet; keine weiteren Settlementchecks.
+
 05.10.2026 07:31UTC: Run2 jetzt ALLE15 FINAL: 12 Siege/2 Niederlagen/1 Split.
 Nur die2 offenen IDs erneut angefragt: 5178128 Johnny Speeds resolved[0,1],
 FavoritIndex0 Verlust -4.71840; 5169563 No resolved[0,1], Index1 +1.20072.
