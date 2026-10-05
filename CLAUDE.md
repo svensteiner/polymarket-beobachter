@@ -13,6 +13,24 @@ Kein Polymarket-API-Key. Alles lokal. Pipeline alle 15 Min — nicht extra start
 ## Neustart (2026-09-12) — hat Vorrang vor dem historischen Stand
 
 ### Vorrangiger Auftrag vom 30.09.2026
+05.10.2026 15:05UTC: News-Ueberreaktion/Reversal-Suche UNZUREICHENDE DATEN.
+2Suchqueries/2Sourceopens beide403, keinPrimaertext/keine empirischeAuswertung.
+output/distinct_edge_research_20261005_1500: preregistration.json, report.json,
+request_receipts.json, search_results_reconstructed.json, root_review.json.
+Root-Abnahme nur Zugangsfehler: 0Bytes=keinegespeichertenSourcebytes,
+NICHT nachgewiesenesNetzvolumen; Einzelrequestzeiten/Errorrawhashes fehlen.
+ZweiterSourceopen war KalshiAdverseSelection statt NFLNews-Paper und passt
+nicht zur vorregistriertenHypothese. Kein Edgebeleg, keine Widerlegung.
+Keine weiterenRequests/Collector. Geblockte ScienceDirect/SSRN-URLs nicht
+wiederholen. Naechste konkrete Arbeit: EIN frei zugaengliches Autorenpreprint
+zum bereits gefundenen Titel 'Improving prediction market forecasts by detecting
+and correcting possible over-reaction to price movements' suchen (keine neue
+breiteHypothesensuche). Max1Suchquery/1SourceGET inkl.Redirect/Fehler,5MiB/10Min,
+Regeln vorher mitUTC speichern. Nur passende Primaerquelle pruefen: echte
+zeitlicheHoldouts und executableKosten statt reineForecastverbesserung.
+Wenn nicht zugreifbar/qualifiziert, News-Reversal-Quellenroute beenden; keine
+weiteren Bibliographie-/Metadatenrunden. Keine Paperclaims als Gewinne ausgeben.
+
 05.10.2026 14:06UTC: Maker-Stornofilter analytisch bearbeitet, UNZUREICHENDE
 DATEN (Hypothese nicht empirisch widerlegt). Artefakte
 output/maker_veto_economics_20261005_1400/preregistration.json, report.json,
