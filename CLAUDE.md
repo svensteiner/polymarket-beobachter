@@ -13,6 +13,27 @@ Kein Polymarket-API-Key. Alles lokal. Pipeline alle 15 Min — nicht extra start
 ## Neustart (2026-09-12) — hat Vorrang vor dem historischen Stand
 
 ### Vorrangiger Auftrag vom 30.09.2026
+05.10.2026 11:04UTC: Rocklabs-Einmalprobe UNZUREICHENDE DATEN, Route geschlossen.
+GespeicherteREADME nennt komprimierte Stundenpartitionen und Zugangsanfrage
+mit Institution/Zweck, keinen kleinen direkt abrufbaren unkomprimierten Book.
+0HTTPversuche/0neueNetzbytes; keine Kontaktaufnahme, Archive oder Sammler.
+Schema-Beispiele mit verkuerzten IDs sind KEINE historischen Beobachtungen.
+Artefakte output/rocklabs_raw_probe_20261005: preregistration.json, report.json,
+request_receipt.json, root_review.json. Root verifiziert README11594Bytes/SHA
+und Zugangstext unabhaengig. Luna meldete nach Artefaktspeicherung Kapazitaetsfehler;
+kein Modellfallback/Retry, vorhandene Befunde direkt abgenommen.
+Keine weiteren Options-/Rocklabs-Metadatenrunden ohne neue Rohdatenquelle.
+Naechster konkreter Forschungsauftrag: primaeren OpenMarket-Artikel
+https://arxiv.org/abs/2607.26245 auf eine reproduzierbare wirtschaftliche
+Lead-Lag-Hypothese pruefen (bisher nur Suchauszug, KEIN gepruefter Befund).
+Vorab max2Quellenabrufversuche inkl.Redirects/Fehler, max5MiB/max10Min;
+kein Datensatzarchiv/Code/Collector. Paper-Methodik auf zeitliche Leakage,
+Out-of-sample-Trennung, beideOutcomes, executableask/bid stattmid, Gebuehren,
+Latenz und Settlementbasis gegen bisherigenTWAP-Ansatz abgrenzen. Nur wenn
+eine wirklich neue testbare Vorhersage verbleibt, Folgetest vorregistrieren;
+sonst Paper als nicht ausreichend fuer eine neue Strategie verwerfen.
+Run1/Run2 final und Sidecar geschlossen: nicht neu auswerten/abfragen.
+
 05.10.2026 10:06UTC: Alternative historische Optionsdaten-Suche abgeschlossen:
 UNZUREICHENDE DATEN; historische Optionsroute vorlaeufig schliessen.
 3Suchanfragen; Rocklabs/Pancake liefern in geprueften READMEs keine gepaarten
