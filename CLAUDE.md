@@ -13,6 +13,23 @@ Kein Polymarket-API-Key. Alles lokal. Pipeline alle 15 Min — nicht extra start
 ## Neustart (2026-09-12) — hat Vorrang vor dem historischen Stand
 
 ### Vorrangiger Auftrag vom 30.09.2026
+05.10.2026 19:05UTC: Resolved-Claim-Abschlagprobe UNZUREICHENDE DATEN.
+1GammaGET/100offeneMaerkte/719013Bytes, alleumaResolutionStatus fehlt,
+closedfalse/activetrue/acceptingOrderstrue. 0qualifiziert, keineBookrequests.
+Root bestaetigt Rohhash/Counts; output/resolved_claims_20261005_1900:
+preregistration.json, source.bin, request_receipt.json, report.json, root_review.json.
+Discovery order=id descending waehlte NEUGELISTETE, nicht neuaufgeloeste
+Maerkte. Daher kein sinnvoller Ausschluss derZielpopulation, keinEdgebeleg
+oder Widerlegung. Gamma-Payout/OnchainRedemption/Fee/Depth weiterhin ungeprueft.
+Naechster konkreter Schritt einmalig: dokumentierte Gamma-Filter fuer
+Resolutionstatus bzw. juengstbeendete NOCHoffeneMaerkte verifizieren (erst
+lokale vorhandeneSchemas, notfalls1offizielleAPI-DokuGET). Danach NUR mit
+bestaetigtemParameter vorab registrierter gezielterSlice/max100/1ListenGET,
+keine selbenneugelisteten100/altenFinalIDs direkt pollen. Gesamtmax2GETs
+inkl.Redirect/Fehler/5MiB/10Min, keineBooks in diesemDiscoverytest. Fehlt
+dokumentierter passenderFilter oder keinequalifiziertenZeilen, Route schliessen
+statt offeneNewestListen zu wiederholen. KeineOrders/Collector/Archive.
+
 05.10.2026 18:04UTC: Wallet-Persistenz Powerplanung OFFLINE abgeschlossen,
 UNZUREICHENDE DATEN; Route bis qualifizierter neuer Evidenz geschlossen.
 20Kandidaten/FamilyAlpha.05 => alpha_i.0025;80%Power bei wahremNettoeffekt.01
