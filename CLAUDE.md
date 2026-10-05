@@ -13,6 +13,28 @@ Kein Polymarket-API-Key. Alles lokal. Pipeline alle 15 Min — nicht extra start
 ## Neustart (2026-09-12) — hat Vorrang vor dem historischen Stand
 
 ### Vorrangiger Auftrag vom 30.09.2026
+05.10.2026 12:06UTC: OpenMarket-Primarpaper geprueft; als Grundlage fuer NEUEN
+Lead-Lag-Kandidaten VERWORFEN. 1HTTP200/219440Bytes, Rohhash/Receipt in
+output/openmarket_paper_20261005; report.json und unabhaengige root_review.json.
+Paper berichtet OOS-ModellBrier.165 vsMid.163, AUC.8377 vs.8405 und simuliert
+-.116 normalisierteEinheiten jeVersuch bei1%Fee/.5%Slippage. NICHT reproduziert,
+keine aktuelleFee-/Fillvalidierung. Nur2251/4450Maerkte exportiert; Tie verworfen.
+16msSourceclockLag hat +/-99msOffsetunsicherheit;347msCollectorreaktion ist
+kein ausfuehrbares Gewinnfenster. BeideOutcomes erfasst, keine separat bewiesene
+Nettoausfuehrung/Depth/MinNotional. Kein neuer Sammler. Vorgeschlagenen30Fenster-
+Test abgelehnt: kein neuesSignal/Powerbeleg, Share-/Notionalminimum ungeprueft.
+Root korrigierte OOS-Zeitformulierung und unbelegtesDatum imWorkerreport.
+Separater LunaReviewer Kapazitaetsfehler; keinFallback, Root las Primaertext.
+Naechster konkreter Schritt: NEUE Hypothese passiver Marketmaker mit
+Binance-Schock als Quote-Stornofilter statt Richtungseinstieg. Zuerst begrenzte
+wirtschaftliche Falsifikation auf Papier: Spread-Ertrag gegen adverse einseitige
+Fills, Hedgekosten, verpassteFills und Stornolatenz; Rewards/Rebates konservativ0.
+Vorab max2PrimaerquellenGETs inkl.Fehler/Redirects,5MiB/10Min, keineSammler.
+Parameter nicht als empirisch geschaetzt ausgeben; Break-even-Bedingung und
+erforderliche echte Queue-/Filldaten bestimmen. Wenn kein pruefbarer Vorteil
+gegen passivenBaseline ohneFilter formulierbar, verwerfen statt Collector bauen.
+Keine Wiederholung naiverLeadLag-/Options-/Rocklabs-Suche oder finalerSettlements.
+
 05.10.2026 11:04UTC: Rocklabs-Einmalprobe UNZUREICHENDE DATEN, Route geschlossen.
 GespeicherteREADME nennt komprimierte Stundenpartitionen und Zugangsanfrage
 mit Institution/Zweck, keinen kleinen direkt abrufbaren unkomprimierten Book.
