@@ -13,6 +13,18 @@ Kein Polymarket-API-Key. Alles lokal. Pipeline alle 15 Min — nicht extra start
 ## Neustart (2026-09-12) — hat Vorrang vor dem historischen Stand
 
 ### Vorrangiger Auftrag vom 30.09.2026
+05.10.2026 13:01UTC: Maker-Stornofilter-Auftrag NICHT ausgewertet: einmaliger
+gpt-5.6-luna-Worker sofort wegen Modellkapazitaet fehlgeschlagen, keine
+Forschungsartefakte vorhanden. Kein Retry/Modellfallback/Collector/Netzabruf.
+Status output/maker_veto_economics_20261005/execution_status.json; keine
+wirtschaftliche Aussage aus Betriebsfehler ableiten. Naechste regulaere Runde
+denselben unten gespeicherten analytischen Auftrag bearbeiten, falls Luna
+verfuegbar. Zusatz zur Abnahme: inkrementeller Vorteil gegen UNGEFILTERTEN
+Maker und absolut positiver Nettoertrag sind getrennte Anforderungen;
+vermeidbare adverse Fills minus entgangene gute Fills, Race-/Hedgekosten und
+Kapitalbindung. Hypothetische Parameter nicht als geschaetzte Erfolgsraten
+ausgeben. Kein neuer Sammler allein aufgrund positiver Sensitivitaetsrechnung.
+
 05.10.2026 12:06UTC: OpenMarket-Primarpaper geprueft; als Grundlage fuer NEUEN
 Lead-Lag-Kandidaten VERWORFEN. 1HTTP200/219440Bytes, Rohhash/Receipt in
 output/openmarket_paper_20261005; report.json und unabhaengige root_review.json.
