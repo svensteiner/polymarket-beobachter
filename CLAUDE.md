@@ -13,6 +13,28 @@ Kein Polymarket-API-Key. Alles lokal. Pipeline alle 15 Min — nicht extra start
 ## Neustart (2026-09-12) — hat Vorrang vor dem historischen Stand
 
 ### Vorrangiger Auftrag vom 30.09.2026
+05.10.2026 14:06UTC: Maker-Stornofilter analytisch bearbeitet, UNZUREICHENDE
+DATEN (Hypothese nicht empirisch widerlegt). Artefakte
+output/maker_veto_economics_20261005_1400/preregistration.json, report.json,
+root_review.json. KeineNetzabrufe/Sammler/Orders. Root prueft Decimalfaelle:
+Delta+.0521 bei weiterhin negativem Veto-.0249; zweiterFall Delta-.0300,
+Baseline+.0090,Veto-.0210. Alles HYPOTHETISCH, keine geschaetzten Erfolgsraten.
+Korrekturen: allgemeine Identitaet E[NettoVeto-NettoBaseline]; bedingte
+Gewinne/Verluste koennen jeArm verschieden sein. Zusatzkosten nur inkrementell,
+bereits eingerechnete Hedgefees nicht doppelt. Beispiel3%-Notionalfee ist KEINE
+Polymarketfee/Q5-Ausfuehrbarkeitspruefung.347msQuote-Reaktion keinCancelACK.
+Ohne echteQueue-/Counterfactual-/Filldaten kannDelta beideVorzeichen haben;
+kein neuerCollector, keine Wiederholung gleicher Sensitivitaeten ohne Evidenz.
+Naechste konkrete Arbeit: begrenzte Primaerquellensuche nach EINEM empirisch
+belegten ANDEREN Mechanismus als BTCLeadLag, Favoriten, passiveCancelFilter,
+Optionskalibrierung oder bereits gescreenteArbitragen. Vorab max2Suchqueries,
+max2QuellenGETs inkl.Fehler/Redirects,5MiB/10Min. Nur Mechanismus mit zeitlich
+getrenntem Test und nachvollziehbaren Kosten/Outcomes als Kandidat behalten;
+sonst als unzureichend dokumentieren. Keine Datenarchive/Code/Collector oder
+Metadatenbeschaffungsschleife. Auswahl samt Ausschlussgruenden vor jedem
+eventuellen wirtschaftlichen Test festschreiben; Gewinne nicht aus Paperclaims
+uebernehmen. Vorige Finalsettlements nicht erneut abfragen.
+
 05.10.2026 13:01UTC: Maker-Stornofilter-Auftrag NICHT ausgewertet: einmaliger
 gpt-5.6-luna-Worker sofort wegen Modellkapazitaet fehlgeschlagen, keine
 Forschungsartefakte vorhanden. Kein Retry/Modellfallback/Collector/Netzabruf.
