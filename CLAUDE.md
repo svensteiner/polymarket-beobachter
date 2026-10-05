@@ -13,6 +13,26 @@ Kein Polymarket-API-Key. Alles lokal. Pipeline alle 15 Min — nicht extra start
 ## Neustart (2026-09-12) — hat Vorrang vor dem historischen Stand
 
 ### Vorrangiger Auftrag vom 30.09.2026
+05.10.2026 21:04UTC: Claim-Redemption-Break-even OFFLINE abgeschlossen:
+UNZUREICHENDE AUSFUEHRUNGSDATEN, Route geschlossen bis neuerPayout/Bookbeleg.
+output/claim_economics_20261005_2100/preregistration.json, report.json und echte
+unabhaengige root_review.json (Worker-Selbstcheck gleichenNamens ersetzt).
+Root rechnet alle9Zellen mit50Decimalstellen nach, Fehler<1e-24. IdealQ=B/(1-d),
+Bruttospielraum=B*d/(1-d). BeiB5/.001-.01 Abschlag nur.005005-.050505USDC;
+beiB50 .05005-.50505; B500 .50050-5.05051. Alles hypothetisch ohneFees/Warten,
+keineAnnahme aktuellerGaspreise/Payoutverfuegbarkeit oderGewinne. All-inBudget
+muss Entry+LevelFees+Fixkostenreserve umfassen; Raster verbrauchtB schon als
+Principal, daher KEIN finanzierter Ausfuehrungsplan. Outcome0/Split beachten,
+Exitverkaufsfee nicht fuerRedemption addieren. KeineNetzabrufe/Orders/Collector.
+Naechster konkreter Auftrag: EIN begrenzter Primaerquellen-Changecheck, ob
+seit30.09.2026 offiziell neue Polymarket-Gebuehren/Rebates/Rewardbedingungen
+eine bishernegative wirtschaftlicheHypothese veraendern. Max1Suchquery und
+1passenderoffiziellerSourceGET,5MiB/10Min, Regeln/UTC vorher. Nur belegte
+Aenderung mitDatum und vorher/nachherKostenwirkung als neueEvidenz aufnehmen;
+keine allgemeinenMarketing-/Dokuseiten als Aenderung deuten. Fehlt belegte
+Aenderung, keinRepeatscreen/Collector/Metadatenloop. Keine neueAutomation;
+keine Wiederaufnahme geschlossenerRouten ohne konkretgepruefte neueEvidenz.
+
 05.10.2026 20:08UTC: GezielteResolved-Claim-Discovery UNZUREICHENDE DATEN,
 Route geschlossen. Offizielle alteDokuURL404/119729gespeicherteBytes;
 zweiterListenGET order=end_date_iso 422, Body nichtgesichert. Root gepruefte
