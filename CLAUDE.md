@@ -13,6 +13,25 @@ Kein Polymarket-API-Key. Alles lokal. Pipeline alle 15 Min — nicht extra start
 ## Neustart (2026-09-12) — hat Vorrang vor dem historischen Stand
 
 ### Vorrangiger Auftrag vom 30.09.2026
+05.10.2026 17:05UTC: Wallet-Persistenzprobe UNZUREICHENDE DATEN. 1GET200,
+82620Bytes/100Trades/68Wallets/46Conditions. Rohhash/Receipt/Prereg/Report und
+unabhaengige root_review.json: output/wallet_feasibility_20261005_1700.
+Root bestaetigt100vollidentitaetsverschiedeneTrades. VorabDedup liess Wallet/
+TxHash aus und kollabierte5echteZeilen; korrigierteTop20-Auswahl NUR posthoc-
+Diagnostik, kein gueltiger Strategie-/Holdoutstart. Aktivitaet ist keineSkill.
+Cutoff17:01:25.0983599UTC, Tradezeiten16:54:40..53; beiReceipt17:02:11.677959
+bereits438.678..451.678s alt. CacheHIT/Age153 dokumentiert, Ursache nicht
+vollstaendig daraus ableitbar. Fillpreise KEINE replizierbarenAsks; beideToken
+in6Conditions KEINE geprueftenQuotes/Settlementjoins. Kein weitererAbruf/Collector.
+Naechster konkreter Schritt OFFLINE: statistische/wirtschaftliche Machbarkeit
+eines Wallet-Persistenztests vor jedem Forwardplan berechnen. Vorab20Kandidaten,
+familienweitesAlpha.05, ZielNettoeffekt1Cent je1USDC-Risiko definieren; unabh.
+ParentEvents statt Tradezeilen, multipleTests und echte Nettoverlustgrenzen
+explizit. Konservative erforderlicheFallzahl/Beobachtungsdauer nur konditional
+berechnen, keine unbekannteEventrate erfinden. Kein Netz/Collector/ModellAPI.
+Falls mit vorliegenderHistorie nicht testbar, Kandidat bis neuerqualifizierter
+Evidenz schliessen, nicht dieselbenWallets/Finalsettlements stundenweise pollen.
+
 05.10.2026 16:04UTC: Exakttitel-Autorenpreprint einmal gesucht/abgerufen:
 Southampton ePrints HTTP401,7382Bytes Anubis-HTML statt Manuskript, keinRedirect.
 Root verifiziert Bytes/SHA/Challenge unabhaengig. Artefakte
