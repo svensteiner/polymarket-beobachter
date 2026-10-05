@@ -13,6 +13,25 @@ Kein Polymarket-API-Key. Alles lokal. Pipeline alle 15 Min — nicht extra start
 ## Neustart (2026-09-12) — hat Vorrang vor dem historischen Stand
 
 ### Vorrangiger Auftrag vom 30.09.2026
+05.10.2026 20:08UTC: GezielteResolved-Claim-Discovery UNZUREICHENDE DATEN,
+Route geschlossen. Offizielle alteDokuURL404/119729gespeicherteBytes;
+zweiterListenGET order=end_date_iso 422, Body nichtgesichert. Root gepruefte
+Artefakte output/resolved_targeted_20261005_2000 inkl.root_review.json.
+PROTOKOLLABWEICHUNG: lokaleCollector-Nutzung ist keinAPI-Dokumentationsbeleg;
+Listenabruf trotzfehlendemParameterbeleg. Workerreport von1auf2Requests und
+fehlendenBody von0/Leerhash aufunknown korrigiert. GesamtNetzbytes unbekannt,
+Zeitpaar deszweitenAbrufs keinLatenzbeleg. KeineMarktzeilen != keineChancen.
+KeineBooks/Orders/Sammler, keine erneuten404/422-Endpunkte oderNewestSlices.
+Naechste konkrete Arbeit OFFLINE: wirtschaftliche Break-even-Grenzen fuer
+Claim-Redemption ermitteln, bevor nochDiscovery geplant wird. Festes
+hypothetischesBudgetRaster5/50/500USDC und Abschlaege.001/.005/.01 jeShare,
+Redemptionfixkosten sowie Wartezeit/Opportunitaetskosten explizit symbolisch;
+keine heutigenGas-/Fee-/Payoutdaten behaupten. Q/MinNotional/Depth und Fees
+proverbrauchtemLevel genau einmal, partielleFills und fehlendeRedemptionbasis
+als unidentifiziert. Vorher Regeln/UTC speichern, keineNetzrequests. Hypothetische
+positiveSzenarien erlauben keinenCollector. Danach dieseClaimroute schliessen
+bis neuer echter Ausfuehrungs-/Payoutbeleg vorhanden ist.
+
 05.10.2026 19:05UTC: Resolved-Claim-Abschlagprobe UNZUREICHENDE DATEN.
 1GammaGET/100offeneMaerkte/719013Bytes, alleumaResolutionStatus fehlt,
 closedfalse/activetrue/acceptingOrderstrue. 0qualifiziert, keineBookrequests.
