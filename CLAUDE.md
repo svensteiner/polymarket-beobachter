@@ -13,6 +13,7 @@ Kein Polymarket-API-Key. Alles lokal. Pipeline alle 15 Min — nicht extra start
 ## Neustart (2026-09-12) — hat Vorrang vor dem historischen Stand
 
 ### Vorrangiger Auftrag vom 30.09.2026
+12.10.2026: Neue bestehende Pipeline-Daten einmalig offline geprueft: UNZUREICHENDE DATEN, keine Route wiedereroeffnet. Eingefrorener Zyklus a350b2c914ba41549b20bd59c8578daa unter output/snapshot_gate_20261012_1549/research_status.json; Hash und Root-/Luna-Abnahme in review.md. 20 Versuche, 2 valide, 15 stale/future, 3 leere Asks, 495 ungeprueft; keine Implication-Paare. Beide Outcome-/Condition-Identitaeten bestaetigt; Ask-Summen 1.03 und 1.001 bereits vor Kosten ueber Payout1, modellierte Q5-Nettos -0.16710/-0.01609. Keine Fill-/Profitabilitaetsevidenz; Mindestnotional und Ausfuehrungsrisiken offen. Live-Datei wechselte waehrend Pruefung; nur eingefrorenen Zyklus verwenden. PID6372 vorhanden, exakte Identitaet mangels CommandLine nicht verifiziert; kein Eingriff. Naechster Schritt: nur neue qualifizierende Evidenz pruefen; keine unveraenderten Wiederholungen oder Sammlerstarts. Favorite-/Markout-Artefakte unveraendert.
 05.10.2026 22:03UTC: Begrenzter offiziellerFee/Rebate/Reward-Changecheck
 abgeschlossen: KEINE BELEGTE NEUE EVIDENZ, keineResearchroute wiedereroeffnet.
 Worker berichtet1Suchquery 'Polymarket fees rebates rewards', Domainpolymarket.com,
