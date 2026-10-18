@@ -12,6 +12,8 @@ Kein Polymarket-API-Key. Alles lokal. Pipeline alle 15 Min — nicht extra start
 
 ## Neustart (2026-09-12) — hat Vorrang vor dem historischen Stand
 
+2026-10-18 LINKEDINBATCH8 ERLEDIGT (2026-10-18T07:48:57Z): drei neue Anfragen ohne Notiz an je eine bisher unkontaktiert geprüfte DACH-Gesellschaft gesendet: Sebastian Lacher/SAIL Recruiting/Österreich, Christoph D./Deutsche Interim AG/Deutschland, Daniel Rolla/Swiss Interim Management GmbH/Schweiz. Alle drei im LinkedIn-Ausgangsordner mit Zurückziehen-Link als ausstehend bestätigt; Beobachtungszeit 07:48:57 UTC, exakte Sendezeiten unknown. Keine DM/CV/Beträge. Screenshot, Rohsnapshot, Kandidatendaten und SHA256 unter output/hr_hub_20261018/linkedin_batch8; Gesamt manuell 24. Next: Annahmen/Antworten abwarten, keine Autoschleife.
+
 ### Vorrangiger Auftrag vom 30.09.2026
 17.10.2026 LINKEDINBATCH7 ERLEDIGT (2026-10-17T15:38:23.4811959+00:00): genau3Anfragen mit freigegebenem CFO/KI-Satz gesendet und Versandübersicht mit Notiz+personalisiertemZurückziehenLink geprüft: AntjeLenk/Bridgeimp/Deutschland, LynneColgate/HeadInterimCFOFinance/EtonBridgePartners/UK, RobertvanVeggel/FounderPriorityInterim/Niederlande. Gesellschaftsabgleich gegen bisherigeHR+WhiteLabelLogs ohneVersandtreffer, je1PersonproGesellschaft, Saremasausgeschlossen. ThomasTschol/Valtus und MartinLudwigMayr/GOiNTERIM bereits1.Grad daher keineAnfrage; OlafSchnell nichtgesendet wegen geografischerStreuung. Belege output/hr_hub_20261017/linkedin_batch7 mitScreenshot/Rohsnapshot/Status. Gesamtmanuell21historisch, keinKontopendingZähler. NextAnnahmenabwarten, keineAutoschleife.
 
@@ -1494,6 +1496,7 @@ Produktionsrunde 2026-09-30 09 Uhr: setup_research.ps1 gehaertet. Vorhandene .ve
 - Pending: 5174666 proposed `.495/.505` (not final), 5178128 open, 5169563 Genoa/No soccer 16:00 UTC start; check after 18:00 UTC.
 - Do not repoll the three 1704 settlements or prior nine; no new horizons/evaluator run until status changes.
 - Shell startup/read delays occurred; saved GET eventually succeeded. Sampler was not touched.
+
 
 
 
