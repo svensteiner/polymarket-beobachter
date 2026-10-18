@@ -12,6 +12,10 @@ Kein Polymarket-API-Key. Alles lokal. Pipeline alle 15 Min — nicht extra start
 
 ## Neustart (2026-09-12) — hat Vorrang vor dem historischen Stand
 
+2026-10-18 09:18 UTC — Venturi/Freelancermap-Klärung: Auf Nutzerwunsch Lead #3036882 erneut auf Originalseite geprüft; Seite weiterhin öffentlich mit „Bewerben“. Kein separater Nachrichtenweg; nur nach Anmeldung formelle Bewerbung mit CV und Remote-/On-Site-Stundensatz. Tab nicht angemeldet. Kein CV, Satz, Bewerbung, Drittanbieter-Mail oder Firmenkontaktformular gesendet (E-Mail-Treffer nicht verifiziert; offizielles allgemeines Venturi-Formular nicht an benannten Ansprechpartner adressiert und verlangt Datenschutz-Consent). Klärungstext nicht versandt; im privaten Drive-Bericht 1tLbIURS_UOwOlE_V3s_Xz1C9zr1m8Q6_ als Entwurf/Barriere ergänzt und readback geprüft; aktueller SHA256 lokal im Sidecar 17740A224B3BAA6E787CAA27367EB8C4682D4B09474C74B51BBD3266D3625DF2. Nächster Schritt: Sven meldet sich ggf. im bestehenden Freelancermap-Konto an; formelle Bewerbung erst nach persönlichem Stundensatz und separater Freigabe. Keine Neuanlage/Upgrade.
+2026-10-18 PLATTFORM-ERTRAGSCHECK: Offizielle Tarifseiten und DACH-Finance-Projekte geprüft; Bericht `output/hr_hub_20261018/platform_expansion/paid_platform_research_20261018.md`, SHA256 FEABFA85B5BCE60EB279C725768A764319AFB3BE6BAEC98B55D1F948614776B8. Drive-Matrix `1QsYLLtDnRVZ6PvypJ13HiV8KZMitDoXj` in-place erweitert und readback geprüft (48,401 Bytes; SHA256 F63A251C0CD3B3205DEED513A3D6725A0DF31282CDD1E8F8B2AC04B4F058F3D6); datierter Researchbericht privat hochgeladen als `1tLbIURS_UOwOlE_V3s_Xz1C9zr1m8Q6_`. Empfehlung jetzt 0 EUR: Freelancermap Basis als bester kostenloser neuer DACH-Test (10 Bewerbungen/Monat, alle Projekte zugänglich), bestehende Plattformkonten nicht duplizieren; Gmail-Suche ohne Freelancermap-Mail beweist kein fehlendes Konto. Freelancermap Premium 13,99 EUR/Monat bleibt nur spätere Prüfkandidatin nach gratis Test/qualifizierten Leads; kein nachgewiesener persönlicher Return für irgendein Abo. Bestpassender Lead ist Freelancermap/Venturi Finance-Prozessoptimierung Frankfurt, mindestens3Monate, 3–4Tage vor Ort, Wochenumfang widersprüchlich (Karte80%, Text Vollzeit), Honorar unknown; keine Bewerbung. freelance.de 100EUR/h sichtbarer Interim-Controller nicht passend verifiziert (SAPCO/SOX/US-GAAP unbekannt); 120EUR/h Profilmittelwert ist Angebotswert, kein Umsatz. Keine Konten, Gebühren, Abos, Nachricht oder Bewerbung in dieser Runde. Nächster Schritt: bestehenden Freelancermap-Zugang belegen/öffnen, den Venturi-Lead auf Status, Wochenumfang und Honorar klären, erst dann kostenlose Bewerbung erwägen. Aktualisierte Matrix/readback und Drive-Bericht verifizieren, keine Auto-Verlängerung/paid tests.
+
+
 2026-10-18 LINKEDINBATCH8 ERLEDIGT (2026-10-18T07:48:57Z): drei neue Anfragen ohne Notiz an je eine bisher unkontaktiert geprüfte DACH-Gesellschaft gesendet: Sebastian Lacher/SAIL Recruiting/Österreich, Christoph D./Deutsche Interim AG/Deutschland, Daniel Rolla/Swiss Interim Management GmbH/Schweiz. Alle drei im LinkedIn-Ausgangsordner mit Zurückziehen-Link als ausstehend bestätigt; Beobachtungszeit 07:48:57 UTC, exakte Sendezeiten unknown. Keine DM/CV/Beträge. Screenshot, Rohsnapshot, Kandidatendaten und SHA256 unter output/hr_hub_20261018/linkedin_batch8; Gesamt manuell 24. Next: Annahmen/Antworten abwarten, keine Autoschleife.
 
 ### Vorrangiger Auftrag vom 30.09.2026
@@ -1496,6 +1500,8 @@ Produktionsrunde 2026-09-30 09 Uhr: setup_research.ps1 gehaertet. Vorhandene .ve
 - Pending: 5174666 proposed `.495/.505` (not final), 5178128 open, 5169563 Genoa/No soccer 16:00 UTC start; check after 18:00 UTC.
 - Do not repoll the three 1704 settlements or prior nine; no new horizons/evaluator run until status changes.
 - Shell startup/read delays occurred; saved GET eventually succeeded. Sampler was not touched.
+
+
 
 
 
