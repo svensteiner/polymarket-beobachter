@@ -3,6 +3,12 @@
 Eine Datei. Anweisungen + aktueller Stand. Bei Statusfragen zuerst diesen Block lesen, dann die Live-Dateien darunter.
 
 Antworte auf Deutsch. Konkret. Paper-only. **Ziel ist Gewinn, nicht Wetter.**
+## Aktueller Bewerbungsstand – 2026-10-19
+
+- 2026-10-19 15:39:35 UTC (17:39:35 Wien): Nach Duplikatcheck im Gmail-Postfach wurde die Dankesmail an `c.hupe@peak-one.de` gesendet. Gmail zeigte „Nachricht gesendet“; Gmail-API-Send scheiterte an fehlendem Scope, deshalb erfolgte der Versand in der angemeldeten Gmail-Oberfläche. Betreff: „Vielen Dank für das nette Gespräch – Interim-CFO-Profil“.
+- Angehängt: `Sven_Steiner_Interim_CFO_DACH_20261019.pdf`, zweiseitig mit Porträt, visuell geprüft, SHA-256 `893952B5FB5CB591AA67CBAD13330D2A9C459EDD8C2522B406EEE7D6F3762CBB`. Privater Drive-Hub enthält CV-ID `1PDE9z1u6i2w0xKZ-K7hXdxbQPtw3VoRd` sowie Versandprotokoll-ID `1gmP57GXBjStG-c2fjSRARhbMEnYOrBId`; beide im Drive-Hub als nicht geteilt gelistet.
+- Versandprotokoll mit Mailtext/Metadaten lokal `output/hr_hub_20261019/Christina_Hupe_Interim_CFO_Versandprotokoll_20261019.md`; Drive-Inhalt und Datei-IDs zusätzlich in `output/hr_hub_20261016/platform_inventory/drive_uploads.json` registriert.
+- Nächster Schritt: Auf Antwort warten; ohne Antwort am 2026-10-26 höflich einmal nachfassen. Keine erneute Erstmail.
 
 ## Pfad
 
@@ -1500,6 +1506,7 @@ Produktionsrunde 2026-09-30 09 Uhr: setup_research.ps1 gehaertet. Vorhandene .ve
 - Pending: 5174666 proposed `.495/.505` (not final), 5178128 open, 5169563 Genoa/No soccer 16:00 UTC start; check after 18:00 UTC.
 - Do not repoll the three 1704 settlements or prior nine; no new horizons/evaluator run until status changes.
 - Shell startup/read delays occurred; saved GET eventually succeeded. Sampler was not touched.
+
 
 
 
