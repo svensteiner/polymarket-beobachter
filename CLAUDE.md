@@ -1,5 +1,9 @@
 # Polymarket Beobachter — Agent-Memory
+## LinkedIn-Statuscheck — 2026-10-21 11:57 UTC
+Gesendete Einladungen live geprüft: UI zeigt Personen(59), Seiten(13); neueste drei Personeneinträge Daniel Rolla, Christoph D., Sebastian Lacher stehen als heute/vor 1 Minute gesendet. Das widerspricht dem gespeicherten Batch8-Datum 2026-10-18T07:48:57Z; Ursache unknown. Keine neue Einladung/Nachricht/Profiländerung gesendet. Bei 59 im Gesendet-Bereich gezählten Personeneinträgen (vollständige Einzelprüfung nicht erfolgt) und ungeklärter Zeitabweichung erst den Status klären und Antworten abwarten. Vollständiger Befund im privaten Drive-Artefakt ID 1vFXJ-3yLrEa2QgmXB_zMKm0EaX0bsJQA, Drive-Readback erfolgreich; lokaler SHA256 9A9A37D984DFB3FB20274160A5EDC2C6FBB42AFE61C1792BB0C0EB56DE1130DD.
 
+## Startup-Zielgruppe — 2026-10-21
+Strategiepapier im privaten Drive-Dokument ergänzt und per Readback geprüft: Start-ups als zusätzliche Zielgruppe innerhalb derselben Marke „Finance-Führung plus konkrete Automatisierung“, mit Fokus auf Wachstums-/Finanzierungs- und Finance-Aufbau-Signale, Zielrollen Gründer/CEO/COO/Finance Lead/Venture-Studios, klaren Qualifizierungsfragen und Erfolgsmessung an bezahlten Gesprächen/Projekten. Keine neue LinkedIn-Ansprache gesendet; erst den 59er Live-Zähler und abweichenden Datumsanzeigen-Status klären.
 Eine Datei. Anweisungen + aktueller Stand. Bei Statusfragen zuerst diesen Block lesen, dann die Live-Dateien darunter.
 
 Antworte auf Deutsch. Konkret. Paper-only. **Ziel ist Gewinn, nicht Wetter.**
@@ -1506,6 +1510,9 @@ Produktionsrunde 2026-09-30 09 Uhr: setup_research.ps1 gehaertet. Vorhandene .ve
 - Pending: 5174666 proposed `.495/.505` (not final), 5178128 open, 5169563 Genoa/No soccer 16:00 UTC start; check after 18:00 UTC.
 - Do not repoll the three 1704 settlements or prior nine; no new horizons/evaluator run until status changes.
 - Shell startup/read delays occurred; saved GET eventually succeeded. Sampler was not touched.
+
+
+
 
 
 
