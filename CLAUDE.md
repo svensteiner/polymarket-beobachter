@@ -1,3 +1,13 @@
+## Wissensdatenbank und E-Mail-Verarbeitung zusammengeführt — v6 — 2026-11-02
+
+Nutzerkorrektur: ehemaligerProjektpunkt7(E-Mail-Datenverarbeitung/Datenbankaufbau)istTeildesWissensdatenbankprojekts6. Zusammengeführtzu„06 KI-Wissensdatenbank mit über33.000E-Mails“;Kennzahl,Umsetzung,Architektur,lokalesLLMundlaufenderDatenbankausbauintegriert.KeinseparatesE-Mail-Projektmehrbehaupten.NachfolgendePunkteauf7bis10neunummeriert,jetzt10Projekte.KeineFaktenentfernt.
+AktuellGesamtCVv6(DOCX/PDF5Seiten),separateProjektbeilagev6(DOCX/PDF3Seiten)unteroutput/cv_sven_steiner_20261102.VierbestehendeDriveIDsinPlacev6,MetadataReadbackprivaterHub/shared=false.GeänderteGesamtseiten4/5undBeilagenseiten2/3visuellgeprüft,übrige4Rasterseitenhashidentischmitv5.Hashes/Bytesinv6_artifact_receipt.json,Uploadmanifestaktualisiert.KeinVersand.
+
+## Bitpanda Transaktionsdaten fachlich verantwortet — v5 — 2026-11-02
+
+Nutzer bestätigt: beiBitpanda massiveTransaktionsdaten fachlichverantwortet UND indieBuchhaltungübergeleitet. InProfil,BitpandaStationundProjekt01aufgenommen: „Umfangreiche Transaktionsdaten fachlich verantwortet und in die Buchhaltung übergeleitet.“ BelegfürhohesTransaktionsvolumen undfachlicheDatenüberleitung,keineungeklärtepersönlichetechnischeImplementierungbehauptet. NutzererwähntFMA-PrüfungdesDatenumfelds; genauerPrüfumfangoffen,daherkeineFMA-Freigabe/QualitätsbestätigungimCVbehauptet. KeineECommerce-/PaymentProviderIntegrationdarauserfunden.
+JetztaktuellGesamtCVv5(DOCX/PDF5Seiten),separateProjektbeilagev5(DOCX/PDF3Seiten)unteroutput/cv_sven_steiner_20261102. VierbestehendeDriveIDsunverändertinPlacev5undMetadataReadbackprivaterHub/shared=false. GeänderteGesamtseiten1/3undBeilagenseite1visuellgeprüft,restliche5Rasterseitenhashidentischmitfreigeprüfterv4. Hashes/Bytesinv5_artifact_receipt.json;Uploadmanifestaktualisiert.KeinMailversand.
+
 ## LLP und KPMG im CV präzisiert — 2026-11-02
 
 Nutzer bestätigt ausdrücklich: KPMG ist Prüfungsmandant von LLP; Sven wirkt an den Prüfungsmandaten mit. CV-Zeile jetzt: „LLP: Mitwirkung an Prüfungsmandaten, darunter KPMG, sowie Automatisierung von Prüfungshandlungen.“ KeineAnstellungbeiKPMG,keineverantwortlicheAbschlussprüfer-/UnterschriftsfunktionoderLizenzabgeleitet. Nutzersteuert:CopilotstehtbereitsinderProjektbeilage,dortbelassen;Beilageinhaltlichunverändert.
