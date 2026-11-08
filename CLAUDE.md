@@ -1,3 +1,16 @@
+## 3byChance Briefings auf eigenen Shop ausgerichtet — 2026-11-08
+
+TerraUno-Shop zuerst; Amazon ist laut eigenem FAQ ein weiterer Kanal, seine Bedeutung im Mandat ist offen. Hauptbriefing (5 Seiten) um Gesprächsantwort zur agentischen Buchhaltung ergänzt. E-Commerce-Briefing (8 Seiten) mit drei Umsetzungsideen auf Seite 7: Shop-Auszahlung abstimmen, Agent für Klärfälle, schrittweise Rückholung der Buchhaltung. Amainvoice als Beispiel für Amazon → DATEV, Scopevisio-Dateiimport als Beispiel für DATEV → neue Buchhaltung; DATEV-Datenservice für wiederkehrende Auswertung. Toolwahl und gewünschte Autonomie offen. Word-PDF-Vergleich, visuelle Prüfung der acht geänderten Seiten und Linkprüfung abgeschlossen.
+
+- 3byChance Interviewbriefing zum Ueben.docx: SHA256 FC73BE9139EE716F19812CC060B10EC908074C11F1F6F9415B4952F7611B48D6
+- 3byChance E-Commerce Finance zum Ueben.docx: SHA256 87529907A2A6454E4E729DFF98BCB557600932DD09B9039C9C133843998A7F99
+
+Nächster Schritt: Im Probeinterview die Frage nach dem ersten Shop-Abrechnungslauf üben.
+
+## E-Commerce-Interviewvertiefung für 3byChance — 2026-11-08
+
+Vorhandenes Word-Briefing als Auftraggeber bewertet: 8/10; stärkster zusätzlicher Beleg ist ein live erklärbarer E-Commerce-Abgleich. Separate Lernunterlage im Desktop-Projektordner unter 04 Interviewvorbereitung/3byChance E-Commerce Finance zum Ueben.docx. Primärquellen: TerraUno (Shop, FAQ mit Amazon, Zahlungsarten, Retouren), Amazon-Abrechnungen, Bitpanda-Produktdokumentation sowie HGB/GoBD/BZSt; interne Systeme/Volumen/Margen bleiben offen. Zahlenfall und Bitpanda-Analogie zu Kauf/Verkauf und Staking eines geeigneten Assets; persönliche Verantwortung bleibt auf belegte Finance-Überleitung begrenzt. Sieben Seiten per Word-PDF gerendert und visuell geprüft, Rechenbeispiele und 19 Quellenlinks geprüft. SHA256 7532F47BEAE3BC1388317B3171EF6009DA914AF0D944AEF4A6C3E1A34B44EAAC. Desktop-Index ergänzt; ursprüngliches Briefing unverändert. Nächster Schritt: Zahlenfall auf Seite 2 und Ein-Minuten-Antwort auf Seite 4 laut üben.
+
 ## Projekt 3byChance und Interviewbriefing — 2026-11-08
 
 Christina Hupe, Peak One, bestätigt Interview für das freiberufliche Mandat Finance Process & AI Transformation am Mittwoch, 11.11.2026, 16:00–16:45 MEZ per Teams mit Thomas Meints. Termin in Bestätigungs-E-Mail und ICS abgeglichen. Projektanfrage vom 02.11. nennt sechs Monate mit Verlängerungsoption, Start Ende November, Auslastung nach Absprache, überwiegend remote mit möglichen Abstimmungen in Mannheim. Sven hat am 02.11. 125 €/h all-in remote zzgl. Spesen als Vorstellung bestätigt. Tatsächlich versandter fünfseitiger CV entspricht v6 bytegenau.
