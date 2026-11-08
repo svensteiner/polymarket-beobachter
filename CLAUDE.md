@@ -1,3 +1,11 @@
+## Projekt 3byChance und Interviewbriefing — 2026-11-08
+
+Christina Hupe, Peak One, bestätigt Interview für das freiberufliche Mandat Finance Process & AI Transformation am Mittwoch, 11.11.2026, 16:00–16:45 MEZ per Teams mit Thomas Meints. Termin in Bestätigungs-E-Mail und ICS abgeglichen. Projektanfrage vom 02.11. nennt sechs Monate mit Verlängerungsoption, Start Ende November, Auslastung nach Absprache, überwiegend remote mit möglichen Abstimmungen in Mannheim. Sven hat am 02.11. 125 €/h all-in remote zzgl. Spesen als Vorstellung bestätigt. Tatsächlich versandter fünfseitiger CV entspricht v6 bytegenau.
+
+Desktop-Ordner C:/Users/botrunner/Desktop/Projekt Christina Hupe mit START HIER.md und fünf Unterordnern angelegt. Acht EML-Originale einschließlich eigener Weiterleitung archiviert, Anlagen und ICS aus MIME extrahiert und per SHA256 abgeglichen. Der Dateiname des Registeranhangs enthält HRB 734199, sein Inhalt ist der HGB-Jahresabschluss 2025 aus dem Unternehmensregister. Beide per E-Mail verlinkten Original-PDFs von Peak One heruntergeladen und lesbar geprüft. Verlinktes Thomas-Meints-Profil als lokaler relevanter Quellenauszug und URL abgelegt. Gmail-Connector per erfolgreicher Suche nach Verbindung bestätigt. Keine Nachrichten versandt und keine Kalendereinladung verändert.
+
+Einzige Word-Übungsunterlage unter 04 Interviewvorbereitung/3byChance Interviewbriefing zum Ueben.docx. Fünf Seiten mit 90-Sekunden-Einstieg, Argumentation anhand Bitpanda/STRABAG/BIG, konkretem Vorgehen für Rückholung und Datenüberleitung, Fachantworten, eigenen Fragen, Abschluss und Eckdaten. Word-PDF-Export und visuelle Prüfung aller fünf Seiten. SHA256 9EE3F81A4889B9B3A630073EE2DAD5DB3365DA1C2AE523A72E193B99C7C64CE9. Nächster Schritt: Nutzer übt den Einstieg und bespricht offene Projektfragen im Interview.
+
 ## Wissensdatenbank und E-Mail-Verarbeitung zusammengeführt — v6 — 2026-11-02
 
 Nutzerkorrektur: ehemaligerProjektpunkt7(E-Mail-Datenverarbeitung/Datenbankaufbau)istTeildesWissensdatenbankprojekts6. Zusammengeführtzu„06 KI-Wissensdatenbank mit über33.000E-Mails“;Kennzahl,Umsetzung,Architektur,lokalesLLMundlaufenderDatenbankausbauintegriert.KeinseparatesE-Mail-Projektmehrbehaupten.NachfolgendePunkteauf7bis10neunummeriert,jetzt10Projekte.KeineFaktenentfernt.
