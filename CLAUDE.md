@@ -1,3 +1,58 @@
+## Interim-CFO-Akquise · 123 Gesellschaften
+
+- 2026-11-11T20:05:49.000Z · consultingheads GmbH in Leverkusen erstmals über das offizielle Postfach zu Händen von Mike Blanek angeschrieben. Interim-CFO für Immobilienrestrukturierung, HGB-Abschlüsse im Bau, IFRS in SAP und KI-Automatisierung. Anbieter belegt freiberufliche Interim-CFO-Vermittlung. Kein einzelnes Kundenmandat bestätigt. Gmail SENT, Empfänger, Betreff und Volltext geprüft. [Ansprechpartner](https://consultingheads.com/ueber-uns/) · [Versandbeleg](https://mail.google.com/mail/u/0/#sent/1a1cc3774e85bd12).
+- Optares Bremen und LeHa Invest bereits kontaktiert. Im abgefragten Gmail-Umfang keine neue Rückmeldung.
+- [Privates Drive-Versandprotokoll](https://drive.google.com/file/d/12qVoObzQMCtPORfQtHPJ0V-qMw51Tegu/view?usp=drivesdk) geprüft, 195405 Bytes. Lokales SHA-256 `0C29CD9387D4C6063679ABBA3FA73517402A0E0A2FEBCCBA8DDFB52B626167CA`.
+- Nächster Schritt · Neue konkrete Mandate im Rheinland und DACH mit Schwerpunkt Immobilien, Bau und KI-Finance priorisieren. Antworten auf die jüngsten Projektanfragen prüfen.
+
+## Interim-CFO-Akquise · 122 Gesellschaften
+
+- 2026-11-11T20:03:28.000Z · fortalent GmbH, Wien, über den im Candidate Center veröffentlichten Kontakt erstmals angeschrieben. Nach selbstständigen Interim-CFO-Mandaten für Mittelstand und Beteiligungsgesellschaften in Österreich/DACH gefragt. Immobilienrestrukturierung, Kölner HGB-Verantwortung und KI-Automatisierung als Belege. Kein konkretes Kundenmandat oder Freelance-Vertragsmodell bestätigt. Gmail SENT, Empfänger, Betreff und Volltext geprüft. [Kandidatenkontakt](https://www.fortalent.at/candidate-center) · [Versandbeleg](https://mail.google.com/mail/u/0/#sent/1a1cc354feed2ae5).
+- Der indexierte Interim-CFO-Lead zur Dienstleistungsbranche wurde Hays zugeordnet. Bereits im Firmenbestand, zehn Jahre als CFO laut Inserat Pflicht und nicht belegt. Keine Parallelansprache. In den jüngsten abgefragten Gmail-Threads keine neue Rückmeldung.
+- [Privates Drive-Versandprotokoll](https://drive.google.com/file/d/12qVoObzQMCtPORfQtHPJ0V-qMw51Tegu/view?usp=drivesdk) geprüft, 193397 Bytes. Lokales SHA-256 `1543352EE98D177B7B51390889404911EEE085AC11C8B279D17CD1680750F04E`.
+- Nächster Schritt · Neue konkrete Mandate in Interim-Finanzleitung und KI-Finance mit Schwerpunkt Rheinland, Bau und Immobilien priorisieren. Bei fortalent auf Rückmeldung zum Freelance-Modell achten.
+
+## Interim-CFO-Akquise · 121 Gesellschaften
+
+- 2026-11-11T20:00:44.000Z · K² Advisory GmbH über den offiziellen Bewerberkanal für Interim-Finanzleitung und abgegrenzte Finance-Automatisierungsprojekte im Rheinland erstmals angeschrieben. Kölner HGB-Verantwortung im Bau, IFRS in SAP, Überleitung großer Transaktionsmengen und KI im Rechnungswesen als Belege. Bewerberkanal und Freelancer-Einsatz bis CFO belegt. Gmail SENT, Empfänger, Betreff und Volltext geprüft. Kein konkretes Kundenmandat bestätigt. [Bewerberkanal](https://k2advisory.de/karriere/) · [Versandbeleg](https://mail.google.com/mail/u/0/#sent/1a1cc32d01e8b39b).
+- Hettich, Management Force, aslee, AGO und Bankpower bereits im Kontaktbestand. Peak One 3071525 verlangt LucaNet, vorhandener Firmenkontakt. Keine erneute Ansprache. In den geprüften Gmail-Threads keine neue Rückmeldung.
+- [Privates Drive-Versandprotokoll](https://drive.google.com/file/d/12qVoObzQMCtPORfQtHPJ0V-qMw51Tegu/view?usp=drivesdk) geprüft, 191487 Bytes. Lokales SHA-256 `41D4D3D32058DE0D0BC27B4405A81E06A908E1D637BDD951DFA0344B757CFE20`.
+- Nächster Schritt · Neue konkrete CFO-, Immobilien- und Finance-Automatisierungsmandate im Rheinland/DACH priorisieren und substanzielle Antworten zu bestehenden Projektanfragen prüfen.
+
+## Interim-CFO-Akquise · 120 Gesellschaften
+
+- 2026-11-11T19:58:07.000Z · Lena Brühne, Mitgründerin der Immobilien-Personalberatung alevate GmbH, für Interim-CFO-Mandate im Rheinland und DACH erstmals angeschrieben. Immobilienrestrukturierung, Bankverhandlungen, Kölner HGB-Abschlussverantwortung im Bau und KI-gestütztes Rechnungswesen hervorgehoben. Gmail SENT, Empfänger, Betreff und Volltext geprüft. Allgemeiner Kandidatenkontakt, kein einzelnes Mandat bestätigt. [Anbieter](https://alevate-people.de/leistungen/) · [Versandbeleg](https://mail.google.com/mail/u/0/#sent/1a1cc30692357f57).
+- Öffentliche Vergabe Forschungsverbund Berlin GV-2026-0008 identifiziert. Leitung Finanzen als freiberufliche Leistung, Angebotsfrist 18.11.2026 10:00 laut Portal. Ausschreibung nennt einschlägige Leitungserfahrung in öffentlich finanzierter Forschung/Hochschule als Eignungsnachweis, im Profil unbelegt. Kein Angebot. Brandenburg-Index führt ohne öffentlich zugänglichen Originalkontakt wieder zum Index zurück. Michael Page Köln #3069338 bereits kontaktiert. Im abgefragten Gmail-Umfang keine neue Antwort.
+- [Privates Drive-Versandprotokoll](https://drive.google.com/file/d/12qVoObzQMCtPORfQtHPJ0V-qMw51Tegu/view?usp=drivesdk) geprüft, 189458 Bytes. Lokales SHA-256 `3C0F148222811C9255F924D05DBA4AC1AA9111FA9F24D0EB0A33E54950FA1E73`.
+- Nächster Schritt · Neue konkrete Mandate und gezielte Immobilien-Finance-Vermittler im Rheinland/DACH prüfen und Rückmeldungen zu den jüngsten Projektanfragen beachten.
+
+## Interim-CFO-Akquise · 119 Gesellschaften
+
+- 2026-11-11T19:54:39.000Z · Martin Ehrentreich, LeHa Invest GmbH, über das offizielle Bewerbungspostfach zum Projekt 3060528 in Zossen angeschrieben. Rechnungswesen einer Immobiliengruppe, 6–9 Monate und 3–4 Tage pro Woche laut Text, überwiegend remote mit 2–4 Präsenztagen pro Monat in der Analysephase. Prozessaufbau, Abschlusskontrollen und Reporting als separates Paket angefragt, ebenso Aufgabenverteilung bei DATEV und Immoware. Honorar und tatsächlicher Besetzungsstatus offen. Gmail SENT, Empfänger, Betreff und Volltext geprüft. [Originalausschreibung](https://www.freelancermap.de/projekt/bilanzbuchhalter-in-freiberuflich-prozessaufbau-dokumentation-und-abschlussvorbereitung) · [Versandbeleg](https://mail.google.com/mail/u/0/#sent/1a1cc2d3cbabc6e4).
+- HiSimply 3054722 bereits geprüft, keine neue Status- oder Stack-Information. Im abgefragten Gmail-Umfang keine neue Rückmeldung.
+- [Privates Drive-Versandprotokoll](https://drive.google.com/file/d/12qVoObzQMCtPORfQtHPJ0V-qMw51Tegu/view?usp=drivesdk) geprüft, 187637 Bytes. Lokales SHA-256 `B093FACAA64B8549A5AEBE9E28A60297CF2042A354CDC1CA9ED541503B62B675`.
+- Nächster Schritt · Neue Interim-Finanzleitungsmandate im Rheinland und DACH suchen. Auf LeHa-Rückmeldung zur getrennten Vergabe und DATEV-Zuständigkeit achten.
+
+## Interim-CFO-Akquise · 118 Gesellschaften
+
+- 2026-11-11T19:52:00.000Z · Sebastian Janus, nugrow GmbH, zum konkreten Interim-Projekt Finance AI Engineer in Mannheim/München erstmals angeschrieben. Verifizierte Ausschreibung und direkter Empfänger für zuvor indexierten Lead 1299920. Angebot für abgegrenztes Arbeitspaket Datenabgleich, Ausnahmebehandlung und Kontrollen. NetSuite-Aufteilung und aktueller Besetzungsstatus erfragt. SAP-Praxis offengelegt. Anzeige nennt sechs Monate, Vollzeit und Vor-Ort-Einsatz. Honorar nicht veröffentlicht. Gmail SENT mit Empfänger, Betreff und Volltext geprüft. [Ausschreibung](https://www.freelancermap.de/projekt/interim-finance-ai-engineer-m-w-d-ai-agents-und-automation-in-finance-vor-ort) · [Versandbeleg](https://mail.google.com/mail/u/0/#sent/1a1cc2ad1426bf91).
+- [Privates Drive-Versandprotokoll](https://drive.google.com/file/d/12qVoObzQMCtPORfQtHPJ0V-qMw51Tegu/view?usp=drivesdk) geprüft, 185398 Bytes. Lokales SHA-256 `99AB602322E8455E797CBE2329EAD22584F3057A5013BA12E9F58FC49AA8B366`.
+- Nächster Schritt · Neue konkrete Interim-Finanzleitungsmandate im Rheinland und DACH priorisieren. Auf nugrow-Rückmeldung zur NetSuite-Zuständigkeit und zum möglichen Projektzuschnitt achten.
+
+## Interim-CFO-Akquise · 117 Gesellschaften
+
+- 2026-11-11T19:43:24.000Z · GB Consult GmbH in Nordhorn über den offiziellen Bewerberkanal für freiberufliche Interim Manager angeschrieben. Konkreter Bezug zu Sanierung und operativer Finanzleitung mit Immobilienrestrukturierung, Bankgesprächen, HGB-Abschlussverantwortung und KI-Automatisierung. Gmail SENT, Empfänger, Betreff und Volltext geprüft. [Bewerberkanal](https://gbconsult.de/karriere/) · [Versandbeleg](https://mail.google.com/mail/u/0/#sent/1a1cc22f2a4fbfe3).
+- Kein einzelnes Kundenmandat bei GB Consult bestätigt. Piquano, Headmatch, Constaff und Lichtfels im Bestand abgeglichen. Facts Connect als Kandidatenportal erfasst. Im abgefragten Gmail-Umfang keine neue Rückmeldung.
+- [Privates Drive-Versandprotokoll](https://drive.google.com/file/d/12qVoObzQMCtPORfQtHPJ0V-qMw51Tegu/view?usp=drivesdk) geprüft, 183321 Bytes. Lokales SHA-256 `9E02C48DC85CA6CEE84FD050BDD008F4C8141197BD324D7EBA6096A645EC105E`.
+- Nächster Schritt · Neue konkrete Mandate für Interim-Finanzleitung im Rheinland und DACH prüfen. Bei Facts Connect ausschließlich über den ausgewiesenen Bewerberkanal weiterprüfen.
+
+## Interim-CFO-Akquise · 116 Gesellschaften
+
+- 2026-11-11T19:40:16.000Z · excim Management Consulting über den Bewerberkanal für selbstständige Interim Manager kontaktiert. Restrukturierung, Fortbestehensprognose, Bankgespräche und KI-gestütztes Konzernrechnungswesen als Belege. [Versandbeleg](https://mail.google.com/mail/u/0/#sent/1a1cc2013d30acfb).
+- 2026-11-11T19:40:17.000Z · GiVE Management Consulting über den offiziellen Kandidatenkontakt angeschrieben. Konzernabschlüsse nach HGB, IFRS/SAP und KI-Automatisierung für Mandate in Interim-Finanzleitung und Reporting. [Versandbeleg](https://mail.google.com/mail/u/0/#sent/1a1cc2014030434a).
+- Gmail SENT jeweils mit Empfänger, Betreff und Volltext verifiziert. Kein konkretes Einzelmandat bei den beiden neuen Kontakten bestätigt. [Privates Drive-Protokoll](https://drive.google.com/file/d/12qVoObzQMCtPORfQtHPJ0V-qMw51Tegu/view?usp=drivesdk), 181563 Bytes, lokales SHA-256 `AC97D3D576595FF86C2C59BF4CD93C2D29C9D90E79A2675DAEEDC225097A8C5D`.
+- Büllesbach & Plöntzke · automatische Abwesenheitsmeldung, laut Nachricht ab 12.11. wieder erreichbar. Keine parallele Ansprache. enomyc, Grey Solutions und Amoria Bond im Bestand abgeglichen. Nächster Schritt · Neue konkrete Aufträge im Rheinland und DACH priorisieren und Antworten auf Projektanfragen prüfen.
+
 ## Interim-CFO-Akquise · 114 Gesellschaften
 
 - 2026-11-11T19:36:37.000Z · Marc Plöntzke (Büllesbach & Plöntzke, Köln) zum Infor-/Carve-out-Projekt in NRW angeschrieben. SAP-Praxis offengelegt, fachliche Finance-Leitung neben Infor-Spezialist oder vergleichbare SAP-Mandate angefragt. Infor-Praxis nicht behauptet. [Versandbeleg](https://mail.google.com/mail/u/0/#sent/1a1cc1cba55142bc).
