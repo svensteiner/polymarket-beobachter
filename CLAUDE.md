@@ -1,3 +1,171 @@
+## Interim-CFO-Akquise · 79 Gesellschaften — 2026-11-11
+
+Weitere Erstkontakte: Valdivia Interim Associates / Bewerberteam Frankfurt (1a1cbe7466362402, 18:38:14 UTC), QRC Group Interim Management / Tor Marklund Düsseldorf (1a1cbe74874b8cea, 18:38:15 UTC) und MSU Interim / Eva Engelmann Rhein-Main (1a1cbe74fd5b5e6d, 18:38:16 UTC). Gmail SENT, Empfänger und Volltext bestätigt. Individuelle Initiativ-E-Mails ohne Anhang, Honorar oder Startzusage. Keine neuen Antworten der vorherigen Runde im abgefragten Gmail-Ergebnis.
+
+Privates Drive-Protokoll in bestehender Datei ergänzt: https://drive.google.com/file/d/12qVoObzQMCtPORfQtHPJ0V-qMw51Tegu/view, 114.500 Bytes, shared=false. Lokaler SHA256 30AE70E4CCD035D4F5190CAEC4080097B6DFA8AB35526121DE113C6FD63335A8.
+
+Nächster Schritt: Weitere spezialisierte Anbieter in Südwest- und Norddeutschland prüfen, mit belegtem Kandidatenweg für Finance-Interim. Robert Walters wurde bereits über LinkedIn kontaktiert, keine Doppelansprache. VIVICON erst bei belegter Finance-Praxis und geeignetem Kandidatenkontakt.
+
+## Interim-CFO-Akquise · 76 Gesellschaften — 2026-11-11
+
+Weitere Erstkontakte: JC Jorisch Consulting Interim Management / Manager-Pool Schlitz (1a1cbe43bfce9bf3, 18:34:54 UTC), Klose Interim Management / Günter Klose Ronneburg (1a1cbe43f441f519, 18:34:55 UTC), hahn+friends group / Finance und Interim Essen (1a1cbe44595c177a, 18:34:56 UTC). Gmail SENT, Empfänger und Volltext bestätigt. Individuelle Initiativ-E-Mails ohne Anhang, Honorar oder Startzusage. In der abgefragten Gmail-Suche keine neuen Antworten aus der vorherigen Runde.
+
+Privates Drive-Protokoll in bestehender Datei ergänzt: https://drive.google.com/file/d/12qVoObzQMCtPORfQtHPJ0V-qMw51Tegu/view, 110.028 Bytes, shared=false. Lokaler SHA256 09BCC64A1DBDC6D47B6476CA76CAA5379BCD889AA86FBC00DF125BEC82E5B886.
+
+Nächster Schritt: Weitere passende Kandidatenkontakte aus dem Verzeichnis prüfen, Fokus Immobilien/Bau und Finance-Transformation. IES ist auf Papier, Verpackung und Kunststoff spezialisiert; Lowin aktuell mit HR-Schwerpunkt belegt; People & Projects verlangt für Aufnahme unterschriebene Einwilligung, Zeugnisse und Gehaltsangabe. Diese drei waren in dieser Runde keine Erstkontakte.
+
+## Interim-CFO-Akquise · 73 Gesellschaften — 2026-11-11
+
+Weitere Erstkontakte: ARTES Recruitment / Kandidatenteam Berlin und Hamburg (1a1cbe0b9f3192ad, 18:31:04 UTC), ARTS / Laura Becker, Dresden (1a1cbe0ba2581e21, 18:31:05 UTC), SYNSERO Experts / Freelance-Finance-Team München (1a1cbe0bfd613434, 18:31:06 UTC). ARTES und ARTS sind unterschiedliche Unternehmen mit jeweils eigener Domain. Gmail SENT, Empfänger und Volltext bestätigt. Individuelle Initiativ-E-Mails ohne Anhang, Honorar oder Startzusage. Keine neuen Antworten der vorherigen Runde im abgefragten Gmail-Ergebnis.
+
+Privates Drive-Protokoll in bestehender Datei ergänzt: https://drive.google.com/file/d/12qVoObzQMCtPORfQtHPJ0V-qMw51Tegu/view, 105.970 Bytes, shared=false. Lokaler SHA256 13B61AB604D219807CF51609827DDB034590C88D2E0B0F8895DEC0A55F1A7AFE.
+
+Nächster Schritt: Noch nicht kontaktierte Anbieter aus UNITEDINTERIM gezielt prüfen, z.B. People & Projects, IES Interim Expert Solutions und Carolin Lowin. Kandidatenweg und frühere Ansprache je Gesellschaft belegen. Heuse-Kandidatenaufnahme im September durch Gmail bestätigt, keine Doppelansprache.
+
+## Interim-CFO-Akquise · 70 Gesellschaften — 2026-11-11
+
+Weitere Erstkontakte: contagi INTERIM / Bewerberteam Rhein-Main (1a1cbdd7d701d701, 18:27:32 UTC), Boyden Interim Executives / Petra Rahmann Düsseldorf (1a1cbdd7e51f76d3, 18:27:33 UTC) und Morgan Philips Interim Management / Sebastian Melz Frankfurt (1a1cbdd82ee057b7, 18:27:34 UTC). Gmail SENT, Empfänger und Volltext bestätigt. Individuelle Initiativ-E-Mails ohne Anhang, Honorar oder Startzusage. Frühere contagi-Ausschreibung nur geprüft, keine damalige Ansprache. Boyden-Neugesellschaft und unabhängiges XQI getrennt anhand aktueller Quellen geprüft. Morgan Philips ID 154209 liefert 410, keine Bewerbung darauf. Keine neuen Antworten der vorherigen Runde im abgefragten Gmail-Ergebnis.
+
+Privates Drive-Protokoll in bestehender Datei ergänzt: https://drive.google.com/file/d/12qVoObzQMCtPORfQtHPJ0V-qMw51Tegu/view, 101.678 Bytes, shared=false. Lokaler SHA256 51C8F9CBA22B88E54BC54AB4AEB2B67EC115457755BAB89EB0A8B6B156B383BB.
+
+Nächster Schritt: DDIM- und UNITEDINTERIM-Verzeichnisse für weitere Kandidatenwege auswerten, insbesondere Nord- und Ostdeutschland. Den Kandidatenweg und frühere Ansprache je Gesellschaft prüfen; Signium-Ansprechpartner hat zu Delville gewechselt, keine historische Adresse verwenden. Rückmeldungen abgleichen.
+
+## Interim-CFO-Akquise · 67 Gesellschaften — 2026-11-11
+
+Weitere Erstkontakte: FIT in NETWORK / Kandidatenkanal für Hamburg und Deutschland (1a1cbd8e12f5805f, 18:22:30 UTC), element / Christian Schmitt, Finance & Banking für Freiberufler (1a1cbd8e22ad7e86, 18:22:30 UTC), goodSTEP Consulting / Bewerberteam Oberhausen (1a1cbd8e593b56f2, 18:22:31 UTC). Gmail SENT, Empfänger und Volltext bestätigt. FIT: Initiativvorstellung auf Kandidatenaufruf 26.032 für künftige Mandate, konkreter Kundenstatus unknown. Keine Anhänge, Honorare, Start- oder Reiseversprechen.
+
+Privates Drive-Protokoll in bestehender Datei ergänzt: https://drive.google.com/file/d/12qVoObzQMCtPORfQtHPJ0V-qMw51Tegu/view, 97.349 Bytes, shared=false. Lokaler SHA256 395FC8F86B706392CB089B094F5EF2CF22F1F85C3101DD45024F619C3313FEDF.
+
+Nächster Schritt: Neue spezialisierte Kandidatenkanäle in Berlin, Norddeutschland und NRW prüfen. Umano Capital: aktuell nur kundenorientierte Adresse belegt; nur bei eigenem Kandidatenkanal erneut erwägen. HLS: Office, Lohn und Buchhaltung statt Senior Finance. Rückmeldungen und Dubletten weiterhin abgleichen.
+
+## Interim-CFO-Akquise · 64 Gesellschaften — 2026-11-11
+
+Weitere Erstkontakte: Hettich Professionals / Bewerberservice Düsseldorf (1a1cbd6cd81638b7, 18:20:14 UTC), AT ON / Freelancer-Pool Oberasbach bei Nürnberg (1a1cbd6d1bdbc492, 18:20:15 UTC) und Lichtfels Personalvermittlung / Interim-Finance-Team Frankfurt (1a1cbd6d29aaf4a8, 18:20:16 UTC). Gmail SENT, Empfänger und Volltext bestätigt. Individuelle Initiativ-E-Mails ohne Anhang, Honorar oder Startzusage. Keine Bewerbung auf die separat indexierte Lichtfels-Vakanz mit LucaNet-Pflicht.
+
+Privates Drive-Protokoll in bestehender Datei ergänzt: https://drive.google.com/file/d/12qVoObzQMCtPORfQtHPJ0V-qMw51Tegu/view, 92.747 Bytes, shared=false. Lokaler SHA256 BD46F61FE02C7BF6E1EB85FDD7EEBD57396A41C529C91672E5D8B44D66C395E2.
+
+Nächster Schritt: Weitere ausgewiesene Kandidatenwege für Interim Finance in Nord- und Ostdeutschland sowie Köln prüfen; bisherige Firmen und Rückmeldungen abgleichen. Keine Anschreiben auf bloße Kundenkontakte ausweiten.
+
+## Interim-CFO-Kaltakquise · 61 Gesellschaften — 2026-11-11
+
+Weitere Erstkontakte: Kompass Recruitment / Interim-Finance-Team Düsseldorf (1a1cbd36cf162996, 18:16:33 UTC), Jan Pethe Interim Management & Consulting / Interim-Finance-Team (1a1cbd3720c6e5a4, 18:16:34 UTC) und DIS AG / Interim-Finance-Team (1a1cbd3772456334, 18:16:35 UTC). Gmail-Readback SENT für alle drei. Individuelle Initiativ-E-Mails mit praktischem KI-Beleg, ohne Anhänge oder Honorarangaben.
+
+Bestehendes privates Drive-Protokoll https://drive.google.com/file/d/12qVoObzQMCtPORfQtHPJ0V-qMw51Tegu/view in place ergänzt, Readback 88.466 Bytes, shared=false. Lokaler SHA256 AFBA932B3244675077573FD8705D24301496EC0E8977E32A17C7326E0162CCE6.
+
+Nächster Schritt: Weitere spezialisierte Finance-Interim-Vermittler prüfen. Regionale Streuung, Firmenabgleich und Rückmeldungsprüfung beibehalten.
+
+## Interim-CFO-Kaltakquise · 58 Gesellschaften — 2026-11-11
+
+Weitere Erstkontakte: imperex Consulting / Finance-Team Düsseldorf (1a1cbd0bde97463a, 18:13:37 UTC), IRC International Recruitment Company Germany / Interim-Team München (1a1cbd0c02515fb8, 18:13:38 UTC) und KNAISCH CONSULTING / Interim-Team (1a1cbd0c7f4e6e11, 18:13:39 UTC). Alle drei per Gmail-Readback SENT. Je eine individuell formulierte Erstansprache mit KI-Beleg, ohne Anhänge oder Honorarangaben. Keine Antworten oder Zustellfehler in der vorgelagerten Suche für die geprüften Firmen.
+
+Bestehendes privates Drive-Protokoll https://drive.google.com/file/d/12qVoObzQMCtPORfQtHPJ0V-qMw51Tegu/view in place ergänzt, Readback 84.247 Bytes, shared=false. Lokaler SHA256 9E682FD9434455DEED666165A38AF4DCFE5A69B91C93664AB095C7B96F943E53.
+
+Nächster Schritt: Weitere Finance-Interim-Vermittler aus Branchenverzeichnissen prüfen. Rheinland bevorzugen, regionale Streuung und Firmenabgleich beibehalten. Antworten beobachten.
+
+## Interim-CFO-Kaltakquise · 55 Gesellschaften — 2026-11-11
+
+Weitere Erstkontakte: Amadeus Fire / Weiterleitung an Interim-Team Köln (1a1cbce85c364e5a, 18:11:11 UTC), Goodman Masson Deutschland / Interim-Finance-Team Düsseldorf (1a1cbce88a46d954, 18:11:12 UTC) und FinanceProfessionals / Michaela Friedrich in Frankfurt (1a1cbce8ad3909d3, 18:11:13 UTC; CFO-Mandate mit Finanzierungsschwerpunkt erfragt). Gmail-Readback SENT für alle drei. Individuell, ohne CV-Anhang oder Honorarangabe, jeweils mit KI-Beleg. AC Alpha im bestehenden Gmail-Pool belegt, IMS mit INTERIM-SHERPAS über Geschäftsführung und Adresse verbunden, beide von der Erstansprache ausgenommen. Keine Antworten oder Zustellfehler in der vorgelagerten Suche für die geprüften Firmen.
+
+Bestehendes privates Drive-Protokoll https://drive.google.com/file/d/12qVoObzQMCtPORfQtHPJ0V-qMw51Tegu/view in place ergänzt, Readback 79.838 Bytes, shared=false. Lokaler SHA256 123D00358104AAD940D3D30C712D3DA4E7921F838E55C2ADE1A48263E693B5CD.
+
+Nächster Schritt: Neue Finance-Provider aus Branchenverzeichnissen auf belegte freiberufliche CFO-/Finance-Mandate und Kandidatenkontakt prüfen. Köln/Rheinland bevorzugen und weitere Regionen ergänzen. Gmail-Antworten und Zustellfehler prüfen.
+
+## Interim-CFO-Kaltakquise · 52 Gesellschaften — 2026-11-11
+
+Weitere Erstkontakte: sparkm / Interim & Projektmanagement (1a1cbcbaf4dbbb31, 18:08:05 UTC; Finance und Liquiditätssteuerung), PROEVOLUTION / Wiebke Stellfeld in Karlsruhe (1a1cbcbb2b487d73, 18:08:06 UTC; internationale CFO-Übergangsmandate) und The PURE Group / Interim & Fractional Management (1a1cbcbb7bc2d07c, 18:08:07 UTC; Fractional-CFO und Finance-Transformation). Gmail-Readback SENT für alle drei, ohne Anhang oder Honorarangabe, mit konkretem KI-Beleg. viacur auf Gesundheits- und Sozialwirtschaft spezialisiert, keine Ansprache mangels belegter Branchenpassung. Keine Antworten oder Zustellfehler in der vorgelagerten Suche für die geprüften Firmen.
+
+Bestehendes privates Drive-Protokoll https://drive.google.com/file/d/12qVoObzQMCtPORfQtHPJ0V-qMw51Tegu/view in place ergänzt, Readback 75.511 Bytes, shared=false. Lokaler SHA256 421103755EF0D61BEBBCE1BDB82368B3F31ADCCFBB8506D33E14CAC65BD806B3.
+
+Nächster Schritt: Weitere neue Interim-CFO-Netzwerke mit ausdrücklich passenden Finance-Mandaten und offiziellen Kandidatenwegen prüfen. Rheinland bevorzugen, regionale Streuung und Firmenabgleich beibehalten. Antworten beobachten.
+
+## Interim-CFO-Kaltakquise · 49 Gesellschaften — 2026-11-11
+
+Weitere Erstkontakte: ACHIEFERS / Interim-Team Regensburg (1a1cbc9965269445, 18:05:48 UTC; Finance-Transformation), TOPOS Interim Management / Kandidatenteam (1a1cbc99b96ee86c, 18:05:49 UTC; CFO-Übergangsmandate), Reeg & Nasharty / Anja Reeg (1a1cbc99e85b7ba5, 18:05:50 UTC; Corporate Functions und Interim Management). Gmail-Readback SENT für alle drei, ohne CV-Anhang oder Honorarangabe, mit KI-Beleg. Interim Profis nutzt für die Aufnahme ausschließlich das zentrale Formular, deshalb kein E-Mail-Ersatz. Keine Antworten oder Zustellfehler in der vorgelagerten Gmail-Suche für die geprüften Firmen.
+
+Bestehendes privates Drive-Protokoll https://drive.google.com/file/d/12qVoObzQMCtPORfQtHPJ0V-qMw51Tegu/view in place ergänzt, Readback 71.055 Bytes, shared=false. Lokaler SHA256 8FD64CAD0AC77CA90E595EBE84E46E9FC540B489BC6698ABF75E4ADF5A906BEA.
+
+Nächster Schritt: Weitere relevante DDIM-Provider (etwa sparkm, viacur, PROEVOLUTION) nur bei bestätigter Finance-Praxis und geeignetem Kandidatenweg prüfen. Rheinland bevorzugen, breite regionale Streuung und Firmenabgleich beibehalten. Rückmeldungen beobachten.
+
+## Interim-CFO-Kaltakquise · 46 Gesellschaften — 2026-11-11
+
+Weitere Erstkontakte: Corporate Connect / Business Services Düsseldorf (1a1cbc6afa9c371e, 18:02:38 UTC; Interim Finance und Bau), Vires Conferre / Interim-Team (1a1cbc6b2ab31f6d, 18:02:39 UTC; Finance und Immobilien), ConSource / Interim-Finance-Team Duisburg (1a1cbc6b41ac82a5, 18:02:39 UTC; externe projektbezogene Zusammenarbeit erfragt). Alle drei per Gmail-Readback SENT, ohne CV-Anhang oder Honorarangabe, mit praktischem KI-Beleg. Keine Antworten oder Zustellfehler in der vorgelagerten Gmail-Suche.
+
+Bestehendes privates Drive-Protokoll https://drive.google.com/file/d/12qVoObzQMCtPORfQtHPJ0V-qMw51Tegu/view in place ergänzt, Readback 66.751 Bytes, shared=false. Lokaler SHA256 475A80496EDAC671ED306E4D2DBB55C880BC8DDD8A004A0921E1E9E706F73ACF.
+
+Nächster Schritt: Weitere spezialisierte Interim-CFO-/Finance-Vermittler identifizieren. Regionale Streuung mit Rheinland-Vorrang beibehalten, bestehende Kontakte konsequent ausschließen. Rückmeldungen und Zustellfehler prüfen.
+
+## Interim-CFO-Kaltakquise · 43 Gesellschaften — 2026-11-11
+
+Weitere Erstkontakte: AGO InterimServices / Interim-Team Berlin (1a1cbc43be53b950, 17:59:57 UTC; Finance, Immobilien und Bau), Bankpower / Recruiting-Team Köln (1a1cbc43f711bfea, 17:59:58 UTC; Nachfrage nach Finance-Führung auf freiberuflicher Basis) und BAVARIA Interim / Daniel B. Trautmann (1a1cbc44381fe18d, 17:59:59 UTC; ausgeschriebenes Managerprofil Finance & IT, Branchenoffenheit erfragt). Alle drei per Gmail-Readback SENT, ohne CV-Anhang oder Honorarangabe und mit KI-Beleg. Interim Aid wegen historischer LinkedIn-Kontakte nicht erneut angeschrieben. BRAINFORCE verweist auf ein ausschließliches Bewerbungsportal; keine formelle Bewerbung oder Kontoanlage. Keine Antworten oder Zustellfehler in der vorgelagerten Suche.
+
+Bestehendes privates Drive-Protokoll https://drive.google.com/file/d/12qVoObzQMCtPORfQtHPJ0V-qMw51Tegu/view in place ergänzt, Readback 62.312 Bytes, shared=false. Lokaler SHA256 F6B5B5BBBA0D57AC4C9FFD0F93E3AB40D90DEA0DA8B16C0876F31A185055F164.
+
+Nächster Schritt: Weitere nachweislich passende Vermittler im Rheinland und in anderen deutschen Regionen priorisieren. Neue Firmen und Adressen mit Gmail und historischen Kontakten abgleichen. Antworten und Zustellfehler prüfen.
+
+## Interim-CFO-Kaltakquise · 40 Gesellschaften — 2026-11-11
+
+Weitere Erstkontakte: Hofer Experts / Alexander Jolk (1a1cbc1603dc3bb9, 17:56:50 UTC; Interim-Finance im Rheinland), KPCI Interim Management / Finance-Team (1a1cbc16556aee05, 17:56:51 UTC; selbstständige Finance-Partner) und INTERIM-SHERPAS / Finance-Interim-Team in Hamburg (1a1cbc169a5fdafb, 17:56:52 UTC; CFO-Praxis). Alle drei per Gmail-Readback SENT, ohne CV-Anhang oder Honorarangabe und mit praktischem KI-Beleg. Keine Antworten oder Zustellfehler in der vorgelagerten Gmail-Suche.
+
+Bestehendes privates Drive-Protokoll https://drive.google.com/file/d/12qVoObzQMCtPORfQtHPJ0V-qMw51Tegu/view in place ergänzt, Readback 57.612 Bytes, shared=false. Lokaler SHA256 9D90F7F53C40772A85643B986A8CDA4E0B2EB220AE3E6A2608BB1DE4107726A5.
+
+Nächster Schritt: Weitere verifizierte Spezialisten für Interim-Finance und Immobilien identifizieren. Köln/Rheinland bevorzugen, weitere Regionen ergänzen. Ansprache je Firma einmal, Antworten und Zustellfehler prüfen.
+
+## Interim-CFO-Kaltakquise · 37 Gesellschaften — 2026-11-11
+
+Weitere Erstkontakte: Numeris Consulting / Team Interim Management (1a1cbbf250c7676e, 17:54:24 UTC; Real Estate und Finance), Interimio / Executive-Team in München (1a1cbbf288bba7d3, 17:54:25 UTC; CFO bei Finanzierung oder Krise) und BECKER + PARTNER / Klaus Becker in Bensheim (1a1cbbf2cc258575, 17:54:26 UTC; Interim-CFO für den Mittelstand). Alle drei per Gmail-Readback SENT, ohne CV-Anhang oder Honorarangabe. KI-Beleg in allen drei Anschreiben. Interim Germany ist ISG/ALWIRO zugeordnet; bestehende ISG-Kontakte berücksichtigt. Keine Antworten oder Zustellfehler in der vorgelagerten Gmail-Suche.
+
+Bestehendes privates Drive-Protokoll https://drive.google.com/file/d/12qVoObzQMCtPORfQtHPJ0V-qMw51Tegu/view in place ergänzt, Readback 53.119 Bytes, shared=false. Lokaler SHA256 5C2A285AD81943176E52F593410E1BA67C642EA4A67F09EF2D27CA5BA743EE43.
+
+Nächster Schritt: Neue passende CFO-Vermittler aus Kandidatenverzeichnissen und einschlägige spezialisierte Real-Estate-Netzwerke prüfen. Antworten und Zustellfehler beobachten. Keine Mehrfachansprache bekannter Gruppen.
+
+## Interim-CFO-Kaltakquise · 34 Gesellschaften — 2026-11-11
+
+Weitere Erstkontakte: QTalents / Real-Estate-Team (1a1cbbc78089e0e2, 17:51:29 UTC; gefragt nach Vermittlung selbstständiger Interim-CFOs), ZMM Zeitmanager München / Interim Professionals (1a1cbbc7f563668a, 17:51:30 UTC) und KORT Group / Interim-CFO-Team in Hamburg (1a1cbbc834adad4f, 17:51:31 UTC). Alle drei per Gmail-Readback SENT, ohne CV-Anhang oder Honorarangabe. KI-Beleg in allen drei Anschreiben. Keine Antworten oder Zustellfehler in der vorgelagerten Gmail-Suche.
+
+Bestehendes privates Drive-Protokoll https://drive.google.com/file/d/12qVoObzQMCtPORfQtHPJ0V-qMw51Tegu/view in place ergänzt, Readback 48.726 Bytes, shared=false. Lokaler SHA256 74EE48D882DD26DF4DA63A8331FE8FB0AE41436B1BA32FBFFE7483F2451143B0.
+
+Nächster Schritt: Weitere geeignete Interim-CFO-Netzwerke sowie Real-Estate-Kontakte mit belegtem Interim-Bezug priorisieren. Elite Interim und Interimio als mögliche Quellen prüfen, insbesondere Kandidatenweg und Firmenbezug. Antworten und Zustellfehler beobachten.
+
+## Interim-CFO-Kaltakquise · 31 Gesellschaften — 2026-11-11
+
+Weitere Erstkontakte: Kœgler & Compagnie / Interim-Finance-Team Düsseldorf (1a1cbba3dfb0f600, 17:49:02 UTC), aslee Interim Management / Bahar Mah in Frankfurt (1a1cbba430475b14, 17:49:03 UTC), selected heads / Interim-Team Berlin (1a1cbba47018b134, 17:49:04 UTC). Gmail-Readback SENT für alle drei. Je eine individuelle Mail mit praktischem KI-Beleg, ohne CV-Anhang oder Honorarangabe. Keine Antworten oder Zustellfehler in der vorgelagerten Gmail-Suche.
+
+Bestehendes privates Drive-Protokoll https://drive.google.com/file/d/12qVoObzQMCtPORfQtHPJ0V-qMw51Tegu/view in place ergänzt, Readback 44.121 Bytes, shared=false. Lokaler SHA256 686F77F7CB3ED84FE5E3DE5AA853B1A7E4E825E90CA2CCEF0084965391EF3260.
+
+Nächster Schritt: Weitere geeignete Interim-CFO- und Real-Estate-Finance-Netzwerke priorisieren. KORT Group und Elite Interim als mögliche Quellen auf Kandidatenweg und E-Mail prüfen. Antworten und Zustellfehler beobachten.
+
+## Interim-CFO-Kaltakquise · 28 Gesellschaften — 2026-11-11
+
+Weitere Erstkontakte: persofaktum interim / Interim-Team Köln (1a1cbb80b8f81df6, 17:46:38 UTC), HR Consultants / FIN-Consultants / Ulrich Naumann bei München (1a1cbb80f6a51405, 17:46:39 UTC), FISHROCK Consulting / Sarah Fischer in Hamburg (1a1cbb813db61491, 17:46:40 UTC). Gmail-Readback SENT für alle drei. Je eine individuelle Mail mit praktischem KI-Beleg, ohne CV-Anhang oder Honorarangabe. Keine Antworten oder Zustellfehler in der vorgelagerten Gmail-Suche.
+
+Bestehendes privates Drive-Protokoll https://drive.google.com/file/d/12qVoObzQMCtPORfQtHPJ0V-qMw51Tegu/view in place ergänzt, Readback 39.794 Bytes, shared=false. Lokaler SHA256 A5C223E56EC56D502D0E77A87A9F88C9806F1C8C89391BA60BBB9687BC43471E.
+
+Nächster Schritt: Rheinland bevorzugen, weitere Regionen und spezialisierte Interim-Finance-Kanäle mit verifiziertem Kandidatenkontakt ergänzen. Antwort- und Zustellstatus in Gmail prüfen.
+
+## Interim-CFO-Kaltakquise · 25 Gesellschaften — 2026-11-11
+
+Weitere Erstkontakte: Management Force / Interim-Team Düsseldorf (1a1cbb5d5d31e681, 17:44:14 UTC), CAPERA / Oliver Wersinski in Minden (1a1cbb5d929fa62d, 17:44:14 UTC), Treuenfels / Christian Nieswandt in Hamburg (1a1cbb5dc68da321, 17:44:15 UTC). Gmail-Readback SENT für alle drei. Je eine individuelle Mail mit praktischem KI-Beleg, ohne CV-Anhang oder Honorarangabe. Keine Antworten oder Zustellfehler in der vorgelagerten Suche.
+
+Bestehendes privates Drive-Protokoll https://drive.google.com/file/d/12qVoObzQMCtPORfQtHPJ0V-qMw51Tegu/view in place ergänzt, Readback 35.406 Bytes, shared=false. Lokaler SHA256 52875E437873A0E67CD2365579CBEF3CD917D7EEB5CAC9EBFD3E70E958B64AD5.
+
+Nächster Schritt: Rheinland weiter priorisieren und geeignete süddeutsche sowie ostdeutsche Vermittler ergänzen. ConSource auf selbstständigen Kandidatenweg prüfen; Lowin nur bei aktuell bestätigtem Anbieterbetrieb. Gmail-Antworten und Zustellfehler prüfen.
+
+## Interim-CFO-Kaltakquise · 22 Gesellschaften, Rheinland/Hamburg — 2026-11-11
+
+Weitere Erstkontakte: HIREOS Recruiting in Hürth (1a1cbb39db850380, 17:41:48 UTC), Dynamic Experts / Sandra Sadowski in Düsseldorf (1a1cbb3a2b9682c2, 17:41:49 UTC) und Get Your Talent / Tobias Friedl in Hamburg (1a1cbb3a43d22180, 17:41:50 UTC). Gmail-Readback SENT für alle drei. Individuelle E-Mails mit Kölner HGB-Verantwortung und praktischem KI-Beleg, ohne CV-Anhang oder Honorarangabe. Keine Rückmeldungen oder Zustellfehler in der vorgelagerten Gmail-Suche.
+
+Bestehendes privates Drive-Protokoll https://drive.google.com/file/d/12qVoObzQMCtPORfQtHPJ0V-qMw51Tegu/view in place ergänzt, Readback 31.029 Bytes, shared=false. Lokaler SHA256 51AC4A197A8CBB4CB5955B84C3EB2B4C2CAB0E2F231DD24E1CD5F9A5399E70E5.
+
+Nächster Schritt: Deutschland regional streuen, Rheinland bevorzugen, auf ausgewiesene Interim-Finance-Vermittler beschränken. Potenziell Capera und Carolin Lowin mit verifiziertem Kontakt. Antworten und Zustellfehler der bisherigen Kandidaten prüfen.
+
+## Interim-CFO-Kaltakquise · 19 Gesellschaften, Köln/Rheinland — 2026-11-11
+
+Vier weitere Erstkontakte, je eine E-Mail, ohne CV-Anhang oder Honorarangabe. Köln: netvaerk (1a1cbb146a4ab074, 17:39:15 UTC), Human Capitals (1a1cbb14db2b5cbf, 17:39:16 UTC) und EO Executives (1a1cbb1502b9c3d4, 17:39:17 UTC). Weitere regionale Streuung: interim-cfo.com / Holger Schönitz GmbH, Werder (Havel), (1a1cbb1556d4b860, 17:39:19 UTC). Alle SENT im Gmail-Readback, keine Rückmeldungen oder Zustellfehler in der vorangegangenen Suche nach den zuletzt kontaktierten Firmen. Kölner HGB-Verantwortung und praktische KI-Erfahrung jeweils konkret eingebunden.
+
+Bestehendes Drive-Protokoll https://drive.google.com/file/d/12qVoObzQMCtPORfQtHPJ0V-qMw51Tegu/view in place aktualisiert, Readback 26.705 Bytes, shared=false. Lokaler SHA256 5EDE05225B088057B23C1EBEC2644AC3A7990B4A92686EA6A7E4C199F0F06C01.
+
+Nächster Schritt: Köln/Rheinland bevorzugen, weitere Regionen berücksichtigen und nur neue, verifizierte Interim-Finance-Kontakte anschreiben. TriFinance bereits in früherer Partneransprache, keine Doppelansprache. Potenzielle nächste Quelle Capera, passenden Finance-Kontakt prüfen. Gmail-Antworten und Zustellfehler beobachten.
+
 ## Interim-CFO-Kaltakquise · 15 Gesellschaften — 2026-11-11
 
 Weitere verifizierte Erstkontakte per Gmail: Interim Partner GmbH / Christof Meier-Preschany (1a1cbae7a956ae84, 17:36:12 UTC), F&P Executive Solutions / Judith Goldmann (1a1cbae7eb1d2cb9, 17:36:13 UTC), taskforce / Finance-Team (1a1cbae834f2c29d, 17:36:14 UTC). Alle drei per Gmail-Readback SENT. Konkreter KI-Beleg je Mail, keine Anhänge oder Honorarangaben, bei F&P Klärung der projektbezogenen Zusammenarbeit ohne Mitgliedschaftszusage.
