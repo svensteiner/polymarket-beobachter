@@ -1,3 +1,27 @@
+## Interim-CFO-Kaltakquise · 15 Gesellschaften — 2026-11-11
+
+Weitere verifizierte Erstkontakte per Gmail: Interim Partner GmbH / Christof Meier-Preschany (1a1cbae7a956ae84, 17:36:12 UTC), F&P Executive Solutions / Judith Goldmann (1a1cbae7eb1d2cb9, 17:36:13 UTC), taskforce / Finance-Team (1a1cbae834f2c29d, 17:36:14 UTC). Alle drei per Gmail-Readback SENT. Konkreter KI-Beleg je Mail, keine Anhänge oder Honorarangaben, bei F&P Klärung der projektbezogenen Zusammenarbeit ohne Mitgliedschaftszusage.
+
+Bestehendes privates Drive-Protokoll https://drive.google.com/file/d/12qVoObzQMCtPORfQtHPJ0V-qMw51Tegu/view in place ergänzt. Readback 21.041 Bytes, shared=false. Lokaler SHA256 4FFCFF3B97021A173600232F5916C16B88BD153E66DC9EBBBB252FA27D8D8D00.
+
+Nächster Schritt: Neue Interim-Finance-Vermittler nur nach Firmen-, Rollen- und Mailabgleich kontaktieren. Rückmeldungen oder Zustellfehler in den bestehenden Gmail-Threads prüfen. Brainforce, Bavaria Interim und Interimio nur bei bestätigtem CFO-Fokus und geeignetem Kandidatenweg.
+
+## Interim-CFO-Kaltakquise erweitert — 2026-11-11
+
+Drei weitere personalisierte Erstkontakte ohne Anhänge oder Honorarangaben. enomyc / Anne Rienecker (Gmail 1a1cbac05395cbef, 17:33:30 UTC), FINANCE People Solutions / Paul Taaffe (1a1cbac08d710197, 17:33:31 UTC), Finatal / Achim Knobelspies (1a1cbac0c36caa51, 17:33:32 UTC). Alle drei per Gmail-Readback SENT bestätigt. enomyc als Interim-Netzwerk, Finatal als allgemeine Vorstellung ohne Bewerbung auf das separat gelistete PE-Mandat. Unter den ersten neun Kontakten zur Prüfung keine Antworten oder Zustellfehler im abgefragten Gmail-Suchergebnis.
+
+Gesamt jetzt zwölf Gesellschaften. Bestehendes privates Drive-Protokoll https://drive.google.com/file/d/12qVoObzQMCtPORfQtHPJ0V-qMw51Tegu/view in place ergänzt, 16.529 Bytes und shared=false per Metadaten-Readback. Lokaler SHA256 42CB2081EDB9F37085D8AD998931D951B25C1151B9EC411B989AD547299647DD.
+
+Nächster Schritt: Weitere unkontaktierte deutsche Interim-Vermittler mit expliziter Finance-/CFO-Praxis und verifizierter Kandidatenadresse priorisieren. Interim Partner GmbH nur mit bestätigter Erstkontaktadresse. xQi und Ludwig Heuse bereits aus Gmail bekannt. Antworten und Zustellfehler abgleichen.
+
+## Interim-CFO-Kaltakquise Deutschland — 2026-11-11
+
+Neun gezielte Initiativ-E-Mails per Gmail, je eine pro Gesellschaft, ohne Anhang und ohne Honorarangabe. Fokus Interim-CFO, Restrukturierung, Immobilien/Bau und konkrete KI-Anwendung in Finance. Namen, Empfänger, vollständige Texte, UTC-Zeitstempel, Originalquellen und Gmail-Versandbelege im privaten Drive-Protokoll https://drive.google.com/file/d/12qVoObzQMCtPORfQtHPJ0V-qMw51Tegu/view (12.098 Bytes, shared=false im Metadaten-Readback). Lokaler SHA256 AF7D9BAF15D29B004ECB2DC253E9D8F5CC5EF94C7DC4959296B337D2A417EA44.
+
+KEYPLAYER / Sebastian Bretag (1a1cba0b34c9fd61), Cobalt / Jan Schwill (1a1cba4551b15c25), Piquano / Roland Pätzold (1a1cba4560c1b183), Dr. Schannath / Bewerberteam (1a1cba660e22415c), Executive Interim Partners / Bodo-Joachim Wendenburg (1a1cba6659f5f5f0), cc interim management / Joachim Hahn (1a1cba900bf442fc), Headmatch / Michael Kleebank (1a1cba9034406bb1), HANSE Interim / Andreas Lau (1a1cba909ca71025), InterSearch / Interim-Team (1a1cba90c1e25644). Gmail-Readback für alle neun mit SENT. LinkedIn im Browser wegen Windows-Sandboxfehler nicht direkt abgleichbar, bisherige lokale Versandprotokolle und Gmail geprüft.
+
+Nächster Schritt: Weitere bisher unkontaktierte deutsche Interim-Headhunter mit belegter CFO-/Finance-Praxis auswählen und einzeln anschreiben. Antworten und Zustellfehler gegen die Gmail-Threads prüfen. Keine Doppelansprache bei Atreus, EIM/Management Angels, Valtus/Management Factory, GOiNTERIM oder division one.
+
 ## 3byChance Briefings auf eigenen Shop ausgerichtet — 2026-11-08
 
 TerraUno-Shop zuerst; Amazon ist laut eigenem FAQ ein weiterer Kanal, seine Bedeutung im Mandat ist offen. Hauptbriefing (5 Seiten) um Gesprächsantwort zur agentischen Buchhaltung ergänzt. E-Commerce-Briefing (8 Seiten) mit drei Umsetzungsideen auf Seite 7: Shop-Auszahlung abstimmen, Agent für Klärfälle, schrittweise Rückholung der Buchhaltung. Amainvoice als Beispiel für Amazon → DATEV, Scopevisio-Dateiimport als Beispiel für DATEV → neue Buchhaltung; DATEV-Datenservice für wiederkehrende Auswertung. Toolwahl und gewünschte Autonomie offen. Word-PDF-Vergleich, visuelle Prüfung der acht geänderten Seiten und Linkprüfung abgeschlossen.
