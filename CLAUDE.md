@@ -1,3 +1,11 @@
+## Interim-CFO-Akquise beendet · 125 Gesellschaften · Profil an Schannath
+
+- Nutzer löschte das Akquiseziel. Die letzte Runde hatte zuvor zwei erste Kontakte gesendet, [DeepBridge Advisory](https://mail.google.com/mail/u/0/#sent/1a1cc3b5b641bca3) und [Freelance Partner](https://mail.google.com/mail/u/0/#sent/1a1cc3b5d0a0fbed).
+- Auf ausdrücklichen Nutzerauftrag 2026-11-11T21:33:49.000Z auf die Profilanfrage von Dr. Heinz Schannath geantwortet. Zweitseitiges Interim-CFO-Profil mit Foto, Immobilienrestrukturierung, STRABAG Köln/HGB und laufendem Reporting-Tool für einen österreichischen Restrukturierungsberater. [PDF privat in Drive](https://drive.google.com/file/d/1Bz4NBeyqfm9-6KMkxDrPOuQSgER3Q1ix/view?usp=drivesdk) · [Gmail-SENT-Nachweis](https://mail.google.com/mail/u/0/#sent/1a1cc880bf2009e8). Anhang und Originalthread geprüft. Aufnahme in die Vermittlerdatenbank angefragt, kein Mandat bestätigt.
+- [Privates Versandprotokoll](https://drive.google.com/file/d/12qVoObzQMCtPORfQtHPJ0V-qMw51Tegu/view), 201243 Bytes in Drive geprüft. Lokales SHA-256 `03A1FEBBA26CB91D6B92A339806B53FFBF93D69EC5B7C07D1EBE688E0082A0B6`.
+- Nächster Schritt auf Nutzeranweisung. Eventuelle Rückmeldung von Schannath dem bestehenden Kontakt zuordnen.
+
+
 ## Interim-CFO-Akquise · 123 Gesellschaften
 
 - 2026-11-11T20:05:49.000Z · consultingheads GmbH in Leverkusen erstmals über das offizielle Postfach zu Händen von Mike Blanek angeschrieben. Interim-CFO für Immobilienrestrukturierung, HGB-Abschlüsse im Bau, IFRS in SAP und KI-Automatisierung. Anbieter belegt freiberufliche Interim-CFO-Vermittlung. Kein einzelnes Kundenmandat bestätigt. Gmail SENT, Empfänger, Betreff und Volltext geprüft. [Ansprechpartner](https://consultingheads.com/ueber-uns/) · [Versandbeleg](https://mail.google.com/mail/u/0/#sent/1a1cc3774e85bd12).
