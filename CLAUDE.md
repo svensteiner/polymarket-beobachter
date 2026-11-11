@@ -1,3 +1,154 @@
+## Interim-CFO-Akquise · 114 Gesellschaften
+
+- 2026-11-11T19:36:37.000Z · Marc Plöntzke (Büllesbach & Plöntzke, Köln) zum Infor-/Carve-out-Projekt in NRW angeschrieben. SAP-Praxis offengelegt, fachliche Finance-Leitung neben Infor-Spezialist oder vergleichbare SAP-Mandate angefragt. Infor-Praxis nicht behauptet. [Versandbeleg](https://mail.google.com/mail/u/0/#sent/1a1cc1cba55142bc).
+- 2026-11-11T19:36:37.000Z · Ulf Lindner (actcon) zu Düsseldorf #3071787 angeschrieben. Senior-Arbeitspaket für komplexe HGB-Abschlussthemen und Prozessverbesserung angefragt. Anzeige ab 25 Wochenstunden, remote nach Onboarding vor Ort. [Versandbeleg](https://mail.google.com/mail/u/0/#sent/1a1cc1cbc7410dc4).
+- Beide Gmail SENT mit Empfänger, Betreff und Volltext verifiziert. Keine Anhänge, Beträge oder Zusagen. [Privates Drive-Protokoll](https://drive.google.com/file/d/12qVoObzQMCtPORfQtHPJ0V-qMw51Tegu/view?usp=drivesdk), 177434 Bytes, lokales SHA-256 `8FFC18A15649E48644676F21F9B55BEBD0F491BFA5DD5C8B2EF76A1376C3BAF5`.
+- freelance.de 1301263 ist ein separater NRW-Carve-out-Lead. Laufzeit laut Anzeige 3–6 Monate, Firma, Wochenumfang, Honorar und tatsächliche Besetzung offen. Browser scheiterte beim Windows-Sandboxstart. Kein Versand. Nächster Schritt · Bei wieder verfügbarem Browser Bewerbungsweg und Anforderungen prüfen, ansonsten neue Rheinland-Mandate mit verifiziertem Empfänger priorisieren.
+
+## Interim-CFO-Akquise · 112 Gesellschaften
+
+- 2026-11-11T19:33:44.000Z · Tim Jarzombek, Spiegel Institut Management GmbH, über veröffentlichtes Bewerbungspostfach zum Mannheimer Mandat 2703590 angeschrieben. Group Accounting & Reporting, 3–6 Monate, freiberufliche Option ausdrücklich genannt. Status der Interim-Option, operative DATEV-Tiefe, Aufgabenverteilung und Präsenz erfragt. Kein Honorar belegt. Kein CV oder Zusagen. Gmail SENT, Empfänger, Betreff und Volltext geprüft. [Originalausschreibung](https://spiegel-institut.jobs.personio.de/job/2703590) · [Versandbeleg](https://mail.google.com/mail/u/0/#sent/1a1cc1a18e81203e).
+- CTG über Numeris und EIM mit Management Angels im bestehenden Gruppenabgleich berücksichtigt. Keine neuen Parallelkontakte. Das zweite Inserat des Spiegel Instituts bleibt beim selben Ansprechpartner.
+- [Privates Drive-Versandprotokoll](https://drive.google.com/file/d/12qVoObzQMCtPORfQtHPJ0V-qMw51Tegu/view?usp=drivesdk) verifiziert, 173580 Bytes. Lokales SHA-256 `1F4FFE2AEDBF5873E72E9FC4F2DD2693C9929E294E1285C67179BBE7D08745E6`.
+- Nächster Schritt · Neue Interim-Mandate und Bewerberkanäle im Rheinland/DACH mit Schwerpunkt Immobilien, Bau und KI-Finance prüfen. Auf konkrete Antwort des Spiegel Instituts zu Auslastung und Aufgabenverteilung achten.
+
+## Interim-CFO-Akquise · 111 Gesellschaften
+
+- 2026-11-11T19:30:36.000Z · Top Fifty AG in Baar über den veröffentlichten Kontakt für Interim Manager angeschrieben. Immobilienrestrukturierung, deutsche HGB-Abschlüsse in Köln und KI-Automatisierung im Rechnungswesen als Kurzprofil. Nach Vermittlung aus Wien gefragt. Gmail SENT, Empfänger, Betreff und Volltext geprüft. [Versandbeleg](https://mail.google.com/mail/u/0/#sent/1a1cc173819dcf4b).
+- VALTUS Management Factory bereits im direkten Austausch. Venturi Frankfurt #3036882 ist ein bekannter Lead mit widersprüchlichem Wochenumfang, kein neuer Versand. Kein neues konkretes Mandat bestätigt.
+- [Privates Drive-Versandprotokoll](https://drive.google.com/file/d/12qVoObzQMCtPORfQtHPJ0V-qMw51Tegu/view?usp=drivesdk) unter bestehender ID geprüft, 171625 Bytes. Lokales SHA-256 `2A3E564E81B2077F8D918AB2E6A720E5262AA1E70C78B527E46A48F641C84BA5`.
+- Nächster Schritt · Neue Mandate und Bewerberkanäle für Interim-Finanzleitung im Rheinland suchen, Schwerpunkt Immobilien, Bau und KI-Finance. Firmen und verbundene Marken vor Versand über bisherige Kanäle abgleichen.
+
+## Interim-CFO-Akquise · 110 Gesellschaften
+
+- 11.11.2026, 2026-11-11T19:26:52.000Z · Norbert Geroldinger (office@geroldinger.at) als möglicher Empfehlungspartner für Interim-CFO-Mandate angeschrieben. Vermittlung unabhängiger Spezialisten bei Bedarf auf Originalseite belegt. Gmail SENT, Empfänger und Volltext verifiziert. [Versandbeleg](https://mail.google.com/mail/u/0/#sent/1a1cc13cf77fc220).
+- Your Accountant · Automatische Eingangsbestätigung um 19:24:31 UTC. Persönliche Antwort ausstehend. [Gmail-Beleg](https://mail.google.com/mail/u/0/#all/1a1cc11b425d8702).
+- Interim Alliance bereits kontaktiert und historische Antwort gefunden. Kein Doppelversand. Diese Runde kein neues konkretes Mandat bestätigt.
+- [Privates Drive-Versandprotokoll](https://drive.google.com/file/d/12qVoObzQMCtPORfQtHPJ0V-qMw51Tegu/view?usp=drivesdk) unter bestehender ID verifiziert, 169835 Bytes. Lokales SHA-256 `939453145EE79C4B0D06631020F2B77AEC8C2F17F98CD7F7D7EA85679AD9B232`.
+- Nächster Schritt · Neue konkrete Interim-CFO-Mandate in Köln/Rheinland und DACH prüfen, insbesondere Immobilien, Bau und KI-Finance. Neue Vermittler nach Gesellschaft und bisherigen Kanälen abgleichen.
+
+## Interim-CFO-Akquise · 109 Gesellschaften — 2026-11-11
+
+Zwei verifizierte Erstkontakte. Primera CFO / Lars Hebel (1a1cc1191118787f, 19:24:25 UTC), freie CFO-Mitarbeit für Abschluss, Liquidität und KI-Automatisierung, Remote-Kooperation aus Wien erfragt. Your Accountant / Alen Brkić via offizielles Postfach (1a1cc1194cbdefa1, 19:24:26 UTC), offener Freelancer-Aufruf, nach Leitungsmandaten oder abgegrenzten Arbeitspaketen gefragt. Gmail SENT, Empfänger und Volltext bestätigt. Ohne Anhang, Honorar, Anmeldung oder Zusage. Beide Erstkontakte beziehen sich auf allgemeine Bewerberkanäle. Kein bestimmtes Kundenmandat belegt. Im abgefragten Gmail-Ergebnis keine neue Antwort.
+
+Berlin freelance.de 1296425 ist Michael Page JN-102026-7123479, dort bereits Valbona Memeti als Kontakt für ein anderes Mandat im Bestand. Kein paralleler Kontakt zu Lisanne Okonedo. Heidelberg 9am/PlanetInterim 547545 bisher ohne belastbaren Originalkontakt.
+
+Privates Drive-Protokoll in bestehender Datei ergänzt: https://drive.google.com/file/d/12qVoObzQMCtPORfQtHPJ0V-qMw51Tegu/view. 167769 Bytes, shared=false, lokaler SHA256 2380880171B01E04FB77DA592663DB0A667208FF675664BF0805716747A98EC5.
+
+Nächster Schritt: Neue konkrete Ausschreibungen in Interim-Finanzleitung, Immobilien oder KI-Finance mit belegt erreichbarem Empfänger priorisieren. Für Heidelberg nur nach belegter neuer Originalquelle weiterarbeiten.
+
+## Interim-CFO-Akquise · 107 Gesellschaften — 2026-11-11
+
+Zwei Erstkontakte bei Immobilien-Interim-Spezialisten. STRATON Real Estate Advisory / Freelancer-Team (1a1cc0ef75b3c172, 19:21:35 UTC), Interim-Finanzleitung für Immobiliengesellschaften, Bankverhandlungen, Abschlüsse und Reporting; frühere Recherche ohne dokumentierte Ansprache. CIREAS / Dr. Jürgen Diefenbach (1a1cc0ef9d0bc44a, 19:21:35 UTC), Interim-CFO für Restrukturierung und Abverkauf, mit HGB/IFRS und KI-Automatisierung. Gmail SENT mit Empfänger und Volltext bestätigt. Zwei Netzwerk-Anfragen ohne konkretes Kundenmandat, Upload, Honorar, Anmeldung oder Zusage. Keine Rückmeldung im abgefragten Gmail-Ergebnis. Droste bis zu belastbarem Beleg für freie Interim-Mandate zurückgestellt.
+
+Privates Drive-Protokoll in bestehender Datei ergänzt: https://drive.google.com/file/d/12qVoObzQMCtPORfQtHPJ0V-qMw51Tegu/view. 164154 Bytes, shared=false, lokaler SHA256 044A83613C74408B2C56CCA1F0A6BD423CCFA9CEE33AAE7EE7CC80FDD1C0EFD7.
+
+Nächster Schritt: Konkrete neue Ausschreibungen in Immobilien-Finance oder KI-gestützter Finance-Transformation mit offenem Kandidatenweg priorisieren. Bei STRATON und CIREAS Antworten auf kaufmännischen Bedarf und Mandatsmodell prüfen.
+
+## Interim-CFO-Akquise · 105 Gesellschaften — 2026-11-11
+
+OPTARES / Janek Meyer (1a1cc0ca42bac2ba, 19:19:03 UTC), Klärungsanfrage zur Infrastruktur-Referenz 7130 im Raum Bremen. Anzeige im Anbieter-Jobboard, Vollzeit, mehrjährig, anteilig mobil. Nach aktuellem Status, Bündelung von Vergabe und Claimmanagement sowie separaten Finance-Arbeitspaketen gefragt. Gmail SENT mit Empfänger und Volltext bestätigt. Ohne Anhang, Honorar oder Zusage. Keine neue Rückmeldung im abgefragten Gmail-Ergebnis.
+
+Recherche: Amoria 3065373 ist derselbe Vermittler wie 3071316; keine zweite Ansprache. FERCHAU 3071914 erfordert Maschinenbau/Halbleiter und S/4HANA-Implementierung als Key User, SOLCOM 1084204 WP-Examen plus LSI-Prüfung, ageneo Wiener PMO Pharma/Biotech/Process Engineering. Dafür fehlen Belege. Daniel Rolla bereits historisch kontaktiert; AIM-Pool verlangt Wohnsitz Schweiz.
+
+Privates Drive-Protokoll in bestehender Datei ergänzt: https://drive.google.com/file/d/12qVoObzQMCtPORfQtHPJ0V-qMw51Tegu/view. 160638 Bytes, shared=false, lokaler SHA256 893C1125653EA6A7CF59BCE5CC28C260F2E587B85549CE1FDF8CE0004627213E.
+
+Nächster Schritt: Neue Finance-Mandate mit bestätigtem Anbieter und erreichbarem Kandidatenkontakt weiter priorisieren. Bei OPTARES nach einer Antwort zwischen Vollrolle und separat beauftragtem Finance-Arbeitspaket unterscheiden.
+
+## Interim-CFO-Akquise · 104 Gesellschaften — 2026-11-11
+
+Zwei Erstkontakte: NAKAMA EUROPE / Claudia Wulf über offizielles Postfach (1a1cc09798545715, 19:15:35 UTC), Interim-CFO für Portfoliounternehmen im deutschsprachigen Raum; Nigel Wright Group / deutsches Interim-Team Düsseldorf (1a1cc097dbe2f8e9, 19:15:36 UTC), Rhein-Ruhr, HGB-Abschlüsse und Finance-Transformation. Beide Anbieter vermitteln Interim-CFOs, kein konkretes Kundenmandat für diese Anfragen belegt. Gmail SENT, Empfänger und Volltext bestätigt. Ohne Anhang, Honorar und Zusagen. Keine neuen Antworten im abgefragten Gmail-Ergebnis.
+
+Recherche: OPROMA 14424721 ist die bereits kontaktierte ISG-Referenz 112.705, kein erneuter Versand. Privatal/Harry Turner laut historischem LinkedIn-Protokoll bereits im Bestand. Limestone bis zu einem klaren Kandidatenkontakt und belastbaren Anbieterangaben zurückgestellt.
+
+Privates Drive-Protokoll in bestehender Datei ergänzt: https://drive.google.com/file/d/12qVoObzQMCtPORfQtHPJ0V-qMw51Tegu/view. 158349 Bytes, shared=false, lokaler SHA256 19343FBCD01737A03BE82926134E165234392481F867FF4B822997A2BB16936F.
+
+Nächster Schritt: Neue konkrete Mandate in Finance-Führung, Immobilien oder Finance-Automatisierung mit überprüfbarem Kandidatenkontakt suchen. Kontaktierte Anbieter und Syndizierungen bei der Suche herausfiltern.
+
+## Interim-CFO-Akquise · 102 Gesellschaften — 2026-11-11
+
+Zwei konkrete Projektanfragen. Michael Page / Valbona Memeti (1a1cc05d59014814, 19:11:36 UTC), JN-112026-7141494, Interim-CFO-Sparring Köln. Original bestätigt. Nach Status, erwarteter Rolle in S/4HANA und PMI sowie Präsenz gefragt. Amoria Bond / Marcel Franke zur Weiterleitung an Jan Moik (1a1cc05d73d89265, 19:11:37 UTC), 3071316, Interim-Leitung Rechnungswesen Essen, drei Monate, 3–4 Gesamttage/Woche. Nach Status, ERP und tatsächlicher Präsenz gefragt. Gmail SENT, Empfänger und Volltext bestätigt. Weiterleitung und Besetzungsstände offen. Ohne CV, Honorar oder Zusage. Keine Antworten der letzten Runde im abgefragten Gmail-Ergebnis.
+
+Privates Drive-Protokoll in bestehender Datei ergänzt: https://drive.google.com/file/d/12qVoObzQMCtPORfQtHPJ0V-qMw51Tegu/view. 154590 Bytes, shared=false, lokaler SHA256 2603A62FF18CA475D35381F6E1E67D6E0EE9AEE4057CFD93A978520FF90CB667.
+
+Nächster Schritt: Neue konkrete Mandate priorisieren. Finatal AK1599 wäre fachlich relevant, Finatal bereits via Achim Knobelspies kontaktiert. Keine zweite Kontaktperson anschreiben. Amoria-Stellen nicht parallel an andere Personen senden. ACP 3071116 verlangt Advanced SQL, Databricks/Spark und Tableau, nicht belegt.
+
+## Interim-CFO-Akquise · 100 Gesellschaften — 2026-11-11
+
+Zwei Wiener Erstkontakte: Maria Bühler / Bühler Interim Management (1a1cc0329b09b6b0, 19:08:41 UTC), CFO-/Finanzleitungspool mit Bau und Real Estate; Walter Pfaller / P+P Interim Management Solutions via offizielles Postfach (1a1cc032bd247df0, 19:08:42 UTC), CFO, Fractional und grenzüberschreitende Mandate. Bei P+P Klärung, ob projektbezogene Finance-Beratung und Automatisierung mit Poolkriterien vereinbar sind. Gmail SENT, Empfänger und Volltext bestätigt. Keine konkreten Kundenmandate, keine Unterlagen, Rahmenvereinbarungen, Honorarangaben oder Zusagen. Keine Antworten im abgefragten Gmail-Ergebnis.
+
+Privates Drive-Protokoll in bestehender Datei ergänzt: https://drive.google.com/file/d/12qVoObzQMCtPORfQtHPJ0V-qMw51Tegu/view. 150435 Bytes, shared=false, lokaler SHA256 C640DF4B4A6808419AED99F0E6FA6FD4D7DF77A360296F462267334A6AD53CFB.
+
+Nächster Schritt: In den nächsten Suchrunden neue konkrete Mandate mit Primärquelle und passendem Anforderungsprofil priorisieren. DYN-IT 3064997 erfordert zwei persönliche SAP-Projektleitungsreferenzen und mehrere eigenverantwortete SAP-Einführungen; diese Belege liegen nicht vor. Nach bestätigten neuen Rückmeldungen gezielt weiterarbeiten.
+
+## Interim-CFO-Akquise · 98 Gesellschaften — 2026-11-11
+
+Drei Erstkontakte: HAPEKO / Stephan Ulm über Kölner Standort (1a1cc010a5324810, 19:06:22 UTC), Rheinland, Bau/Immobilien und Restrukturierung; Schulmeister / Barbara Schreiber in Wien (1a1cc010c1345e37, 19:06:23 UTC), Finance-Interim mit IFRS, SAP und KI; Ertler / Ewald Kager über offizielles Interim-Postfach (1a1cc011016c6222, 19:06:24 UTC), DACH-Finanzführung und Transformation. Je ein Erstkontakt pro Gesellschaft. Gmail SENT, Empfänger und Volltext bestätigt. Ohne Anhänge, Honorar und Zusagen. Bei allen drei ist Interim-Vermittlung belegt; es handelt sich um Initiativkontakte. Im abgefragten Gmail-Ergebnis keine neuen Antworten der vorherigen Runde.
+
+Privates Drive-Protokoll in bestehender Datei ergänzt: https://drive.google.com/file/d/12qVoObzQMCtPORfQtHPJ0V-qMw51Tegu/view. 146774 Bytes, shared=false, lokaler SHA256 20346F3B6B7F1344AA4E4A85A5184EF2898E4054A02E129A66D6F005AD5A2DDF.
+
+Nächster Schritt: Konkrete, neu publizierte Finance-Mandate mit überprüfbarer Originalquelle priorisieren. Brandenburg-Index zur kaufmännischen Leitung nur bei bestätigtem Originalkontakt prüfen. P+P nennt Unterlagen und ausschließliche Interim-/Projektarbeit für die Poolaufnahme. Vor möglichem Kontakt Bedingungen klären und mögliche frühere Korrespondenz über ppim-solutions.eu und Vorgängermarken abgleichen.
+
+## Interim-CFO-Akquise · 95 Gesellschaften — 2026-11-11
+
+Zwei verifizierte Erstkontakte in der Schweiz: Roman Kalberer / Karoka (1a1cbfe5e4951f80, 19:03:27 UTC), Interim-CFO plus praktische KI-Automatisierung im Rechnungswesen. Luc Widmer / LAWInvest Advisers (1a1cbfe617010026, 19:03:28 UTC), Interim-CFO-Netzwerk für Restrukturierung und Finanzführung mit Immobilien-/Bauprofil. Beide nach grenzüberschreitender Zusammenarbeit mit österreichischen Selbstständigen gefragt. Gmail SENT mit Empfänger und Volltext bestätigt, ohne CV, Honorare und Zusagen. Kein konkretes Kundenmandat bei diesen beiden Netzwerken belegt. Keine Antwort im abgefragten Gmail-Ergebnis.
+
+Recherche: freelance.de 1297428 Immobilien-Investmentgruppe im Großraum Berlin laut Detailseite vom Anbieter geschlossen, keine Bewerbung und keine erneute Abfrage ohne Statusänderung. Hays-Dienstleistungs-CFO verlangt mindestens zehn Jahre als CFO, nicht belegt und Hays bereits im Bestand. Robert Walters P2P bereits als Vermittler kontaktiert. Finance Systems & Automation Südwesten: zwei Sekundärspuren, Primärkontakt und Status noch nicht verifiziert, sechs Monate Vollzeit ausschließlich vor Ort laut Index.
+
+Privates Drive-Protokoll in bestehender Datei ergänzt: https://drive.google.com/file/d/12qVoObzQMCtPORfQtHPJ0V-qMw51Tegu/view. 141818 Bytes, shared=false, lokaler SHA256 ACA0BF8E9C4D7718886AA42B855783268DD2466ED0B4A1C0633B514CDD96C447.
+
+Nächster Schritt: neue Mandate mit zugänglicher Originalausschreibung und eindeutigem Kandidatenkontakt priorisieren. Schweizer Rückmeldungen auf tatsächlichen Zugang und Vor-Ort-Anforderungen prüfen.
+
+## Interim-CFO-Akquise · 93 Gesellschaften — 2026-11-11
+
+Zwei Erstkontakte: ForTech / Roman Grischkowski via offizielles Postfach (1a1cbfb81aa33243, 19:00:19 UTC), Projekt 3070328 KI im SAP-Rechnungswesen, remote, im Text rund drei Tage pro Woche, Kopf 100 %. Nach Besetzungsstand, FI/CO-Customizing, Umfang und Zugang aus Österreich gefragt. EquiTalent / Oliver York (1a1cbfb85df055a7, 19:00:20 UTC), Düsseldorf: nur Sekundärinserat mit widersprüchlicher Vertragsart und ohne verifizierten Status. Nach laufender Suche und selbstständigem Vertragsmodell gefragt und für künftige Interim-Mandate im Rheinland vorgestellt. Gmail SENT mit Empfänger und Volltext bestätigt. Ohne Anhang, Honorare oder Zusagen. Keine Rückmeldungen der zuletzt geprüften Anbieter im Gmail-Abgleich.
+
+Privates Drive-Protokoll in bestehender Datei ergänzt: https://drive.google.com/file/d/12qVoObzQMCtPORfQtHPJ0V-qMw51Tegu/view. 138283 Bytes, shared=false, lokaler SHA256 AEA3D9423BFC9897CD9C22FE429417181C162AC40CBC26126C5CF67C363801D4.
+
+Nächster Schritt: Neue konkrete Immobilien-/Bau- oder Finance-Automatisierungsmandate bei bislang unkontaktierten Anbietern priorisieren. ForTech und EquiTalent auf Rückmeldung prüfen. HiSimply 3054722 nur bei neuem Status oder geklärten Stack-Anforderungen weiterverfolgen (SAP, Snowflake und Power BI genannt; Ausschreibung vom 30.09.).
+
+## Interim-CFO-Akquise · 91 Gesellschaften — 2026-11-11
+
+Constaff / Michelle Maggio: gezielte Anfrage zum ausgeschriebenen Finance-Prozessmandat MMA15233 in Bonn (1a1cbf91f8742bcf, 18:57:43 UTC). Gmail SENT, Empfänger und Volltext bestätigt. Anzeige: freiberuflich, Vollzeit, 14 Monate+, Frist 19.11., widersprüchlich 80 % / 90 % remote. Nach Besetzungsstand, Präsenzrhythmus und zwingender Systemtiefe gefragt. Honorar und Veröffentlichungsdatum unknown. Anbieter-Detailseite über Recherchetool nicht abrufbar; Anbieteranzeige auf freelancermap und öffentlich publizierte Geschäftsadresse geprüft. Keine Anhänge, Honorare oder Zusagen. enomyc, Dynamic Finance und cc interim schon kontaktiert. Keine Antwort von Grey, AUCTUS oder ISG im geprüften Gmail-Ergebnis.
+
+Bestehendes privates Drive-Protokoll aktualisiert: https://drive.google.com/file/d/12qVoObzQMCtPORfQtHPJ0V-qMw51Tegu/view. 134151 Bytes, shared=false, lokaler SHA256 3ADB3D4F37DE649F83E43408442675E8B019E9E3458888C23AD3D77CEC6C864C.
+
+Nächster Schritt: Antworten zu Constaff, Grey und ISG auf Mandatsstatus, Einsatzumfang und Systemanforderungen prüfen. Bei neuen passenden Ausschreibungen gezielten Kandidatenweg belegen und Unternehmen vor Versand gegen Gmail und Kontaktlog abgleichen.
+
+## Interim-CFO-Akquise · 90 Gesellschaften — 2026-11-11
+
+Weitere Erstkontakte: Grey Solutions / konkretes Interim-CFO-Mandat JOB5396 im Raum Innsbruck (1a1cbf569d1aed7b, 18:53:40 UTC); AUCTUS Capital Partners / Recruiting, laufender Interim-CFO-Aufruf für Beteiligungen (1a1cbf56c8d27249, 18:53:41 UTC). Gmail SENT, Empfänger und Volltext bestätigt. Ohne CV, Honorarangaben oder Zusagen. Grey: 16.11. gewünschter Start, Original ca. vier Monate, Portal drei Monate, Vollzeit und Remote-Anteil dort widersprüchlich. Nach Besetzungsstand, Laufzeit, Präsenz und operativer Dynamics-365-Tiefe gefragt. AUCTUS: nach selbstständigen Mandaten gefragt; der Aufruf belegt kein konkretes Kundenmandat. Keine neuen Antworten der vorherigen Runde im abgefragten Gmail-Ergebnis.
+
+Privates Drive-Protokoll in bestehender Datei ergänzt: https://drive.google.com/file/d/12qVoObzQMCtPORfQtHPJ0V-qMw51Tegu/view, 131.746 Bytes, shared=false. Lokaler SHA256 64A094B9C6E3B701F2D3CAE66F5BB8DCF6BDC6257D282D19584CA5332964D1D7.
+
+Nächster Schritt: Antworten zu Grey, AUCTUS und ISG auf konkreten Status und Aufgaben prüfen. Neue Mandate mit verifiziertem Empfänger priorisieren. Freelance.de Münster nicht erneut ohne neue Zugangsinformation prüfen; vorhandene Plattformbeschränkung dokumentiert.
+
+## Interim-CFO-Akquise · 88 Gesellschaften — 2026-11-11
+
+Weitere Erstkontakte: CBA Personalberatung / Heinz Handtrack Stuttgart (1a1cbf2f347d3fe7, 18:50:59 UTC), Delville Management / Markus Heimbrodt Düsseldorf (1a1cbf2f59bd4311, 18:50:59 UTC), Karlhoff / Michel Karänke Raum München (1a1cbf2f61c3dc0c, 18:51:00 UTC). Gmail SENT, Empfänger und Volltext bestätigt. Individuelle Initiativ-E-Mails ohne Anhänge oder Zusagen. Keine neuen Rückmeldungen im geprüften Gmail-Ergebnis.
+
+Privates Drive-Protokoll in bestehender Datei ergänzt: https://drive.google.com/file/d/12qVoObzQMCtPORfQtHPJ0V-qMw51Tegu/view, 128.297 Bytes, shared=false. Lokaler SHA256 480BCDBBD924C2082E47168999BCBF2D73C8483F18CCA9C9FF823243A2965FD0.
+
+freelance.de 1299566 Münster: Kandidatenweg hinter Login, Firmenidentität öffentlich verborgen. CUA-Kernel zweimal abgebrochen; Windows-Sandboxdiagnose registered Core setup belongs to another owner; Playwright nur leeres isoliertes Fenster. Keine Bewerbung, kein Upgrade. Zweiter Treffer 1299920 Finance AI Engineer öffentlich indexiert: sechs Monate Vollzeit vor Ort Mannheim oder München, Honorar auf Anfrage, Status und Auftraggeber unknown. SThree/Huxley wegen früherer Bewerbung beim verbundenen Computer Futures ausgeschlossen.
+
+Nächster Schritt: Neue konkrete CFO- oder Finance-Automatisierungsmandate mit bestätigtem Empfänger suchen, Rückmeldungen abgleichen. Die zwei freelance.de-IDs erst bei wiederhergestellter Sitzung oder entscheidungsrelevantem neuen Beleg erneut prüfen.
+
+## Interim-CFO-Akquise · 85 Gesellschaften — 2026-11-11
+
+Weitere Erstkontakte: MC Executives / Interim-Team Berlin (1a1cbeeb24d1ca0e, 18:46:20 UTC), Management Ressourcen Buchner / Kandidatenteam Rheinland (1a1cbeeb541af988, 18:46:21 UTC) und Hilltop / Interim-Team München (1a1cbeeb971af381, 18:46:22 UTC). Gmail SENT, Empfänger und Volltext bestätigt. Individuelle Initiativ-E-Mails ohne Anhänge oder Zusagen. Im geprüften Gmail-Ergebnis keine Antwort auf ISG 112.705 oder die übrigen Erstkontakte der vorigen Runde.
+
+Privates Drive-Protokoll in bestehender Datei ergänzt: https://drive.google.com/file/d/12qVoObzQMCtPORfQtHPJ0V-qMw51Tegu/view, 123.790 Bytes, shared=false. Lokaler SHA256 74CBD5DF9276532FF2A36D34217F06131D0060E58EA6DC4B5DE28D43B87A4685.
+
+Nächster Schritt: Konkrete Mandate priorisieren. freelance.de 1299566 (Münster, vor Ort, November–April, Honorar auf Anfrage) öffentlich abrufbar, Firma und Besetzungsstatus unbekannt. Bei vorhandener Sitzung regulären Kandidatenweg und Doppelansprache prüfen, ohne Upgrade. SAIL bereits per LinkedIn kontaktiert und dortiges Carve-out-Projekt geschlossen.
+
+## Interim-CFO-Akquise · 82 Gesellschaften — 2026-11-11
+
+Weitere Erstkontakte: ISG / Ignacio Topete Dominguez, konkretes Stuttgarter Interim-Head-of-Finance-Mandat 112.705 (1a1cbea9e37df84f, 18:41:53 UTC), InCharge Management / Interim-Netzwerk Bremen (1a1cbeaa1a81e8f9, 18:41:53 UTC) und next level consulting / Benjamin Rabl, Wien-DACH (1a1cbeaa43991db8, 18:41:54 UTC). Gmail SENT, Empfänger und Volltext bestätigt. Kein Anhang, keine Honorar-, Start- oder Reisevereinbarung. ISG: Originalangebot 2–4 Monate, 2 Tage Präsenz, 1.000–1.150 EUR/Tag laut Quelle; Bundesagentur nennt Vollzeit. E-Mail fragt aktuellen Status, Start und operative SAP-FI/CO-Tiefe ab. Keine neuen Antworten der vorherigen Runde im abgefragten Gmail-Ergebnis.
+
+Privates Drive-Protokoll in bestehender Datei ergänzt: https://drive.google.com/file/d/12qVoObzQMCtPORfQtHPJ0V-qMw51Tegu/view, 119.607 Bytes, shared=false. Lokaler SHA256 FB1E20EBF9E3C0EAFD38FE97611828DB7C51617FB81C233D63A9E9D658281FEB.
+
+Nächster Schritt: Weitere unkontaktierte Vermittler aus Nord und Südwest prüfen, konkrete Interim-Mandate mit belegtem Kandidatenweg priorisieren. Aurum und AC Alpha bereits aus früherer Bewerbung bzw. Aufnahme bekannt; keine Doppelansprache. ISG-Antwort auf Passung und Start prüfen.
+
 ## Interim-CFO-Akquise · 79 Gesellschaften — 2026-11-11
 
 Weitere Erstkontakte: Valdivia Interim Associates / Bewerberteam Frankfurt (1a1cbe7466362402, 18:38:14 UTC), QRC Group Interim Management / Tor Marklund Düsseldorf (1a1cbe74874b8cea, 18:38:15 UTC) und MSU Interim / Eva Engelmann Rhein-Main (1a1cbe74fd5b5e6d, 18:38:16 UTC). Gmail SENT, Empfänger und Volltext bestätigt. Individuelle Initiativ-E-Mails ohne Anhang, Honorar oder Startzusage. Keine neuen Antworten der vorherigen Runde im abgefragten Gmail-Ergebnis.
