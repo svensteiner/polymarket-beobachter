@@ -1,3 +1,8 @@
+## 12.11.2026 · ARTES-Profil und Projektübersicht versandt
+
+- Jasmin Glaser bat um Profil und Projektübersicht für den ARTES-Interim-Pool. Derzeit kein passendes Mandat gemeldet. Um 22:59 Uhr Wien zweitseitiges Foto-PDF mit Immobilienrestrukturierung, Bau/HGB und integrierter Übersicht zur Reporting-Automatisierung im Originalverlauf gesandt. [Gmail-Nachweis](https://mail.google.com/mail/u/0/#sent/1a1d1c597abe0e43).
+- [Versandprotokoll](https://drive.google.com/file/d/12qVoObzQMCtPORfQtHPJ0V-qMw51Tegu/view) und [Kontaktübersicht](https://drive.google.com/file/d/1xNq-Lw9nYVo-GecFFu984DJCE2pDWOaX/view) privat aktualisiert und geprüft. Nächster Schritt: Rückmeldung bei konkreter Mandatsanfrage bearbeiten.
+
 ## 12.11.2026 · Drei weitere Londoner DACH-Vermittler angeschrieben
 
 - Um 22:09 Uhr Wien drei englische Erstkontakte nach Gmail- und Protokollabgleich: [SPK Search](https://mail.google.com/mail/u/0/#sent/1a1d1985dc2b9d3a), [ERP Resource Base](https://mail.google.com/mail/u/0/#sent/1a1d1985ec6df9b6), [Source Group International](https://mail.google.com/mail/u/0/#sent/1a1d19862a012065). SPK Search: Fintech/Interim, Bitpanda und Transaktionsdaten. ERP Resource Base: SAP FI, IFRS und KI-Finanzautomatisierung. Source Group International: DACH-ERP- und Reporting-Transformation.
