@@ -1,3 +1,21 @@
+## 12.11.2026 · Kontaktübersicht und englische Anbieter
+
+- [Private Gesamtliste](https://drive.google.com/file/d/1xNq-Lw9nYVo-GecFFu984DJCE2pDWOaX/view) mit 125 Gmail-verifizierten Erstsendungen, 25 Anbieterantworten, 3 Standard-/Automatikantworten, 2 Unzustellbarkeiten, 95 ohne belegten Rücklauf. 12 Folge-E-Mails mit CV/Profil und 3 bestätigte Portaleingänge. HAPEKO bittet um Anschrift. Werner und York haben Terminvorschläge erhalten, keine Zusage bei Prüfung.
+- LinkedIn: Daniel Jorisch und Tobias Streckel eingeladen und Versand geprüft. Barbara Schreiber und Eva von Rottkay bereits direkt vernetzt. [Versandprotokoll](https://drive.google.com/file/d/12qVoObzQMCtPORfQtHPJ0V-qMw51Tegu/view) privat aktualisiert und geprüft.
+- Finanzautomatisierung als Oberbegriff. Fintech und Payments ebenso wie Immobilien, Bau und andere passende Branchen. SystemsAccountants, Vend Tech Group und Camino Search als drei neue Londoner Anbieter mit Europapraxis geprüft. Englische Entwürfe und Quellen in der Gesamtliste.
+- Nächster Schritt: Versandentscheidung für die drei englischen Entwürfe, Anschrift für HAPEKO klären, eingehende Terminzusagen bearbeiten. Zwei Bounces mit offiziellen Alternativkontakten dokumentiert.
+
+## 12.11.2026 · enomyc-Bewerbung eingegangen
+
+- Sven hat die Bewerbung als Interim CFO / Kaufmännische Leitung mit Köln als bevorzugtem Ort eingereicht. enomyc bestätigt die Übermittlung im Portal. [Bestätigung](https://enomyc.recruitee.com/o/interim-cfo-kaufmannische-leitung-mwd/applied).
+- [Privates Versandprotokoll](https://drive.google.com/file/d/12qVoObzQMCtPORfQtHPJ0V-qMw51Tegu/view) aktualisiert und verifiziert. Nächster Schritt: Rückmeldung von enomyc abwarten, taskforce über einen funktionsfähigen Portalweg fortsetzen und Numeris nach Klärung der Pflichtangaben bearbeiten.
+
+## 12.11.2026 · Interim-Portale nach Datenfreigabe
+
+- Kompass-Profil mit LinkedIn eingereicht, ProEvolution-Profil mit Foto-CV eingereicht. Beide Portalbestätigungen geprüft. Sven gab die Speicherung für beide Anbieter ausdrücklich frei.
+- enomyc vollständig vorbereitet, Köln ausgewählt. Sicherheitsprüfung vor Eingang, Tab offen. taskforce Schritt 1 mit CV und bestätigten Kontaktdaten vorbereitet, Weiter-Schaltfläche bleibt deaktiviert. Numeris/CTG mit Kontaktdaten und Region vorbereitet, Pflichtangaben zu Gehalt/Honorar, Reisen und Umzug offen.
+- [Privates Versandprotokoll](https://drive.google.com/file/d/12qVoObzQMCtPORfQtHPJ0V-qMw51Tegu/view) aktualisiert und verifiziert (220900 Bytes, shared=false). Nächster Schritt: enomyc-Sicherheitsprüfung im geöffneten Tab abschließen und Eingang verifizieren, taskforce über einen funktionsfähigen Portalweg fortsetzen, Numeris nur mit bestätigten Pflichtangaben.
+
 ## 12.11.2026 · Profilversand, Termine, LinkedIn und Schweizer Finance-Transformation
 
 - Zehn angeforderte Profile mit Foto und je Empfänger gewichteten Referenzen per Gmail versendet und in Gesendet bestätigt: Spiegel Institut, Schulmeister, Boyden, Jorisch, Vires Conferre, Headmatch, achiefers, Concord/Cobalt, Lichtfels und HAPEKO. [Private Profilkopien](https://drive.google.com/drive/folders/1ptS6Elcy27oGh1Y6zZCT0odfX6U0ibkC).
