@@ -1,3 +1,17 @@
+## 12.11.2026 · Drei weitere Londoner DACH-Vermittler angeschrieben
+
+- Um 22:09 Uhr Wien drei englische Erstkontakte nach Gmail- und Protokollabgleich: [SPK Search](https://mail.google.com/mail/u/0/#sent/1a1d1985dc2b9d3a), [ERP Resource Base](https://mail.google.com/mail/u/0/#sent/1a1d1985ec6df9b6), [Source Group International](https://mail.google.com/mail/u/0/#sent/1a1d19862a012065). SPK Search: Fintech/Interim, Bitpanda und Transaktionsdaten. ERP Resource Base: SAP FI, IFRS und KI-Finanzautomatisierung. Source Group International: DACH-ERP- und Reporting-Transformation.
+- In Gmail Gesendet verifiziert. Keine unmittelbare Unzustellbarkeitsmeldung. Konkrete Mandate und Ausführung von Österreich aus angefragt.
+- [Private Gesamtliste](https://drive.google.com/file/d/1xNq-Lw9nYVo-GecFFu984DJCE2pDWOaX/view) (131 Gesellschaften) und [Versandprotokoll](https://drive.google.com/file/d/12qVoObzQMCtPORfQtHPJ0V-qMw51Tegu/view) in bestehenden Drive-Dateien aktualisiert und verifiziert. Nächster Schritt: Rückmeldungen und mögliche Zustellfehler im bestehenden Gmail-Lauf abgleichen.
+
+
+## 12.11.2026 · NAKAMA eingereicht und drei Londoner Anbieter angeschrieben
+
+- HAPEKO: Iris Liebig erhielt die freigegebene Wiener Anschrift im Originalverlauf. Gmail SENT geprüft. [Beleg](https://mail.google.com/mail/u/0/#sent/1a1d18957b4dc6a0).
+- NAKAMA: Sven reichte das vorbereitete Kandidatenformular mit Foto-CV nach der Sicherheitsprüfung ein. Das Portal bestätigte den Eingang. [Kandidatenweg](https://nakamaeurope.com/kontakt/).
+- Drei neue Anbieter auf Englisch zu Finanzautomatisierung und DACH-Mandaten aus Österreich angeschrieben. [SystemsAccountants](https://mail.google.com/mail/u/0/#sent/1a1d18b4b8327b4e), [Vend Tech Group](https://mail.google.com/mail/u/0/#sent/1a1d18b4c4eae578), [Camino Search / Jack Parkhouse](https://mail.google.com/mail/u/0/#sent/1a1d18c6cadf5c1f). Die allgemeine Camino-Adresse wies die Erstmail ab. Parkhouse direkt zum Finance-AI-Operating-Advisor-Mandat angeschrieben, Status und Österreich-Zugang offen.
+- [Private Gesamtliste](https://drive.google.com/file/d/1xNq-Lw9nYVo-GecFFu984DJCE2pDWOaX/view) und [Versandprotokoll](https://drive.google.com/file/d/12qVoObzQMCtPORfQtHPJ0V-qMw51Tegu/view) aktualisiert und verifiziert. Nächster Schritt: Antworten sowie mögliche Zustellfehler über die bestehende Gmail-Automation abgleichen.
+
 ## 12.11.2026 · Delville-Profil versandt und CV-Automation freigegeben
 
 - Um 21:29 Uhr Wien auf Svens Auftrag an Markus Heimbrodt im Originalverlauf geantwortet. PDF-Profil mit Foto und ausgewählten Mandaten im Anhang. Gmail SENT, Empfänger, Verlauf, Dateiname und 171409 Bytes geprüft. Direktantwort gewählt, da das Kandidatenportal ein Passwort und die Annahme der Bedingungen verlangt. [Gmail](https://mail.google.com/mail/u/0/#sent/1a1d173396e3918f) · [Portal](https://www.delville-management.de/fuer-kandidaten/).
