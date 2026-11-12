@@ -1,3 +1,9 @@
+## 12.11.2026 · Delville-Profil versandt und CV-Automation freigegeben
+
+- Um 21:29 Uhr Wien auf Svens Auftrag an Markus Heimbrodt im Originalverlauf geantwortet. PDF-Profil mit Foto und ausgewählten Mandaten im Anhang. Gmail SENT, Empfänger, Verlauf, Dateiname und 171409 Bytes geprüft. Direktantwort gewählt, da das Kandidatenportal ein Passwort und die Annahme der Bedingungen verlangt. [Gmail](https://mail.google.com/mail/u/0/#sent/1a1d173396e3918f) · [Portal](https://www.delville-management.de/fuer-kandidaten/).
+- Sven hat automatische Antworten mit CV oder Interim-Profil bei eindeutigen Anfragen verifizierter Vermittler freigegeben. Bestehende Gmail-Automation aktualisiert und als aktiv mit Vierstundenrhythmus geprüft. Passwort, Vertragsbedingungen und unbestätigte zusätzliche Pflichtangaben bleiben bei Bedarf beim Nutzer.
+- [Private Gesamtliste](https://drive.google.com/file/d/1xNq-Lw9nYVo-GecFFu984DJCE2pDWOaX/view) und [Versandprotokoll](https://drive.google.com/file/d/12qVoObzQMCtPORfQtHPJ0V-qMw51Tegu/view) synchronisiert und privat geprüft. Nächster Schritt: Delville-Rückmeldung bearbeiten, falls sie eingeht.
+
 ## 12.11.2026 · Delville bittet um Unterlagen
 
 - Markus Heimbrodt antwortete im Originalverlauf um 18:44 Uhr Wien und begrüßt die Einreichung der Unterlagen. In Gmail keine nachfolgende Antwort von Sven. Delvilles offizielle Kandidatenseite nennt Interim Finance, Restrukturierung und Digitalisierung. Vorgeschlagener CV-Schwerpunkt: Immobilienrestrukturierung, HGB-Abschlussverantwortung in Köln, IFRS in SAP und Reporting-Automatisierung. Versandfreigabe offen. [Gmail](https://mail.google.com/mail/u/0/#all/1a1d0dcf042c4e9d) · [Delville](https://www.delville-management.de/fuer-kandidaten/).
