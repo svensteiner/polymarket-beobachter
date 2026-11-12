@@ -1,3 +1,12 @@
+## 12.11.2026 · Gmail · ISG-Stuttgart und neue Profilanfragen
+
+- [ISG / Stuttgart](https://mail.google.com/mail/u/0/#all/1a1cef5b4915f88c): Ignacio Topete bestätigte 2–6 Monate Vollzeit und zwei Tage pro Woche im Büro als Pflicht. Sven antwortete selbst, dass Stuttgart grundsätzlich möglich ist und er im Dezember wegen Projektnacharbeiten nur drei Tage pro Woche leisten kann. B2B-Zugang aus Österreich und Rückmeldung auf das Dezembermodell offen. Keine weitere Mail gesendet.
+- [Freelance Partner / Sachsen-Anhalt](https://mail.google.com/mail/u/0/#all/1a1cc3b5d0a0fbed): Mandat pausiert, da Kandidaten für Festanstellung Vorrang haben. [Optares / Bremen #7130](https://mail.google.com/mail/u/0/#all/1a1cc0ca42bac2ba): Vakanz nicht mehr zu besetzen. Optares behält Sven für Finance und Reporting in Bau und Infrastruktur im Blick.
+- [interim-cfo.com](https://mail.google.com/mail/u/0/#all/1a1cbb1556d4b860): Barbara Peter fragte nach Zuordnung zu einem Eintrag von 09/2025 mit chello.at. Gmail meldet SPF softfail und keine am Absender ausgerichtete DKIM-Signatur. Zuordnung und Freigabe einer anderen Adresse vor Weitergabe bei Sven klären.
+- [Boyden / Petra Rahmann](https://mail.google.com/mail/u/0/#all/1a1cbdd7e51f76d3) und [Jorisch / Daniel Jorisch](https://mail.google.com/mail/u/0/#all/1a1cbe43bfce9bf3) bitten laut Gmail-Vorschau um einen aktuellen CV für den Pool. Bei Freigabe Boyden auf Finance-Stabilisierung, Liquidität und deutsche Abschlüsse im internationalen Konzern zuschneiden ([Boyden-Referenz](https://www.boyden.com/de/deutschland/)). Jorisch auf operative Restrukturierung, Bankgespräche und Finance-Transformation zuschneiden ([Unternehmensinfos](https://jorisch-interim-management.com/de/unternehmensinfos)). Vor Versand vollständigen Verlauf und Empfänger prüfen.
+- enomyc verweist ausschließlich auf sein Karriereportal, Kompass sandte einen Registrierungslink. Keine Registrierung. Nächster Schritt: ISG auf Rückmeldung zum Dezemberumfang prüfen und CV-/Kontofreigaben sowie die bereits erbetenen Gesprächszeitfenster abwarten.
+
+
 ## 12.11.2026 · Antworten aus der Interim-Akquise
 
 - Sparkm / Konstantin Werner möchte kommende Woche 30 Minuten über Teams sprechen und bittet um Svens Telefonnummer. EquiTalent / Oliver York möchte ebenfalls kommende Woche ein Kennenlernen. Kein konkretes Düsseldorfer Mandat in Yorks Antwort bestätigt. Terminvorschläge und Telefonnummer von Sven erforderlich. [Sparkm](https://mail.google.com/mail/u/0/#all/1a1ce834be7fa5f5) · [EquiTalent](https://mail.google.com/mail/u/0/#all/1a1cbfb85df055a7).
