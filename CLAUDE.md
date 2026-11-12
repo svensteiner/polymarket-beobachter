@@ -1,3 +1,8 @@
+## 12.11.2026 · Delville bittet um Unterlagen
+
+- Markus Heimbrodt antwortete im Originalverlauf um 18:44 Uhr Wien und begrüßt die Einreichung der Unterlagen. In Gmail keine nachfolgende Antwort von Sven. Delvilles offizielle Kandidatenseite nennt Interim Finance, Restrukturierung und Digitalisierung. Vorgeschlagener CV-Schwerpunkt: Immobilienrestrukturierung, HGB-Abschlussverantwortung in Köln, IFRS in SAP und Reporting-Automatisierung. Versandfreigabe offen. [Gmail](https://mail.google.com/mail/u/0/#all/1a1d0dcf042c4e9d) · [Delville](https://www.delville-management.de/fuer-kandidaten/).
+- Private Gesamtliste aktualisiert und geprüft: 26 Anbieterantworten und 94 Gesellschaften ohne belegten Rücklauf. Nächster Schritt: Freigabe für die Einreichung bei Delville abwarten.
+
 ## 12.11.2026 · Kontaktübersicht und englische Anbieter
 
 - [Private Gesamtliste](https://drive.google.com/file/d/1xNq-Lw9nYVo-GecFFu984DJCE2pDWOaX/view) mit 125 Gmail-verifizierten Erstsendungen, 25 Anbieterantworten, 3 Standard-/Automatikantworten, 2 Unzustellbarkeiten, 95 ohne belegten Rücklauf. 12 Folge-E-Mails mit CV/Profil und 3 bestätigte Portaleingänge. HAPEKO bittet um Anschrift. Werner und York haben Terminvorschläge erhalten, keine Zusage bei Prüfung.
