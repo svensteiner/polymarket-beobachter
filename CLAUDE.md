@@ -1,3 +1,15 @@
+## 13.11.2026 · Suchradius für Interim-Mandate
+
+- Sven bevorzugt Remote und Hybrid. Ausschließlich vor Ort ist für Wien und gut erreichbares Umland im Einzelfall möglich. Außerhalb davon nur Mandate mit praktikablem Reiseaufwand und überwiegender Arbeit aus Wien priorisieren. Kein pauschaler Kilometerradius. Wochenumfang, Präsenzrhythmus und Österreich-Zugang projektbezogen prüfen.
+- Frankfurt #3072545, Münster #1299566 und Hamburg #3072253 zurückgestellt. Frankfurt #3071228 (Mebrahtu) bleibt wegen Remote-Anteil aktiv. Lokale Alternative epunkt Financial Controlling CEE, Wien 23, 20–30 Stunden/Woche und 40 % Homeoffice laut Beschreibung. SAP BOFC verlangt, Erfahrung und Besetzungsstand offen. Ulm Business Transformation mit 1–2 Tagen Präsenz pro Monat, Vollzeit und Österreich-Zugang offen. [Private Kontaktübersicht](https://drive.google.com/file/d/1xNq-Lw9nYVo-GecFFu984DJCE2pDWOaX/view) aktualisiert und geprüft.
+- Nächster Schritt: konkrete neue Interim-Mandate in Wien oder mit tragfähigem Remote-Modell priorisieren. Auf Rückmeldung von Michael Page zu #3071228 achten.
+
+## 13.11.2026 · Interim-Positionierung und Anfrage an Michael Page
+
+- Svens Positionierung: Interim Manager für Finanzführung, Restrukturierung und Transformation. Je Mandat Interim CFO, kaufmännische Leitung, Konzernrechnungswesen oder Finance-Transformation hervorheben. KI- und Reporting-Automatisierung als praktische Zusatzkompetenz.
+- Michael Page / Mikal Mebrahtu, Frankfurt #3071228: um 10:45 Uhr Wien per veröffentlichter Firmenadresse um Weiterleitung und Klärung von Besetzungsstand, drei Tagen/Woche im Dezember und Remote aus Wien gebeten. Gmail SENT und Volltext geprüft. [Versand](https://mail.google.com/mail/u/0/#sent/1a1d44c13c0541e0).
+- Marktsuche: Frankfurt #3072545 (Real Estate Finance ab Januar, vor Ort), Hamburg #3072253 (Konsolidierung, Vollzeit, hohe Präsenz) und Münster #1299566 (kaufmännische Leitung, vor Ort) in der privaten Übersicht dokumentiert. Besetzungsstände offen. [Kontaktübersicht](https://drive.google.com/file/d/1xNq-Lw9nYVo-GecFFu984DJCE2pDWOaX/view) und [Versandprotokoll](https://drive.google.com/file/d/12qVoObzQMCtPORfQtHPJ0V-qMw51Tegu/view) aktualisiert und verifiziert. Nächster Schritt: passende Interim-Mandate mit flexibler Auslastung und Rückmeldungen priorisieren.
+
 ## 13.11.2026 · fortalent-Profil versandt
 
 - Julian Maly bat um CV oder Interim-Profil. Um 10:37 Uhr Wien das Foto-PDF für Interim-Finanzleitung, Restrukturierung und Reporting-Automatisierung im Originalverlauf geschickt. Gmail Gesendet, Empfänger und Anhang verifiziert. [Gmail](https://mail.google.com/mail/u/0/#sent/1a1d44526ac016a8).
