@@ -1,3 +1,10 @@
+## 13.11.2026 · Vermittlerantworten, Kennzahlen und E-Mail-Archiv
+
+- Gmail im Originalverlauf gesendet und geprüft: Vires Conferre / Till Ewest Freitag 20.11. 10:00 Uhr Wien vorgeschlagen (1a1d58ede1ee7ed9), Boyden Speichereinwilligung (1a1d58ee3ca701fd), Delville ausführlicherer Foto-CV mit einzelnen Interim-Stationen (1a1d5914929821fc), Get Your Talent Profil über den offiziellen E-Mail-Weg (1a1d59152039231b). Sparkm 16.11. 15:00–15:30 Uhr Wien im Kalender bestätigt. HAPEKO und Concord/Cobalt warten auf separate Bestätigungsmails.
+- Sarah Gäbler / Bridge IMP bat per LinkedIn um CV und Mandatshistorie. Rückfrage zum offiziellen Einreichungsweg gesendet. Formular lädt und validiert Pflichtfelder. Name, berufliche E-Mail und Wien/Österreich vorbereitet. Keine Einreichung verifiziert. Vor Fortsetzung vollständige Pflichtfelder und Umgang mit den verlangten Referenzen prüfen.
+- [Privater Bewerbungshub](https://drive.google.com/drive/folders/19LXxLa8aUwcpWkeGxJXitNfRVWwYSxR2) behält seinen Namen. [Gesamtdoku mit Kennzahlen](https://drive.google.com/file/d/1xNq-Lw9nYVo-GecFFu984DJCE2pDWOaX/view) und [Versandprotokoll](https://drive.google.com/file/d/12qVoObzQMCtPORfQtHPJ0V-qMw51Tegu/view) aktualisiert. [E-Mail-Archiv](https://drive.google.com/file/d/1v9zskUolEDwfiXYmzXNIMjnGaHKODIJs/view) privat geprüft: 25 Nachrichten und 26 Anlagen, neun erledigte Eingänge anschließend im Papierkorb verifiziert. Bestehenden Gmail-Lauf für Ablage vor Papierkorb aktualisiert.
+- Nächster Schritt: Bridge-Einreichung nach Klärung der tatsächlichen Pflichtangaben abschließen, Terminbestätigungen und Talentpool-Links prüfen.
+
 ## 13.11.2026 · Suchradius für Interim-Mandate
 
 - Sven bevorzugt Remote und Hybrid. Ausschließlich vor Ort ist für Wien und gut erreichbares Umland im Einzelfall möglich. Außerhalb davon nur Mandate mit praktikablem Reiseaufwand und überwiegender Arbeit aus Wien priorisieren. Kein pauschaler Kilometerradius. Wochenumfang, Präsenzrhythmus und Österreich-Zugang projektbezogen prüfen.
