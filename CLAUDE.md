@@ -1,3 +1,8 @@
+## 13.11.2026 · fortalent-Profil versandt
+
+- Julian Maly bat um CV oder Interim-Profil. Um 10:37 Uhr Wien das Foto-PDF für Interim-Finanzleitung, Restrukturierung und Reporting-Automatisierung im Originalverlauf geschickt. Gmail Gesendet, Empfänger und Anhang verifiziert. [Gmail](https://mail.google.com/mail/u/0/#sent/1a1d44526ac016a8).
+- [Versandprotokoll](https://drive.google.com/file/d/12qVoObzQMCtPORfQtHPJ0V-qMw51Tegu/view) und [Kontaktübersicht](https://drive.google.com/file/d/1xNq-Lw9nYVo-GecFFu984DJCE2pDWOaX/view) privat aktualisiert und verifiziert. Nächster Schritt: konkrete Mandatsrückmeldung abwarten.
+
 ## 12.11.2026 · ARTES-Profil und Projektübersicht versandt
 
 - Jasmin Glaser bat um Profil und Projektübersicht für den ARTES-Interim-Pool. Derzeit kein passendes Mandat gemeldet. Um 22:59 Uhr Wien zweitseitiges Foto-PDF mit Immobilienrestrukturierung, Bau/HGB und integrierter Übersicht zur Reporting-Automatisierung im Originalverlauf gesandt. [Gmail-Nachweis](https://mail.google.com/mail/u/0/#sent/1a1d1c597abe0e43).
